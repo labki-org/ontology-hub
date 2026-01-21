@@ -31,11 +31,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Database schema supports entities (categories, properties, subobjects), modules, profiles, and drafts
   3. Capability tokens are generated securely and stored as hashes only (never plaintext)
   4. API endpoints return proper 429 responses when rate limits exceeded
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: Docker and database setup
-- [ ] 01-02: Capability URL and rate limiting infrastructure
+- [ ] 01-01-PLAN.md — Docker Compose, FastAPI scaffold, SQLModel database schema, Alembic migrations
+- [ ] 01-02-PLAN.md — Capability URL token system, SlowAPI rate limiting, draft API endpoints
 
 ### Phase 2: GitHub Integration
 **Goal**: Platform indexes SemanticSchemas GitHub repository and exposes entity data via API
@@ -147,7 +147,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/2 | Not started | - |
+| 1. Foundation | 0/2 | Planned | - |
 | 2. GitHub Integration | 0/2 | Not started | - |
 | 3. Entity Browsing | 0/3 | Not started | - |
 | 4. Modules and Versioning | 0/3 | Not started | - |
