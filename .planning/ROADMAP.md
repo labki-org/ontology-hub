@@ -46,11 +46,11 @@ Plans:
   2. Indexed entities are stored in PostgreSQL with commit SHA for versioning
   3. API endpoints return entity data (GET /entities/{type}/{id})
   4. Webhook handler processes push events to re-index changed files
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 02-01: GitHub indexer and entity storage
-- [ ] 02-02: Entity API and webhook handler
+- [ ] 02-01-PLAN.md — GitHub API client with httpx, indexer service with upsert logic, manual sync endpoint
+- [ ] 02-02-PLAN.md — Entity API endpoints with pagination, webhook handler with HMAC verification
 
 ### Phase 3: Entity Browsing
 **Goal**: Users can browse, search, and explore entity relationships in the UI
