@@ -12,6 +12,11 @@ from app.models.draft import (
     DraftUpdate,
     DraftWithCapability,
 )
+from app.schemas.entity import (
+    EntityListResponse,
+    EntityOverviewResponse,
+    EntityTypeSummary,
+)
 
 __all__ = [
     "DraftCreate",
@@ -20,4 +25,7 @@ __all__ = [
     "DraftStatus",
     "DraftUpdate",
     "DraftWithCapability",
+    "EntityListResponse",
+    "EntityOverviewResponse",
+    "EntityTypeSummary",
 ]

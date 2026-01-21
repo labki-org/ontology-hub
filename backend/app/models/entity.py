@@ -5,6 +5,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Optional
 
+import sqlalchemy as sa
 from sqlalchemy import JSON, Column
 from sqlmodel import Field, SQLModel
 
@@ -31,6 +32,9 @@ class Entity(EntityBase, table=True):
     """Entity database table."""
 
     __tablename__ = "entities"
+    __table_args__ = (
+        sa.UniqueConstraint("entity_id", "entity_type", name="uq_entities_entity_id_type"),
+    )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     commit_sha: Optional[str] = None  # For versioning from GitHub

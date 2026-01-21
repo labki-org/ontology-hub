@@ -1,16 +1,21 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request, Response
+import httpx
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi.errors import RateLimitExceeded
 from sqlmodel import SQLModel, text
+from sqlmodel.ext.asyncio.session import AsyncSession
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.database import engine, async_session_maker
+from app.config import settings
+from app.database import engine, async_session_maker, get_session
 from app.dependencies.rate_limit import limiter, rate_limit_exceeded_handler
 # Import all models to register them with SQLModel.metadata before create_all
 from app.models import Entity, Module, Profile, Draft  # noqa: F401
-from app.routers import drafts_router
+from app.routers import drafts_router, entities_router, webhooks_router
+from app.services.github import GitHubClient
+from app.services.indexer import sync_repository
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -36,7 +41,32 @@ async def lifespan(app: FastAPI):
     # Startup: Create database tables (use Alembic in production)
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
+
+    # Create GitHub API client with connection pooling
+    # Only initialize if token is configured
+    if settings.GITHUB_TOKEN:
+        timeout = httpx.Timeout(connect=5.0, read=30.0, write=10.0, pool=5.0)
+        limits = httpx.Limits(max_connections=10, max_keepalive_connections=5)
+
+        app.state.github_http_client = httpx.AsyncClient(
+            base_url="https://api.github.com",
+            timeout=timeout,
+            limits=limits,
+            headers={
+                "Accept": "application/vnd.github+json",
+                "X-GitHub-Api-Version": "2022-11-28",
+                "Authorization": f"Bearer {settings.GITHUB_TOKEN}",
+            },
+        )
+    else:
+        app.state.github_http_client = None
+
     yield
+
+    # Shutdown: Close GitHub client
+    if app.state.github_http_client:
+        await app.state.github_http_client.aclose()
+
     # Shutdown: Dispose of connection pool
     await engine.dispose()
 
@@ -69,6 +99,8 @@ app.add_middleware(
 
 # Include API routers
 app.include_router(drafts_router, prefix="/api/v1")
+app.include_router(entities_router, prefix="/api/v1")
+app.include_router(webhooks_router, prefix="/api/v1")
 
 
 @app.get("/health")
@@ -79,3 +111,40 @@ async def health_check():
         result = await session.execute(text("SELECT 1"))
         result.scalar()
     return {"status": "healthy", "database": "connected"}
+
+
+def get_github_client(request: Request) -> GitHubClient:
+    """Get GitHubClient from app state.
+
+    Raises:
+        HTTPException: If GitHub token is not configured
+    """
+    if request.app.state.github_http_client is None:
+        raise HTTPException(
+            status_code=503,
+            detail="GitHub integration not configured. Set GITHUB_TOKEN environment variable.",
+        )
+    return GitHubClient(request.app.state.github_http_client)
+
+
+@app.post("/admin/sync")
+async def trigger_sync(
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+):
+    """Trigger full repository sync from GitHub.
+
+    Fetches all entity, module, and profile files from the configured
+    GitHub repository and upserts them into the database.
+
+    Returns:
+        Sync statistics including commit_sha, entities_synced, files_processed, errors
+    """
+    github_client = get_github_client(request)
+    result = await sync_repository(
+        github_client=github_client,
+        session=session,
+        owner=settings.GITHUB_REPO_OWNER,
+        repo=settings.GITHUB_REPO_NAME,
+    )
+    return result

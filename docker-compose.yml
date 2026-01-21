@@ -25,6 +25,10 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://ontology:${POSTGRES_PASSWORD}@db:5432/ontology_hub
       DEBUG: ${DEBUG:-false}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      GITHUB_REPO_OWNER: ${GITHUB_REPO_OWNER:-labki-org}
+      GITHUB_REPO_NAME: ${GITHUB_REPO_NAME:-labki-schemas}
+      GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET:-}
     volumes:
       - ./backend:/app
     ports:

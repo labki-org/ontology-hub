@@ -13,7 +13,7 @@ Ontology Hub transforms a wiki admin's local schema changes into a GitHub PR thr
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Docker infrastructure, PostgreSQL schema, capability URL security, rate limiting
-- [ ] **Phase 2: GitHub Integration** - Repository indexing, entity API, webhook handling
+- [x] **Phase 2: GitHub Integration** - Repository indexing, entity API, webhook handling
 - [ ] **Phase 3: Entity Browsing** - Entity pages, search, inheritance graphs, used-by references
 - [ ] **Phase 4: Modules and Versioning** - Module/profile browsing, version listing, diff views
 - [ ] **Phase 5: Draft System** - Draft ingestion, capability URL access, review UI, module editing
@@ -46,11 +46,12 @@ Plans:
   2. Indexed entities are stored in PostgreSQL with commit SHA for versioning
   3. API endpoints return entity data (GET /entities/{type}/{id})
   4. Webhook handler processes push events to re-index changed files
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 02-01: GitHub indexer and entity storage
-- [ ] 02-02: Entity API and webhook handler
+- [x] 02-01-PLAN.md — GitHub API client with httpx, indexer service with upsert logic, database migration for unique constraint, manual sync endpoint
+- [x] 02-02-PLAN.md — Entity API endpoints with cursor-based pagination
+- [x] 02-03-PLAN.md — Webhook handler with HMAC verification and background sync
 
 ### Phase 3: Entity Browsing
 **Goal**: Users can browse, search, and explore entity relationships in the UI
@@ -148,7 +149,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 2/2 | Complete | 2026-01-21 |
-| 2. GitHub Integration | 0/2 | Not started | - |
+| 2. GitHub Integration | 3/3 | Complete | 2026-01-21 |
 | 3. Entity Browsing | 0/3 | Not started | - |
 | 4. Modules and Versioning | 0/3 | Not started | - |
 | 5. Draft System | 0/3 | Not started | - |
@@ -157,5 +158,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 
 ---
 *Roadmap created: 2025-01-20*
-*Total phases: 7 | Total plans: 18 (estimated)*
+*Total phases: 7 | Total plans: 19 (estimated)*
 *Coverage: 25/25 v1 requirements mapped*
