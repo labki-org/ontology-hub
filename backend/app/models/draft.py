@@ -69,3 +69,15 @@ class DraftWithCapability(DraftPublic):
     """Response schema including the capability URL (only returned on creation)."""
 
     capability_url: str
+
+
+class DraftCreateResponse(SQLModel):
+    """Response schema for draft creation.
+
+    Contains the capability URL (shown ONCE, cannot be recovered)
+    and expiration info. Does NOT include draft data - use capability URL to retrieve.
+    """
+
+    capability_url: str
+    expires_at: datetime
+    message: str = "Save this URL - it cannot be recovered. Use it to access your draft."

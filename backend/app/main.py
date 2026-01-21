@@ -10,6 +10,7 @@ from app.database import engine, async_session_maker
 from app.dependencies.rate_limit import limiter, rate_limit_exceeded_handler
 # Import all models to register them with SQLModel.metadata before create_all
 from app.models import Entity, Module, Profile, Draft  # noqa: F401
+from app.routers import drafts_router
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -64,6 +65,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# Include API routers
+app.include_router(drafts_router, prefix="/api/v1")
 
 
 @app.get("/health")
