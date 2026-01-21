@@ -63,12 +63,12 @@ Plans:
   3. User can see inheritance graph showing parent/child category relationships
   4. User can see which categories use a given property or subobject
   5. Entity pages display ID, label, description, module membership, and full schema definition
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 03-01: React app scaffolding and entity detail pages
-- [ ] 03-02: Search functionality
-- [ ] 03-03: Inheritance graph and used-by references
+- [ ] 03-01-PLAN.md — React app scaffolding with Vite, sidebar layout, entity detail pages
+- [ ] 03-02-PLAN.md — Search API endpoint and frontend search with debounce
+- [ ] 03-03-PLAN.md — Inheritance graph visualization and used-by references
 
 ### Phase 4: Modules and Versioning
 **Goal**: Users can browse modules, profiles, and version history with diff views
@@ -115,7 +115,7 @@ Plans:
   1. Validation checks that all referenced IDs exist (parents, properties, module members)
   2. Validation detects and reports circular category inheritance
   3. Validation checks datatypes are in the allowed set
-  4. Validation detects breaking changes: datatype changes, multiplicity changes, removals
+  4. Validation checks for breaking changes: datatype changes, multiplicity changes, removals
   5. Validation suggests semver classification (major/minor/patch) per change
   6. Validation feedback displays inline in draft review UI with clear severity indicators
 **Plans**: TBD
