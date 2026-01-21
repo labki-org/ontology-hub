@@ -46,11 +46,12 @@ Plans:
   2. Indexed entities are stored in PostgreSQL with commit SHA for versioning
   3. API endpoints return entity data (GET /entities/{type}/{id})
   4. Webhook handler processes push events to re-index changed files
-**Plans**: 2 plans
+**Plans**: 3 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — GitHub API client with httpx, indexer service with upsert logic, manual sync endpoint
-- [ ] 02-02-PLAN.md — Entity API endpoints with pagination, webhook handler with HMAC verification
+- [ ] 02-01-PLAN.md — GitHub API client with httpx, indexer service with upsert logic, database migration for unique constraint, manual sync endpoint
+- [ ] 02-02-PLAN.md — Entity API endpoints with cursor-based pagination
+- [ ] 02-03-PLAN.md — Webhook handler with HMAC verification and background sync
 
 ### Phase 3: Entity Browsing
 **Goal**: Users can browse, search, and explore entity relationships in the UI
@@ -148,7 +149,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 2/2 | Complete | 2026-01-21 |
-| 2. GitHub Integration | 0/2 | Not started | - |
+| 2. GitHub Integration | 0/3 | Not started | - |
 | 3. Entity Browsing | 0/3 | Not started | - |
 | 4. Modules and Versioning | 0/3 | Not started | - |
 | 5. Draft System | 0/3 | Not started | - |
@@ -157,5 +158,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 
 ---
 *Roadmap created: 2025-01-20*
-*Total phases: 7 | Total plans: 18 (estimated)*
+*Total phases: 7 | Total plans: 19 (estimated)*
 *Coverage: 25/25 v1 requirements mapped*
