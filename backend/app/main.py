@@ -4,6 +4,8 @@ from fastapi import FastAPI
 from sqlmodel import SQLModel, text
 
 from app.database import engine, async_session_maker
+# Import all models to register them with SQLModel.metadata before create_all
+from app.models import Entity, Module, Profile, Draft  # noqa: F401
 
 
 @asynccontextmanager
