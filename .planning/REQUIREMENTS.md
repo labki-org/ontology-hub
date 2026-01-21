@@ -58,10 +58,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Infrastructure
 
-- [ ] **INFR-01**: Platform runs as Docker container for local development
+- [x] **INFR-01**: Platform runs as Docker container for local development
 - [ ] **INFR-02**: Platform indexes GitHub repo content for browsing
 - [ ] **INFR-03**: Rate limiting on draft creation (per IP)
-- [ ] **INFR-04**: Capability tokens never logged; stored as hashes only
+- [x] **INFR-04**: Capability tokens never logged; stored as hashes only
 
 ## v2 Requirements
 
@@ -117,8 +117,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INFR-01 | Phase 1 | Pending |
-| INFR-04 | Phase 1 | Pending |
+| INFR-01 | Phase 1 | Complete |
+| INFR-04 | Phase 1 | Complete |
 | INFR-02 | Phase 2 | Pending |
 | BRWS-01 | Phase 3 | Pending |
 | BRWS-02 | Phase 3 | Pending |
@@ -160,4 +160,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2025-01-20*
-*Last updated: 2025-01-20 after roadmap creation*
+*Last updated: 2026-01-21 after Phase 1 completion*

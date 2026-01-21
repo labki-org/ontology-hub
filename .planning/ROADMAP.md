@@ -12,7 +12,7 @@ Ontology Hub transforms a wiki admin's local schema changes into a GitHub PR thr
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation** - Docker infrastructure, PostgreSQL schema, capability URL security, rate limiting
+- [x] **Phase 1: Foundation** - Docker infrastructure, PostgreSQL schema, capability URL security, rate limiting
 - [ ] **Phase 2: GitHub Integration** - Repository indexing, entity API, webhook handling
 - [ ] **Phase 3: Entity Browsing** - Entity pages, search, inheritance graphs, used-by references
 - [ ] **Phase 4: Modules and Versioning** - Module/profile browsing, version listing, diff views
@@ -34,8 +34,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 2 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Docker Compose, FastAPI scaffold, SQLModel database schema, Alembic migrations
-- [ ] 01-02-PLAN.md — Capability URL token system, SlowAPI rate limiting, draft API endpoints
+- [x] 01-01-PLAN.md — Docker Compose, FastAPI scaffold, SQLModel database schema, Alembic migrations
+- [x] 01-02-PLAN.md — Capability URL token system, SlowAPI rate limiting, draft API endpoints
 
 ### Phase 2: GitHub Integration
 **Goal**: Platform indexes SemanticSchemas GitHub repository and exposes entity data via API
@@ -147,7 +147,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/2 | Planned | - |
+| 1. Foundation | 2/2 | Complete | 2026-01-21 |
 | 2. GitHub Integration | 0/2 | Not started | - |
 | 3. Entity Browsing | 0/3 | Not started | - |
 | 4. Modules and Versioning | 0/3 | Not started | - |
