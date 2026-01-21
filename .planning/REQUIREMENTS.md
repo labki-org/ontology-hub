@@ -117,13 +117,47 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (Populated during roadmap creation) | | |
+| INFR-01 | Phase 1 | Pending |
+| INFR-04 | Phase 1 | Pending |
+| INFR-02 | Phase 2 | Pending |
+| BRWS-01 | Phase 3 | Pending |
+| BRWS-02 | Phase 3 | Pending |
+| BRWS-03 | Phase 3 | Pending |
+| BRWS-04 | Phase 3 | Pending |
+| BRWS-05 | Phase 3 | Pending |
+| MODL-01 | Phase 4 | Pending |
+| MODL-02 | Phase 4 | Pending |
+| MODL-03 | Phase 4 | Pending |
+| MODL-04 | Phase 4 | Pending |
+| VERS-01 | Phase 4 | Pending |
+| VERS-02 | Phase 4 | Pending |
+| VERS-03 | Phase 4 | Pending |
+| DRFT-01 | Phase 5 | Pending |
+| DRFT-02 | Phase 5 | Pending |
+| DRFT-03 | Phase 5 | Pending |
+| DRFT-04 | Phase 5 | Pending |
+| DRFT-05 | Phase 5 | Pending |
+| DRFT-06 | Phase 5 | Pending |
+| DRFT-07 | Phase 5 | Pending |
+| DRFT-08 | Phase 5 | Pending |
+| INFR-03 | Phase 5 | Pending |
+| VALD-01 | Phase 6 | Pending |
+| VALD-02 | Phase 6 | Pending |
+| VALD-03 | Phase 6 | Pending |
+| VALD-04 | Phase 6 | Pending |
+| VALD-05 | Phase 6 | Pending |
+| VALD-06 | Phase 6 | Pending |
+| GHUB-01 | Phase 7 | Pending |
+| GHUB-02 | Phase 7 | Pending |
+| GHUB-03 | Phase 7 | Pending |
+| GHUB-04 | Phase 7 | Pending |
+| GHUB-05 | Phase 7 | Pending |
 
 **Coverage:**
 - v1 requirements: 25 total
-- Mapped to phases: 0
-- Unmapped: 25 ⚠️
+- Mapped to phases: 25
+- Unmapped: 0
 
 ---
 *Requirements defined: 2025-01-20*
-*Last updated: 2025-01-20 after initial definition*
+*Last updated: 2025-01-20 after roadmap creation*
