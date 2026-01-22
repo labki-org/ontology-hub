@@ -8,6 +8,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAllEntitiesByType } from '@/api/entities'
+import { SearchInput } from '@/components/search/SearchInput'
 
 const entityTypeConfig = {
   category: { label: 'Categories', icon: Boxes },
@@ -24,6 +25,10 @@ export function Sidebar() {
         <Link to="/" className="font-semibold text-lg hover:opacity-80">
           Ontology Hub
         </Link>
+      </div>
+
+      <div className="p-2 border-b">
+        <SearchInput />
       </div>
 
       <nav className="flex-1 p-2 space-y-1 overflow-y-auto">

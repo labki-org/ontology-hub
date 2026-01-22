@@ -4,6 +4,8 @@ import { HomePage } from '@/pages/HomePage'
 import { CategoryPage } from '@/pages/CategoryPage'
 import { PropertyPage } from '@/pages/PropertyPage'
 import { SubobjectPage } from '@/pages/SubobjectPage'
+import { SearchPage } from '@/pages/SearchPage'
+import { GraphExplorerPage } from '@/pages/GraphExplorerPage'
 
 const router = createBrowserRouter([
   {
@@ -13,6 +15,10 @@ const router = createBrowserRouter([
       {
         index: true,
         element: <HomePage />,
+      },
+      {
+        path: 'search',
+        element: <SearchPage />,
       },
       {
         path: 'category/:entityId',
@@ -25,6 +31,10 @@ const router = createBrowserRouter([
       {
         path: 'subobject/:entityId',
         element: <SubobjectPage />,
+      },
+      {
+        path: 'graph/:entityId',
+        element: <GraphExplorerPage />,
       },
     ],
   },
