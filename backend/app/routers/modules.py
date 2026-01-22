@@ -4,6 +4,7 @@ Provides read-only access to modules and profiles:
 - GET /modules - List all modules with optional search
 - GET /modules/{module_id} - Get single module
 - GET /modules/{module_id}/entities - Get entities grouped by type
+- GET /modules/{module_id}/overlaps - Get entities that appear in other modules
 - GET /profiles - List all profiles with optional search
 - GET /profiles/{profile_id} - Get single profile
 - GET /profiles/{profile_id}/modules - Get modules in a profile
@@ -196,6 +197,61 @@ async def get_module_entities(
         properties=properties,
         subobjects=subobjects,
     )
+
+
+@router.get("/modules/{module_id}/overlaps")
+@limiter.limit(RATE_LIMITS["entity_read"])
+async def get_module_overlaps(
+    request: Request,
+    module_id: str,
+    session: SessionDep,
+) -> dict[str, list[str]]:
+    """Get entities that appear in multiple modules.
+
+    Returns a mapping of entity_id to list of other module_ids where that entity
+    also appears. Only includes entities that appear in more than one module.
+
+    Rate limited to 200/minute per IP.
+
+    Args:
+        module_id: The module's unique identifier
+
+    Returns:
+        Dict mapping entity_id to list of other module_ids
+
+    Raises:
+        HTTPException: 404 if module not found
+    """
+    # Verify module exists
+    query = select(Module).where(
+        Module.module_id == module_id,
+        Module.deleted_at.is_(None),
+    )
+    result = await session.execute(query)
+    module = result.scalar_one_or_none()
+
+    if not module:
+        raise HTTPException(status_code=404, detail="Module not found")
+
+    # Get all other modules
+    other_query = select(Module).where(
+        Module.module_id != module_id,
+        Module.deleted_at.is_(None),
+    )
+    result = await session.execute(other_query)
+    other_modules = result.scalars().all()
+
+    # Find overlaps - categories from this module that appear in other modules
+    overlaps: dict[str, list[str]] = {}
+    for cat_id in module.category_ids or []:
+        other_module_ids = [
+            m.module_id for m in other_modules
+            if cat_id in (m.category_ids or [])
+        ]
+        if other_module_ids:
+            overlaps[cat_id] = other_module_ids
+
+    return overlaps
 
 
 # Profile endpoints

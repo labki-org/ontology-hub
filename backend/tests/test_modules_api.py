@@ -4,6 +4,7 @@ Tests module and profile retrieval, listing, and search:
 - GET /api/v1/modules - List modules with optional search
 - GET /api/v1/modules/{id} - Get single module
 - GET /api/v1/modules/{id}/entities - Get entities grouped by type
+- GET /api/v1/modules/{id}/overlaps - Get entities that appear in other modules
 - GET /api/v1/profiles - List profiles with optional search
 - GET /api/v1/profiles/{id} - Get single profile
 - GET /api/v1/profiles/{id}/modules - Get modules in profile
@@ -339,6 +340,107 @@ class TestModuleEntities:
         data = response.json()
         assert len(data["categories"]) == 1
         assert data["categories"][0]["entity_id"] == "Person"
+
+
+class TestModuleOverlaps:
+    """Tests for GET /api/v1/modules/{module_id}/overlaps."""
+
+    async def test_overlaps_returns_correct_format(
+        self, client: AsyncClient, test_session: AsyncSession
+    ):
+        """GET returns dict mapping entity_id to list of other module_ids."""
+        # Create modules with shared category
+        test_session.add(Module(
+            module_id="core",
+            label="Core Module",
+            category_ids=["Person", "Organization"],
+        ))
+        test_session.add(Module(
+            module_id="extended",
+            label="Extended Module",
+            category_ids=["Person", "Event"],  # Person is shared
+        ))
+        test_session.add(Module(
+            module_id="research",
+            label="Research Module",
+            category_ids=["Person", "Experiment"],  # Person is shared
+        ))
+        await test_session.commit()
+
+        response = await client.get("/api/v1/modules/core/overlaps")
+        assert response.status_code == 200
+
+        data = response.json()
+        # Person appears in extended and research
+        assert "Person" in data
+        assert set(data["Person"]) == {"extended", "research"}
+        # Organization is unique to core
+        assert "Organization" not in data
+
+    async def test_overlaps_with_no_overlaps(
+        self, client: AsyncClient, test_session: AsyncSession
+    ):
+        """GET returns empty dict when module has no overlapping entities."""
+        # Create modules with no shared categories
+        test_session.add(Module(
+            module_id="unique",
+            label="Unique Module",
+            category_ids=["UniqueCat1", "UniqueCat2"],
+        ))
+        test_session.add(Module(
+            module_id="other",
+            label="Other Module",
+            category_ids=["OtherCat1", "OtherCat2"],
+        ))
+        await test_session.commit()
+
+        response = await client.get("/api/v1/modules/unique/overlaps")
+        assert response.status_code == 200
+        assert response.json() == {}
+
+    async def test_overlaps_empty_module(
+        self, client: AsyncClient, test_session: AsyncSession
+    ):
+        """GET returns empty dict for module with no categories."""
+        test_session.add(Module(
+            module_id="empty",
+            label="Empty Module",
+            category_ids=[],
+        ))
+        await test_session.commit()
+
+        response = await client.get("/api/v1/modules/empty/overlaps")
+        assert response.status_code == 200
+        assert response.json() == {}
+
+    async def test_overlaps_not_found(self, client: AsyncClient):
+        """GET returns 404 for non-existent module."""
+        response = await client.get("/api/v1/modules/nonexistent/overlaps")
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Module not found"
+
+    async def test_overlaps_excludes_deleted_modules(
+        self, client: AsyncClient, test_session: AsyncSession
+    ):
+        """GET excludes soft-deleted modules from overlap results."""
+        # Create modules
+        test_session.add(Module(
+            module_id="active",
+            label="Active Module",
+            category_ids=["SharedCat"],
+        ))
+        test_session.add(Module(
+            module_id="deleted",
+            label="Deleted Module",
+            category_ids=["SharedCat"],
+            deleted_at=datetime.utcnow(),
+        ))
+        await test_session.commit()
+
+        response = await client.get("/api/v1/modules/active/overlaps")
+        assert response.status_code == 200
+        # Deleted module should not appear in overlaps
+        assert response.json() == {}
 
 
 class TestProfileList:
