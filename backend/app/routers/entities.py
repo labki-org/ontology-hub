@@ -243,3 +243,67 @@ async def get_entity(
         raise HTTPException(status_code=404, detail="Entity not found")
 
     return EntityPublic.model_validate(entity)
+
+
+@router.get("/{entity_type}/{entity_id}/used-by", response_model=list[EntityPublic])
+@limiter.limit(RATE_LIMITS["entity_read"])
+async def get_used_by(
+    request: Request,
+    entity_type: EntityType,
+    entity_id: str,
+    session: SessionDep,
+) -> list[EntityPublic]:
+    """Get categories that reference this property or subobject.
+
+    Only valid for property and subobject entity types. Returns
+    a list of categories that include this entity in their
+    properties or subobjects arrays.
+
+    Rate limited to 200/minute per IP.
+
+    Args:
+        entity_type: Type of entity (must be property or subobject)
+        entity_id: Entity ID to find usages of
+
+    Returns:
+        List of EntityPublic for categories using this entity
+
+    Raises:
+        HTTPException: 400 if entity_type is category
+        HTTPException: 404 if entity not found
+    """
+    # Only properties and subobjects can have used-by
+    if entity_type == EntityType.CATEGORY:
+        raise HTTPException(
+            status_code=400,
+            detail="used-by only applies to properties and subobjects",
+        )
+
+    # Verify the entity exists
+    verify_query = select(Entity).where(
+        Entity.entity_type == entity_type,
+        Entity.entity_id == entity_id,
+        Entity.deleted_at.is_(None),
+    )
+    result = await session.execute(verify_query)
+    if not result.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="Entity not found")
+
+    # Determine which field to search in
+    field_name = "properties" if entity_type == EntityType.PROPERTY else "subobjects"
+
+    # Find categories that contain this entity_id in their schema_definition
+    # We need to search for the entity_id in the array stored at field_name
+    # Using cast to text and LIKE for cross-database compatibility
+    from sqlalchemy import cast, String
+
+    query = select(Entity).where(
+        Entity.entity_type == EntityType.CATEGORY,
+        Entity.deleted_at.is_(None),
+        cast(Entity.schema_definition[field_name], String).contains(f'"{entity_id}"'),
+    )
+
+    result = await session.execute(query)
+    categories = result.scalars().all()
+
+    return [EntityPublic.model_validate(c) for c in categories]

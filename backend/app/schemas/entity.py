@@ -42,3 +42,37 @@ class EntityOverviewResponse(BaseModel):
 
     types: list[EntityTypeSummary]
     total: int
+
+
+class InheritanceNode(BaseModel):
+    """Node in an inheritance graph.
+
+    Represents a category in the React Flow visualization.
+    """
+
+    id: str  # entity_id for React Flow
+    label: str
+    entity_id: str
+    is_current: bool
+
+
+class InheritanceEdge(BaseModel):
+    """Edge in an inheritance graph.
+
+    Represents a parent relationship (child -> parent direction).
+    """
+
+    source: str  # child entity_id
+    target: str  # parent entity_id
+
+
+class InheritanceResponse(BaseModel):
+    """Inheritance graph response for React Flow visualization.
+
+    Contains all nodes and edges for rendering the inheritance
+    hierarchy of a category.
+    """
+
+    nodes: list[InheritanceNode]
+    edges: list[InheritanceEdge]
+    has_circular: bool = False
