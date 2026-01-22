@@ -8,6 +8,7 @@ import { DraftHeader } from '@/components/draft/DraftHeader'
 import { DraftDiffViewer } from '@/components/draft/DraftDiffViewer'
 import { BulkModuleAssignment } from '@/components/draft/BulkModuleAssignment'
 import { ProfileEditor } from '@/components/draft/ProfileEditor'
+import { ValidationSummary } from '@/components/draft/ValidationSummary'
 import { useDraft, useDraftDiff, useUpdateDraft } from '@/api/drafts'
 import { useDraftStore } from '@/stores/draftStore'
 import type { EntityUpdate, DraftPatchPayload } from '@/api/types'
@@ -291,13 +292,22 @@ export function DraftPage() {
       <div className="space-y-6">
         <DraftHeader draft={draft} />
 
+        {/* Validation summary - show when draft has validation results */}
+        {draft.validation_results && (
+          <ValidationSummary report={draft.validation_results} />
+        )}
+
         {/* Bulk module assignment for new categories */}
         {isEditable && hasNewCategories && (
           <BulkModuleAssignment diff={diff} />
         )}
 
         {/* Entity diff viewer */}
-        <DraftDiffViewer diff={diff} editable={isEditable} />
+        <DraftDiffViewer
+          diff={diff}
+          editable={isEditable}
+          validationResults={draft.validation_results}
+        />
 
         {/* Profile editor */}
         {isEditable && (
