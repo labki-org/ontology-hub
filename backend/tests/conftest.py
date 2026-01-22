@@ -67,6 +67,10 @@ async def client(test_engine) -> AsyncGenerator[AsyncClient, None]:
     # Override database session
     app.dependency_overrides[get_session] = override_get_session
 
+    # Initialize github_client to None for tests (can be overridden per-test)
+    if not hasattr(app.state, "github_client"):
+        app.state.github_client = None
+
     async with AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://test",
@@ -75,3 +79,5 @@ async def client(test_engine) -> AsyncGenerator[AsyncClient, None]:
         yield ac
 
     app.dependency_overrides.clear()
+    # Reset github_client after test
+    app.state.github_client = None

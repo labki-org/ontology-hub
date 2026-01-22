@@ -13,7 +13,13 @@ from app.database import engine, async_session_maker, get_session
 from app.dependencies.rate_limit import limiter, rate_limit_exceeded_handler
 # Import all models to register them with SQLModel.metadata before create_all
 from app.models import Entity, Module, Profile, Draft  # noqa: F401
-from app.routers import drafts_router, entities_router, modules_router, webhooks_router
+from app.routers import (
+    drafts_router,
+    entities_router,
+    modules_router,
+    versions_router,
+    webhooks_router,
+)
 from app.services.github import GitHubClient
 from app.services.indexer import sync_repository
 
@@ -58,8 +64,11 @@ async def lifespan(app: FastAPI):
                 "Authorization": f"Bearer {settings.GITHUB_TOKEN}",
             },
         )
+        # Also store the wrapped GitHubClient for convenience
+        app.state.github_client = GitHubClient(app.state.github_http_client)
     else:
         app.state.github_http_client = None
+        app.state.github_client = None
 
     yield
 
@@ -102,6 +111,7 @@ app.add_middleware(
 app.include_router(drafts_router, prefix="/api/v1")
 app.include_router(entities_router, prefix="/api/v1")
 app.include_router(modules_router, prefix="/api/v1")
+app.include_router(versions_router, prefix="/api/v1")
 app.include_router(webhooks_router, prefix="/api/v1")
 
 
