@@ -34,12 +34,19 @@ async def fetch_canonical_entities_map(
         "profiles": {},
     }
 
+    # Map singular entity types to plural keys
+    type_to_plural = {
+        "category": "categories",
+        "property": "properties",
+        "subobject": "subobjects",
+    }
+
     # Fetch entities
     stmt = select(Entity).where(Entity.deleted_at.is_(None))
     result = await session.execute(stmt)
     for entity in result.scalars().all():
-        type_key = f"{entity.entity_type.value}s"  # category -> categories
-        if type_key in result_map:
+        type_key = type_to_plural.get(entity.entity_type.value)
+        if type_key:
             result_map[type_key][entity.entity_id] = {
                 "entity_id": entity.entity_id,
                 "label": entity.label,

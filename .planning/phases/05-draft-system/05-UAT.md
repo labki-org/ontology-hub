@@ -91,10 +91,13 @@ skipped: 2
 ## Design Feedback
 
 ### Dependency Warning Logic (Test 12)
-Current: Warns about module-to-module dependencies when assigning category to module.
-Suggested: Should warn about entity-level dependencies instead:
-- Parent category not in module (or dep module)
-- Used properties not accessible
-- Used subobjects not accessible
+~~Current: Warns about module-to-module dependencies when assigning category to module.~~
+~~Suggested: Should warn about entity-level dependencies instead:~~
+- ~~Parent category not in module (or dep module)~~
+- ~~Used properties not accessible~~
+- ~~Used subobjects not accessible~~
 
-This is a design refinement, not a bug. Consider for future iteration.
+**IMPLEMENTED** (commit d380371): Now checks entity-level dependencies:
+- Parent category must be in assigned module or a module it depends on
+- Warning shows: "Missing Parent Category: Parent X is not in assigned modules"
+- Warning clears when module containing parent is added
