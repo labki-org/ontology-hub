@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { X, Link2, ChevronDown, Plus } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -7,17 +7,39 @@ import { DependencyFeedback } from './DependencyFeedback'
 import { useModules } from '@/api/modules'
 import { useDraftStore } from '@/stores/draftStore'
 import { cn } from '@/lib/utils'
+import type { ModuleAssignmentState } from '@/api/types'
+
+/**
+ * Build a map of category ID -> assigned module IDs from the moduleAssignments state
+ */
+function buildCategoryAssignmentsMap(
+  moduleAssignments: Map<string, ModuleAssignmentState>
+): Map<string, string[]> {
+  const result = new Map<string, string[]>()
+  for (const [entityId, state] of moduleAssignments) {
+    result.set(entityId, [...state.explicit, ...state.autoIncluded])
+  }
+  return result
+}
+
+interface EntitySchema {
+  parent?: string
+  properties?: string[]
+  subobjects?: string[]
+}
 
 interface ModuleAssignmentProps {
   entityId: string
   entityType: 'category' | 'property' | 'subobject'
   parentCategories?: string[]
+  entitySchema?: EntitySchema
 }
 
 export function ModuleAssignment({
   entityId,
   entityType,
   parentCategories,
+  entitySchema,
 }: ModuleAssignmentProps) {
   const { data: modules, isLoading } = useModules()
   const {
@@ -200,6 +222,8 @@ export function ModuleAssignment({
       <DependencyFeedback
         entityId={entityId}
         assignedModules={[...assignments.explicit, ...assignments.autoIncluded]}
+        entitySchema={entitySchema}
+        allCategoryAssignments={buildCategoryAssignmentsMap(moduleAssignments)}
       />
     </div>
   )

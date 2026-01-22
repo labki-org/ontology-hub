@@ -224,6 +224,11 @@ function AddedEntityItem({
                   entityId={change.entity_id}
                   entityType={moduleEntityType}
                   parentCategories={parentCategories}
+                  entitySchema={moduleEntityType === 'category' ? {
+                    parent: (newData.schema_definition as Record<string, unknown>)?.parent as string | undefined,
+                    properties: (newData.schema_definition as Record<string, unknown>)?.properties as string[] | undefined,
+                    subobjects: (newData.schema_definition as Record<string, unknown>)?.subobjects as string[] | undefined,
+                  } : undefined}
                 />
               </div>
             )}
