@@ -3,8 +3,9 @@ import { useEntity } from '@/api/entities'
 import { EntityDetail } from '@/components/entity/EntityDetail'
 import { SchemaTable } from '@/components/entity/SchemaTable'
 import { PropertyList } from '@/components/entity/PropertyList'
+import { UsedByList } from '@/components/entity/UsedByList'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 
 export function SubobjectPage() {
   const { entityId } = useParams<{ entityId: string }>()
@@ -53,17 +54,8 @@ export function SubobjectPage() {
         </section>
       )}
 
-      {/* Used-by placeholder - implemented in Plan 03-03 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-medium">Used By</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-sm">
-            Categories using this subobject will be shown here.
-          </p>
-        </CardContent>
-      </Card>
+      {/* Used-by - categories using this subobject */}
+      <UsedByList entityType="subobject" entityId={entityId!} />
 
       {/* Schema Definition */}
       <section>

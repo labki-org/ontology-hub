@@ -2,6 +2,7 @@ import { useParams } from 'react-router-dom'
 import { useEntity } from '@/api/entities'
 import { EntityDetail } from '@/components/entity/EntityDetail'
 import { SchemaTable } from '@/components/entity/SchemaTable'
+import { UsedByList } from '@/components/entity/UsedByList'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -87,17 +88,8 @@ export function PropertyPage() {
         </Card>
       )}
 
-      {/* Used-by placeholder - implemented in Plan 03-03 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-medium">Used By</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-sm">
-            Categories using this property will be shown here.
-          </p>
-        </CardContent>
-      </Card>
+      {/* Used-by - categories using this property */}
+      <UsedByList entityType="property" entityId={entityId!} />
 
       {/* Schema Definition */}
       <section>
