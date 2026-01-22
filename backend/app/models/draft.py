@@ -184,6 +184,50 @@ class DraftCreate(SQLModel):
     payload: DraftPayload
 
 
+class EntityUpdate(SQLModel):
+    """Partial entity update."""
+
+    entity_id: str
+    label: Optional[str] = None
+    description: Optional[str] = None
+    schema_definition: Optional[dict] = None
+
+
+class EntitiesUpdate(SQLModel):
+    """Container for partial entity updates."""
+
+    categories: list[EntityUpdate] = Field(default_factory=list)
+    properties: list[EntityUpdate] = Field(default_factory=list)
+    subobjects: list[EntityUpdate] = Field(default_factory=list)
+
+
+class ModuleUpdate(SQLModel):
+    """Module assignment update for an entity."""
+
+    entity_id: str
+    module_ids: list[str] = Field(default_factory=list)
+
+
+class ProfileUpdate(SQLModel):
+    """Profile module list update."""
+
+    profile_id: str
+    module_ids: list[str] = Field(default_factory=list)
+
+
+class DraftPatchPayload(SQLModel):
+    """Payload for PATCH draft endpoint.
+
+    All fields are optional for partial updates.
+    """
+
+    entities: Optional[EntitiesUpdate] = None
+    modules: Optional[list[ModuleUpdate | ModuleDefinition]] = None
+    profiles: Optional[list[ProfileUpdate | ProfileDefinition]] = None
+
+    model_config = ConfigDict(extra="forbid")
+
+
 class DraftUpdate(SQLModel):
     """Schema for updating a Draft (all fields optional)."""
 

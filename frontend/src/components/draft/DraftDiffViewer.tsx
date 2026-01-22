@@ -9,6 +9,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
 import { EditableField } from './EditableField'
+import { ModuleAssignment } from './ModuleAssignment'
 import { useDraftStore } from '@/stores/draftStore'
 import { computeDiff, flattenDelta, type FieldChange } from '@/lib/diff'
 import type { VersionDiffResponse, ChangesByType, EntityChange } from '@/api/types'
@@ -148,16 +149,24 @@ function AddedEntityItem({
   change,
   editable,
   entityType,
+  parentCategories,
 }: {
   change: EntityChange
   editable?: boolean
   entityType: string
+  parentCategories?: string[]
 }) {
   const [isOpen, setIsOpen] = useState(false)
   const { getEditedValue } = useDraftStore()
 
   const newData = change.new || {}
   const editableFields = ['label', 'description']
+
+  // Determine entity type for module assignment
+  const moduleEntityType = entityType === 'categories' ? 'category'
+    : entityType === 'properties' ? 'property'
+    : entityType === 'subobjects' ? 'subobject'
+    : null
 
   return (
     <div className="py-1">
@@ -204,6 +213,20 @@ function AddedEntityItem({
                 </div>
               )
             })}
+
+            {/* Module assignment for entities (not modules/profiles themselves) */}
+            {editable && moduleEntityType && (
+              <div className="pt-2 border-t mt-2">
+                <div className="text-muted-foreground font-medium mb-1">
+                  Module Assignment:
+                </div>
+                <ModuleAssignment
+                  entityId={change.entity_id}
+                  entityType={moduleEntityType}
+                  parentCategories={parentCategories}
+                />
+              </div>
+            )}
           </div>
         </CollapsibleContent>
       </Collapsible>
@@ -216,11 +239,13 @@ function EntityChangeItem({
   variant,
   editable,
   entityType,
+  parentCategories,
 }: {
   change: EntityChange
   variant: 'success' | 'warning' | 'destructive'
   editable?: boolean
   entityType: string
+  parentCategories?: string[]
 }) {
   const [isOpen, setIsOpen] = useState(false)
 
@@ -231,6 +256,7 @@ function EntityChangeItem({
         change={change}
         editable={editable}
         entityType={entityType}
+        parentCategories={parentCategories}
       />
     )
   }
@@ -291,12 +317,14 @@ function ChangeGroup({
   variant,
   editable,
   entityType,
+  parentCategories,
 }: {
   title: string
   changes: EntityChange[]
   variant: 'success' | 'warning' | 'destructive'
   editable?: boolean
   entityType: string
+  parentCategories?: string[]
 }) {
   const [isOpen, setIsOpen] = useState(true)
   const config = variantConfig[variant]
@@ -323,6 +351,7 @@ function ChangeGroup({
               variant={variant}
               editable={editable}
               entityType={entityType}
+              parentCategories={parentCategories}
             />
           ))}
         </div>
@@ -337,14 +366,23 @@ function EntityTypeCard({
   changes,
   editable,
   entityType,
+  allCategoryIds,
 }: {
   label: string
   icon: typeof Boxes
   changes: ChangesByType
   editable?: boolean
   entityType: string
+  allCategoryIds?: string[]
 }) {
   if (!hasChanges(changes)) return null
+
+  // For properties/subobjects, they need parent category IDs
+  // In a real scenario, this would come from the entity's schema_definition
+  // For now, we pass all categories as potential parents
+  const parentCategories = (entityType === 'properties' || entityType === 'subobjects')
+    ? allCategoryIds
+    : undefined
 
   return (
     <Card>
@@ -364,6 +402,7 @@ function EntityTypeCard({
           variant="success"
           editable={editable}
           entityType={entityType}
+          parentCategories={parentCategories}
         />
         <ChangeGroup
           title="Modified"
@@ -371,6 +410,7 @@ function EntityTypeCard({
           variant="warning"
           editable={editable}
           entityType={entityType}
+          parentCategories={parentCategories}
         />
         <ChangeGroup
           title="Deleted"
@@ -389,6 +429,12 @@ export function DraftDiffViewer({ diff, editable = false }: DraftDiffViewerProps
     (sum, section) => sum + getTotalChanges(diff[section.key]),
     0
   )
+
+  // Collect all category IDs for parent lookup
+  const allCategoryIds = [
+    ...diff.categories.added.map((c) => c.entity_id),
+    ...diff.categories.modified.map((c) => c.entity_id),
+  ]
 
   if (totalChanges === 0) {
     return (
@@ -410,6 +456,7 @@ export function DraftDiffViewer({ diff, editable = false }: DraftDiffViewerProps
           changes={diff[key]}
           editable={editable}
           entityType={key}
+          allCategoryIds={allCategoryIds}
         />
       ))}
     </div>

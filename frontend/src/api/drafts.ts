@@ -4,6 +4,7 @@ import type {
   DraftPublic,
   DraftPayload,
   DraftCreateResponse,
+  DraftPatchPayload,
   VersionDiffResponse,
 } from './types'
 
@@ -26,11 +27,11 @@ async function createDraft(payload: DraftPayload): Promise<DraftCreateResponse> 
 
 async function updateDraft(
   token: string,
-  payload: Partial<DraftPayload>
+  payload: DraftPatchPayload
 ): Promise<DraftPublic> {
   return apiFetch(`/drafts/${token}`, {
     method: 'PATCH',
-    body: JSON.stringify({ payload }),
+    body: JSON.stringify(payload),
   })
 }
 
@@ -72,7 +73,7 @@ export function useUpdateDraft(token: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (payload: Partial<DraftPayload>) => updateDraft(token, payload),
+    mutationFn: (payload: DraftPatchPayload) => updateDraft(token, payload),
     onSuccess: () => {
       // Invalidate the specific draft query
       queryClient.invalidateQueries({ queryKey: ['draft', token] })

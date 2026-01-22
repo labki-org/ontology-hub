@@ -1,13 +1,16 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { AlertCircle, Save, Undo2 } from 'lucide-react'
+import { AlertCircle, Save, Undo2, Loader2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { DraftHeader } from '@/components/draft/DraftHeader'
 import { DraftDiffViewer } from '@/components/draft/DraftDiffViewer'
-import { useDraft, useDraftDiff } from '@/api/drafts'
+import { BulkModuleAssignment } from '@/components/draft/BulkModuleAssignment'
+import { ProfileEditor } from '@/components/draft/ProfileEditor'
+import { useDraft, useDraftDiff, useUpdateDraft } from '@/api/drafts'
 import { useDraftStore } from '@/stores/draftStore'
+import type { EntityUpdate, DraftPatchPayload } from '@/api/types'
 
 function DraftPageSkeleton() {
   return (
@@ -59,37 +62,133 @@ function DraftNotFound() {
   )
 }
 
-function UnsavedChangesIndicator() {
-  const { hasUnsavedChanges, discardChanges } = useDraftStore()
+function UnsavedChangesIndicator({
+  token,
+  onSaveSuccess,
+}: {
+  token: string
+  onSaveSuccess: () => void
+}) {
+  const {
+    hasUnsavedChanges,
+    discardChanges,
+    editedEntities,
+    moduleAssignments,
+    profileEdits,
+    newModules,
+    newProfiles,
+  } = useDraftStore()
+
+  const updateDraft = useUpdateDraft(token)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   if (!hasUnsavedChanges) return null
 
+  const handleSave = async () => {
+    setSaveError(null)
+
+    try {
+      // Build update payload from store
+      const entities: {
+        categories: EntityUpdate[]
+        properties: EntityUpdate[]
+        subobjects: EntityUpdate[]
+      } = {
+        categories: [],
+        properties: [],
+        subobjects: [],
+      }
+
+      // Collect edited entities
+      for (const [key, edits] of editedEntities) {
+        const [entityType, entityId] = key.split(':')
+        const entityData: EntityUpdate = {
+          entity_id: entityId,
+          label: edits.label as string | undefined,
+          description: edits.description as string | undefined,
+          schema_definition: edits.schema_definition as Record<string, unknown> | undefined,
+        }
+
+        if (entityType === 'categories') {
+          entities.categories.push(entityData)
+        } else if (entityType === 'properties') {
+          entities.properties.push(entityData)
+        } else if (entityType === 'subobjects') {
+          entities.subobjects.push(entityData)
+        }
+      }
+
+      // Build modules update from assignments
+      const modules = Array.from(moduleAssignments.entries()).map(
+        ([entityId, assignments]) => ({
+          entity_id: entityId,
+          module_ids: [...assignments.explicit, ...assignments.autoIncluded],
+        })
+      )
+
+      // Build profiles update
+      const profiles = Array.from(profileEdits.entries()).map(
+        ([profileId, moduleIds]) => ({
+          profile_id: profileId,
+          module_ids: moduleIds,
+        })
+      )
+
+      // Combine with new modules and profiles
+      const payload: DraftPatchPayload = {
+        entities,
+        modules: [...modules, ...newModules],
+        profiles: [...profiles, ...newProfiles],
+      }
+
+      await updateDraft.mutateAsync(payload)
+      onSaveSuccess()
+      discardChanges()
+    } catch (error) {
+      setSaveError(
+        error instanceof Error ? error.message : 'Failed to save changes'
+      )
+    }
+  }
+
   return (
-    <div className="fixed bottom-6 right-6 bg-card border shadow-lg rounded-lg p-4 flex items-center gap-3 z-50">
-      <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
-        <AlertCircle className="h-5 w-5" />
-        <span className="font-medium">Unsaved changes</span>
+    <div className="fixed bottom-6 right-6 bg-card border shadow-lg rounded-lg p-4 flex flex-col gap-3 z-50">
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
+          <AlertCircle className="h-5 w-5" />
+          <span className="font-medium">Unsaved changes</span>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={discardChanges}
+            className="gap-1"
+            disabled={updateDraft.isPending}
+          >
+            <Undo2 className="h-4 w-4" />
+            Discard
+          </Button>
+          <Button
+            size="sm"
+            onClick={handleSave}
+            disabled={updateDraft.isPending}
+            className="gap-1"
+          >
+            {updateDraft.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
+            Save
+          </Button>
+        </div>
       </div>
-      <div className="flex gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={discardChanges}
-          className="gap-1"
-        >
-          <Undo2 className="h-4 w-4" />
-          Discard
-        </Button>
-        <Button
-          size="sm"
-          disabled
-          className="gap-1"
-          title="Save functionality coming in Plan 03"
-        >
-          <Save className="h-4 w-4" />
-          Save
-        </Button>
-      </div>
+      {saveError && (
+        <div className="text-sm text-red-600 dark:text-red-400">
+          {saveError}
+        </div>
+      )}
     </div>
   )
 }
@@ -97,17 +196,20 @@ function UnsavedChangesIndicator() {
 export function DraftPage() {
   const { token } = useParams<{ token: string }>()
   const { setDraft, hasUnsavedChanges, reset } = useDraftStore()
+  const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null)
 
   const {
     data: draft,
     isLoading: isDraftLoading,
     error: draftError,
+    refetch: refetchDraft,
   } = useDraft(token)
 
   const {
     data: diff,
     isLoading: isDiffLoading,
     error: diffError,
+    refetch: refetchDiff,
   } = useDraftDiff(token)
 
   // Initialize store when data loads
@@ -137,6 +239,21 @@ export function DraftPage() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [hasUnsavedChanges])
 
+  // Clear save success message after timeout
+  useEffect(() => {
+    if (saveSuccessMessage) {
+      const timer = setTimeout(() => setSaveSuccessMessage(null), 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [saveSuccessMessage])
+
+  const handleSaveSuccess = () => {
+    setSaveSuccessMessage('Changes saved successfully')
+    // Refetch data to show updated diff
+    refetchDraft()
+    refetchDiff()
+  }
+
   // Loading state
   if (isDraftLoading || isDiffLoading) {
     return (
@@ -157,16 +274,40 @@ export function DraftPage() {
     )
   }
 
+  const isEditable = draft.status === 'pending'
+  const hasNewCategories = diff.categories.added.length > 0
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Draft Review</h1>
 
+      {/* Save success toast */}
+      {saveSuccessMessage && (
+        <div className="fixed top-6 right-6 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 rounded-lg p-4 shadow-lg z-50">
+          {saveSuccessMessage}
+        </div>
+      )}
+
       <div className="space-y-6">
         <DraftHeader draft={draft} />
-        <DraftDiffViewer diff={diff} editable={draft.status === 'pending'} />
+
+        {/* Bulk module assignment for new categories */}
+        {isEditable && hasNewCategories && (
+          <BulkModuleAssignment diff={diff} />
+        )}
+
+        {/* Entity diff viewer */}
+        <DraftDiffViewer diff={diff} editable={isEditable} />
+
+        {/* Profile editor */}
+        {isEditable && (
+          <ProfileEditor profileChanges={diff.profiles.added} />
+        )}
       </div>
 
-      <UnsavedChangesIndicator />
+      {token && (
+        <UnsavedChangesIndicator token={token} onSaveSuccess={handleSaveSuccess} />
+      )}
     </div>
   )
 }

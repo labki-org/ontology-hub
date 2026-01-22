@@ -185,3 +185,33 @@ export interface NewModule {
   category_ids: string[]
   dependencies: string[]
 }
+
+// Patch payload types for draft updates
+export interface EntityUpdate {
+  entity_id: string
+  label?: string
+  description?: string
+  schema_definition?: Record<string, unknown>
+}
+
+export interface EntitiesUpdate {
+  categories?: EntityUpdate[]
+  properties?: EntityUpdate[]
+  subobjects?: EntityUpdate[]
+}
+
+export interface ModuleUpdate {
+  entity_id: string
+  module_ids: string[]
+}
+
+export interface ProfileUpdate {
+  profile_id: string
+  module_ids: string[]
+}
+
+export interface DraftPatchPayload {
+  entities?: EntitiesUpdate
+  modules?: (ModuleUpdate | NewModule)[]
+  profiles?: (ProfileUpdate | ProfileDefinition)[]
+}

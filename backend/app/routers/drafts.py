@@ -31,6 +31,7 @@ from app.models.draft import (
     DraftCreate,
     DraftCreateResponse,
     DraftDiffResponse,
+    DraftPatchPayload,
     DraftPayload,
     DraftPublic,
     ValidationError,
@@ -226,3 +227,154 @@ async def get_draft_diff(
         return DraftDiffResponse()
 
     return DraftDiffResponse.model_validate(draft.diff_preview)
+
+
+@router.patch("/{token}", response_model=DraftPublic)
+@limiter.limit(RATE_LIMITS["draft_read"])
+async def update_draft(
+    request: Request,  # Required for SlowAPI rate limiting
+    token: str,
+    patch: DraftPatchPayload,
+    session: SessionDep,
+) -> DraftPublic:
+    """Update a draft with partial changes.
+
+    Accepts partial updates for entities, modules, and profiles.
+    Merges updates with existing payload and recomputes diff preview.
+
+    Rate limited to 100/minute per IP.
+
+    Args:
+        request: HTTP request (required for rate limiting)
+        token: Capability token from URL
+        patch: Partial update payload
+        session: Database session
+
+    Returns:
+        Updated DraftPublic
+
+    Raises:
+        HTTPException: 404 for invalid or expired tokens
+        HTTPException: 400 if draft is not in pending status
+    """
+    # Validate token and get draft
+    draft = await validate_capability_token(token, session)
+
+    # Only allow updates on pending drafts
+    if draft.status.value != "pending":
+        raise HTTPException(
+            status_code=400,
+            detail="Can only update drafts in pending status",
+        )
+
+    # Get existing payload
+    existing_payload = dict(draft.payload)
+
+    # Apply entity updates
+    if patch.entities:
+        existing_entities = existing_payload.get("entities", {})
+
+        # Helper to apply updates to entity list
+        def apply_entity_updates(
+            existing_list: list, updates: list, id_field: str = "entity_id"
+        ) -> list:
+            # Build lookup by ID
+            existing_map = {e.get(id_field): e for e in existing_list}
+
+            for update in updates:
+                entity_id = getattr(update, id_field, None) or update.get(id_field)
+                if entity_id in existing_map:
+                    # Merge update into existing
+                    update_dict = (
+                        update.model_dump(exclude_unset=True)
+                        if hasattr(update, "model_dump")
+                        else update
+                    )
+                    for key, value in update_dict.items():
+                        if value is not None:
+                            existing_map[entity_id][key] = value
+                else:
+                    # Add new entity
+                    new_entity = (
+                        update.model_dump() if hasattr(update, "model_dump") else update
+                    )
+                    existing_list.append(new_entity)
+                    existing_map[entity_id] = new_entity
+
+            return existing_list
+
+        # Apply category updates
+        if patch.entities.categories:
+            existing_entities["categories"] = apply_entity_updates(
+                existing_entities.get("categories", []),
+                patch.entities.categories,
+            )
+
+        # Apply property updates
+        if patch.entities.properties:
+            existing_entities["properties"] = apply_entity_updates(
+                existing_entities.get("properties", []),
+                patch.entities.properties,
+            )
+
+        # Apply subobject updates
+        if patch.entities.subobjects:
+            existing_entities["subobjects"] = apply_entity_updates(
+                existing_entities.get("subobjects", []),
+                patch.entities.subobjects,
+            )
+
+        existing_payload["entities"] = existing_entities
+
+    # Apply module updates
+    if patch.modules:
+        existing_modules = existing_payload.get("modules", [])
+        module_map = {m.get("module_id"): m for m in existing_modules}
+
+        for update in patch.modules:
+            update_dict = (
+                update.model_dump() if hasattr(update, "model_dump") else update
+            )
+            module_id = update_dict.get("module_id")
+            if module_id:
+                if module_id in module_map:
+                    module_map[module_id].update(update_dict)
+                else:
+                    existing_modules.append(update_dict)
+                    module_map[module_id] = update_dict
+
+        existing_payload["modules"] = existing_modules
+
+    # Apply profile updates
+    if patch.profiles:
+        existing_profiles = existing_payload.get("profiles", [])
+        profile_map = {p.get("profile_id"): p for p in existing_profiles}
+
+        for update in patch.profiles:
+            update_dict = (
+                update.model_dump() if hasattr(update, "model_dump") else update
+            )
+            profile_id = update_dict.get("profile_id")
+            if profile_id:
+                if profile_id in profile_map:
+                    profile_map[profile_id].update(update_dict)
+                else:
+                    existing_profiles.append(update_dict)
+                    profile_map[profile_id] = update_dict
+
+        existing_payload["profiles"] = existing_profiles
+
+    # Update draft payload
+    draft.payload = existing_payload
+
+    # Recompute diff preview
+    validated_payload = DraftPayload.model_validate(existing_payload)
+    new_diff = await compute_draft_diff(validated_payload, session)
+    draft.diff_preview = new_diff.model_dump()
+
+    # Save changes
+    session.add(draft)
+    await session.commit()
+    await session.refresh(draft)
+
+    return DraftPublic.model_validate(draft)
