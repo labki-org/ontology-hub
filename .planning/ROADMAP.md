@@ -101,12 +101,12 @@ Plans:
   5. User can assign new entities to modules and edit module membership (categories only)
   6. User can create/edit profile module lists as part of draft
   7. Module/profile editing shows dependency feedback (missing deps, redundancy warnings)
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 05-01: Draft ingestion API and capability URL access
-- [ ] 05-02: Draft review UI with diffs
-- [ ] 05-03: Module and profile editing in drafts
+- [ ] 05-01-PLAN.md — Extend draft API with structured payload, validation, and diff preview on creation
+- [ ] 05-02-PLAN.md — Draft review UI with capability URL routing, diff display, and inline field editing
+- [ ] 05-03-PLAN.md — Module assignment with auto-dependencies and profile editing in drafts
 
 ### Phase 6: Validation Engine
 **Goal**: Drafts are validated for consistency and breaking changes with inline feedback
