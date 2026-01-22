@@ -4,14 +4,23 @@ All table models must be imported here before SQLModel.metadata.create_all runs.
 """
 
 from app.models.draft import (
+    ChangeDetail,
+    ChangesByType,
     Draft,
     DraftBase,
     DraftCreate,
     DraftCreateResponse,
+    DraftDiffResponse,
+    DraftPayload,
     DraftPublic,
     DraftStatus,
     DraftUpdate,
     DraftWithCapability,
+    EntitiesPayload,
+    EntityDefinition,
+    ModuleDefinition,
+    ProfileDefinition,
+    ValidationError,
 )
 from app.models.entity import (
     Entity,
@@ -55,12 +64,21 @@ __all__ = [
     "ProfilePublic",
     "ProfileUpdate",
     # Draft
+    "ChangeDetail",
+    "ChangesByType",
     "Draft",
     "DraftBase",
     "DraftCreate",
     "DraftCreateResponse",
+    "DraftDiffResponse",
+    "DraftPayload",
     "DraftPublic",
     "DraftStatus",
     "DraftUpdate",
     "DraftWithCapability",
+    "EntitiesPayload",
+    "EntityDefinition",
+    "ModuleDefinition",
+    "ProfileDefinition",
+    "ValidationError",
 ]
