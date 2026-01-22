@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2025-01-20)
 ## Current Position
 
 Phase: 3 of 7 (Entity Browsing)
-Plan: 0 of 3 in current phase
-Status: Ready to plan
-Last activity: 2026-01-21 - Completed Phase 2 (GitHub Integration)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-01-21 - Completed 03-01-PLAN.md (Frontend Entity Browsing)
 
-Progress: [#####-------------] 29%
+Progress: [######------------] 35%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
-- Average duration: 6 min
-- Total execution time: 0.52 hours
+- Total plans completed: 6
+- Average duration: 7 min
+- Total execution time: 0.72 hours
 
 **By Phase:**
 
@@ -29,10 +29,11 @@ Progress: [#####-------------] 29%
 |-------|-------|-------|----------|
 | 01-foundation | 2 | 14 min | 7 min |
 | 02-github-integration | 3 | 17 min | 6 min |
+| 03-entity-browsing | 1 | 12 min | 12 min |
 
 **Recent Trend:**
-- Last 5 plans: 8min, 6min, 5min, 8min, 4min
-- Trend: Stable
+- Last 5 plans: 6min, 5min, 8min, 4min, 12min
+- Trend: Stable (03-01 longer due to new frontend scaffolding)
 
 *Updated after each plan completion*
 
@@ -59,6 +60,10 @@ Recent decisions affecting current work:
 | Fresh session in background | 02-03 | Background tasks create own AsyncSession |
 | Cursor pagination on entity_id | 02-02 | Consistent ordering for pagination |
 | Default limit 20, max 100 | 02-02 | Balance response size with usability |
+| TanStack Query 5min stale, 30min gc | 03-01 | Balance freshness with caching for browsing |
+| Nested routes with MainLayout | 03-01 | Consistent sidebar across all pages |
+| SchemaTable per entity type | 03-01 | Different fields shown based on type |
+| Docker volume for node_modules | 03-01 | Faster container restarts |
 
 ### Pending Todos
 
@@ -71,5 +76,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed Phase 2 (GitHub Integration) - verified, all tests passing
+Stopped at: Completed 03-01-PLAN.md (Frontend Entity Browsing)
 Resume file: None
