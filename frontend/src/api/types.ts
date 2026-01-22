@@ -74,3 +74,36 @@ export interface ModuleEntitiesResponse {
   properties: EntityPublic[]
   subobjects: EntityPublic[]
 }
+
+// Version types
+export interface ReleasePublic {
+  tag_name: string
+  name: string | null
+  created_at: string
+  published_at: string | null
+  body: string | null
+}
+
+export interface EntityChange {
+  key: string
+  entity_type: string
+  entity_id: string
+  old?: Record<string, unknown>
+  new?: Record<string, unknown>
+}
+
+export interface ChangesByType {
+  added: EntityChange[]
+  modified: EntityChange[]
+  deleted: EntityChange[]
+}
+
+export interface VersionDiffResponse {
+  old_version: string
+  new_version: string
+  categories: ChangesByType
+  properties: ChangesByType
+  subobjects: ChangesByType
+  modules: ChangesByType
+  profiles: ChangesByType
+}

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ChevronRight, Boxes, Tag, Package, Layers } from 'lucide-react'
+import { ChevronRight, Boxes, Tag, Package, Layers, History } from 'lucide-react'
 import {
   Collapsible,
   CollapsibleContent,
@@ -48,6 +48,19 @@ export function Sidebar() {
             Failed to load entities
           </div>
         )}
+
+        {/* Versions link */}
+        <div className="mb-2">
+          <Link
+            to="/versions"
+            className="flex items-center w-full px-2 py-1.5 rounded hover:bg-sidebar-accent text-sm"
+          >
+            <History className="h-4 w-4 mr-2" />
+            <span className="font-medium">Versions</span>
+          </Link>
+        </div>
+
+        <div className="h-px bg-border mb-2" />
 
         {/* Modules and Profiles sections */}
         <div className="mb-2">

@@ -10,6 +10,7 @@ import { ModulesPage } from '@/pages/ModulesPage'
 import { ModulePage } from '@/pages/ModulePage'
 import { ProfilesPage } from '@/pages/ProfilesPage'
 import { ProfilePage } from '@/pages/ProfilePage'
+import { VersionsPage } from '@/pages/VersionsPage'
 
 const router = createBrowserRouter([
   {
@@ -55,6 +56,10 @@ const router = createBrowserRouter([
       {
         path: 'profile/:profileId',
         element: <ProfilePage />,
+      },
+      {
+        path: 'versions',
+        element: <VersionsPage />,
       },
     ],
   },
