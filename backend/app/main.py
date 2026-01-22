@@ -76,6 +76,7 @@ app = FastAPI(
     description="Backend API for Ontology Hub - Entity management and draft proposals",
     version="0.1.0",
     lifespan=lifespan,
+    redirect_slashes=False,  # Prevent 307 redirects with internal hostnames through proxy
 )
 
 # Add rate limiter to app state (required by SlowAPI)

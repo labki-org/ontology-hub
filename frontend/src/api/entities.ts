@@ -11,7 +11,7 @@ import type {
 
 // Fetch functions
 async function fetchEntityOverview(): Promise<EntityOverviewResponse> {
-  return apiFetch('/entities')
+  return apiFetch('/entities/')
 }
 
 async function fetchEntities(
