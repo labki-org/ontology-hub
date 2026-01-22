@@ -107,3 +107,67 @@ export interface VersionDiffResponse {
   modules: ChangesByType
   profiles: ChangesByType
 }
+
+// Draft types
+
+export interface EntityDefinition {
+  entity_id: string
+  label: string
+  description?: string
+  schema_definition: Record<string, unknown>
+}
+
+export interface ModuleDefinition {
+  module_id: string
+  label: string
+  description?: string
+  category_ids: string[]
+  dependencies: string[]
+}
+
+export interface ProfileDefinition {
+  profile_id: string
+  label: string
+  description?: string
+  module_ids: string[]
+}
+
+export interface EntitiesPayload {
+  categories: EntityDefinition[]
+  properties: EntityDefinition[]
+  subobjects: EntityDefinition[]
+}
+
+export interface DraftPayload {
+  wiki_url: string
+  base_version: string
+  entities: EntitiesPayload
+  modules?: ModuleDefinition[]
+  profiles?: ProfileDefinition[]
+}
+
+export type DraftStatus = 'pending' | 'validated' | 'submitted' | 'expired'
+
+export interface DraftPublic {
+  id: string
+  status: DraftStatus
+  payload: DraftPayload
+  source_wiki: string | null
+  base_commit_sha: string | null
+  diff_preview: VersionDiffResponse | null
+  expires_at: string
+  created_at: string
+}
+
+export interface ValidationError {
+  field: string
+  message: string
+  severity: 'error' | 'warning'
+}
+
+export interface DraftCreateResponse {
+  capability_url: string
+  expires_at: string
+  diff_preview: VersionDiffResponse | null
+  validation_warnings: ValidationError[]
+}
