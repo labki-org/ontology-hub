@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2025-01-20)
 ## Current Position
 
 Phase: 5 of 7 (Draft System)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-01-22 - Completed 05-01-PLAN.md (Draft Payload and Diff Preview)
+Last activity: 2026-01-22 - Completed 05-02-PLAN.md (Draft Review UI)
 
-Progress: [#############-----] 72%
+Progress: [##############----] 78%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 13
+- Total plans completed: 14
 - Average duration: 7 min
-- Total execution time: 1.55 hours
+- Total execution time: 1.65 hours
 
 **By Phase:**
 
@@ -31,10 +31,10 @@ Progress: [#############-----] 72%
 | 02-github-integration | 3 | 17 min | 6 min |
 | 03-entity-browsing | 4 | 34 min | 9 min |
 | 04-modules-and-versioning | 3 | 24 min | 8 min |
-| 05-draft-system | 1 | 4 min | 4 min |
+| 05-draft-system | 2 | 10 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 4min, 8min, 7min, 9min, 4min
+- Last 5 plans: 8min, 7min, 9min, 4min, 6min
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -83,6 +83,10 @@ Recent decisions affecting current work:
 | 422 for validation errors | 05-01 | FastAPI standard for Pydantic validation |
 | Store diff_preview in database | 05-01 | Avoid recomputation on retrieval |
 | Pydantic field validators | 05-01 | Ensure non-empty wiki_url/base_version |
+| Zustand with immer middleware | 05-02 | Immutable draft state with readable mutable-style syntax |
+| Fragment-based capability redirect | 05-02 | /drafts#{token} -> /draft/{token} reduces referrer leakage |
+| Only new values editable | 05-02 | Old values read-only as diff reference |
+| Save disabled in Plan 02 | 05-02 | Deferred to Plan 03 for full submission flow |
 
 ### Pending Todos
 
@@ -95,23 +99,25 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-22
-Stopped at: Completed 05-01-PLAN.md (Draft Payload and Diff Preview)
+Stopped at: Completed 05-02-PLAN.md (Draft Review UI)
 Resume file: None
 
-05-01 SUMMARY context:
-- DraftPayload schema with wiki_url, base_version, entities validation
-- compute_draft_diff service for draft vs canonical comparison
-- POST /drafts/ now returns capability_url + diff_preview
-- GET /drafts/{token}/diff endpoint for retrieving stored diff
-- DraftDiffResponse with ChangesByType structure
-- Migration 003 for diff_preview column
+05-02 SUMMARY context:
+- Draft review page at /draft/{token} with /drafts#{token} redirect
+- DraftHeader shows wiki URL, base version, status, expiration countdown
+- DraftDiffViewer extends ChangeGroup with inline EditableField
+- Zustand draftStore tracks editedEntities, editingFields, hasUnsavedChanges
+- beforeunload warning when unsaved changes exist
+- Save button disabled (wired in Plan 03)
 
 ## Phase 5 Progress
 
 Phase 5 (Draft System) IN PROGRESS:
 - 05-01: Draft Payload and Diff Preview (COMPLETE)
-- 05-02: Draft Submission Flow (PENDING)
-- 05-03: Draft Feedback UI (PENDING)
+- 05-02: Draft Review UI (COMPLETE)
+- 05-03: Draft Submission Flow (PENDING)
 
 DRFT-01 satisfied: Draft API accepts wiki_url, base_version, entities payload
 DRFT-02 satisfied: Draft creation returns capability_url and diff_preview
+DRFT-03 satisfied: Draft review page accessible via capability URL
+DRFT-04 satisfied: Inline editing with unsaved changes tracking
