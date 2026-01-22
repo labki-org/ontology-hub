@@ -41,12 +41,12 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Validation
 
-- [ ] **VALD-01**: Validation checks that referenced IDs exist (parents, properties, module members)
-- [ ] **VALD-02**: Validation detects circular category inheritance
-- [ ] **VALD-03**: Validation checks datatypes are in allowed set
-- [ ] **VALD-04**: Validation detects breaking changes (datatype changes, multiplicity changes, removals)
-- [ ] **VALD-05**: Validation suggests semver classification (major/minor/patch) per change
-- [ ] **VALD-06**: Validation feedback displays inline in draft review UI
+- [x] **VALD-01**: Validation checks that referenced IDs exist (parents, properties, module members)
+- [x] **VALD-02**: Validation detects circular category inheritance
+- [x] **VALD-03**: Validation checks datatypes are in allowed set
+- [x] **VALD-04**: Validation detects breaking changes (datatype changes, multiplicity changes, removals)
+- [x] **VALD-05**: Validation suggests semver classification (major/minor/patch) per change
+- [x] **VALD-06**: Validation feedback displays inline in draft review UI
 
 ### GitHub Integration
 
@@ -141,12 +141,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DRFT-07 | Phase 5 | Complete |
 | DRFT-08 | Phase 5 | Complete |
 | INFR-03 | Phase 5 | Complete |
-| VALD-01 | Phase 6 | Pending |
-| VALD-02 | Phase 6 | Pending |
-| VALD-03 | Phase 6 | Pending |
-| VALD-04 | Phase 6 | Pending |
-| VALD-05 | Phase 6 | Pending |
-| VALD-06 | Phase 6 | Pending |
+| VALD-01 | Phase 6 | Complete |
+| VALD-02 | Phase 6 | Complete |
+| VALD-03 | Phase 6 | Complete |
+| VALD-04 | Phase 6 | Complete |
+| VALD-05 | Phase 6 | Complete |
+| VALD-06 | Phase 6 | Complete |
 | GHUB-01 | Phase 7 | Pending |
 | GHUB-02 | Phase 7 | Pending |
 | GHUB-03 | Phase 7 | Pending |
@@ -160,4 +160,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2025-01-20*
-*Last updated: 2026-01-22 after Phase 5 completion*
+*Last updated: 2026-01-22 after Phase 6 completion*
