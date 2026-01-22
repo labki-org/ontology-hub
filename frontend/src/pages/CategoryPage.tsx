@@ -1,10 +1,13 @@
-import { useParams } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
+import { ExternalLink } from 'lucide-react'
 import { useEntity } from '@/api/entities'
 import { EntityDetail } from '@/components/entity/EntityDetail'
 import { SchemaTable } from '@/components/entity/SchemaTable'
 import { PropertyList } from '@/components/entity/PropertyList'
+import { InheritanceGraph } from '@/components/graph/InheritanceGraph'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 
 export function CategoryPage() {
   const { entityId } = useParams<{ entityId: string }>()
@@ -43,6 +46,24 @@ export function CategoryPage() {
   return (
     <div className="space-y-6">
       <EntityDetail entity={entity} />
+
+      {/* Inheritance Graph */}
+      <section>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Inheritance</CardTitle>
+            <Link to={`/graph/${entityId}`}>
+              <Button variant="ghost" size="sm">
+                <ExternalLink className="h-4 w-4 mr-1" />
+                Full Graph
+              </Button>
+            </Link>
+          </CardHeader>
+          <CardContent className="h-64">
+            <InheritanceGraph entityId={entityId!} compact />
+          </CardContent>
+        </Card>
+      </section>
 
       {/* Properties and Subobjects */}
       <section>

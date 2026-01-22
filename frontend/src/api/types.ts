@@ -27,3 +27,21 @@ export interface EntityOverviewResponse {
   types: EntityTypeSummary[]
   total: number
 }
+
+export interface InheritanceNode {
+  id: string
+  label: string
+  entity_id: string
+  is_current: boolean
+}
+
+export interface InheritanceEdge {
+  source: string
+  target: string
+}
+
+export interface InheritanceResponse {
+  nodes: InheritanceNode[]
+  edges: InheritanceEdge[]
+  has_circular: boolean
+}
