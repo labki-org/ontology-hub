@@ -4,6 +4,7 @@ import { ChevronDown, ChevronRight, Boxes, Tag, Package } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { OverlapIndicator } from '@/components/module/OverlapIndicator'
 import type { EntityPublic, EntityType } from '@/api/types'
 
 interface EntitySectionProps {
@@ -12,9 +13,10 @@ interface EntitySectionProps {
   entities: EntityPublic[]
   icon: React.ReactNode
   defaultOpen?: boolean
+  overlaps?: Record<string, string[]>
 }
 
-function EntitySection({ title, entityType, entities, icon, defaultOpen = true }: EntitySectionProps) {
+function EntitySection({ title, entityType, entities, icon, defaultOpen = true, overlaps }: EntitySectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen)
   const count = entities.length
 
@@ -47,20 +49,26 @@ function EntitySection({ title, entityType, entities, icon, defaultOpen = true }
       {isOpen && (
         <CardContent className="pt-0">
           <div className="grid gap-1">
-            {entities.map((entity) => (
-              <Link
-                key={entity.entity_id}
-                to={`/${entityType}/${entity.entity_id}`}
-                className="flex items-center justify-between p-2 rounded hover:bg-accent text-sm"
-              >
-                <div className="flex flex-col">
-                  <span className="font-medium">{entity.label}</span>
-                  <span className="text-xs text-muted-foreground font-mono">
-                    {entity.entity_id}
-                  </span>
-                </div>
-              </Link>
-            ))}
+            {entities.map((entity) => {
+              const entityOverlaps = overlaps?.[entity.entity_id] || []
+              return (
+                <Link
+                  key={entity.entity_id}
+                  to={`/${entityType}/${entity.entity_id}`}
+                  className="flex items-center justify-between p-2 rounded hover:bg-accent text-sm"
+                >
+                  <div className="flex flex-col">
+                    <span className="font-medium">{entity.label}</span>
+                    <span className="text-xs text-muted-foreground font-mono">
+                      {entity.entity_id}
+                    </span>
+                  </div>
+                  {entityOverlaps.length > 0 && (
+                    <OverlapIndicator otherModuleIds={entityOverlaps} />
+                  )}
+                </Link>
+              )
+            })}
           </div>
         </CardContent>
       )}
@@ -72,12 +80,14 @@ interface ModuleEntityListProps {
   categories: EntityPublic[]
   properties: EntityPublic[]
   subobjects: EntityPublic[]
+  overlaps?: Record<string, string[]>
 }
 
 /**
  * Displays module entities grouped by type with collapsible sections.
+ * Optionally shows overlap indicators for entities that appear in other modules.
  */
-export function ModuleEntityList({ categories, properties, subobjects }: ModuleEntityListProps) {
+export function ModuleEntityList({ categories, properties, subobjects, overlaps }: ModuleEntityListProps) {
   const totalCount = categories.length + properties.length + subobjects.length
 
   if (totalCount === 0) {
@@ -97,6 +107,7 @@ export function ModuleEntityList({ categories, properties, subobjects }: ModuleE
         entityType="category"
         entities={categories}
         icon={<Boxes className="h-4 w-4 text-muted-foreground" />}
+        overlaps={overlaps}
       />
       <EntitySection
         title="Properties"
@@ -104,6 +115,7 @@ export function ModuleEntityList({ categories, properties, subobjects }: ModuleE
         entities={properties}
         icon={<Tag className="h-4 w-4 text-muted-foreground" />}
         defaultOpen={categories.length === 0}
+        overlaps={overlaps}
       />
       <EntitySection
         title="Subobjects"
@@ -111,6 +123,7 @@ export function ModuleEntityList({ categories, properties, subobjects }: ModuleE
         entities={subobjects}
         icon={<Package className="h-4 w-4 text-muted-foreground" />}
         defaultOpen={categories.length === 0 && properties.length === 0}
+        overlaps={overlaps}
       />
     </div>
   )

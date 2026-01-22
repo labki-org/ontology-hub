@@ -18,6 +18,10 @@ async function fetchModuleEntities(moduleId: string): Promise<ModuleEntitiesResp
   return apiFetch(`/modules/${moduleId}/entities`)
 }
 
+async function fetchModuleOverlaps(moduleId: string): Promise<Record<string, string[]>> {
+  return apiFetch(`/modules/${moduleId}/overlaps`)
+}
+
 // Fetch functions for profiles
 async function fetchProfiles(search?: string): Promise<ProfilePublic[]> {
   const params = new URLSearchParams()
@@ -54,6 +58,14 @@ export function useModuleEntities(moduleId: string) {
   return useQuery({
     queryKey: ['module-entities', moduleId],
     queryFn: () => fetchModuleEntities(moduleId),
+    enabled: !!moduleId,
+  })
+}
+
+export function useModuleOverlaps(moduleId: string) {
+  return useQuery({
+    queryKey: ['module-overlaps', moduleId],
+    queryFn: () => fetchModuleOverlaps(moduleId),
     enabled: !!moduleId,
   })
 }

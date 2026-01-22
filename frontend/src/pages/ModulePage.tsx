@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom'
 import { Package } from 'lucide-react'
-import { useModule, useModuleEntities } from '@/api/modules'
+import { useModule, useModuleEntities, useModuleOverlaps } from '@/api/modules'
 import { ModuleEntityList } from '@/components/module/ModuleEntityList'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -10,6 +10,7 @@ export function ModulePage() {
   const { moduleId } = useParams<{ moduleId: string }>()
   const { data: module, isLoading: moduleLoading, error: moduleError } = useModule(moduleId!)
   const { data: entities, isLoading: entitiesLoading } = useModuleEntities(moduleId!)
+  const { data: overlaps } = useModuleOverlaps(moduleId!)
 
   if (moduleLoading) {
     return (
@@ -107,6 +108,7 @@ export function ModulePage() {
             categories={entities.categories}
             properties={entities.properties}
             subobjects={entities.subobjects}
+            overlaps={overlaps}
           />
         ) : null}
       </section>

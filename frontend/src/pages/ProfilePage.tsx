@@ -2,6 +2,7 @@ import { useParams } from 'react-router-dom'
 import { Layers, Boxes, Tag, Package } from 'lucide-react'
 import { useProfile, useProfileModules } from '@/api/modules'
 import { ModuleCard } from '@/components/module/ModuleCard'
+import { DependencyGraph } from '@/components/graph/DependencyGraph'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -42,6 +43,9 @@ export function ProfilePage() {
     }),
     { categories: 0, modules: 0 }
   ) || { categories: 0, modules: 0 }
+
+  // Check if any module has dependencies (to decide whether to show graph)
+  const hasDependencies = modules?.some(m => m.dependencies && m.dependencies.length > 0) || false
 
   return (
     <div className="space-y-6">
@@ -115,6 +119,18 @@ export function ProfilePage() {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {/* Module Dependencies Graph */}
+      {!modulesLoading && modules && modules.length > 1 && hasDependencies && (
+        <section>
+          <h2 className="text-lg font-semibold mb-3">Module Dependencies</h2>
+          <Card>
+            <CardContent className="h-64 p-4">
+              <DependencyGraph modules={modules} />
+            </CardContent>
+          </Card>
+        </section>
       )}
 
       {/* Modules in Profile */}
