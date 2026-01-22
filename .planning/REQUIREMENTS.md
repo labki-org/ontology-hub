@@ -17,16 +17,16 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Modules and Profiles
 
-- [ ] **MODL-01**: User can browse list of modules with included entities and dependencies
-- [ ] **MODL-02**: User can browse list of profiles with module composition
-- [ ] **MODL-03**: User can view module dependency visualization (which modules depend on which)
-- [ ] **MODL-04**: Module pages show overlap warnings when entities appear in multiple modules
+- [x] **MODL-01**: User can browse list of modules with included entities and dependencies
+- [x] **MODL-02**: User can browse list of profiles with module composition
+- [x] **MODL-03**: User can view module dependency visualization (which modules depend on which)
+- [x] **MODL-04**: Module pages show overlap warnings when entities appear in multiple modules
 
 ### Versioning
 
-- [ ] **VERS-01**: User can view list of releases with dates and version labels
-- [ ] **VERS-02**: User can view field-level diff between any two versions
-- [ ] **VERS-03**: Diffs categorize changes by entity type and change type (add/modify/delete)
+- [x] **VERS-01**: User can view list of releases with dates and version labels
+- [x] **VERS-02**: User can view field-level diff between any two versions
+- [x] **VERS-03**: Diffs categorize changes by entity type and change type (add/modify/delete)
 
 ### Draft System
 
@@ -125,13 +125,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BRWS-03 | Phase 3 | Complete |
 | BRWS-04 | Phase 3 | Complete |
 | BRWS-05 | Phase 3 | Complete |
-| MODL-01 | Phase 4 | Pending |
-| MODL-02 | Phase 4 | Pending |
-| MODL-03 | Phase 4 | Pending |
-| MODL-04 | Phase 4 | Pending |
-| VERS-01 | Phase 4 | Pending |
-| VERS-02 | Phase 4 | Pending |
-| VERS-03 | Phase 4 | Pending |
+| MODL-01 | Phase 4 | Complete |
+| MODL-02 | Phase 4 | Complete |
+| MODL-03 | Phase 4 | Complete |
+| MODL-04 | Phase 4 | Complete |
+| VERS-01 | Phase 4 | Complete |
+| VERS-02 | Phase 4 | Complete |
+| VERS-03 | Phase 4 | Complete |
 | DRFT-01 | Phase 5 | Pending |
 | DRFT-02 | Phase 5 | Pending |
 | DRFT-03 | Phase 5 | Pending |
@@ -160,4 +160,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2025-01-20*
-*Last updated: 2026-01-21 after Phase 3 completion*
+*Last updated: 2026-01-22 after Phase 4 completion*

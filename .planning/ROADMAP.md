@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Foundation** - Docker infrastructure, PostgreSQL schema, capability URL security, rate limiting
 - [x] **Phase 2: GitHub Integration** - Repository indexing, entity API, webhook handling
 - [x] **Phase 3: Entity Browsing** - Entity pages, search, inheritance graphs, used-by references
-- [ ] **Phase 4: Modules and Versioning** - Module/profile browsing, version listing, diff views
+- [x] **Phase 4: Modules and Versioning** - Module/profile browsing, version listing, diff views
 - [ ] **Phase 5: Draft System** - Draft ingestion, capability URL access, review UI, module editing
 - [ ] **Phase 6: Validation Engine** - Consistency checks, breaking change detection, semver classification
 - [ ] **Phase 7: PR Integration** - GitHub OAuth, branch/commit/PR creation, structured summaries
@@ -85,9 +85,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — Module and profile list/detail pages with API endpoints and sidebar navigation
-- [ ] 04-02-PLAN.md — Module dependency graph visualization and entity overlap detection
-- [ ] 04-03-PLAN.md — Version/release listing and field-level diff viewer with jsondiffpatch
+- [x] 04-01-PLAN.md — Module and profile list/detail pages with API endpoints and sidebar navigation
+- [x] 04-02-PLAN.md — Module dependency graph visualization and entity overlap detection
+- [x] 04-03-PLAN.md — Version/release listing and field-level diff viewer with jsondiffpatch
 
 ### Phase 5: Draft System
 **Goal**: Wiki admins can submit drafts via API, access them via capability URLs, and review changes with module editing
@@ -152,7 +152,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 1. Foundation | 2/2 | Complete | 2026-01-21 |
 | 2. GitHub Integration | 3/3 | Complete | 2026-01-21 |
 | 3. Entity Browsing | 4/4 | Complete | 2026-01-21 |
-| 4. Modules and Versioning | 0/3 | Not started | - |
+| 4. Modules and Versioning | 3/3 | Complete | 2026-01-22 |
 | 5. Draft System | 0/3 | Not started | - |
 | 6. Validation Engine | 0/3 | Not started | - |
 | 7. PR Integration | 0/2 | Not started | - |
