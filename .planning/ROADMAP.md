@@ -82,12 +82,12 @@ Plans:
   4. Module pages show warnings when entities appear in multiple modules (overlap detection)
   5. User can view list of releases with dates and version labels
   6. User can view field-level diff between any two versions categorized by change type
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 04-01: Module and profile browsing pages
-- [ ] 04-02: Module dependency visualization and overlap warnings
-- [ ] 04-03: Version listing and diff views
+- [ ] 04-01-PLAN.md — Module and profile list/detail pages with API endpoints and sidebar navigation
+- [ ] 04-02-PLAN.md — Module dependency graph visualization and entity overlap detection
+- [ ] 04-03-PLAN.md — Version/release listing and field-level diff viewer with jsondiffpatch
 
 ### Phase 5: Draft System
 **Goal**: Wiki admins can submit drafts via API, access them via capability URLs, and review changes with module editing
