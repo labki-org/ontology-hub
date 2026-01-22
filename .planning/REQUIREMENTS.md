@@ -30,14 +30,14 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Draft System
 
-- [ ] **DRFT-01**: Platform accepts draft proposals via POST API (no auth required)
-- [ ] **DRFT-02**: Drafts are accessible only via capability URL (token-protected)
-- [ ] **DRFT-03**: Drafts expire automatically after TTL (default 7 days)
-- [ ] **DRFT-04**: Draft review UI shows field-level diffs grouped by entity type
-- [ ] **DRFT-05**: User can assign new entities to modules during draft review
-- [ ] **DRFT-06**: User can create/edit module membership (categories only) as part of draft
-- [ ] **DRFT-07**: User can create/edit profile module lists as part of draft
-- [ ] **DRFT-08**: Module/profile editing shows dependency feedback (missing deps, redundancy)
+- [x] **DRFT-01**: Platform accepts draft proposals via POST API (no auth required)
+- [x] **DRFT-02**: Drafts are accessible only via capability URL (token-protected)
+- [x] **DRFT-03**: Drafts expire automatically after TTL (default 7 days)
+- [x] **DRFT-04**: Draft review UI shows field-level diffs grouped by entity type
+- [x] **DRFT-05**: User can assign new entities to modules during draft review
+- [x] **DRFT-06**: User can create/edit module membership (categories only) as part of draft
+- [x] **DRFT-07**: User can create/edit profile module lists as part of draft
+- [x] **DRFT-08**: Module/profile editing shows dependency feedback (missing deps, redundancy)
 
 ### Validation
 
@@ -60,7 +60,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **INFR-01**: Platform runs as Docker container for local development
 - [x] **INFR-02**: Platform indexes GitHub repo content for browsing
-- [ ] **INFR-03**: Rate limiting on draft creation (per IP)
+- [x] **INFR-03**: Rate limiting on draft creation (per IP)
 - [x] **INFR-04**: Capability tokens never logged; stored as hashes only
 
 ## v2 Requirements
@@ -132,15 +132,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 | VERS-01 | Phase 4 | Complete |
 | VERS-02 | Phase 4 | Complete |
 | VERS-03 | Phase 4 | Complete |
-| DRFT-01 | Phase 5 | Pending |
-| DRFT-02 | Phase 5 | Pending |
-| DRFT-03 | Phase 5 | Pending |
-| DRFT-04 | Phase 5 | Pending |
-| DRFT-05 | Phase 5 | Pending |
-| DRFT-06 | Phase 5 | Pending |
-| DRFT-07 | Phase 5 | Pending |
-| DRFT-08 | Phase 5 | Pending |
-| INFR-03 | Phase 5 | Pending |
+| DRFT-01 | Phase 5 | Complete |
+| DRFT-02 | Phase 5 | Complete |
+| DRFT-03 | Phase 5 | Complete |
+| DRFT-04 | Phase 5 | Complete |
+| DRFT-05 | Phase 5 | Complete |
+| DRFT-06 | Phase 5 | Complete |
+| DRFT-07 | Phase 5 | Complete |
+| DRFT-08 | Phase 5 | Complete |
+| INFR-03 | Phase 5 | Complete |
 | VALD-01 | Phase 6 | Pending |
 | VALD-02 | Phase 6 | Pending |
 | VALD-03 | Phase 6 | Pending |
@@ -160,4 +160,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2025-01-20*
-*Last updated: 2026-01-22 after Phase 4 completion*
+*Last updated: 2026-01-22 after Phase 5 completion*

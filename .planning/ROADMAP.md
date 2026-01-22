@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: GitHub Integration** - Repository indexing, entity API, webhook handling
 - [x] **Phase 3: Entity Browsing** - Entity pages, search, inheritance graphs, used-by references
 - [x] **Phase 4: Modules and Versioning** - Module/profile browsing, version listing, diff views
-- [ ] **Phase 5: Draft System** - Draft ingestion, capability URL access, review UI, module editing
+- [x] **Phase 5: Draft System** - Draft ingestion, capability URL access, review UI, module editing
 - [ ] **Phase 6: Validation Engine** - Consistency checks, breaking change detection, semver classification
 - [ ] **Phase 7: PR Integration** - GitHub OAuth, branch/commit/PR creation, structured summaries
 
@@ -104,9 +104,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 05-01-PLAN.md — Extend draft API with structured payload, validation, and diff preview on creation
-- [ ] 05-02-PLAN.md — Draft review UI with capability URL routing, diff display, and inline field editing
-- [ ] 05-03-PLAN.md — Module assignment with auto-dependencies and profile editing in drafts
+- [x] 05-01-PLAN.md — Extend draft API with structured payload, validation, and diff preview on creation
+- [x] 05-02-PLAN.md — Draft review UI with capability URL routing, diff display, and inline field editing
+- [x] 05-03-PLAN.md — Module assignment with auto-dependencies and profile editing in drafts
 
 ### Phase 6: Validation Engine
 **Goal**: Drafts are validated for consistency and breaking changes with inline feedback
@@ -153,7 +153,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 2. GitHub Integration | 3/3 | Complete | 2026-01-21 |
 | 3. Entity Browsing | 4/4 | Complete | 2026-01-21 |
 | 4. Modules and Versioning | 3/3 | Complete | 2026-01-22 |
-| 5. Draft System | 0/3 | Not started | - |
+| 5. Draft System | 3/3 | Complete | 2026-01-22 |
 | 6. Validation Engine | 0/3 | Not started | - |
 | 7. PR Integration | 0/2 | Not started | - |
 
