@@ -7,6 +7,7 @@ Provides read-only access to indexed schema entities:
 - GET /entities/{entity_type}/{entity_id} - Get single entity by type and ID
 - GET /entities/category/{entity_id}/inheritance - Get inheritance graph for a category
 - GET /entities/{entity_type}/{entity_id}/used-by - Get categories using a property/subobject
+- GET /entities/{entity_type}/{entity_id}/modules - Get modules containing the entity
 
 All endpoints filter out soft-deleted entities (deleted_at is not None).
 """
@@ -14,12 +15,13 @@ All endpoints filter out soft-deleted entities (deleted_at is not None).
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query, Request
-from sqlalchemy import func, or_
+from sqlalchemy import cast, func, or_, String
 from sqlmodel import select
 
 from app.database import SessionDep
 from app.dependencies.rate_limit import RATE_LIMITS, limiter
 from app.models.entity import Entity, EntityPublic, EntityType
+from app.models.module import Module, ModulePublic
 from app.schemas.entity import (
     EntityListResponse,
     EntityOverviewResponse,
@@ -295,8 +297,6 @@ async def get_used_by(
     # Find categories that contain this entity_id in their schema_definition
     # We need to search for the entity_id in the array stored at field_name
     # Using cast to text and LIKE for cross-database compatibility
-    from sqlalchemy import cast, String
-
     query = select(Entity).where(
         Entity.entity_type == EntityType.CATEGORY,
         Entity.deleted_at.is_(None),
@@ -307,3 +307,79 @@ async def get_used_by(
     categories = result.scalars().all()
 
     return [EntityPublic.model_validate(c) for c in categories]
+
+
+@router.get("/{entity_type}/{entity_id}/modules", response_model=list[ModulePublic])
+@limiter.limit(RATE_LIMITS["entity_read"])
+async def get_entity_modules(
+    request: Request,
+    entity_type: EntityType,
+    entity_id: str,
+    session: SessionDep,
+) -> list[ModulePublic]:
+    """Get modules that contain this entity.
+
+    For categories: Returns modules where the category is in category_ids.
+    For properties/subobjects: Returns modules containing categories that use this entity.
+
+    Rate limited to 200/minute per IP.
+
+    Args:
+        entity_type: Type of entity (category, property, subobject)
+        entity_id: Entity ID to find modules for
+
+    Returns:
+        List of ModulePublic for modules containing this entity
+
+    Raises:
+        HTTPException: 404 if entity not found
+    """
+    # Verify the entity exists
+    verify_query = select(Entity).where(
+        Entity.entity_type == entity_type,
+        Entity.entity_id == entity_id,
+        Entity.deleted_at.is_(None),
+    )
+    result = await session.execute(verify_query)
+    if not result.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="Entity not found")
+
+    if entity_type == EntityType.CATEGORY:
+        # Direct lookup: find modules where entity_id is in category_ids
+        query = select(Module).where(
+            Module.deleted_at.is_(None),
+            cast(Module.category_ids, String).contains(f'"{entity_id}"'),
+        )
+        result = await session.execute(query)
+        modules = result.scalars().all()
+    else:
+        # Indirect lookup: first find categories that use this property/subobject,
+        # then find modules containing those categories
+        field_name = "properties" if entity_type == EntityType.PROPERTY else "subobjects"
+
+        # Get categories that use this entity
+        category_query = select(Entity.entity_id).where(
+            Entity.entity_type == EntityType.CATEGORY,
+            Entity.deleted_at.is_(None),
+            cast(Entity.schema_definition[field_name], String).contains(f'"{entity_id}"'),
+        )
+        result = await session.execute(category_query)
+        category_ids = [row[0] for row in result.all()]
+
+        if not category_ids:
+            return []
+
+        # Find modules containing any of those categories
+        # We need to check if any category_id is in the module's category_ids
+        module_query = select(Module).where(Module.deleted_at.is_(None))
+        result = await session.execute(module_query)
+        all_modules = result.scalars().all()
+
+        # Filter modules that contain at least one of the category_ids
+        modules = []
+        for module in all_modules:
+            module_cat_ids = module.category_ids or []
+            if any(cat_id in module_cat_ids for cat_id in category_ids):
+                modules.append(module)
+
+    return [ModulePublic.model_validate(m) for m in modules]

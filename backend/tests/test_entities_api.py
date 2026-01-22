@@ -4,6 +4,7 @@ Tests entity retrieval, listing, and pagination:
 - GET /api/v1/entities - Overview of entity types
 - GET /api/v1/entities/{type} - List entities with pagination
 - GET /api/v1/entities/{type}/{id} - Get single entity
+- GET /api/v1/entities/{type}/{id}/modules - Get modules containing entity
 - Soft delete filtering
 """
 
@@ -14,6 +15,7 @@ from httpx import AsyncClient
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.models.entity import Entity, EntityType
+from app.models.module import Module
 
 
 pytestmark = pytest.mark.asyncio
@@ -910,3 +912,165 @@ class TestUsedBy:
         data = response.json()
         assert len(data) == 1
         assert data[0]["entity_id"] == "Person"
+
+
+class TestEntityModules:
+    """Tests for GET /api/v1/entities/{type}/{id}/modules."""
+
+    async def test_get_entity_modules_category(
+        self, client: AsyncClient, test_session: AsyncSession
+    ):
+        """Category returns modules containing it."""
+        # Create category
+        test_session.add(Entity(
+            entity_id="Person",
+            entity_type=EntityType.CATEGORY,
+            label="Person",
+        ))
+        # Create module that contains the category
+        test_session.add(Module(
+            module_id="core",
+            label="Core Module",
+            category_ids=["Person", "Organization"],
+        ))
+        # Create module that doesn't contain the category
+        test_session.add(Module(
+            module_id="other",
+            label="Other Module",
+            category_ids=["Event"],
+        ))
+        await test_session.commit()
+
+        response = await client.get("/api/v1/entities/category/Person/modules")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["module_id"] == "core"
+        assert data[0]["label"] == "Core Module"
+
+    async def test_get_entity_modules_property(
+        self, client: AsyncClient, test_session: AsyncSession
+    ):
+        """Property returns modules via category membership."""
+        # Create property
+        test_session.add(Entity(
+            entity_id="has_name",
+            entity_type=EntityType.PROPERTY,
+            label="Has Name",
+        ))
+        # Create category that uses the property
+        test_session.add(Entity(
+            entity_id="Person",
+            entity_type=EntityType.CATEGORY,
+            label="Person",
+            schema_definition={"properties": ["has_name"]},
+        ))
+        # Create module containing the category
+        test_session.add(Module(
+            module_id="core",
+            label="Core Module",
+            category_ids=["Person"],
+        ))
+        await test_session.commit()
+
+        response = await client.get("/api/v1/entities/property/has_name/modules")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["module_id"] == "core"
+
+    async def test_get_entity_modules_subobject(
+        self, client: AsyncClient, test_session: AsyncSession
+    ):
+        """Subobject returns modules via category membership."""
+        # Create subobject
+        test_session.add(Entity(
+            entity_id="Address",
+            entity_type=EntityType.SUBOBJECT,
+            label="Address",
+        ))
+        # Create category that uses the subobject
+        test_session.add(Entity(
+            entity_id="Person",
+            entity_type=EntityType.CATEGORY,
+            label="Person",
+            schema_definition={"subobjects": ["Address"]},
+        ))
+        # Create module containing the category
+        test_session.add(Module(
+            module_id="core",
+            label="Core Module",
+            category_ids=["Person"],
+        ))
+        await test_session.commit()
+
+        response = await client.get("/api/v1/entities/subobject/Address/modules")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["module_id"] == "core"
+
+    async def test_get_entity_modules_not_found(self, client: AsyncClient):
+        """Returns 404 for non-existent entity."""
+        response = await client.get("/api/v1/entities/category/NonExistent/modules")
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Entity not found"
+
+    async def test_get_entity_modules_empty(
+        self, client: AsyncClient, test_session: AsyncSession
+    ):
+        """Returns empty list when entity in no modules."""
+        # Create category not in any module
+        test_session.add(Entity(
+            entity_id="Orphan",
+            entity_type=EntityType.CATEGORY,
+            label="Orphan Category",
+        ))
+        # Create a module that doesn't include this category
+        test_session.add(Module(
+            module_id="other",
+            label="Other Module",
+            category_ids=["Person"],
+        ))
+        await test_session.commit()
+
+        response = await client.get("/api/v1/entities/category/Orphan/modules")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data == []
+
+    async def test_get_entity_modules_excludes_deleted_modules(
+        self, client: AsyncClient, test_session: AsyncSession
+    ):
+        """Excludes soft-deleted modules."""
+        # Create category
+        test_session.add(Entity(
+            entity_id="Person",
+            entity_type=EntityType.CATEGORY,
+            label="Person",
+        ))
+        # Create active module
+        test_session.add(Module(
+            module_id="active",
+            label="Active Module",
+            category_ids=["Person"],
+        ))
+        # Create soft-deleted module
+        test_session.add(Module(
+            module_id="deleted",
+            label="Deleted Module",
+            category_ids=["Person"],
+            deleted_at=datetime.utcnow(),
+        ))
+        await test_session.commit()
+
+        response = await client.get("/api/v1/entities/category/Person/modules")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["module_id"] == "active"
