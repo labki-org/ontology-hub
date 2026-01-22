@@ -1,5 +1,9 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
+import { enableMapSet } from 'immer'
+
+// Enable Map and Set support in immer (required for Zustand immer middleware)
+enableMapSet()
 import type {
   DraftPublic,
   EntityDefinition,
