@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2025-01-20)
 ## Current Position
 
 Phase: 4 of 7 (Modules and Versioning)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-01-22 - Completed 04-01-PLAN.md (Module and Profile Browsing)
+Last activity: 2026-01-22 - Completed 04-02-PLAN.md (Dependency Visualization and Overlap Detection)
 
-Progress: [##########--------] 55%
+Progress: [###########-------] 61%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10
+- Total plans completed: 11
 - Average duration: 7 min
-- Total execution time: 1.22 hours
+- Total execution time: 1.33 hours
 
 **By Phase:**
 
@@ -30,10 +30,10 @@ Progress: [##########--------] 55%
 | 01-foundation | 2 | 14 min | 7 min |
 | 02-github-integration | 3 | 17 min | 6 min |
 | 03-entity-browsing | 4 | 34 min | 9 min |
-| 04-modules-and-versioning | 1 | 8 min | 8 min |
+| 04-modules-and-versioning | 2 | 15 min | 8 min |
 
 **Recent Trend:**
-- Last 5 plans: 12min, 8min, 10min, 4min, 8min
+- Last 5 plans: 8min, 10min, 4min, 8min, 7min
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -74,6 +74,9 @@ Recent decisions affecting current work:
 | Indirect module lookup | 03-04 | Properties/subobjects find modules via categories |
 | Collapsible entity sections | 04-01 | Better UX for modules with many entities |
 | Compact module card prop | 04-01 | Reuse component with different density levels |
+| Edge direction dependency->dependent | 04-02 | Arrow shows "depends on" relationship |
+| Neutral overlap styling | 04-02 | Blue/gray info style per CONTEXT.md decision |
+| moduleNodeTypes outside component | 04-02 | Prevent React Flow re-render issues |
 
 ### Pending Todos
 
@@ -86,25 +89,26 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-22
-Stopped at: Completed 04-01-PLAN.md (Module and Profile Browsing)
+Stopped at: Completed 04-02-PLAN.md (Dependency Visualization and Overlap Detection)
 Resume file: None
 
-04-01 SUMMARY context:
-- GET /modules, GET /modules/{id}, GET /modules/{id}/entities endpoints
-- GET /profiles, GET /profiles/{id}, GET /profiles/{id}/modules endpoints
-- ModulesPage with search and card grid
-- ModulePage with dependencies and grouped entity list
-- ProfilesPage with search and card grid
-- ProfilePage with module cards and entity summary
-- Sidebar updated with Modules and Profiles navigation
-- 25 tests for module/profile API
+04-02 SUMMARY context:
+- GET /modules/{id}/overlaps endpoint for entity overlap detection
+- DependencyGraph component with React Flow for module dependencies
+- ModuleNode with Package icon, entity count, clickable navigation
+- OverlapIndicator shows "also in: X, Y" with neutral blue/gray styling
+- ModuleEntityList accepts overlaps prop
+- ProfilePage shows Module Dependencies graph when hasDependencies
+- Circular dependency detection and warning badge
 
 ## Phase 4 Progress
 
 Phase 4 (Modules and Versioning) in progress:
 - 04-01: Module and Profile browsing (COMPLETE)
-- 04-02: Version history and comparison (pending)
+- 04-02: Dependency visualization and overlap detection (COMPLETE)
 - 04-03: Module/profile filtering (pending)
 
 MODL-01 satisfied: User can browse modules with included entities and dependencies
 MODL-02 satisfied: User can browse profiles with module composition
+MODL-03 satisfied: User can view module dependency visualization
+MODL-04 satisfied: Module pages show overlap info when entities appear in multiple modules
