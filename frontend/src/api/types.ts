@@ -171,3 +171,17 @@ export interface DraftCreateResponse {
   diff_preview: VersionDiffResponse | null
   validation_warnings: ValidationError[]
 }
+
+// Module assignment state types for draft editing
+export interface ModuleAssignmentState {
+  explicit: string[]      // Explicitly assigned module IDs
+  autoIncluded: string[]  // Auto-included via dependencies
+}
+
+export interface NewModule {
+  module_id: string
+  label: string
+  description?: string
+  category_ids: string[]
+  dependencies: string[]
+}
