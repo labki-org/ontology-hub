@@ -119,12 +119,12 @@ Plans:
   4. Validation checks for breaking changes: datatype changes, multiplicity changes, removals
   5. Validation suggests semver classification (major/minor/patch) per change
   6. Validation feedback displays inline in draft review UI with clear severity indicators
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 06-01: Reference and consistency validation
-- [ ] 06-02: Breaking change detection and semver classification
-- [ ] 06-03: Inline validation display in draft UI
+- [ ] 06-01-PLAN.md — Core validation engine with reference, inheritance, and datatype checks
+- [ ] 06-02-PLAN.md — Breaking change detection and semver classification
+- [ ] 06-03-PLAN.md — Inline validation display in draft UI with severity indicators
 
 ### Phase 7: PR Integration
 **Goal**: Users can create GitHub PRs from validated drafts with structured summaries
