@@ -37,6 +37,7 @@ from app.models.draft import (
     ValidationError,
 )
 from app.services.draft_diff import compute_draft_diff
+from app.services.validation.validator import validate_draft
 
 # Default expiration: 7 days (from CONTEXT.md)
 DEFAULT_EXPIRATION_DAYS = 7
@@ -130,6 +131,9 @@ async def create_draft(
     # Compute diff preview
     diff_preview = await compute_draft_diff(payload, session)
 
+    # Run validation engine
+    validation_report = await validate_draft(payload, session)
+
     # Generate capability token (NOT logged, NOT stored)
     token = generate_capability_token()
 
@@ -143,6 +147,7 @@ async def create_draft(
         source_wiki=payload.wiki_url,
         base_commit_sha=payload.base_version,
         diff_preview=diff_preview.model_dump(),
+        validation_results=validation_report.model_dump(),
         expires_at=expires_at,
     )
 
@@ -159,6 +164,7 @@ async def create_draft(
         capability_url=capability_url,
         expires_at=draft.expires_at,
         diff_preview=diff_preview,
+        validation_results=validation_report.model_dump(),
         validation_warnings=validation_warnings,
     )
 
@@ -367,10 +373,14 @@ async def update_draft(
     # Update draft payload
     draft.payload = existing_payload
 
-    # Recompute diff preview
+    # Recompute diff preview and validation
     validated_payload = DraftPayload.model_validate(existing_payload)
     new_diff = await compute_draft_diff(validated_payload, session)
     draft.diff_preview = new_diff.model_dump()
+
+    # Recompute validation after update
+    validation_report = await validate_draft(validated_payload, session)
+    draft.validation_results = validation_report.model_dump()
 
     # Save changes
     session.add(draft)
