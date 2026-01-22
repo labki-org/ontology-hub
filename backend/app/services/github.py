@@ -157,3 +157,37 @@ class GitHubClient:
         url = f"/repos/{owner}/{repo}/commits/{branch}"
         data = await self._request("GET", url)
         return data["sha"]
+
+    async def get_releases(
+        self, owner: str, repo: str, per_page: int = 30
+    ) -> list[dict[str, Any]]:
+        """Fetch releases from GitHub repository.
+
+        Args:
+            owner: Repository owner
+            repo: Repository name
+            per_page: Number of releases to fetch (max 100)
+
+        Returns:
+            List of release objects with tag_name, name, created_at, published_at, body
+        """
+        url = f"/repos/{owner}/{repo}/releases"
+        return await self._request("GET", url, params={"per_page": per_page})
+
+    async def get_file_at_ref(
+        self, owner: str, repo: str, path: str, ref: str
+    ) -> dict[str, Any]:
+        """Fetch and decode a JSON file at a specific git ref (tag/sha).
+
+        Same as get_file_content but with explicit ref parameter.
+
+        Args:
+            owner: Repository owner
+            repo: Repository name
+            path: File path within repository
+            ref: Git ref (branch, tag, or commit SHA)
+
+        Returns:
+            Parsed JSON content of the file
+        """
+        return await self.get_file_content(owner, repo, path, ref=ref)

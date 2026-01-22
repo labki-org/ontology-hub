@@ -6,6 +6,11 @@ import { PropertyPage } from '@/pages/PropertyPage'
 import { SubobjectPage } from '@/pages/SubobjectPage'
 import { SearchPage } from '@/pages/SearchPage'
 import { GraphExplorerPage } from '@/pages/GraphExplorerPage'
+import { ModulesPage } from '@/pages/ModulesPage'
+import { ModulePage } from '@/pages/ModulePage'
+import { ProfilesPage } from '@/pages/ProfilesPage'
+import { ProfilePage } from '@/pages/ProfilePage'
+import { VersionsPage } from '@/pages/VersionsPage'
 
 const router = createBrowserRouter([
   {
@@ -35,6 +40,26 @@ const router = createBrowserRouter([
       {
         path: 'graph/:entityId',
         element: <GraphExplorerPage />,
+      },
+      {
+        path: 'modules',
+        element: <ModulesPage />,
+      },
+      {
+        path: 'module/:moduleId',
+        element: <ModulePage />,
+      },
+      {
+        path: 'profiles',
+        element: <ProfilesPage />,
+      },
+      {
+        path: 'profile/:profileId',
+        element: <ProfilePage />,
+      },
+      {
+        path: 'versions',
+        element: <VersionsPage />,
       },
     ],
   },
