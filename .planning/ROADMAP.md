@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Entity Browsing** - Entity pages, search, inheritance graphs, used-by references
 - [x] **Phase 4: Modules and Versioning** - Module/profile browsing, version listing, diff views
 - [x] **Phase 5: Draft System** - Draft ingestion, capability URL access, review UI, module editing
-- [ ] **Phase 6: Validation Engine** - Consistency checks, breaking change detection, semver classification
+- [x] **Phase 6: Validation Engine** - Consistency checks, breaking change detection, semver classification
 - [ ] **Phase 7: PR Integration** - GitHub OAuth, branch/commit/PR creation, structured summaries
 
 ## Phase Details
@@ -119,12 +119,12 @@ Plans:
   4. Validation checks for breaking changes: datatype changes, multiplicity changes, removals
   5. Validation suggests semver classification (major/minor/patch) per change
   6. Validation feedback displays inline in draft review UI with clear severity indicators
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 06-01: Reference and consistency validation
-- [ ] 06-02: Breaking change detection and semver classification
-- [ ] 06-03: Inline validation display in draft UI
+- [x] 06-01-PLAN.md — Core validation engine with reference, inheritance, and datatype checks
+- [x] 06-02-PLAN.md — Breaking change detection and semver classification
+- [x] 06-03-PLAN.md — Inline validation display in draft UI with severity indicators
 
 ### Phase 7: PR Integration
 **Goal**: Users can create GitHub PRs from validated drafts with structured summaries
@@ -154,7 +154,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 3. Entity Browsing | 4/4 | Complete | 2026-01-21 |
 | 4. Modules and Versioning | 3/3 | Complete | 2026-01-22 |
 | 5. Draft System | 3/3 | Complete | 2026-01-22 |
-| 6. Validation Engine | 0/3 | Not started | - |
+| 6. Validation Engine | 3/3 | Complete | 2026-01-22 |
 | 7. PR Integration | 0/2 | Not started | - |
 
 ---

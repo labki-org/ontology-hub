@@ -158,6 +158,7 @@ class DraftBase(SQLModel):
     source_wiki: Optional[str] = None
     base_commit_sha: Optional[str] = None
     diff_preview: Optional[dict] = Field(default=None, sa_column=Column(JSON))
+    validation_results: Optional[dict] = Field(default=None, sa_column=Column(JSON))
 
 
 class Draft(DraftBase, table=True):
@@ -253,11 +254,12 @@ class DraftCreateResponse(SQLModel):
     """Response schema for draft creation.
 
     Contains the capability URL (shown ONCE, cannot be recovered),
-    expiration info, diff preview, and any validation warnings.
+    expiration info, diff preview, validation results, and any validation warnings.
     """
 
     capability_url: str
     expires_at: datetime
     diff_preview: Optional[DraftDiffResponse] = None
+    validation_results: Optional[dict] = None  # Full validation report
     validation_warnings: list[ValidationError] = Field(default_factory=list)
     message: str = "Save this URL - it cannot be recovered. Use it to access your draft."

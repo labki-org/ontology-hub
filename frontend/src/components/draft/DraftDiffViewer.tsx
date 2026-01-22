@@ -10,13 +10,15 @@ import {
 } from '@/components/ui/collapsible'
 import { EditableField } from './EditableField'
 import { ModuleAssignment } from './ModuleAssignment'
+import { ValidationBadges } from './ValidationBadge'
 import { useDraftStore } from '@/stores/draftStore'
 import { computeDiff, flattenDelta, type FieldChange } from '@/lib/diff'
-import type { VersionDiffResponse, ChangesByType, EntityChange } from '@/api/types'
+import type { VersionDiffResponse, ChangesByType, EntityChange, DraftValidationReport, ValidationResult } from '@/api/types'
 
 interface DraftDiffViewerProps {
   diff: VersionDiffResponse
   editable?: boolean
+  validationResults?: DraftValidationReport | null
 }
 
 interface EntityTypeSection {
@@ -76,6 +78,34 @@ function getEntityLink(entityType: string, entityId: string): string {
   }
   const routeType = typeMap[entityType] || entityType
   return `/${routeType}/${entityId}`
+}
+
+function getEntityValidationResults(
+  validationResults: DraftValidationReport | null | undefined,
+  entityType: string,
+  entityId: string
+): ValidationResult[] {
+  if (!validationResults) return []
+
+  // Map plural entity type to singular for matching
+  const typeMap: Record<string, string> = {
+    categories: 'category',
+    properties: 'property',
+    subobjects: 'subobject',
+    modules: 'module',
+    profiles: 'profile',
+  }
+  const singularType = typeMap[entityType] || entityType
+
+  const allResults = [
+    ...validationResults.errors,
+    ...validationResults.warnings,
+    ...validationResults.info,
+  ]
+
+  return allResults.filter(
+    (r) => r.entity_type === singularType && r.entity_id === entityId
+  )
 }
 
 function FieldDiff({
@@ -150,11 +180,13 @@ function AddedEntityItem({
   editable,
   entityType,
   parentCategories,
+  validationResults,
 }: {
   change: EntityChange
   editable?: boolean
   entityType: string
   parentCategories?: string[]
+  validationResults?: DraftValidationReport | null
 }) {
   const [isOpen, setIsOpen] = useState(false)
   const { getEditedValue } = useDraftStore()
@@ -167,6 +199,9 @@ function AddedEntityItem({
     : entityType === 'properties' ? 'property'
     : entityType === 'subobjects' ? 'subobject'
     : null
+
+  // Get validation results for this entity
+  const entityValidation = getEntityValidationResults(validationResults, entityType, change.entity_id)
 
   return (
     <div className="py-1">
@@ -182,6 +217,7 @@ function AddedEntityItem({
           >
             {change.entity_id}
           </Link>
+          <ValidationBadges results={entityValidation} compact />
           <Badge variant="outline" className="text-xs ml-auto bg-green-50 text-green-700">
             new
           </Badge>
@@ -245,12 +281,14 @@ function EntityChangeItem({
   editable,
   entityType,
   parentCategories,
+  validationResults,
 }: {
   change: EntityChange
   variant: 'success' | 'warning' | 'destructive'
   editable?: boolean
   entityType: string
   parentCategories?: string[]
+  validationResults?: DraftValidationReport | null
 }) {
   const [isOpen, setIsOpen] = useState(false)
 
@@ -262,6 +300,7 @@ function EntityChangeItem({
         editable={editable}
         entityType={entityType}
         parentCategories={parentCategories}
+        validationResults={validationResults}
       />
     )
   }
@@ -273,6 +312,9 @@ function EntityChangeItem({
       : []
 
   const hasFieldChanges = fieldChanges.length > 0
+
+  // Get validation results for this entity
+  const entityValidation = getEntityValidationResults(validationResults, entityType, change.entity_id)
 
   return (
     <div className="py-1">
@@ -289,6 +331,7 @@ function EntityChangeItem({
             >
               {change.entity_id}
             </Link>
+            <ValidationBadges results={entityValidation} compact />
             <Badge variant="outline" className="text-xs ml-auto">
               {fieldChanges.length} field{fieldChanges.length !== 1 ? 's' : ''} changed
             </Badge>
@@ -310,6 +353,7 @@ function EntityChangeItem({
           >
             {change.entity_id}
           </Link>
+          <ValidationBadges results={entityValidation} compact />
         </div>
       )}
     </div>
@@ -323,6 +367,7 @@ function ChangeGroup({
   editable,
   entityType,
   parentCategories,
+  validationResults,
 }: {
   title: string
   changes: EntityChange[]
@@ -330,6 +375,7 @@ function ChangeGroup({
   editable?: boolean
   entityType: string
   parentCategories?: string[]
+  validationResults?: DraftValidationReport | null
 }) {
   const [isOpen, setIsOpen] = useState(true)
   const config = variantConfig[variant]
@@ -357,6 +403,7 @@ function ChangeGroup({
               editable={editable}
               entityType={entityType}
               parentCategories={parentCategories}
+              validationResults={validationResults}
             />
           ))}
         </div>
@@ -372,6 +419,7 @@ function EntityTypeCard({
   editable,
   entityType,
   allCategoryIds,
+  validationResults,
 }: {
   label: string
   icon: typeof Boxes
@@ -379,6 +427,7 @@ function EntityTypeCard({
   editable?: boolean
   entityType: string
   allCategoryIds?: string[]
+  validationResults?: DraftValidationReport | null
 }) {
   if (!hasChanges(changes)) return null
 
@@ -408,6 +457,7 @@ function EntityTypeCard({
           editable={editable}
           entityType={entityType}
           parentCategories={parentCategories}
+          validationResults={validationResults}
         />
         <ChangeGroup
           title="Modified"
@@ -416,6 +466,7 @@ function EntityTypeCard({
           editable={editable}
           entityType={entityType}
           parentCategories={parentCategories}
+          validationResults={validationResults}
         />
         <ChangeGroup
           title="Deleted"
@@ -423,13 +474,14 @@ function EntityTypeCard({
           variant="destructive"
           editable={false}
           entityType={entityType}
+          validationResults={validationResults}
         />
       </CardContent>
     </Card>
   )
 }
 
-export function DraftDiffViewer({ diff, editable = false }: DraftDiffViewerProps) {
+export function DraftDiffViewer({ diff, editable = false, validationResults }: DraftDiffViewerProps) {
   const totalChanges = entityTypeSections.reduce(
     (sum, section) => sum + getTotalChanges(diff[section.key]),
     0
@@ -462,6 +514,7 @@ export function DraftDiffViewer({ diff, editable = false }: DraftDiffViewerProps
           editable={editable}
           entityType={key}
           allCategoryIds={allCategoryIds}
+          validationResults={validationResults}
         />
       ))}
     </div>

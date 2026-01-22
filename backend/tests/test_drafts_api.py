@@ -17,27 +17,51 @@ pytestmark = pytest.mark.asyncio
 class TestDraftCreation:
     """Tests for POST /api/v1/drafts."""
 
+    # Valid payload structure for tests
+    VALID_PAYLOAD = {
+        "wiki_url": "https://wiki.example.com",
+        "base_version": "v1.0.0",
+        "entities": {"categories": [], "properties": [], "subobjects": []},
+        "modules": [],
+        "profiles": [],
+    }
+
     async def test_creates_draft_returns_capability_url(self, client: AsyncClient):
         """POST should return capability URL with fragment token."""
         response = await client.post(
-            "/api/v1/drafts",
-            json={"payload": {"test": "data"}},
+            "/api/v1/drafts/",
+            json={"payload": self.VALID_PAYLOAD},
         )
         assert response.status_code == 201
         data = response.json()
         assert "capability_url" in data
         assert "#" in data["capability_url"]  # Token in fragment
         assert "expires_at" in data
+        assert "validation_results" in data  # Validation engine integrated
+        assert data["validation_results"]["is_valid"] is True
 
-    async def test_creates_draft_with_optional_fields(self, client: AsyncClient):
-        """POST should accept optional source_wiki and base_commit_sha."""
-        response = await client.post(
-            "/api/v1/drafts",
-            json={
-                "payload": {"entities": []},
-                "source_wiki": "https://wiki.example.com",
-                "base_commit_sha": "abc123def456",
+    async def test_creates_draft_with_entities(self, client: AsyncClient):
+        """POST should accept payload with entities."""
+        payload = {
+            "wiki_url": "https://wiki.example.com",
+            "base_version": "v1.0.0",
+            "entities": {
+                "categories": [
+                    {
+                        "entity_id": "TestCategory",
+                        "label": "Test Category",
+                        "schema_definition": {},
+                    }
+                ],
+                "properties": [],
+                "subobjects": [],
             },
+            "modules": [],
+            "profiles": [],
+        }
+        response = await client.post(
+            "/api/v1/drafts/",
+            json={"payload": payload},
         )
         assert response.status_code == 201
 
@@ -45,16 +69,16 @@ class TestDraftCreation:
         """POST should work without authentication."""
         # No auth headers needed
         response = await client.post(
-            "/api/v1/drafts",
-            json={"payload": {}},
+            "/api/v1/drafts/",
+            json={"payload": self.VALID_PAYLOAD},
         )
         assert response.status_code == 201
 
     async def test_capability_url_contains_token(self, client: AsyncClient):
         """Capability URL should have token after # fragment."""
         response = await client.post(
-            "/api/v1/drafts",
-            json={"payload": {"test": True}},
+            "/api/v1/drafts/",
+            json={"payload": self.VALID_PAYLOAD},
         )
         data = response.json()
         url = data["capability_url"]
@@ -66,12 +90,21 @@ class TestDraftCreation:
 class TestDraftRetrieval:
     """Tests for GET /api/v1/drafts/{token}."""
 
+    # Valid payload structure for tests
+    VALID_PAYLOAD = {
+        "wiki_url": "https://wiki.example.com",
+        "base_version": "v1.0.0",
+        "entities": {"categories": [], "properties": [], "subobjects": []},
+        "modules": [],
+        "profiles": [],
+    }
+
     async def test_retrieves_draft_with_valid_token(self, client: AsyncClient):
         """GET with valid token should return draft data."""
         # Create draft
         create_response = await client.post(
-            "/api/v1/drafts",
-            json={"payload": {"key": "value"}},
+            "/api/v1/drafts/",
+            json={"payload": self.VALID_PAYLOAD},
         )
         url = create_response.json()["capability_url"]
         token = url.split("#")[1]
@@ -80,8 +113,11 @@ class TestDraftRetrieval:
         response = await client.get(f"/api/v1/drafts/{token}")
         assert response.status_code == 200
         data = response.json()
-        assert data["payload"] == {"key": "value"}
+        assert data["payload"]["wiki_url"] == "https://wiki.example.com"
         assert data["status"] == "pending"
+        # Validation results should be stored
+        assert data["validation_results"] is not None
+        assert data["validation_results"]["is_valid"] is True
 
     async def test_returns_404_for_invalid_token(self, client: AsyncClient):
         """GET with invalid token should return 404."""
@@ -92,8 +128,8 @@ class TestDraftRetrieval:
         """Draft response should NOT include capability_hash."""
         # Create and retrieve draft
         create_response = await client.post(
-            "/api/v1/drafts",
-            json={"payload": {}},
+            "/api/v1/drafts/",
+            json={"payload": self.VALID_PAYLOAD},
         )
         token = create_response.json()["capability_url"].split("#")[1]
 

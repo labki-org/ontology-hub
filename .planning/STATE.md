@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2025-01-20)
 
 **Core value:** Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes, with zero platform accounts and strong validation feedback.
-**Current focus:** Phase 5 - Draft System (COMPLETE)
+**Current focus:** Phase 6 - Validation Engine (COMPLETE)
 
 ## Current Position
 
-Phase: 5 of 7 (Draft System)
-Plan: 3 of 3 in current phase (COMPLETE)
+Phase: 6 of 7 (Validation Engine)
+Plan: 3 of 3 in current phase
 Status: Phase complete
-Last activity: 2026-01-22 - Completed 05-03-PLAN.md (Draft Submission Flow)
+Last activity: 2026-01-22 - Completed 06-03-PLAN.md (Validation UI Integration)
 
-Progress: [################--] 83%
+Progress: [##################] 95%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 15
+- Total plans completed: 18
 - Average duration: 7 min
-- Total execution time: 1.83 hours
+- Total execution time: 2.1 hours
 
 **By Phase:**
 
@@ -32,9 +32,10 @@ Progress: [################--] 83%
 | 03-entity-browsing | 4 | 34 min | 9 min |
 | 04-modules-and-versioning | 3 | 24 min | 8 min |
 | 05-draft-system | 3 | 21 min | 7 min |
+| 06-validation-engine | 3 | 16 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 7min, 9min, 4min, 6min, 11min
+- Last 5 plans: 4min, 6min, 11min, 4min, 6min
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -89,6 +90,15 @@ Recent decisions affecting current work:
 | Categories only for module assignment | 05-03 | Properties/subobjects inherit via parent categories |
 | Explicit vs auto-included module display | 05-03 | Visual distinction with badges and icons |
 | PATCH merges updates, recomputes diff | 05-03 | Partial update support for draft editing |
+| Combined canonical+draft sets for refs | 06-01 | Draft can reference its own new entities |
+| graphlib.TopologicalSorter for cycles | 06-01 | Stdlib, CycleError provides cycle path |
+| validation_results stored as JSONB | 06-01 | Flexible schema evolution |
+| Breaking changes are warnings not errors | 06-02 | Valid changes, just impactful |
+| Cardinality relaxation is backward compatible | 06-02 | Single->multiple is MINOR |
+| Semver max severity aggregation | 06-02 | major > minor > patch |
+| Prop drilling validation results | 06-03 | Simple, explicit data flow without global state |
+| Compact badges inline by default | 06-03 | Prevent clutter in diff viewer, hover for details |
+| Entity type mapping plural->singular | 06-03 | Frontend uses plural keys, backend uses singular |
 
 ### Pending Todos
 
@@ -101,16 +111,29 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-22
-Stopped at: Completed 05-03-PLAN.md (Draft Submission Flow)
+Stopped at: Completed 06-03-PLAN.md (Validation UI Integration)
 Resume file: None
 
-05-03 SUMMARY context:
-- Module assignment with auto-dependency visualization
-- Bulk assignment for new categories with checkbox grid
-- Profile editor with module list management and new profile creation
-- PATCH endpoint for partial draft updates
-- Save button wired with success/error feedback
-- All DRFT-* checkpoints satisfied
+06-03 SUMMARY context:
+- ValidationSummary component shows overall validation status
+- ValidationBadge shows inline severity indicators with tooltips
+- DraftPage renders validation summary after header
+- DraftDiffViewer shows badges inline next to each entity
+- Semver badge with color coding (major=red, minor=blue, patch=green)
+
+## Phase 6 Progress
+
+Phase 6 (Validation Engine) COMPLETE:
+- 06-01: Core Validation (COMPLETE)
+- 06-02: Breaking Change Detection (COMPLETE)
+- 06-03: Validation UI Integration (COMPLETE)
+
+VALD-01 satisfied: Reference existence checks
+VALD-02 satisfied: Circular inheritance detection
+VALD-03 satisfied: Datatype validation
+VALD-04 satisfied: Breaking change detection
+VALD-05 satisfied: Semver classification with aggregate suggestion
+VALD-06 satisfied: Validation UI with error/warning display and semver badge
 
 ## Phase 5 Progress
 

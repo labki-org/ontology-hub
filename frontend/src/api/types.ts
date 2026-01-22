@@ -155,6 +155,7 @@ export interface DraftPublic {
   source_wiki: string | null
   base_commit_sha: string | null
   diff_preview: VersionDiffResponse | null
+  validation_results: DraftValidationReport | null
   expires_at: string
   created_at: string
 }
@@ -169,7 +170,8 @@ export interface DraftCreateResponse {
   capability_url: string
   expires_at: string
   diff_preview: VersionDiffResponse | null
-  validation_warnings: ValidationError[]
+  validation_results: DraftValidationReport | null
+  validation_warnings: ValidationError[]  // Keep for backward compat
 }
 
 // Module assignment state types for draft editing
@@ -214,4 +216,30 @@ export interface DraftPatchPayload {
   entities?: EntitiesUpdate
   modules?: (ModuleUpdate | NewModule)[]
   profiles?: (ProfileUpdate | ProfileDefinition)[]
+}
+
+// Validation types (matches backend schemas/validation.py)
+
+export type ValidationSeverity = 'error' | 'warning' | 'info'
+export type SemverSuggestion = 'major' | 'minor' | 'patch'
+
+export interface ValidationResult {
+  entity_type: 'category' | 'property' | 'subobject' | 'module' | 'profile'
+  entity_id: string
+  field: string | null
+  code: string  // e.g., "MISSING_PARENT", "DATATYPE_CHANGED"
+  message: string
+  severity: ValidationSeverity
+  suggested_semver: SemverSuggestion | null
+  old_value: string | null
+  new_value: string | null
+}
+
+export interface DraftValidationReport {
+  is_valid: boolean
+  errors: ValidationResult[]
+  warnings: ValidationResult[]
+  info: ValidationResult[]
+  suggested_semver: SemverSuggestion
+  semver_reasons: string[]
 }
