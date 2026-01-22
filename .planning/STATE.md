@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2025-01-20)
 
 **Core value:** Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes, with zero platform accounts and strong validation feedback.
-**Current focus:** Phase 5 - Draft System (in progress)
+**Current focus:** Phase 5 - Draft System (COMPLETE)
 
 ## Current Position
 
 Phase: 5 of 7 (Draft System)
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-01-22 - Completed 05-02-PLAN.md (Draft Review UI)
+Plan: 3 of 3 in current phase (COMPLETE)
+Status: Phase complete
+Last activity: 2026-01-22 - Completed 05-03-PLAN.md (Draft Submission Flow)
 
-Progress: [##############----] 78%
+Progress: [################--] 83%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 14
+- Total plans completed: 15
 - Average duration: 7 min
-- Total execution time: 1.65 hours
+- Total execution time: 1.83 hours
 
 **By Phase:**
 
@@ -31,10 +31,10 @@ Progress: [##############----] 78%
 | 02-github-integration | 3 | 17 min | 6 min |
 | 03-entity-browsing | 4 | 34 min | 9 min |
 | 04-modules-and-versioning | 3 | 24 min | 8 min |
-| 05-draft-system | 2 | 10 min | 5 min |
+| 05-draft-system | 3 | 21 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 8min, 7min, 9min, 4min, 6min
+- Last 5 plans: 7min, 9min, 4min, 6min, 11min
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -86,7 +86,9 @@ Recent decisions affecting current work:
 | Zustand with immer middleware | 05-02 | Immutable draft state with readable mutable-style syntax |
 | Fragment-based capability redirect | 05-02 | /drafts#{token} -> /draft/{token} reduces referrer leakage |
 | Only new values editable | 05-02 | Old values read-only as diff reference |
-| Save disabled in Plan 02 | 05-02 | Deferred to Plan 03 for full submission flow |
+| Categories only for module assignment | 05-03 | Properties/subobjects inherit via parent categories |
+| Explicit vs auto-included module display | 05-03 | Visual distinction with badges and icons |
+| PATCH merges updates, recomputes diff | 05-03 | Partial update support for draft editing |
 
 ### Pending Todos
 
@@ -99,25 +101,28 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-22
-Stopped at: Completed 05-02-PLAN.md (Draft Review UI)
+Stopped at: Completed 05-03-PLAN.md (Draft Submission Flow)
 Resume file: None
 
-05-02 SUMMARY context:
-- Draft review page at /draft/{token} with /drafts#{token} redirect
-- DraftHeader shows wiki URL, base version, status, expiration countdown
-- DraftDiffViewer extends ChangeGroup with inline EditableField
-- Zustand draftStore tracks editedEntities, editingFields, hasUnsavedChanges
-- beforeunload warning when unsaved changes exist
-- Save button disabled (wired in Plan 03)
+05-03 SUMMARY context:
+- Module assignment with auto-dependency visualization
+- Bulk assignment for new categories with checkbox grid
+- Profile editor with module list management and new profile creation
+- PATCH endpoint for partial draft updates
+- Save button wired with success/error feedback
+- All DRFT-* checkpoints satisfied
 
 ## Phase 5 Progress
 
-Phase 5 (Draft System) IN PROGRESS:
+Phase 5 (Draft System) COMPLETE:
 - 05-01: Draft Payload and Diff Preview (COMPLETE)
 - 05-02: Draft Review UI (COMPLETE)
-- 05-03: Draft Submission Flow (PENDING)
+- 05-03: Draft Submission Flow (COMPLETE)
 
 DRFT-01 satisfied: Draft API accepts wiki_url, base_version, entities payload
 DRFT-02 satisfied: Draft creation returns capability_url and diff_preview
 DRFT-03 satisfied: Draft review page accessible via capability URL
 DRFT-04 satisfied: Inline editing with unsaved changes tracking
+DRFT-05 satisfied: Module assignment with dependency feedback
+DRFT-06 satisfied: Profile editing with module list management
+DRFT-07 satisfied: Save functionality via PATCH endpoint
