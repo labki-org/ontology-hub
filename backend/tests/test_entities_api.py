@@ -349,3 +349,243 @@ class TestEntityOverview:
         data = response.json()
         assert data["types"] == []
         assert data["total"] == 0
+
+
+class TestEntitySearch:
+    """Tests for GET /api/v1/entities/search."""
+
+    async def test_search_by_label(
+        self, client: AsyncClient, test_session: AsyncSession
+    ):
+        """Search by label finds matching entity."""
+        entity = Entity(
+            entity_id="Person",
+            entity_type=EntityType.CATEGORY,
+            label="Person",
+            description="A human being",
+        )
+        test_session.add(entity)
+        await test_session.commit()
+
+        response = await client.get("/api/v1/entities/search?q=Person")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert len(data["items"]) == 1
+        assert data["items"][0]["entity_id"] == "Person"
+        assert data["items"][0]["label"] == "Person"
+        assert data["next_cursor"] is None
+        assert data["has_next"] is False
+
+    async def test_search_by_entity_id(
+        self, client: AsyncClient, test_session: AsyncSession
+    ):
+        """Search by entity_id finds matching entity."""
+        entity = Entity(
+            entity_id="has_name",
+            entity_type=EntityType.PROPERTY,
+            label="Name",
+            description="The name of something",
+        )
+        test_session.add(entity)
+        await test_session.commit()
+
+        response = await client.get("/api/v1/entities/search?q=has_name")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert len(data["items"]) == 1
+        assert data["items"][0]["entity_id"] == "has_name"
+
+    async def test_search_by_description(
+        self, client: AsyncClient, test_session: AsyncSession
+    ):
+        """Search by description finds matching entity."""
+        entity = Entity(
+            entity_id="Birthday",
+            entity_type=EntityType.PROPERTY,
+            label="Birthday",
+            description="The date someone was born",
+        )
+        test_session.add(entity)
+        await test_session.commit()
+
+        response = await client.get("/api/v1/entities/search?q=born")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert len(data["items"]) == 1
+        assert data["items"][0]["entity_id"] == "Birthday"
+
+    async def test_search_partial_match(
+        self, client: AsyncClient, test_session: AsyncSession
+    ):
+        """Search with partial term finds multiple matches."""
+        test_session.add(Entity(
+            entity_id="date_of_birth",
+            entity_type=EntityType.PROPERTY,
+            label="Date of Birth",
+        ))
+        test_session.add(Entity(
+            entity_id="date_created",
+            entity_type=EntityType.PROPERTY,
+            label="Date Created",
+        ))
+        test_session.add(Entity(
+            entity_id="name",
+            entity_type=EntityType.PROPERTY,
+            label="Name",
+        ))
+        await test_session.commit()
+
+        response = await client.get("/api/v1/entities/search?q=date")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert len(data["items"]) == 2
+        entity_ids = {item["entity_id"] for item in data["items"]}
+        assert entity_ids == {"date_of_birth", "date_created"}
+
+    async def test_search_case_insensitive(
+        self, client: AsyncClient, test_session: AsyncSession
+    ):
+        """Search is case-insensitive."""
+        entity = Entity(
+            entity_id="Person",
+            entity_type=EntityType.CATEGORY,
+            label="Person",
+        )
+        test_session.add(entity)
+        await test_session.commit()
+
+        # Search with lowercase
+        response = await client.get("/api/v1/entities/search?q=person")
+        assert response.status_code == 200
+        assert len(response.json()["items"]) == 1
+
+        # Search with uppercase
+        response = await client.get("/api/v1/entities/search?q=PERSON")
+        assert response.status_code == 200
+        assert len(response.json()["items"]) == 1
+
+    async def test_search_filter_by_type(
+        self, client: AsyncClient, test_session: AsyncSession
+    ):
+        """Search with entity_type filter returns only matching type."""
+        test_session.add(Entity(
+            entity_id="Person",
+            entity_type=EntityType.CATEGORY,
+            label="Person",
+        ))
+        test_session.add(Entity(
+            entity_id="has_person",
+            entity_type=EntityType.PROPERTY,
+            label="Has Person",
+        ))
+        await test_session.commit()
+
+        # Search without filter - both match
+        response = await client.get("/api/v1/entities/search?q=person")
+        assert len(response.json()["items"]) == 2
+
+        # Search with type filter - only category
+        response = await client.get(
+            "/api/v1/entities/search?q=person&entity_type=category"
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["items"]) == 1
+        assert data["items"][0]["entity_type"] == "category"
+
+    async def test_search_min_length(self, client: AsyncClient):
+        """Search with too short query returns 422."""
+        response = await client.get("/api/v1/entities/search?q=a")
+        assert response.status_code == 422
+
+    async def test_search_max_length(self, client: AsyncClient):
+        """Search with too long query returns 422."""
+        long_query = "a" * 101
+        response = await client.get(f"/api/v1/entities/search?q={long_query}")
+        assert response.status_code == 422
+
+    async def test_search_empty_results(self, client: AsyncClient):
+        """Search with no matches returns empty list."""
+        response = await client.get("/api/v1/entities/search?q=nonexistent")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["items"] == []
+        assert data["has_next"] is False
+        assert data["next_cursor"] is None
+
+    async def test_search_excludes_deleted(
+        self, client: AsyncClient, test_session: AsyncSession
+    ):
+        """Search excludes soft-deleted entities."""
+        # Active entity
+        test_session.add(Entity(
+            entity_id="ActivePerson",
+            entity_type=EntityType.CATEGORY,
+            label="Active Person",
+        ))
+        # Soft-deleted entity
+        test_session.add(Entity(
+            entity_id="DeletedPerson",
+            entity_type=EntityType.CATEGORY,
+            label="Deleted Person",
+            deleted_at=datetime.utcnow(),
+        ))
+        await test_session.commit()
+
+        response = await client.get("/api/v1/entities/search?q=person")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert len(data["items"]) == 1
+        assert data["items"][0]["entity_id"] == "ActivePerson"
+
+    async def test_search_respects_limit(
+        self, client: AsyncClient, test_session: AsyncSession
+    ):
+        """Search respects limit parameter."""
+        for i in range(10):
+            test_session.add(Entity(
+                entity_id=f"test_{i}",
+                entity_type=EntityType.PROPERTY,
+                label=f"Test {i}",
+            ))
+        await test_session.commit()
+
+        response = await client.get("/api/v1/entities/search?q=test&limit=5")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert len(data["items"]) == 5
+
+    async def test_search_ordered_by_label(
+        self, client: AsyncClient, test_session: AsyncSession
+    ):
+        """Search results are ordered by label."""
+        test_session.add(Entity(
+            entity_id="zebra_test",
+            entity_type=EntityType.PROPERTY,
+            label="Zebra Test",
+        ))
+        test_session.add(Entity(
+            entity_id="apple_test",
+            entity_type=EntityType.PROPERTY,
+            label="Apple Test",
+        ))
+        test_session.add(Entity(
+            entity_id="mango_test",
+            entity_type=EntityType.PROPERTY,
+            label="Mango Test",
+        ))
+        await test_session.commit()
+
+        response = await client.get("/api/v1/entities/search?q=test")
+        assert response.status_code == 200
+
+        data = response.json()
+        labels = [item["label"] for item in data["items"]]
+        assert labels == ["Apple Test", "Mango Test", "Zebra Test"]

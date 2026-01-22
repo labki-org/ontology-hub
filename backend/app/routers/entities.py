@@ -2,8 +2,11 @@
 
 Provides read-only access to indexed schema entities:
 - GET /entities - Overview of all entity types with counts
+- GET /entities/search - Search entities by query string
 - GET /entities/{entity_type} - List entities by type with pagination
 - GET /entities/{entity_type}/{entity_id} - Get single entity by type and ID
+- GET /entities/category/{entity_id}/inheritance - Get inheritance graph for a category
+- GET /entities/{entity_type}/{entity_id}/used-by - Get categories using a property/subobject
 
 All endpoints filter out soft-deleted entities (deleted_at is not None).
 """
@@ -11,7 +14,7 @@ All endpoints filter out soft-deleted entities (deleted_at is not None).
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query, Request
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlmodel import select
 
 from app.database import SessionDep
@@ -21,7 +24,9 @@ from app.schemas.entity import (
     EntityListResponse,
     EntityOverviewResponse,
     EntityTypeSummary,
+    InheritanceResponse,
 )
+from app.services.inheritance import get_inheritance_chain
 
 router = APIRouter(prefix="/entities", tags=["entities"])
 
@@ -56,6 +61,93 @@ async def get_entity_overview(
     total = sum(t.count for t in types)
 
     return EntityOverviewResponse(types=types, total=total)
+
+
+@router.get("/search", response_model=EntityListResponse)
+@limiter.limit(RATE_LIMITS["entity_list"])
+async def search_entities(
+    request: Request,
+    session: SessionDep,
+    q: str = Query(..., min_length=2, max_length=100, description="Search query"),
+    entity_type: Optional[EntityType] = Query(
+        None, description="Filter by entity type"
+    ),
+    limit: int = Query(20, ge=1, le=100, description="Max results to return"),
+) -> EntityListResponse:
+    """Search entities by query string.
+
+    Searches across entity_id, label, and description using case-insensitive
+    partial matching. Returns results ordered by label.
+
+    Rate limited to 100/minute per IP.
+
+    Args:
+        q: Search query (2-100 characters)
+        entity_type: Optional filter for entity type
+        limit: Maximum number of results (1-100, default 20)
+
+    Returns:
+        EntityListResponse with matching items (next_cursor always None)
+    """
+    # Build search pattern
+    pattern = f"%{q}%"
+
+    # Base query: match entity_id, label, or description
+    query = select(Entity).where(
+        Entity.deleted_at.is_(None),
+        or_(
+            Entity.entity_id.ilike(pattern),
+            Entity.label.ilike(pattern),
+            Entity.description.ilike(pattern),
+        ),
+    )
+
+    # Apply entity_type filter if provided
+    if entity_type:
+        query = query.where(Entity.entity_type == entity_type)
+
+    # Order by label for readability, apply limit
+    query = query.order_by(Entity.label).limit(limit)
+
+    result = await session.execute(query)
+    entities = list(result.scalars().all())
+
+    items = [EntityPublic.model_validate(e) for e in entities]
+
+    return EntityListResponse(
+        items=items,
+        next_cursor=None,  # Search doesn't use cursor pagination
+        has_next=False,
+    )
+
+
+@router.get("/category/{entity_id}/inheritance", response_model=InheritanceResponse)
+@limiter.limit(RATE_LIMITS["entity_read"])
+async def get_category_inheritance(
+    request: Request,
+    entity_id: str,
+    session: SessionDep,
+) -> InheritanceResponse:
+    """Get inheritance graph for a category.
+
+    Returns nodes and edges for React Flow visualization showing
+    the category's parents (ancestors) and direct children.
+
+    Rate limited to 200/minute per IP.
+
+    Args:
+        entity_id: Category entity_id to get inheritance for
+
+    Returns:
+        InheritanceResponse with nodes, edges, and has_circular flag
+
+    Raises:
+        HTTPException: 404 if category not found
+    """
+    try:
+        return await get_inheritance_chain(session, entity_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.get("/{entity_type}", response_model=EntityListResponse)
