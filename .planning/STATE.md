@@ -90,6 +90,9 @@ Recent decisions affecting current work:
 | Categories only for module assignment | 05-03 | Properties/subobjects inherit via parent categories |
 | Explicit vs auto-included module display | 05-03 | Visual distinction with badges and icons |
 | PATCH merges updates, recomputes diff | 05-03 | Partial update support for draft editing |
+| Combined canonical+draft sets for refs | 06-01 | Draft can reference its own new entities |
+| graphlib.TopologicalSorter for cycles | 06-01 | Stdlib, CycleError provides cycle path |
+| validation_results stored as JSONB | 06-01 | Flexible schema evolution |
 | Breaking changes are warnings not errors | 06-02 | Valid changes, just impactful |
 | Cardinality relaxation is backward compatible | 06-02 | Single->multiple is MINOR |
 | Semver max severity aggregation | 06-02 | major > minor > patch |
