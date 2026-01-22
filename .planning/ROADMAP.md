@@ -63,12 +63,13 @@ Plans:
   3. User can see inheritance graph showing parent/child category relationships
   4. User can see which categories use a given property or subobject
   5. Entity pages display ID, label, description, module membership, and full schema definition
-**Plans**: 3 plans
+**Plans**: 4 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — React app scaffolding with Vite, sidebar layout, entity detail pages
-- [ ] 03-02-PLAN.md — Search API endpoint and frontend search with debounce
-- [ ] 03-03-PLAN.md — Inheritance graph visualization and used-by references
+- [x] 03-01-PLAN.md — React app scaffolding with Vite, sidebar layout, entity detail pages
+- [x] 03-02-PLAN.md — Search API endpoint and frontend search with debounce
+- [x] 03-03-PLAN.md — Inheritance graph visualization and used-by references
+- [ ] 03-04-PLAN.md — Module membership display on entity pages (gap closure)
 
 ### Phase 4: Modules and Versioning
 **Goal**: Users can browse modules, profiles, and version history with diff views
@@ -150,7 +151,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 |-------|----------------|--------|-----------|
 | 1. Foundation | 2/2 | Complete | 2026-01-21 |
 | 2. GitHub Integration | 3/3 | Complete | 2026-01-21 |
-| 3. Entity Browsing | 0/3 | Not started | - |
+| 3. Entity Browsing | 3/4 | In Progress | - |
 | 4. Modules and Versioning | 0/3 | Not started | - |
 | 5. Draft System | 0/3 | Not started | - |
 | 6. Validation Engine | 0/3 | Not started | - |
@@ -158,5 +159,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 
 ---
 *Roadmap created: 2025-01-20*
-*Total phases: 7 | Total plans: 19 (estimated)*
+*Total phases: 7 | Total plans: 20 (estimated)*
 *Coverage: 25/25 v1 requirements mapped*
