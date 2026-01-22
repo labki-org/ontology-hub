@@ -9,11 +9,11 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Browsing
 
-- [ ] **BRWS-01**: User can view entity detail page for any category, property, or subobject
-- [ ] **BRWS-02**: User can search entities by name, description, and field definitions
-- [ ] **BRWS-03**: User can view inheritance graph for categories (parent/child relationships)
-- [ ] **BRWS-04**: User can see "used by" references (which categories use which properties/subobjects)
-- [ ] **BRWS-05**: Entity pages show ID, label, description, module membership, and schema definition
+- [x] **BRWS-01**: User can view entity detail page for any category, property, or subobject
+- [x] **BRWS-02**: User can search entities by name, description, and field definitions
+- [x] **BRWS-03**: User can view inheritance graph for categories (parent/child relationships)
+- [x] **BRWS-04**: User can see "used by" references (which categories use which properties/subobjects)
+- [x] **BRWS-05**: Entity pages show ID, label, description, module membership, and schema definition
 
 ### Modules and Profiles
 
@@ -120,11 +120,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INFR-01 | Phase 1 | Complete |
 | INFR-04 | Phase 1 | Complete |
 | INFR-02 | Phase 2 | Complete |
-| BRWS-01 | Phase 3 | Pending |
-| BRWS-02 | Phase 3 | Pending |
-| BRWS-03 | Phase 3 | Pending |
-| BRWS-04 | Phase 3 | Pending |
-| BRWS-05 | Phase 3 | Pending |
+| BRWS-01 | Phase 3 | Complete |
+| BRWS-02 | Phase 3 | Complete |
+| BRWS-03 | Phase 3 | Complete |
+| BRWS-04 | Phase 3 | Complete |
+| BRWS-05 | Phase 3 | Complete |
 | MODL-01 | Phase 4 | Pending |
 | MODL-02 | Phase 4 | Pending |
 | MODL-03 | Phase 4 | Pending |
@@ -160,4 +160,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2025-01-20*
-*Last updated: 2026-01-21 after Phase 2 completion*
+*Last updated: 2026-01-21 after Phase 3 completion*

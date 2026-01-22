@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Docker infrastructure, PostgreSQL schema, capability URL security, rate limiting
 - [x] **Phase 2: GitHub Integration** - Repository indexing, entity API, webhook handling
-- [ ] **Phase 3: Entity Browsing** - Entity pages, search, inheritance graphs, used-by references
+- [x] **Phase 3: Entity Browsing** - Entity pages, search, inheritance graphs, used-by references
 - [ ] **Phase 4: Modules and Versioning** - Module/profile browsing, version listing, diff views
 - [ ] **Phase 5: Draft System** - Draft ingestion, capability URL access, review UI, module editing
 - [ ] **Phase 6: Validation Engine** - Consistency checks, breaking change detection, semver classification
@@ -69,7 +69,7 @@ Plans:
 - [x] 03-01-PLAN.md — React app scaffolding with Vite, sidebar layout, entity detail pages
 - [x] 03-02-PLAN.md — Search API endpoint and frontend search with debounce
 - [x] 03-03-PLAN.md — Inheritance graph visualization and used-by references
-- [ ] 03-04-PLAN.md — Module membership display on entity pages (gap closure)
+- [x] 03-04-PLAN.md — Module membership display on entity pages (gap closure)
 
 ### Phase 4: Modules and Versioning
 **Goal**: Users can browse modules, profiles, and version history with diff views
@@ -151,7 +151,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 |-------|----------------|--------|-----------|
 | 1. Foundation | 2/2 | Complete | 2026-01-21 |
 | 2. GitHub Integration | 3/3 | Complete | 2026-01-21 |
-| 3. Entity Browsing | 3/4 | In Progress | - |
+| 3. Entity Browsing | 4/4 | Complete | 2026-01-21 |
 | 4. Modules and Versioning | 0/3 | Not started | - |
 | 5. Draft System | 0/3 | Not started | - |
 | 6. Validation Engine | 0/3 | Not started | - |
