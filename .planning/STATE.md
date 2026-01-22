@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2025-01-20)
 
 **Core value:** Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes, with zero platform accounts and strong validation feedback.
-**Current focus:** Phase 5 - Draft System (COMPLETE)
+**Current focus:** Phase 6 - Validation Engine (In Progress)
 
 ## Current Position
 
-Phase: 5 of 7 (Draft System)
-Plan: 3 of 3 in current phase (COMPLETE)
-Status: Phase complete
-Last activity: 2026-01-22 - Completed 05-03-PLAN.md (Draft Submission Flow)
+Phase: 6 of 7 (Validation Engine)
+Plan: 2 of 3 in current phase
+Status: In progress
+Last activity: 2026-01-22 - Completed 06-02-PLAN.md (Breaking Change Detection)
 
-Progress: [################--] 83%
+Progress: [#################-] 89%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 15
+- Total plans completed: 17
 - Average duration: 7 min
-- Total execution time: 1.83 hours
+- Total execution time: 2.0 hours
 
 **By Phase:**
 
@@ -32,9 +32,10 @@ Progress: [################--] 83%
 | 03-entity-browsing | 4 | 34 min | 9 min |
 | 04-modules-and-versioning | 3 | 24 min | 8 min |
 | 05-draft-system | 3 | 21 min | 7 min |
+| 06-validation-engine | 2 | 10 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 7min, 9min, 4min, 6min, 11min
+- Last 5 plans: 9min, 4min, 6min, 11min, 4min
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -89,6 +90,9 @@ Recent decisions affecting current work:
 | Categories only for module assignment | 05-03 | Properties/subobjects inherit via parent categories |
 | Explicit vs auto-included module display | 05-03 | Visual distinction with badges and icons |
 | PATCH merges updates, recomputes diff | 05-03 | Partial update support for draft editing |
+| Breaking changes are warnings not errors | 06-02 | Valid changes, just impactful |
+| Cardinality relaxation is backward compatible | 06-02 | Single->multiple is MINOR |
+| Semver max severity aggregation | 06-02 | major > minor > patch |
 
 ### Pending Todos
 
@@ -101,16 +105,28 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-22
-Stopped at: Completed 05-03-PLAN.md (Draft Submission Flow)
+Stopped at: Completed 06-02-PLAN.md (Breaking Change Detection)
 Resume file: None
 
-05-03 SUMMARY context:
-- Module assignment with auto-dependency visualization
-- Bulk assignment for new categories with checkbox grid
-- Profile editor with module list management and new profile creation
-- PATCH endpoint for partial draft updates
-- Save button wired with success/error feedback
-- All DRFT-* checkpoints satisfied
+06-02 SUMMARY context:
+- Breaking change detection comparing draft to canonical
+- Semver classification with MAJOR/MINOR/PATCH code sets
+- Aggregate semver suggestion using max severity
+- Validator now runs all 5 checks: refs, inheritance, datatypes, breaking, semver
+- ValidationResult includes old_value/new_value for context
+
+## Phase 6 Progress
+
+Phase 6 (Validation Engine) In Progress:
+- 06-01: Core Validation (COMPLETE)
+- 06-02: Breaking Change Detection (COMPLETE)
+- 06-03: Validation UI Integration (pending)
+
+VALD-01 satisfied: Reference existence checks
+VALD-02 satisfied: Circular inheritance detection
+VALD-03 satisfied: Datatype validation
+VALD-04 satisfied: Breaking change detection
+VALD-05 satisfied: Semver classification with aggregate suggestion
 
 ## Phase 5 Progress
 
