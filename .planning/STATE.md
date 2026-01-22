@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2025-01-20)
 
 **Core value:** Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes, with zero platform accounts and strong validation feedback.
-**Current focus:** Phase 4 - Modules and Versioning
+**Current focus:** Phase 4 - Modules and Versioning (complete)
 
 ## Current Position
 
 Phase: 4 of 7 (Modules and Versioning)
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-01-22 - Completed 04-02-PLAN.md (Dependency Visualization and Overlap Detection)
+Plan: 3 of 3 in current phase (COMPLETE)
+Status: Phase complete
+Last activity: 2026-01-22 - Completed 04-03-PLAN.md (Version History and Diff Viewing)
 
-Progress: [###########-------] 61%
+Progress: [############------] 67%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11
+- Total plans completed: 12
 - Average duration: 7 min
-- Total execution time: 1.33 hours
+- Total execution time: 1.48 hours
 
 **By Phase:**
 
@@ -30,10 +30,10 @@ Progress: [###########-------] 61%
 | 01-foundation | 2 | 14 min | 7 min |
 | 02-github-integration | 3 | 17 min | 6 min |
 | 03-entity-browsing | 4 | 34 min | 9 min |
-| 04-modules-and-versioning | 2 | 15 min | 8 min |
+| 04-modules-and-versioning | 3 | 24 min | 8 min |
 
 **Recent Trend:**
-- Last 5 plans: 8min, 10min, 4min, 8min, 7min
+- Last 5 plans: 10min, 4min, 8min, 7min, 9min
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -77,6 +77,8 @@ Recent decisions affecting current work:
 | Edge direction dependency->dependent | 04-02 | Arrow shows "depends on" relationship |
 | Neutral overlap styling | 04-02 | Blue/gray info style per CONTEXT.md decision |
 | moduleNodeTypes outside component | 04-02 | Prevent React Flow re-render issues |
+| github_repo property on Settings | 04-03 | Convenience combining GITHUB_REPO_OWNER and GITHUB_REPO_NAME |
+| Default comparison latest vs previous | 04-03 | Most useful comparison per CONTEXT.md |
 
 ### Pending Todos
 
@@ -89,26 +91,29 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-22
-Stopped at: Completed 04-02-PLAN.md (Dependency Visualization and Overlap Detection)
+Stopped at: Completed 04-03-PLAN.md (Version History and Diff Viewing)
 Resume file: None
 
-04-02 SUMMARY context:
-- GET /modules/{id}/overlaps endpoint for entity overlap detection
-- DependencyGraph component with React Flow for module dependencies
-- ModuleNode with Package icon, entity count, clickable navigation
-- OverlapIndicator shows "also in: X, Y" with neutral blue/gray styling
-- ModuleEntityList accepts overlaps prop
-- ProfilePage shows Module Dependencies graph when hasDependencies
-- Circular dependency detection and warning badge
+04-03 SUMMARY context:
+- GET /versions endpoint for listing GitHub releases
+- GET /versions/diff endpoint for field-level diff between versions
+- VersionsPage with version selectors and DiffViewer
+- DiffViewer groups changes by entity type (categories, properties, subobjects, modules, profiles)
+- ChangeGroup component with collapsible added/modified/deleted sections
+- jsondiffpatch wrapper for field-level change detection
+- Sidebar now has Versions link
 
 ## Phase 4 Progress
 
-Phase 4 (Modules and Versioning) in progress:
+Phase 4 (Modules and Versioning) COMPLETE:
 - 04-01: Module and Profile browsing (COMPLETE)
 - 04-02: Dependency visualization and overlap detection (COMPLETE)
-- 04-03: Module/profile filtering (pending)
+- 04-03: Version history and diff viewing (COMPLETE)
 
 MODL-01 satisfied: User can browse modules with included entities and dependencies
 MODL-02 satisfied: User can browse profiles with module composition
 MODL-03 satisfied: User can view module dependency visualization
 MODL-04 satisfied: Module pages show overlap info when entities appear in multiple modules
+VERS-01 satisfied: User can view list of releases with dates and version labels
+VERS-02 satisfied: User can view field-level diff between any two versions
+VERS-03 satisfied: Diffs categorize changes by entity type and change type
