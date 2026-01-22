@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2025-01-20)
 ## Current Position
 
 Phase: 3 of 7 (Entity Browsing)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-01-21 - Completed 03-01-PLAN.md (Frontend Entity Browsing)
+Last activity: 2026-01-22 - Completed 03-02-PLAN.md (Entity Search)
 
-Progress: [######------------] 35%
+Progress: [#######-----------] 40%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
+- Total plans completed: 7
 - Average duration: 7 min
-- Total execution time: 0.72 hours
+- Total execution time: 0.85 hours
 
 **By Phase:**
 
@@ -29,11 +29,11 @@ Progress: [######------------] 35%
 |-------|-------|-------|----------|
 | 01-foundation | 2 | 14 min | 7 min |
 | 02-github-integration | 3 | 17 min | 6 min |
-| 03-entity-browsing | 1 | 12 min | 12 min |
+| 03-entity-browsing | 2 | 20 min | 10 min |
 
 **Recent Trend:**
-- Last 5 plans: 6min, 5min, 8min, 4min, 12min
-- Trend: Stable (03-01 longer due to new frontend scaffolding)
+- Last 5 plans: 5min, 8min, 4min, 12min, 8min
+- Trend: Stable
 
 *Updated after each plan completion*
 
@@ -64,6 +64,9 @@ Recent decisions affecting current work:
 | Nested routes with MainLayout | 03-01 | Consistent sidebar across all pages |
 | SchemaTable per entity type | 03-01 | Different fields shown based on type |
 | Docker volume for node_modules | 03-01 | Faster container restarts |
+| ILIKE search on 3 fields | 03-02 | Case-insensitive matching on entity_id, label, description |
+| 300ms debounce for search | 03-02 | Balance responsiveness with API call reduction |
+| URL-based search state | 03-02 | Enable bookmarking/sharing searches |
 
 ### Pending Todos
 
@@ -75,6 +78,14 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-21
-Stopped at: Completed 03-01-PLAN.md (Frontend Entity Browsing)
+Last session: 2026-01-22
+Stopped at: Completed 03-02-PLAN.md (Entity Search)
 Resume file: None
+
+03-02 SUMMARY context:
+- Backend search endpoint with ILIKE on entity_id, label, description
+- Frontend useDebounce hook (300ms delay)
+- SearchInput component in sidebar for global access
+- SearchPage with type filter dropdown
+- 12 new search tests
+- API hook: useSearch(query, entityType?, limit?)
