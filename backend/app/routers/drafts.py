@@ -3,6 +3,7 @@
 Implements W3C capability URL pattern:
 - POST /drafts - creates draft, returns capability URL (shown ONCE)
 - GET /drafts/{token} - retrieves draft using capability token
+- GET /drafts/{token}/diff - retrieves stored diff for draft
 - Invalid/expired tokens return 404 (no information leakage)
 
 Security requirements:
@@ -12,8 +13,10 @@ Security requirements:
 """
 
 from datetime import datetime, timedelta
+from typing import Optional
+from urllib.parse import urlparse
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
 
 from app.database import SessionDep
 from app.dependencies.capability import (
@@ -23,12 +26,76 @@ from app.dependencies.capability import (
     validate_capability_token,
 )
 from app.dependencies.rate_limit import RATE_LIMITS, limiter
-from app.models.draft import Draft, DraftCreate, DraftCreateResponse, DraftPublic
+from app.models.draft import (
+    Draft,
+    DraftCreate,
+    DraftCreateResponse,
+    DraftDiffResponse,
+    DraftPayload,
+    DraftPublic,
+    ValidationError,
+)
+from app.services.draft_diff import compute_draft_diff
 
 # Default expiration: 7 days (from CONTEXT.md)
 DEFAULT_EXPIRATION_DAYS = 7
 
 router = APIRouter(prefix="/drafts", tags=["drafts"])
+
+
+def validate_draft_payload(payload: DraftPayload) -> list[ValidationError]:
+    """Validate draft payload and return any warnings.
+
+    Fatal validation errors cause Pydantic to reject the request with 422.
+    This function returns non-fatal warnings that don't block creation.
+
+    Args:
+        payload: Validated DraftPayload
+
+    Returns:
+        List of ValidationError with severity="warning"
+    """
+    warnings: list[ValidationError] = []
+
+    # Check wiki_url is valid URL format
+    try:
+        parsed = urlparse(payload.wiki_url)
+        if not parsed.scheme or not parsed.netloc:
+            warnings.append(
+                ValidationError(
+                    field="wiki_url",
+                    message="wiki_url does not appear to be a valid URL",
+                    severity="warning",
+                )
+            )
+    except Exception:
+        warnings.append(
+            ValidationError(
+                field="wiki_url",
+                message="wiki_url could not be parsed as URL",
+                severity="warning",
+            )
+        )
+
+    # Check entities has at least one array populated
+    has_entities = (
+        len(payload.entities.categories) > 0
+        or len(payload.entities.properties) > 0
+        or len(payload.entities.subobjects) > 0
+    )
+    has_modules = len(payload.modules) > 0
+    has_profiles = len(payload.profiles) > 0
+
+    if not has_entities and not has_modules and not has_profiles:
+        warnings.append(
+            ValidationError(
+                field="entities",
+                message="Draft contains no entities, modules, or profiles",
+                severity="warning",
+            )
+        )
+
+    return warnings
 
 
 @router.post("/", response_model=DraftCreateResponse, status_code=201)
@@ -38,7 +105,7 @@ async def create_draft(
     draft_in: DraftCreate,
     session: SessionDep,
 ) -> DraftCreateResponse:
-    """Create a new draft and return capability URL.
+    """Create a new draft and return capability URL with diff preview.
 
     The capability URL is shown ONCE and cannot be recovered.
     Save it immediately - losing it means losing access to the draft.
@@ -47,12 +114,21 @@ async def create_draft(
 
     Args:
         request: HTTP request (required for rate limiting)
-        draft_in: Draft creation data (payload, source_wiki, base_commit_sha)
+        draft_in: Draft creation data with validated DraftPayload
         session: Database session
 
     Returns:
-        DraftCreateResponse with capability_url, expires_at, and warning message
+        DraftCreateResponse with capability_url, expires_at, diff_preview,
+        and any validation warnings
     """
+    payload = draft_in.payload
+
+    # Validate payload and collect warnings (non-fatal)
+    validation_warnings = validate_draft_payload(payload)
+
+    # Compute diff preview
+    diff_preview = await compute_draft_diff(payload, session)
+
     # Generate capability token (NOT logged, NOT stored)
     token = generate_capability_token()
 
@@ -62,9 +138,10 @@ async def create_draft(
     # Create draft with hashed token
     draft = Draft(
         capability_hash=hash_token(token),
-        payload=draft_in.payload,
-        source_wiki=draft_in.source_wiki,
-        base_commit_sha=draft_in.base_commit_sha,
+        payload=payload.model_dump(),
+        source_wiki=payload.wiki_url,
+        base_commit_sha=payload.base_version,
+        diff_preview=diff_preview.model_dump(),
         expires_at=expires_at,
     )
 
@@ -80,6 +157,8 @@ async def create_draft(
     return DraftCreateResponse(
         capability_url=capability_url,
         expires_at=draft.expires_at,
+        diff_preview=diff_preview,
+        validation_warnings=validation_warnings,
     )
 
 
@@ -112,3 +191,38 @@ async def get_draft(
     draft = await validate_capability_token(token, session)
 
     return DraftPublic.model_validate(draft)
+
+
+@router.get("/{token}/diff", response_model=DraftDiffResponse)
+@limiter.limit(RATE_LIMITS["draft_read"])
+async def get_draft_diff(
+    request: Request,  # Required for SlowAPI rate limiting
+    token: str,
+    session: SessionDep,
+) -> DraftDiffResponse:
+    """Retrieve the computed diff for a draft.
+
+    Returns the diff preview computed during draft creation,
+    showing changes vs canonical database state.
+
+    Rate limited to 100/minute per IP.
+
+    Args:
+        request: HTTP request (required for rate limiting)
+        token: Capability token from URL
+        session: Database session
+
+    Returns:
+        DraftDiffResponse with changes grouped by entity type
+
+    Raises:
+        HTTPException: 404 for invalid or expired tokens
+    """
+    # validate_capability_token returns 404 for invalid OR expired
+    draft = await validate_capability_token(token, session)
+
+    if draft.diff_preview is None:
+        # Should not happen for new drafts, but handle gracefully
+        return DraftDiffResponse()
+
+    return DraftDiffResponse.model_validate(draft.diff_preview)
