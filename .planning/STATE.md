@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2025-01-20)
 
 **Core value:** Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes, with zero platform accounts and strong validation feedback.
-**Current focus:** Phase 4 - Modules and Versioning (complete)
+**Current focus:** Phase 5 - Draft System (in progress)
 
 ## Current Position
 
-Phase: 4 of 7 (Modules and Versioning)
-Plan: 3 of 3 in current phase (COMPLETE)
-Status: Phase complete
-Last activity: 2026-01-22 - Completed 04-03-PLAN.md (Version History and Diff Viewing)
+Phase: 5 of 7 (Draft System)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-01-22 - Completed 05-01-PLAN.md (Draft Payload and Diff Preview)
 
-Progress: [############------] 67%
+Progress: [#############-----] 72%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 12
+- Total plans completed: 13
 - Average duration: 7 min
-- Total execution time: 1.48 hours
+- Total execution time: 1.55 hours
 
 **By Phase:**
 
@@ -31,9 +31,10 @@ Progress: [############------] 67%
 | 02-github-integration | 3 | 17 min | 6 min |
 | 03-entity-browsing | 4 | 34 min | 9 min |
 | 04-modules-and-versioning | 3 | 24 min | 8 min |
+| 05-draft-system | 1 | 4 min | 4 min |
 
 **Recent Trend:**
-- Last 5 plans: 10min, 4min, 8min, 7min, 9min
+- Last 5 plans: 4min, 8min, 7min, 9min, 4min
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -79,6 +80,9 @@ Recent decisions affecting current work:
 | moduleNodeTypes outside component | 04-02 | Prevent React Flow re-render issues |
 | github_repo property on Settings | 04-03 | Convenience combining GITHUB_REPO_OWNER and GITHUB_REPO_NAME |
 | Default comparison latest vs previous | 04-03 | Most useful comparison per CONTEXT.md |
+| 422 for validation errors | 05-01 | FastAPI standard for Pydantic validation |
+| Store diff_preview in database | 05-01 | Avoid recomputation on retrieval |
+| Pydantic field validators | 05-01 | Ensure non-empty wiki_url/base_version |
 
 ### Pending Todos
 
@@ -91,29 +95,23 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-22
-Stopped at: Completed 04-03-PLAN.md (Version History and Diff Viewing)
+Stopped at: Completed 05-01-PLAN.md (Draft Payload and Diff Preview)
 Resume file: None
 
-04-03 SUMMARY context:
-- GET /versions endpoint for listing GitHub releases
-- GET /versions/diff endpoint for field-level diff between versions
-- VersionsPage with version selectors and DiffViewer
-- DiffViewer groups changes by entity type (categories, properties, subobjects, modules, profiles)
-- ChangeGroup component with collapsible added/modified/deleted sections
-- jsondiffpatch wrapper for field-level change detection
-- Sidebar now has Versions link
+05-01 SUMMARY context:
+- DraftPayload schema with wiki_url, base_version, entities validation
+- compute_draft_diff service for draft vs canonical comparison
+- POST /drafts/ now returns capability_url + diff_preview
+- GET /drafts/{token}/diff endpoint for retrieving stored diff
+- DraftDiffResponse with ChangesByType structure
+- Migration 003 for diff_preview column
 
-## Phase 4 Progress
+## Phase 5 Progress
 
-Phase 4 (Modules and Versioning) COMPLETE:
-- 04-01: Module and Profile browsing (COMPLETE)
-- 04-02: Dependency visualization and overlap detection (COMPLETE)
-- 04-03: Version history and diff viewing (COMPLETE)
+Phase 5 (Draft System) IN PROGRESS:
+- 05-01: Draft Payload and Diff Preview (COMPLETE)
+- 05-02: Draft Submission Flow (PENDING)
+- 05-03: Draft Feedback UI (PENDING)
 
-MODL-01 satisfied: User can browse modules with included entities and dependencies
-MODL-02 satisfied: User can browse profiles with module composition
-MODL-03 satisfied: User can view module dependency visualization
-MODL-04 satisfied: Module pages show overlap info when entities appear in multiple modules
-VERS-01 satisfied: User can view list of releases with dates and version labels
-VERS-02 satisfied: User can view field-level diff between any two versions
-VERS-03 satisfied: Diffs categorize changes by entity type and change type
+DRFT-01 satisfied: Draft API accepts wiki_url, base_version, entities payload
+DRFT-02 satisfied: Draft creation returns capability_url and diff_preview
