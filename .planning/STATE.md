@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2025-01-20)
 
 **Core value:** Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes, with zero platform accounts and strong validation feedback.
-**Current focus:** Phase 3 - Entity Browsing (COMPLETE with gap closure)
+**Current focus:** Phase 4 - Modules and Versioning
 
 ## Current Position
 
-Phase: 3 of 7 (Entity Browsing)
-Plan: 4 of 4 in current phase (gap closure plan)
-Status: Phase complete (including gap closure)
-Last activity: 2026-01-22 - Completed 03-04-PLAN.md (Module Membership)
+Phase: 4 of 7 (Modules and Versioning)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-01-22 - Completed 04-01-PLAN.md (Module and Profile Browsing)
 
-Progress: [#########---------] 50%
+Progress: [##########--------] 55%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
+- Total plans completed: 10
 - Average duration: 7 min
-- Total execution time: 1.09 hours
+- Total execution time: 1.22 hours
 
 **By Phase:**
 
@@ -30,9 +30,10 @@ Progress: [#########---------] 50%
 | 01-foundation | 2 | 14 min | 7 min |
 | 02-github-integration | 3 | 17 min | 6 min |
 | 03-entity-browsing | 4 | 34 min | 9 min |
+| 04-modules-and-versioning | 1 | 8 min | 8 min |
 
 **Recent Trend:**
-- Last 5 plans: 4min, 12min, 8min, 10min, 4min
+- Last 5 plans: 12min, 8min, 10min, 4min, 8min
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -71,6 +72,8 @@ Recent decisions affecting current work:
 | Cast JSONB to String for contains | 03-03 | Cross-database compatibility (SQLite/PostgreSQL) |
 | TB layout direction | 03-03 | Parents above children in hierarchy |
 | Indirect module lookup | 03-04 | Properties/subobjects find modules via categories |
+| Collapsible entity sections | 04-01 | Better UX for modules with many entities |
+| Compact module card prop | 04-01 | Reuse component with different density levels |
 
 ### Pending Todos
 
@@ -83,26 +86,25 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-22
-Stopped at: Completed 03-04-PLAN.md (Module Membership)
+Stopped at: Completed 04-01-PLAN.md (Module and Profile Browsing)
 Resume file: None
 
-03-04 SUMMARY context:
-- GET /entities/{type}/{id}/modules returns modules containing entity
-- Categories: direct lookup in module.category_ids
-- Properties/subobjects: indirect via used-by categories
-- useEntityModules hook in entities.ts
-- EntityDetail displays module badges
-- EntityDetail receives entityType prop
-- Query key: ['entity-modules', entityType, entityId]
+04-01 SUMMARY context:
+- GET /modules, GET /modules/{id}, GET /modules/{id}/entities endpoints
+- GET /profiles, GET /profiles/{id}, GET /profiles/{id}/modules endpoints
+- ModulesPage with search and card grid
+- ModulePage with dependencies and grouped entity list
+- ProfilesPage with search and card grid
+- ProfilePage with module cards and entity summary
+- Sidebar updated with Modules and Profiles navigation
+- 25 tests for module/profile API
 
-## Phase 3 Complete
+## Phase 4 Progress
 
-Phase 3 (Entity Browsing) is now complete with all 4 plans executed:
-- 03-01: Frontend scaffolding, entity pages, sidebar navigation
-- 03-02: Search functionality with debounce and type filtering
-- 03-03: Inheritance graphs and used-by references
-- 03-04: Module membership badges (gap closure)
+Phase 4 (Modules and Versioning) in progress:
+- 04-01: Module and Profile browsing (COMPLETE)
+- 04-02: Version history and comparison (pending)
+- 04-03: Module/profile filtering (pending)
 
-BRWS-05 fully satisfied: Entity pages show ID, label, description, module membership, and schema definition.
-
-Ready for next phase (04-schema-validation or 05-draft-system).
+MODL-01 satisfied: User can browse modules with included entities and dependencies
+MODL-02 satisfied: User can browse profiles with module composition
