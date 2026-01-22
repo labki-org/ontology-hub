@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ChevronRight, Boxes, Tag, Package } from 'lucide-react'
+import { ChevronRight, Boxes, Tag, Package, Layers } from 'lucide-react'
 import {
   Collapsible,
   CollapsibleContent,
@@ -8,6 +8,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAllEntitiesByType } from '@/api/entities'
+import { useModules, useProfiles } from '@/api/modules'
 import { SearchInput } from '@/components/search/SearchInput'
 
 const entityTypeConfig = {
@@ -18,6 +19,8 @@ const entityTypeConfig = {
 
 export function Sidebar() {
   const { data, isLoading, error } = useAllEntitiesByType()
+  const { data: modules } = useModules()
+  const { data: profiles } = useProfiles()
 
   return (
     <aside className="w-64 border-r bg-sidebar text-sidebar-foreground flex flex-col">
@@ -45,6 +48,36 @@ export function Sidebar() {
             Failed to load entities
           </div>
         )}
+
+        {/* Modules and Profiles sections */}
+        <div className="mb-2">
+          <Link
+            to="/modules"
+            className="flex items-center w-full px-2 py-1.5 rounded hover:bg-sidebar-accent text-sm"
+          >
+            <Package className="h-4 w-4 mr-2" />
+            <span className="font-medium">Modules</span>
+            {modules && (
+              <Badge variant="secondary" className="ml-auto">
+                {modules.length}
+              </Badge>
+            )}
+          </Link>
+          <Link
+            to="/profiles"
+            className="flex items-center w-full px-2 py-1.5 rounded hover:bg-sidebar-accent text-sm"
+          >
+            <Layers className="h-4 w-4 mr-2" />
+            <span className="font-medium">Profiles</span>
+            {profiles && (
+              <Badge variant="secondary" className="ml-auto">
+                {profiles.length}
+              </Badge>
+            )}
+          </Link>
+        </div>
+
+        <div className="h-px bg-border mb-2" />
 
         {data && (
           <>

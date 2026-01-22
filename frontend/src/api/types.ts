@@ -57,3 +57,20 @@ export interface ModulePublic {
   created_at: string
   updated_at: string
 }
+
+export interface ProfilePublic {
+  id: string
+  profile_id: string
+  label: string
+  description: string | null
+  module_ids: string[]
+  commit_sha: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ModuleEntitiesResponse {
+  categories: EntityPublic[]
+  properties: EntityPublic[]
+  subobjects: EntityPublic[]
+}
