@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2025-01-20)
 
 **Core value:** Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes, with zero platform accounts and strong validation feedback.
-**Current focus:** Phase 3 - Entity Browsing
+**Current focus:** Phase 3 - Entity Browsing (COMPLETE)
 
 ## Current Position
 
 Phase: 3 of 7 (Entity Browsing)
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-01-22 - Completed 03-02-PLAN.md (Entity Search)
+Plan: 3 of 3 in current phase
+Status: Phase complete
+Last activity: 2026-01-22 - Completed 03-03-PLAN.md (Inheritance Graph & Used-By)
 
-Progress: [#######-----------] 40%
+Progress: [########----------] 45%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
+- Total plans completed: 8
 - Average duration: 7 min
-- Total execution time: 0.85 hours
+- Total execution time: 1.02 hours
 
 **By Phase:**
 
@@ -29,10 +29,10 @@ Progress: [#######-----------] 40%
 |-------|-------|-------|----------|
 | 01-foundation | 2 | 14 min | 7 min |
 | 02-github-integration | 3 | 17 min | 6 min |
-| 03-entity-browsing | 2 | 20 min | 10 min |
+| 03-entity-browsing | 3 | 30 min | 10 min |
 
 **Recent Trend:**
-- Last 5 plans: 5min, 8min, 4min, 12min, 8min
+- Last 5 plans: 8min, 4min, 12min, 8min, 10min
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -67,6 +67,9 @@ Recent decisions affecting current work:
 | ILIKE search on 3 fields | 03-02 | Case-insensitive matching on entity_id, label, description |
 | 300ms debounce for search | 03-02 | Balance responsiveness with API call reduction |
 | URL-based search state | 03-02 | Enable bookmarking/sharing searches |
+| nodeTypes outside component | 03-03 | Prevent React Flow re-render issues |
+| Cast JSONB to String for contains | 03-03 | Cross-database compatibility (SQLite/PostgreSQL) |
+| TB layout direction | 03-03 | Parents above children in hierarchy |
 
 ### Pending Todos
 
@@ -79,13 +82,25 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-22
-Stopped at: Completed 03-02-PLAN.md (Entity Search)
+Stopped at: Completed 03-03-PLAN.md (Inheritance Graph & Used-By)
 Resume file: None
 
-03-02 SUMMARY context:
-- Backend search endpoint with ILIKE on entity_id, label, description
-- Frontend useDebounce hook (300ms delay)
-- SearchInput component in sidebar for global access
-- SearchPage with type filter dropdown
-- 12 new search tests
-- API hook: useSearch(query, entityType?, limit?)
+03-03 SUMMARY context:
+- Inheritance service resolves parent chain and finds direct children
+- GET /entities/category/{id}/inheritance returns nodes/edges for React Flow
+- GET /entities/{type}/{id}/used-by returns categories using property/subobject
+- InheritanceGraph component with dagre hierarchical layout
+- CategoryNode with click-to-navigate
+- UsedByList component on property/subobject pages
+- GraphExplorerPage for full graph view
+- API hooks: useInheritance(entityId), useUsedBy(entityType, entityId)
+- Query keys: ['inheritance', entityId], ['used-by', type, id]
+
+## Phase 3 Complete
+
+Phase 3 (Entity Browsing) is now complete with all 3 plans executed:
+- 03-01: Frontend scaffolding, entity pages, sidebar navigation
+- 03-02: Search functionality with debounce and type filtering
+- 03-03: Inheritance graphs and used-by references
+
+Ready for next phase (04-schema-validation or 05-draft-system).
