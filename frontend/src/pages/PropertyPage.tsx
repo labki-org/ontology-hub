@@ -43,7 +43,7 @@ export function PropertyPage() {
 
   return (
     <div className="space-y-6">
-      <EntityDetail entity={entity} />
+      <EntityDetail entity={entity} entityType="property" />
 
       {/* Key Property Info */}
       <div className="grid gap-4 md:grid-cols-2">

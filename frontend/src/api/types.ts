@@ -45,3 +45,15 @@ export interface InheritanceResponse {
   edges: InheritanceEdge[]
   has_circular: boolean
 }
+
+export interface ModulePublic {
+  id: string
+  module_id: string
+  label: string
+  description: string | null
+  category_ids: string[]
+  dependencies: string[]
+  commit_sha: string | null
+  created_at: string
+  updated_at: string
+}

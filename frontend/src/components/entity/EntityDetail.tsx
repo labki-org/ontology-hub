@@ -1,12 +1,16 @@
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import type { EntityPublic } from '@/api/types'
+import { useEntityModules } from '@/api/entities'
+import type { EntityPublic, EntityType } from '@/api/types'
 
 interface EntityDetailProps {
   entity: EntityPublic
+  entityType: EntityType
 }
 
-export function EntityDetail({ entity }: EntityDetailProps) {
+export function EntityDetail({ entity, entityType }: EntityDetailProps) {
+  const { data: modules } = useEntityModules(entityType, entity.entity_id)
+
   return (
     <Card>
       <CardHeader>
@@ -25,6 +29,18 @@ export function EntityDetail({ entity }: EntityDetailProps) {
       {entity.description && (
         <CardContent>
           <p className="text-muted-foreground">{entity.description}</p>
+        </CardContent>
+      )}
+      {modules && modules.length > 0 && (
+        <CardContent className="pt-0">
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="text-sm text-muted-foreground">Modules:</span>
+            {modules.map((module) => (
+              <Badge key={module.id} variant="secondary">
+                {module.label}
+              </Badge>
+            ))}
+          </div>
         </CardContent>
       )}
       <CardFooter className="text-xs text-muted-foreground">

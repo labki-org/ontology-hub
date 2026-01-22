@@ -6,6 +6,7 @@ import type {
   EntityListResponse,
   EntityOverviewResponse,
   InheritanceResponse,
+  ModulePublic,
 } from './types'
 
 // Fetch functions
@@ -58,6 +59,13 @@ async function fetchUsedBy(
   return apiFetch(`/entities/${entityType}/${entityId}/used-by`)
 }
 
+async function fetchEntityModules(
+  entityType: EntityType,
+  entityId: string
+): Promise<ModulePublic[]> {
+  return apiFetch(`/entities/${entityType}/${entityId}/modules`)
+}
+
 // Query hooks
 export function useEntityOverview() {
   return useQuery({
@@ -107,6 +115,14 @@ export function useUsedBy(entityType: EntityType, entityId: string) {
     queryKey: ['used-by', entityType, entityId],
     queryFn: () => fetchUsedBy(entityType, entityId),
     enabled: !!entityType && !!entityId && entityType !== 'category',
+  })
+}
+
+export function useEntityModules(entityType: EntityType, entityId: string) {
+  return useQuery({
+    queryKey: ['entity-modules', entityType, entityId],
+    queryFn: () => fetchEntityModules(entityType, entityId),
+    enabled: !!entityType && !!entityId,
   })
 }
 

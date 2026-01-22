@@ -45,7 +45,7 @@ export function CategoryPage() {
 
   return (
     <div className="space-y-6">
-      <EntityDetail entity={entity} />
+      <EntityDetail entity={entity} entityType="category" />
 
       {/* Inheritance Graph */}
       <section>

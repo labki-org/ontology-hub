@@ -41,7 +41,7 @@ export function SubobjectPage() {
 
   return (
     <div className="space-y-6">
-      <EntityDetail entity={entity} />
+      <EntityDetail entity={entity} entityType="subobject" />
 
       {/* Properties */}
       {schema.properties && schema.properties.length > 0 && (
