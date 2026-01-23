@@ -136,11 +136,11 @@ Plans:
   3. PR body includes structured summary of changes categorized by type
   4. PR body includes validation report and suggested semver bump
   5. PR body references originating wiki and base schema version if provided in draft
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 07-01: GitHub OAuth flow
-- [ ] 07-02: PR creation with structured summary
+- [ ] 07-01-PLAN.md — GitHub OAuth flow with Authlib and SessionMiddleware
+- [ ] 07-02-PLAN.md — PR creation with Git Data API and structured body generation
 
 ## Progress
 
@@ -159,5 +159,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 
 ---
 *Roadmap created: 2025-01-20*
-*Total phases: 7 | Total plans: 20 (estimated)*
+*Total phases: 7 | Total plans: 20*
 *Coverage: 25/25 v1 requirements mapped*
