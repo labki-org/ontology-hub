@@ -159,6 +159,7 @@ class DraftBase(SQLModel):
     base_commit_sha: Optional[str] = None
     diff_preview: Optional[dict] = Field(default=None, sa_column=Column(JSON))
     validation_results: Optional[dict] = Field(default=None, sa_column=Column(JSON))
+    pr_url: Optional[str] = None
 
 
 class Draft(DraftBase, table=True):
