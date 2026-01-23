@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2025-01-20)
 
 **Core value:** Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes, with zero platform accounts and strong validation feedback.
-**Current focus:** Phase 6 - Validation Engine (COMPLETE)
+**Current focus:** MILESTONE v1 COMPLETE
 
 ## Current Position
 
-Phase: 6 of 7 (Validation Engine)
-Plan: 3 of 3 in current phase
-Status: Phase complete
-Last activity: 2026-01-22 - Completed 06-03-PLAN.md (Validation UI Integration)
+Phase: 7 of 7 (PR Integration)
+Plan: 2 of 2 in current phase
+Status: MILESTONE COMPLETE
+Last activity: 2026-01-23 - Phase 7 verified, PR created: https://github.com/labki-org/labki-schemas/pull/1
 
-Progress: [##################] 95%
+Progress: [####################] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 18
+- Total plans completed: 20
 - Average duration: 7 min
-- Total execution time: 2.1 hours
+- Total execution time: 2.3 hours
 
 **By Phase:**
 
@@ -33,9 +33,10 @@ Progress: [##################] 95%
 | 04-modules-and-versioning | 3 | 24 min | 8 min |
 | 05-draft-system | 3 | 21 min | 7 min |
 | 06-validation-engine | 3 | 16 min | 5 min |
+| 07-pr-integration | 2 | 9 min | 4.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 4min, 6min, 11min, 4min, 6min
+- Last 5 plans: 11min, 4min, 6min, 5min, 4min
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -99,6 +100,17 @@ Recent decisions affecting current work:
 | Prop drilling validation results | 06-03 | Simple, explicit data flow without global state |
 | Compact badges inline by default | 06-03 | Prevent clutter in diff viewer, hover for details |
 | Entity type mapping plural->singular | 06-03 | Frontend uses plural keys, backend uses singular |
+| SessionMiddleware before other middleware | 07-01 | OAuth requires session early in request processing |
+| 30min session max_age | 07-01 | Long enough for OAuth flow, short enough for security |
+| same_site lax for sessions | 07-01 | Required for OAuth callback redirects |
+| Conditional OAuth registration | 07-01 | Only register when GITHUB_CLIENT_ID/SECRET configured |
+| 503 when OAuth not configured | 07-01 | Better DX than silent failure |
+| Store draft_token in session | 07-01 | Enables OAuth redirect to return to correct draft page |
+| public_repo scope for OAuth | 07-01 | Minimum scope needed for PR creation |
+| create_pr_with_token helper | 07-02 | Atomic PR workflow with user's OAuth token |
+| Structured PR body | 07-02 | Changes, validation, semver, wiki reference |
+| Draft status to SUBMITTED | 07-02 | Track PR creation, prevent resubmission |
+| OpenPRButton validation-aware | 07-02 | Disabled until validation passes and changes saved |
 
 ### Pending Todos
 
@@ -110,16 +122,31 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-22
-Stopped at: Completed 06-03-PLAN.md (Validation UI Integration)
+Last session: 2026-01-23
+Stopped at: Completed 07-02-PLAN.md (PR Creation)
 Resume file: None
 
-06-03 SUMMARY context:
-- ValidationSummary component shows overall validation status
-- ValidationBadge shows inline severity indicators with tooltips
-- DraftPage renders validation summary after header
-- DraftDiffViewer shows badges inline next to each entity
-- Semver badge with color coding (major=red, minor=blue, patch=green)
+07-02 SUMMARY context:
+- GitHubClient extended with Git Data API methods for atomic PR creation
+- pr_builder service converts draft payload to repo file format
+- OAuth callback creates PR via create_pr_from_draft and redirects with result
+- OpenPRButton component with validation-aware disabled states
+- PR success/error banners display results after OAuth redirect
+- Draft status updates to SUBMITTED after PR creation
+
+## Phase 7 Progress
+
+Phase 7 (PR Integration) COMPLETE:
+- 07-01: OAuth Foundation (COMPLETE)
+- 07-02: PR Creation (COMPLETE)
+
+GHUB-01 satisfied: GitHub OAuth triggered only when user clicks "Open PR"
+GHUB-02 satisfied: Platform creates branch, commits, and opens PR via GitHub API
+GHUB-03 satisfied: PR body includes structured summary categorized by type
+GHUB-04 satisfied: PR body includes validation report and semver suggestion
+GHUB-05 satisfied: PR body references wiki URL and base version
+
+Human verification: https://github.com/labki-org/labki-schemas/pull/1
 
 ## Phase 6 Progress
 

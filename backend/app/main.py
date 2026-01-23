@@ -7,6 +7,7 @@ from slowapi.errors import RateLimitExceeded
 from sqlmodel import SQLModel, text
 from sqlmodel.ext.asyncio.session import AsyncSession
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import settings
 from app.database import engine, async_session_maker, get_session
@@ -17,6 +18,8 @@ from app.routers import (
     drafts_router,
     entities_router,
     modules_router,
+    oauth_router,
+    register_oauth_client,
     versions_router,
     webhooks_router,
 )
@@ -70,6 +73,10 @@ async def lifespan(app: FastAPI):
         app.state.github_http_client = None
         app.state.github_client = None
 
+    # Register OAuth client if credentials configured
+    if settings.GITHUB_CLIENT_ID and settings.GITHUB_CLIENT_SECRET:
+        register_oauth_client(settings)
+
     yield
 
     # Shutdown: Close GitHub client
@@ -94,6 +101,14 @@ app.state.limiter = limiter
 # Register rate limit exceeded handler
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
+# SessionMiddleware must come before other middleware for OAuth
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=settings.SESSION_SECRET,
+    max_age=1800,  # 30 min - enough for OAuth flow
+    same_site="lax",  # Required for OAuth redirects
+)
+
 # Add security headers middleware
 app.add_middleware(SecurityHeadersMiddleware)
 
@@ -111,6 +126,7 @@ app.add_middleware(
 app.include_router(drafts_router, prefix="/api/v1")
 app.include_router(entities_router, prefix="/api/v1")
 app.include_router(modules_router, prefix="/api/v1")
+app.include_router(oauth_router, prefix="/api/v1")
 app.include_router(versions_router, prefix="/api/v1")
 app.include_router(webhooks_router, prefix="/api/v1")
 

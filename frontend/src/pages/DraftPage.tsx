@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
-import { AlertCircle, Save, Undo2, Loader2 } from 'lucide-react'
+import { useParams, useSearchParams } from 'react-router-dom'
+import { AlertCircle, Save, Undo2, Loader2, ExternalLink, CheckCircle2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -9,6 +9,7 @@ import { DraftDiffViewer } from '@/components/draft/DraftDiffViewer'
 import { BulkModuleAssignment } from '@/components/draft/BulkModuleAssignment'
 import { ProfileEditor } from '@/components/draft/ProfileEditor'
 import { ValidationSummary } from '@/components/draft/ValidationSummary'
+import { OpenPRButton } from '@/components/draft/OpenPRButton'
 import { useDraft, useDraftDiff, useUpdateDraft } from '@/api/drafts'
 import { useDraftStore } from '@/stores/draftStore'
 import type { EntityUpdate, DraftPatchPayload } from '@/api/types'
@@ -196,8 +197,11 @@ function UnsavedChangesIndicator({
 
 export function DraftPage() {
   const { token } = useParams<{ token: string }>()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { setDraft, hasUnsavedChanges, reset } = useDraftStore()
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null)
+  const [prUrl, setPrUrl] = useState<string | null>(null)
+  const [prError, setPrError] = useState<string | null>(null)
 
   const {
     data: draft,
@@ -239,6 +243,26 @@ export function DraftPage() {
     window.addEventListener('beforeunload', handleBeforeUnload)
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [hasUnsavedChanges])
+
+  // Parse PR result from URL params
+  useEffect(() => {
+    const prUrlParam = searchParams.get('pr_url')
+    const prErrorParam = searchParams.get('pr_error')
+
+    if (prUrlParam) {
+      setPrUrl(decodeURIComponent(prUrlParam))
+      // Clear URL param
+      searchParams.delete('pr_url')
+      setSearchParams(searchParams, { replace: true })
+    }
+
+    if (prErrorParam) {
+      setPrError(decodeURIComponent(prErrorParam))
+      // Clear URL param
+      searchParams.delete('pr_error')
+      setSearchParams(searchParams, { replace: true })
+    }
+  }, [searchParams, setSearchParams])
 
   // Clear save success message after timeout
   useEffect(() => {
@@ -289,8 +313,76 @@ export function DraftPage() {
         </div>
       )}
 
+      {/* PR success banner */}
+      {prUrl && (
+        <Card className="border-green-500 bg-green-50 dark:bg-green-950">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-green-900 dark:text-green-100 mb-1">
+                  Pull Request Created Successfully
+                </h3>
+                <p className="text-sm text-green-800 dark:text-green-200 mb-3">
+                  Your changes have been submitted as a pull request to the repository.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  asChild
+                  className="gap-2 border-green-600 text-green-700 hover:bg-green-100 dark:border-green-400 dark:text-green-300 dark:hover:bg-green-900"
+                >
+                  <a href={prUrl} target="_blank" rel="noopener noreferrer">
+                    View Pull Request
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* PR error banner */}
+      {prError && (
+        <Card className="border-red-500 bg-red-50 dark:bg-red-950">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-red-900 dark:text-red-100 mb-1">
+                  Failed to Create Pull Request
+                </h3>
+                <p className="text-sm text-red-800 dark:text-red-200">
+                  {prError}
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setPrError(null)}
+                className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+              >
+                Dismiss
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="space-y-6">
         <DraftHeader draft={draft} />
+
+        {/* Open PR Button - show after header if draft is pending and valid */}
+        {isEditable && token && (
+          <div className="flex justify-center">
+            <OpenPRButton
+              draftToken={token}
+              isValid={draft.validation_results?.is_valid ?? false}
+              hasUnsavedChanges={hasUnsavedChanges}
+            />
+          </div>
+        )}
 
         {/* Validation summary - show when draft has validation results */}
         {draft.validation_results && (

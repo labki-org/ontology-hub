@@ -191,3 +191,225 @@ class GitHubClient:
             Parsed JSON content of the file
         """
         return await self.get_file_content(owner, repo, path, ref=ref)
+
+    # Git Data API methods for PR creation
+
+    async def get_branch_sha(
+        self, owner: str, repo: str, branch: str = "main"
+    ) -> str:
+        """Get the SHA of a branch reference.
+
+        Args:
+            owner: Repository owner
+            repo: Repository name
+            branch: Branch name (default: "main")
+
+        Returns:
+            SHA string of the branch reference
+        """
+        url = f"/repos/{owner}/{repo}/git/refs/heads/{branch}"
+        data = await self._request("GET", url)
+        return data["object"]["sha"]
+
+    async def get_commit_tree_sha(
+        self, owner: str, repo: str, commit_sha: str
+    ) -> str:
+        """Get the tree SHA from a commit.
+
+        Args:
+            owner: Repository owner
+            repo: Repository name
+            commit_sha: Commit SHA
+
+        Returns:
+            Tree SHA string
+        """
+        url = f"/repos/{owner}/{repo}/git/commits/{commit_sha}"
+        data = await self._request("GET", url)
+        return data["tree"]["sha"]
+
+    async def create_tree(
+        self, owner: str, repo: str, files: list[dict], base_tree: str
+    ) -> str:
+        """Create a new git tree with files.
+
+        Args:
+            owner: Repository owner
+            repo: Repository name
+            files: List of dicts with "path" and "content" OR "path" and "delete": True
+            base_tree: Base tree SHA to build upon
+
+        Returns:
+            New tree SHA
+        """
+        # Convert files to git tree items
+        tree_items = []
+        for file in files:
+            if file.get("delete"):
+                # Delete file by setting sha to null
+                tree_items.append(
+                    {
+                        "path": file["path"],
+                        "mode": "100644",
+                        "type": "blob",
+                        "sha": None,
+                    }
+                )
+            else:
+                # Add/update file with content
+                tree_items.append(
+                    {
+                        "path": file["path"],
+                        "mode": "100644",
+                        "type": "blob",
+                        "content": file["content"],
+                    }
+                )
+
+        url = f"/repos/{owner}/{repo}/git/trees"
+        data = await self._request(
+            "POST", url, json={"tree": tree_items, "base_tree": base_tree}
+        )
+        return data["sha"]
+
+    async def create_commit(
+        self, owner: str, repo: str, message: str, tree_sha: str, parent_sha: str
+    ) -> str:
+        """Create a new git commit.
+
+        Args:
+            owner: Repository owner
+            repo: Repository name
+            message: Commit message
+            tree_sha: Tree SHA for this commit
+            parent_sha: Parent commit SHA
+
+        Returns:
+            New commit SHA
+        """
+        url = f"/repos/{owner}/{repo}/git/commits"
+        data = await self._request(
+            "POST",
+            url,
+            json={"message": message, "tree": tree_sha, "parents": [parent_sha]},
+        )
+        return data["sha"]
+
+    async def create_branch(
+        self, owner: str, repo: str, branch_name: str, sha: str
+    ) -> dict[str, Any]:
+        """Create a new branch reference.
+
+        Args:
+            owner: Repository owner
+            repo: Repository name
+            branch_name: Name for the new branch
+            sha: Commit SHA for the branch to point to
+
+        Returns:
+            Full ref object
+        """
+        url = f"/repos/{owner}/{repo}/git/refs"
+        return await self._request(
+            "POST", url, json={"ref": f"refs/heads/{branch_name}", "sha": sha}
+        )
+
+    async def create_pull_request(
+        self,
+        owner: str,
+        repo: str,
+        title: str,
+        body: str,
+        head: str,
+        base: str = "main",
+    ) -> dict[str, Any]:
+        """Create a pull request.
+
+        Args:
+            owner: Repository owner
+            repo: Repository name
+            title: PR title
+            body: PR body (markdown)
+            head: Branch name to merge from
+            base: Branch name to merge into (default: "main")
+
+        Returns:
+            Full PR object with html_url
+        """
+        url = f"/repos/{owner}/{repo}/pulls"
+        return await self._request(
+            "POST",
+            url,
+            json={"title": title, "body": body, "head": head, "base": base},
+        )
+
+    async def create_pr_with_token(
+        self,
+        token: str,
+        owner: str,
+        repo: str,
+        branch_name: str,
+        files: list[dict],
+        commit_message: str,
+        pr_title: str,
+        pr_body: str,
+        base_branch: str = "main",
+    ) -> str:
+        """Create a PR with user's OAuth token (full atomic workflow).
+
+        Creates branch, commit, and PR in sequence using user's token.
+
+        Args:
+            token: User's GitHub OAuth access token
+            owner: Repository owner
+            repo: Repository name
+            branch_name: Name for the new branch
+            files: List of dicts with "path" and "content" keys
+            commit_message: Commit message
+            pr_title: PR title
+            pr_body: PR body (markdown)
+            base_branch: Base branch to merge into (default: "main")
+
+        Returns:
+            PR html_url
+        """
+        # Create temporary httpx client with user's token
+        async with httpx.AsyncClient(
+            base_url="https://api.github.com",
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Accept": "application/vnd.github.v3+json",
+                "User-Agent": "Ontology-Hub",
+            },
+            timeout=30.0,
+        ) as client:
+            # Create temporary GitHubClient instance
+            temp_client = GitHubClient(client)
+
+            # 1. Get latest commit SHA from base branch
+            base_sha = await temp_client.get_branch_sha(owner, repo, base_branch)
+
+            # 2. Get tree SHA from base commit
+            base_tree_sha = await temp_client.get_commit_tree_sha(
+                owner, repo, base_sha
+            )
+
+            # 3. Create new tree with files
+            new_tree_sha = await temp_client.create_tree(
+                owner, repo, files, base_tree_sha
+            )
+
+            # 4. Create commit
+            new_commit_sha = await temp_client.create_commit(
+                owner, repo, commit_message, new_tree_sha, base_sha
+            )
+
+            # 5. Create branch
+            await temp_client.create_branch(owner, repo, branch_name, new_commit_sha)
+
+            # 6. Create pull request
+            pr = await temp_client.create_pull_request(
+                owner, repo, pr_title, pr_body, branch_name, base_branch
+            )
+
+            return pr["html_url"]

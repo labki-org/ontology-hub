@@ -50,11 +50,11 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### GitHub Integration
 
-- [ ] **GHUB-01**: GitHub OAuth login triggered only when user clicks "Open PR"
-- [ ] **GHUB-02**: Platform creates branch, commits changes, and opens PR via GitHub API
-- [ ] **GHUB-03**: PR body includes structured summary of changes categorized by type
-- [ ] **GHUB-04**: PR body includes validation report and suggested semver bump
-- [ ] **GHUB-05**: PR body references originating wiki and base schema version (if provided)
+- [x] **GHUB-01**: GitHub OAuth login triggered only when user clicks "Open PR"
+- [x] **GHUB-02**: Platform creates branch, commits changes, and opens PR via GitHub API
+- [x] **GHUB-03**: PR body includes structured summary of changes categorized by type
+- [x] **GHUB-04**: PR body includes validation report and suggested semver bump
+- [x] **GHUB-05**: PR body references originating wiki and base schema version (if provided)
 
 ### Infrastructure
 
@@ -147,11 +147,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | VALD-04 | Phase 6 | Complete |
 | VALD-05 | Phase 6 | Complete |
 | VALD-06 | Phase 6 | Complete |
-| GHUB-01 | Phase 7 | Pending |
-| GHUB-02 | Phase 7 | Pending |
-| GHUB-03 | Phase 7 | Pending |
-| GHUB-04 | Phase 7 | Pending |
-| GHUB-05 | Phase 7 | Pending |
+| GHUB-01 | Phase 7 | Complete |
+| GHUB-02 | Phase 7 | Complete |
+| GHUB-03 | Phase 7 | Complete |
+| GHUB-04 | Phase 7 | Complete |
+| GHUB-05 | Phase 7 | Complete |
 
 **Coverage:**
 - v1 requirements: 25 total

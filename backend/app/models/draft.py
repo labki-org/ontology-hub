@@ -66,11 +66,29 @@ class EntitiesPayload(SQLModel):
     model_config = ConfigDict(extra="forbid")
 
 
+class DeletionsPayload(SQLModel):
+    """Container for entity IDs to explicitly delete.
+
+    Drafts are additive by default - only entities listed here will be deleted.
+    """
+
+    categories: list[str] = Field(default_factory=list)
+    properties: list[str] = Field(default_factory=list)
+    subobjects: list[str] = Field(default_factory=list)
+    modules: list[str] = Field(default_factory=list)
+    profiles: list[str] = Field(default_factory=list)
+
+    model_config = ConfigDict(extra="forbid")
+
+
 class DraftPayload(SQLModel):
     """Validated payload structure for draft creation.
 
     Contains wiki metadata and full schema data for categories,
     properties, subobjects, modules, and profiles.
+
+    Drafts are ADDITIVE by default - entities not included are left unchanged.
+    Use the `deletions` field to explicitly mark entities for removal.
     """
 
     wiki_url: str
@@ -78,6 +96,7 @@ class DraftPayload(SQLModel):
     entities: EntitiesPayload
     modules: list[ModuleDefinition] = Field(default_factory=list)
     profiles: list[ProfileDefinition] = Field(default_factory=list)
+    deletions: Optional["DeletionsPayload"] = None
 
     model_config = ConfigDict(extra="forbid")
 
@@ -159,6 +178,7 @@ class DraftBase(SQLModel):
     base_commit_sha: Optional[str] = None
     diff_preview: Optional[dict] = Field(default=None, sa_column=Column(JSON))
     validation_results: Optional[dict] = Field(default=None, sa_column=Column(JSON))
+    pr_url: Optional[str] = None
 
 
 class Draft(DraftBase, table=True):

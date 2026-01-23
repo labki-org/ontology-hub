@@ -29,6 +29,8 @@ services:
       GITHUB_REPO_OWNER: ${GITHUB_REPO_OWNER:-labki-org}
       GITHUB_REPO_NAME: ${GITHUB_REPO_NAME:-labki-schemas}
       GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET:-}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
     volumes:
       - ./backend:/app
     ports:
