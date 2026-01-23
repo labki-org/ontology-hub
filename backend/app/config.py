@@ -16,6 +16,12 @@ class Settings(BaseSettings):
     GITHUB_REPO_NAME: str = "labki-schemas"
     GITHUB_WEBHOOK_SECRET: Optional[str] = None
 
+    # GitHub OAuth configuration
+    GITHUB_CLIENT_ID: Optional[str] = None
+    GITHUB_CLIENT_SECRET: Optional[str] = None
+    SESSION_SECRET: str = "dev-secret-key-replace-in-production-with-random-32-byte-hex"
+    FRONTEND_URL: str = "http://localhost:5173"
+
     @property
     def github_repo(self) -> str:
         """Full repository path as owner/repo."""
