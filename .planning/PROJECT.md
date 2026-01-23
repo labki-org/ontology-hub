@@ -8,28 +8,34 @@ A public platform for browsing, validating, and proposing changes to a shared Se
 
 Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes, with zero platform accounts and strong validation feedback.
 
+## Current State (v1.0)
+
+**Shipped:** 2026-01-23
+**Codebase:** 15,392 LOC (8,355 Python + 7,037 TypeScript)
+**Stack:** FastAPI 0.115, React 19, Vite 7, PostgreSQL 17, Docker Compose
+
+**Human verified:** https://github.com/labki-org/labki-schemas/pull/1
+
 ## Requirements
 
 ### Validated
 
-(None yet — ship to validate)
+- ✓ Public browsing of entities (categories, properties, subobjects) with search and inheritance graphs — v1.0
+- ✓ Module and profile browsing with dependency/overlap information — v1.0
+- ✓ Version browsing with diff views between releases — v1.0
+- ✓ Draft ingestion API accepting exports from MediaWiki (no auth required) — v1.0
+- ✓ Capability-URL protected drafts with TTL expiration — v1.0
+- ✓ Draft review UI with field-level diffs and validation feedback — v1.0
+- ✓ Compatibility classification (major/minor/patch) per change — v1.0
+- ✓ Module assignment for new entities in draft — v1.0
+- ✓ GitHub OAuth triggered only at PR creation time — v1.0
+- ✓ PR creation via GitHub API (branch, commit, PR with structured summary) — v1.0
+- ✓ Module/profile creation and editing within drafts — v1.0
+- ✓ Validation engine: consistency checks, breaking change detection, semver suggestions — v1.0
 
 ### Active
 
-- [ ] Public browsing of entities (categories, properties, subobjects) with search and inheritance graphs
-- [ ] Module and profile browsing with dependency/overlap information
-- [ ] Version browsing with diff views between releases
-- [ ] Draft ingestion API accepting exports from MediaWiki (no auth required)
-- [ ] Capability-URL protected drafts with TTL expiration
-- [ ] Draft review UI with field-level diffs and validation feedback
-- [ ] Compatibility classification (major/minor/patch) per change
-- [ ] "Canonical vs local overlay" toggle for each change in draft
-- [ ] Module assignment for new entities in draft
-- [ ] GitHub OAuth triggered only at PR creation time
-- [ ] PR creation via GitHub App (branch, commit, PR with structured summary)
-- [ ] Module/profile creation and editing within drafts
-- [ ] Release artifact indexing for SemanticSchemas consumption
-- [ ] Validation engine: consistency checks, breaking change detection, semver suggestions
+(v1.0 complete — next milestone requirements TBD)
 
 ### Out of Scope
 
@@ -38,6 +44,8 @@ Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes,
 - Hosting non-schema wiki content (dashboards, query pages) — separate future registry
 - Runtime source-of-truth for schema deployment — GitHub remains authoritative
 - Mobile-optimized UI — desktop-first for v1
+- "Canonical vs local overlay" toggle — deferred to v2 based on user feedback
+- Release artifact indexing for SemanticSchemas consumption — deferred to v2
 
 ## Context
 
@@ -71,11 +79,18 @@ Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes,
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Split schema by entity type in repo | Cleaner diffs, easier partial updates, natural module boundaries | — Pending |
-| FastAPI + Vite React | Team familiarity, good async support, fast frontend builds | — Pending |
-| Capability URLs for drafts | No accounts needed, simple sharing, secure with proper token handling | — Pending |
-| GitHub OAuth at PR-time only | Minimize friction; most users just browse or review | — Pending |
-| Postgres over SQLite | Better for concurrent access, easier to scale, proper indexing | — Pending |
+| Split schema by entity type in repo | Cleaner diffs, easier partial updates, natural module boundaries | ✓ Good |
+| FastAPI + Vite React | Team familiarity, good async support, fast frontend builds | ✓ Good |
+| Capability URLs for drafts | No accounts needed, simple sharing, secure with proper token handling | ✓ Good |
+| GitHub OAuth at PR-time only | Minimize friction; most users just browse or review | ✓ Good |
+| Postgres over SQLite | Better for concurrent access, easier to scale, proper indexing | ✓ Good |
+| Fragment-based capability URLs | Fragments not sent in HTTP Referrer, reduces token leakage | ✓ Good |
+| SHA-256 token hashing | Never store plaintext tokens, 64-char hex in database | ✓ Good |
+| Zustand with immer | Immutable state updates with readable mutable-style syntax | ✓ Good |
+| graphlib.TopologicalSorter | Stdlib cycle detection with CycleError providing cycle path | ✓ Good |
+| Git Data API for PR creation | Atomic multi-file commits with user's OAuth token | ✓ Good |
+| Breaking changes as warnings | Valid changes that are impactful, not errors to block on | ✓ Good |
+| SessionMiddleware for OAuth | Required for session-based state during OAuth flow | ✓ Good |
 
 ---
-*Last updated: 2025-01-20 after initialization*
+*Last updated: 2026-01-23 after v1.0 milestone*
