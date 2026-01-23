@@ -2,18 +2,29 @@
 
 ## What This Is
 
-A public platform for browsing, validating, and proposing changes to a shared SemanticSchemas ontology maintained in GitHub. Wiki admins can export local schema changes, review diffs with validation feedback, and open GitHub PRs—all without needing platform accounts. GitHub OAuth is only required at PR submission time.
+A public platform for browsing, validating, and proposing changes to a shared Labki ontology maintained in GitHub. The platform provides a unified interface where the same UI and query logic serves both canonical browsing and draft editing—draft mode overlays deltas on canonical data. Wiki admins can create drafts from the Hub UI or push from MediaWiki, validate changes, and submit GitHub PRs. GitHub OAuth is only required at PR submission time.
 
 ## Core Value
 
 Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes, with zero platform accounts and strong validation feedback.
 
-## Current State (v1.0)
+## Current Milestone: v2.0 (Platform Rebuild)
+
+**Goal:** Full database/API/frontend rebuild with versioned canonical data, relationship tables, draft-as-deltas, and graph visualization.
+
+**Target features:**
+- Canonical versioning with commit SHA/tag tracking
+- Precomputed relationship tables (inheritance, property membership, where-used)
+- Draft model storing deltas (JSON Patch for updates, full replacement for creates)
+- Graph-based navigation with module grouping hulls
+- Template entity support (new entity type)
+- Unified browse/draft UI with same underlying query logic
+
+## v1.0 Summary
 
 **Shipped:** 2026-01-23
 **Codebase:** 15,392 LOC (8,355 Python + 7,037 TypeScript)
 **Stack:** FastAPI 0.115, React 19, Vite 7, PostgreSQL 17, Docker Compose
-
 **Human verified:** https://github.com/labki-org/labki-schemas/pull/1
 
 ## Requirements
@@ -35,7 +46,7 @@ Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes,
 
 ### Active
 
-(v1.0 complete — next milestone requirements TBD)
+(Defined in REQUIREMENTS.md for v2.0)
 
 ### Out of Scope
 
@@ -51,18 +62,28 @@ Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes,
 
 **Domain**: SemanticSchemas is a MediaWiki extension that auto-generates Forms and Templates from schema definitions. The extension exists at `/dev/SemanticSchemas` but currently lacks import/export. This platform becomes the canonical schema hub; the extension will be updated to export drafts here.
 
-**Existing schema structure**: Categories, properties, and subobjects with inheritance, required/optional fields, datatypes, and display metadata. The JSON structure shared during planning defines the entity model.
+**Entity types (6 total)**:
+- **Category**: Entity types with inheritance (parents), required/optional properties and subobjects
+- **Property**: Attributes with datatypes, cardinality, validation rules, parent hierarchy
+- **Subobject**: Reusable nested structures with their own properties
+- **Module**: Logical groupings of categories/properties/subobjects/templates with dependencies
+- **Bundle**: Curated collections of modules for deployment scenarios (renamed from Profile)
+- **Template**: Wikitext rendering templates for properties
 
-**Canonical repo format**: Schema files organized by entity type:
-- `categories/*.json`
-- `properties/*.json`
-- `subobjects/*.json`
-- `modules/*.json` (manifest files referencing entity IDs)
-- `profiles/*.json` (manifest files referencing module IDs)
+**Canonical repo format** (labki-schemas):
+- `categories/*.json` — entity types with JSON Schema validation
+- `properties/*.json` — attributes with `Has_*`/`Is_*` naming convention
+- `subobjects/*.json` — nested structures
+- `modules/*.json` — logical groupings with dependencies
+- `bundles/*.json` — module collections (was profiles/)
+- `templates/**/*.json` — wikitext rendering definitions
+- `*/_schema.json` — JSON Schema Draft 2020-12 validation per directory
+
+**Entity key format**: Path-derived from directory + filename (e.g., `categories/Person`, `properties/Has_email`)
 
 **Users**:
-- **U1 (Anonymous browser)**: Explore ontology, view diffs between versions, download artifacts
-- **U2 (Wiki admin)**: Export local changes, review in platform, open PR without platform login
+- **U1 (Anonymous browser)**: Explore ontology via graph or list, view diffs between versions
+- **U2 (Wiki admin)**: Create/edit drafts in Hub UI or push from MediaWiki, validate, submit PR
 - **U3 (Maintainer)**: Review PRs with structured summaries and validation output
 
 ## Constraints
@@ -91,6 +112,12 @@ Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes,
 | Git Data API for PR creation | Atomic multi-file commits with user's OAuth token | ✓ Good |
 | Breaking changes as warnings | Valid changes that are impactful, not errors to block on | ✓ Good |
 | SessionMiddleware for OAuth | Required for session-based state during OAuth flow | ✓ Good |
+| Path-derived entity keys | Maps cleanly to repo file paths, survives refactors | — Pending |
+| Hybrid patch format | JSON Patch for updates (granular), full replacement for creates (simpler) | — Pending |
+| Materialized inheritance tables | Precompute category_property_effective at ingest for fast reads; localized re-materialization during drafts | — Pending |
+| Multi-hull module overlays | Show multiple module boundaries simultaneously in graph view | — Pending |
+| Full template support | Templates as first-class entities: browse, edit, draft like others | — Pending |
+| Full rebuild approach | Replace v1.0 implementation completely, reuse working code where appropriate | — Pending |
 
 ---
-*Last updated: 2026-01-23 after v1.0 milestone*
+*Last updated: 2026-01-23 after v2.0 milestone start*

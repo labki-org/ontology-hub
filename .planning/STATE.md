@@ -5,16 +5,34 @@
 See: .planning/PROJECT.md (updated 2026-01-23)
 
 **Core value:** Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes, with zero platform accounts and strong validation feedback.
-**Current focus:** Planning next milestone
+**Current focus:** v2.0 Platform Rebuild
 
 ## Current Position
 
-Phase: v1.0 Complete — ready for next milestone
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-01-23 — v1.0 milestone complete
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-01-23 — Milestone v2.0 started
 
-Progress: v1.0 SHIPPED
+Progress: REQUIREMENTS DEFINITION
+
+## v2.0 Scope
+
+**Full rebuild** with:
+- Canonical versioning (ontology_version table with commit SHA/tag tracking)
+- Precomputed relationship tables (category_parent, category_property, module_entity, etc.)
+- Draft-as-deltas model (JSON Patch for updates, full replacement for creates)
+- Materialized inheritance with localized re-materialization during drafts
+- Graph navigation with multi-hull module overlays
+- Template entity support (6 entity types total)
+- Unified browse/draft UI with same query logic
+
+**Reuse from v1.0** where appropriate:
+- GitHub OAuth flow (working)
+- Git Data API PR creation (working)
+- Capability URL token system (working)
+- React component patterns and styling
+- FastAPI endpoint patterns
 
 ## v1.0 Summary
 
@@ -23,15 +41,7 @@ Progress: v1.0 SHIPPED
 **Plans:** 20 total
 **Requirements:** 25/25 satisfied
 
-**Key Deliverables:**
-- Entity browsing with search, inheritance graphs, used-by references
-- Module/profile browsing with dependency visualization
-- Version diff viewer with field-level changes
-- Draft system with capability URLs and inline editing
-- Validation engine with breaking change detection and semver
-- GitHub OAuth and PR creation via Git Data API
-
-**Human verified:** https://github.com/labki-org/labki-schemas/pull/1
+**Git range:** `docs: initialize project` → `fix(07): make drafts additive`
 
 ## Archive
 
@@ -43,13 +53,11 @@ v1.0 milestone archived to:
 ## Session Continuity
 
 Last session: 2026-01-23
-Stopped at: v1.0 milestone complete
+Stopped at: v2.0 milestone initialization
 Resume file: None
 
 ## Next Steps
 
-Run `/gsd:new-milestone` to:
-1. Define next milestone goals
-2. Create fresh REQUIREMENTS.md
-3. Create new ROADMAP.md
-4. Begin Phase 8+
+1. Complete requirements definition
+2. Create ROADMAP.md
+3. Run `/gsd:plan-phase 8` to begin execution
