@@ -106,11 +106,15 @@ def serialize_profile_for_repo(profile: ProfileDefinition) -> dict:
 def build_files_from_draft(payload: DraftPayload) -> list[dict]:
     """Build list of files from draft payload for PR creation.
 
+    Drafts are ADDITIVE by default. Files are created/updated for entities in the payload.
+    Files are deleted only for entities explicitly listed in payload.deletions.
+
     Args:
-        payload: Draft payload containing entities, modules, profiles
+        payload: Draft payload containing entities, modules, profiles, and optional deletions
 
     Returns:
-        List of dicts with "path" and "content" keys for Git tree creation
+        List of dicts with "path" and "content" keys for Git tree creation.
+        Deletion entries have "path" and "delete": True instead of "content".
     """
     files = []
 
@@ -143,6 +147,19 @@ def build_files_from_draft(payload: DraftPayload) -> list[dict]:
         repo_profile = serialize_profile_for_repo(profile)
         content = json.dumps(repo_profile, indent=2) + "\n"
         files.append({"path": f"profiles/{profile.profile_id}.json", "content": content})
+
+    # Process explicit deletions (if any)
+    if payload.deletions:
+        for cat_id in payload.deletions.categories:
+            files.append({"path": f"categories/{cat_id}.json", "delete": True})
+        for prop_id in payload.deletions.properties:
+            files.append({"path": f"properties/{prop_id}.json", "delete": True})
+        for subobj_id in payload.deletions.subobjects:
+            files.append({"path": f"subobjects/{subobj_id}.json", "delete": True})
+        for mod_id in payload.deletions.modules:
+            files.append({"path": f"modules/{mod_id}.json", "delete": True})
+        for prof_id in payload.deletions.profiles:
+            files.append({"path": f"profiles/{prof_id}.json", "delete": True})
 
     return files
 

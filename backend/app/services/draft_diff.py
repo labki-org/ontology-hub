@@ -94,24 +94,36 @@ def _compute_changes(
     canonical: dict[str, dict[str, Any]],
     draft: dict[str, dict[str, Any]],
     entity_type: str,
+    explicit_deletions: set[str] | None = None,
 ) -> ChangesByType:
     """Compute changes between canonical and draft entity maps.
+
+    Drafts are ADDITIVE by default - entities not in the draft are left unchanged.
+    Only entities explicitly listed in `explicit_deletions` are marked as deleted.
 
     Args:
         canonical: Canonical entity lookup map
         draft: Draft entity lookup map
         entity_type: Type string for change details
+        explicit_deletions: Set of entity_ids to explicitly delete (optional)
 
     Returns:
         ChangesByType with added, modified, deleted lists
     """
-    all_keys = set(canonical.keys()) | set(draft.keys())
+    explicit_deletions = explicit_deletions or set()
+
+    # Only consider keys that are in draft OR explicitly deleted
+    keys_to_check = set(draft.keys())
+    for entity_id in explicit_deletions:
+        key = f"{entity_type}/{entity_id}"
+        if key in canonical:
+            keys_to_check.add(key)
 
     added: list[ChangeDetail] = []
     modified: list[ChangeDetail] = []
     deleted: list[ChangeDetail] = []
 
-    for key in sorted(all_keys):
+    for key in sorted(keys_to_check):
         parts = key.split("/", 1)
         entity_id = parts[1] if len(parts) > 1 else key
 
@@ -127,7 +139,8 @@ def _compute_changes(
                     new=draft_data,
                 )
             )
-        elif canon_data is not None and draft_data is None:
+        elif entity_id in explicit_deletions and canon_data is not None:
+            # Only delete if explicitly requested AND exists in canonical
             deleted.append(
                 ChangeDetail(
                     key=key,
@@ -136,7 +149,7 @@ def _compute_changes(
                     old=canon_data,
                 )
             )
-        elif canon_data != draft_data:
+        elif canon_data is not None and draft_data is not None and canon_data != draft_data:
             modified.append(
                 ChangeDetail(
                     key=key,
@@ -230,13 +243,27 @@ async def compute_draft_diff(
     draft_modules = _build_module_map(payload.modules)
     draft_profiles = _build_profile_map(payload.profiles)
 
-    # Compute changes for each type
+    # Extract explicit deletions (if provided)
+    deletions = payload.deletions
+    del_categories = set(deletions.categories) if deletions else set()
+    del_properties = set(deletions.properties) if deletions else set()
+    del_subobjects = set(deletions.subobjects) if deletions else set()
+    del_modules = set(deletions.modules) if deletions else set()
+    del_profiles = set(deletions.profiles) if deletions else set()
+
+    # Compute changes for each type (additive by default, deletions must be explicit)
     return DraftDiffResponse(
         old_version="canonical",
         new_version="draft",
-        categories=_compute_changes(canonical_categories, draft_categories, "category"),
-        properties=_compute_changes(canonical_properties, draft_properties, "property"),
-        subobjects=_compute_changes(canonical_subobjects, draft_subobjects, "subobject"),
-        modules=_compute_changes(canonical_modules, draft_modules, "module"),
-        profiles=_compute_changes(canonical_profiles, draft_profiles, "profile"),
+        categories=_compute_changes(
+            canonical_categories, draft_categories, "category", del_categories
+        ),
+        properties=_compute_changes(
+            canonical_properties, draft_properties, "property", del_properties
+        ),
+        subobjects=_compute_changes(
+            canonical_subobjects, draft_subobjects, "subobject", del_subobjects
+        ),
+        modules=_compute_changes(canonical_modules, draft_modules, "module", del_modules),
+        profiles=_compute_changes(canonical_profiles, draft_profiles, "profile", del_profiles),
     )

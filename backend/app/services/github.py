@@ -236,22 +236,35 @@ class GitHubClient:
         Args:
             owner: Repository owner
             repo: Repository name
-            files: List of dicts with "path" and "content" keys
+            files: List of dicts with "path" and "content" OR "path" and "delete": True
             base_tree: Base tree SHA to build upon
 
         Returns:
             New tree SHA
         """
         # Convert files to git tree items
-        tree_items = [
-            {
-                "path": file["path"],
-                "mode": "100644",  # Regular file
-                "type": "blob",
-                "content": file["content"],
-            }
-            for file in files
-        ]
+        tree_items = []
+        for file in files:
+            if file.get("delete"):
+                # Delete file by setting sha to null
+                tree_items.append(
+                    {
+                        "path": file["path"],
+                        "mode": "100644",
+                        "type": "blob",
+                        "sha": None,
+                    }
+                )
+            else:
+                # Add/update file with content
+                tree_items.append(
+                    {
+                        "path": file["path"],
+                        "mode": "100644",
+                        "type": "blob",
+                        "content": file["content"],
+                    }
+                )
 
         url = f"/repos/{owner}/{repo}/git/trees"
         data = await self._request(
