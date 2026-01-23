@@ -5,59 +5,57 @@
 See: .planning/PROJECT.md (updated 2026-01-23)
 
 **Core value:** Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes, with zero platform accounts and strong validation feedback.
-**Current focus:** v2.0 Platform Rebuild
+**Current focus:** Phase 8 - Database Foundation
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-01-23 — Milestone v2.0 started
+Phase: 8 of 14 (Database Foundation)
+Plan: 0 of TBD in current phase
+Status: Ready to plan
+Last activity: 2026-01-23 -- v2.0 roadmap created
 
-Progress: REQUIREMENTS DEFINITION
+Progress: [##########..............] 47% (v1.0 complete, v2.0 starting)
 
-## v2.0 Scope
+## Performance Metrics
 
-**Full rebuild** with:
-- Canonical versioning (ontology_version table with commit SHA/tag tracking)
-- Precomputed relationship tables (category_parent, category_property, module_entity, etc.)
-- Draft-as-deltas model (JSON Patch for updates, full replacement for creates)
-- Materialized inheritance with localized re-materialization during drafts
-- Graph navigation with multi-hull module overlays
-- Template entity support (6 entity types total)
-- Unified browse/draft UI with same query logic
+**Velocity:**
+- Total plans completed: 20 (v1.0)
+- Average duration: ~30 min (v1.0 estimate)
+- Total execution time: ~10 hours (v1.0)
 
-**Reuse from v1.0** where appropriate:
-- GitHub OAuth flow (working)
-- Git Data API PR creation (working)
-- Capability URL token system (working)
-- React component patterns and styling
-- FastAPI endpoint patterns
+**By Phase (v1.0):**
 
-## v1.0 Summary
+| Phase | Plans | Total | Avg/Plan |
+|-------|-------|-------|----------|
+| 1-7 (v1.0) | 20 | ~10h | ~30m |
 
-**Shipped:** 2026-01-23
-**Phases:** 7 (Foundation → PR Integration)
-**Plans:** 20 total
-**Requirements:** 25/25 satisfied
+**Recent Trend:**
+- v1.0 completed in 2 days
+- v2.0 is a full rebuild with 7 phases
 
-**Git range:** `docs: initialize project` → `fix(07): make drafts additive`
+*Metrics reset for v2.0 -- updated after each plan completion*
 
-## Archive
+## Accumulated Context
 
-v1.0 milestone archived to:
-- `.planning/milestones/v1.0-ROADMAP.md`
-- `.planning/milestones/v1.0-REQUIREMENTS.md`
-- `.planning/milestones/v1.0-MILESTONE-AUDIT.md`
+### Decisions
+
+Decisions are logged in PROJECT.md Key Decisions table.
+Recent decisions affecting current work:
+
+- [v2.0 start]: Full rebuild approach -- replace v1.0 implementation completely, reuse working code where appropriate
+- [v2.0 start]: Hybrid patch format -- JSON Patch for updates, full replacement for creates
+- [v2.0 start]: Materialized inheritance tables -- precompute category_property_effective at ingest
+
+### Pending Todos
+
+None yet.
+
+### Blockers/Concerns
+
+None yet.
 
 ## Session Continuity
 
 Last session: 2026-01-23
-Stopped at: v2.0 milestone initialization
+Stopped at: v2.0 roadmap created
 Resume file: None
-
-## Next Steps
-
-1. Complete requirements definition
-2. Create ROADMAP.md
-3. Run `/gsd:plan-phase 8` to begin execution

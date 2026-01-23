@@ -182,28 +182,102 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DB-01 to DB-09 | TBD | Pending |
-| ING-01 to ING-06 | TBD | Pending |
-| QRY-01 to QRY-07 | TBD | Pending |
-| GRP-01 to GRP-04 | TBD | Pending |
-| DRF-01 to DRF-06 | TBD | Pending |
-| VAL-01 to VAL-06 | TBD | Pending |
-| FE-01 to FE-06 | TBD | Pending |
-| GV-01 to GV-07 | TBD | Pending |
-| CAT-01 to CAT-06 | TBD | Pending |
-| PRP-01 to PRP-04 | TBD | Pending |
-| SUB-01 to SUB-04 | TBD | Pending |
-| MOD-01 to MOD-06 | TBD | Pending |
-| BND-01 to BND-05 | TBD | Pending |
-| TPL-01 to TPL-04 | TBD | Pending |
-| DWF-01 to DWF-05 | TBD | Pending |
-| PR-01 to PR-05 | TBD | Pending |
+| DB-01 | Phase 8 | Pending |
+| DB-02 | Phase 8 | Pending |
+| DB-03 | Phase 8 | Pending |
+| DB-04 | Phase 8 | Pending |
+| DB-05 | Phase 8 | Pending |
+| DB-06 | Phase 8 | Pending |
+| DB-07 | Phase 8 | Pending |
+| DB-08 | Phase 8 | Pending |
+| DB-09 | Phase 8 | Pending |
+| ING-01 | Phase 9 | Pending |
+| ING-02 | Phase 9 | Pending |
+| ING-03 | Phase 9 | Pending |
+| ING-04 | Phase 9 | Pending |
+| ING-05 | Phase 9 | Pending |
+| ING-06 | Phase 9 | Pending |
+| QRY-01 | Phase 10 | Pending |
+| QRY-02 | Phase 10 | Pending |
+| QRY-03 | Phase 10 | Pending |
+| QRY-04 | Phase 10 | Pending |
+| QRY-05 | Phase 10 | Pending |
+| QRY-06 | Phase 10 | Pending |
+| QRY-07 | Phase 10 | Pending |
+| GRP-01 | Phase 10 | Pending |
+| GRP-02 | Phase 10 | Pending |
+| GRP-03 | Phase 10 | Pending |
+| GRP-04 | Phase 10 | Pending |
+| DRF-01 | Phase 11 | Pending |
+| DRF-02 | Phase 11 | Pending |
+| DRF-03 | Phase 11 | Pending |
+| DRF-04 | Phase 11 | Pending |
+| DRF-05 | Phase 11 | Pending |
+| DRF-06 | Phase 11 | Pending |
+| FE-01 | Phase 12 | Pending |
+| FE-02 | Phase 12 | Pending |
+| FE-03 | Phase 12 | Pending |
+| FE-04 | Phase 12 | Pending |
+| FE-05 | Phase 12 | Pending |
+| FE-06 | Phase 12 | Pending |
+| GV-01 | Phase 12 | Pending |
+| GV-02 | Phase 12 | Pending |
+| GV-03 | Phase 12 | Pending |
+| GV-04 | Phase 12 | Pending |
+| GV-05 | Phase 12 | Pending |
+| GV-06 | Phase 12 | Pending |
+| GV-07 | Phase 12 | Pending |
+| CAT-01 | Phase 13 | Pending |
+| CAT-02 | Phase 13 | Pending |
+| CAT-03 | Phase 13 | Pending |
+| CAT-04 | Phase 13 | Pending |
+| CAT-05 | Phase 13 | Pending |
+| CAT-06 | Phase 13 | Pending |
+| PRP-01 | Phase 13 | Pending |
+| PRP-02 | Phase 13 | Pending |
+| PRP-03 | Phase 13 | Pending |
+| PRP-04 | Phase 13 | Pending |
+| SUB-01 | Phase 13 | Pending |
+| SUB-02 | Phase 13 | Pending |
+| SUB-03 | Phase 13 | Pending |
+| SUB-04 | Phase 13 | Pending |
+| MOD-01 | Phase 13 | Pending |
+| MOD-02 | Phase 13 | Pending |
+| MOD-03 | Phase 13 | Pending |
+| MOD-04 | Phase 13 | Pending |
+| MOD-05 | Phase 13 | Pending |
+| MOD-06 | Phase 13 | Pending |
+| BND-01 | Phase 13 | Pending |
+| BND-02 | Phase 13 | Pending |
+| BND-03 | Phase 13 | Pending |
+| BND-04 | Phase 13 | Pending |
+| BND-05 | Phase 13 | Pending |
+| TPL-01 | Phase 13 | Pending |
+| TPL-02 | Phase 13 | Pending |
+| TPL-03 | Phase 13 | Pending |
+| TPL-04 | Phase 13 | Pending |
+| VAL-01 | Phase 14 | Pending |
+| VAL-02 | Phase 14 | Pending |
+| VAL-03 | Phase 14 | Pending |
+| VAL-04 | Phase 14 | Pending |
+| VAL-05 | Phase 14 | Pending |
+| VAL-06 | Phase 14 | Pending |
+| DWF-01 | Phase 14 | Pending |
+| DWF-02 | Phase 14 | Pending |
+| DWF-03 | Phase 14 | Pending |
+| DWF-04 | Phase 14 | Pending |
+| DWF-05 | Phase 14 | Pending |
+| PR-01 | Phase 14 | Pending |
+| PR-02 | Phase 14 | Pending |
+| PR-03 | Phase 14 | Pending |
+| PR-04 | Phase 14 | Pending |
+| PR-05 | Phase 14 | Pending |
 
 **Coverage:**
-- v2.0 requirements: 69 total
-- Mapped to phases: 0
-- Unmapped: 69
+- v2.0 requirements: 90 total
+- Mapped to phases: 90
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-01-23*
-*Last updated: 2026-01-23 after initial definition*
+*Last updated: 2026-01-23 after roadmap creation*
