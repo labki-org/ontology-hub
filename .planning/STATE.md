@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2025-01-20)
 ## Current Position
 
 Phase: 7 of 7 (PR Integration)
-Plan: 1 of 3 in current phase
+Plan: 2 of 2 in current phase
 Status: In progress
-Last activity: 2026-01-22 - Completed 07-01-PLAN.md (OAuth Foundation)
+Last activity: 2026-01-23 - Completed 07-02-PLAN.md (PR Creation)
 
-Progress: [##################-] 96%
+Progress: [###################] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 19
+- Total plans completed: 20
 - Average duration: 7 min
-- Total execution time: 2.2 hours
+- Total execution time: 2.3 hours
 
 **By Phase:**
 
@@ -33,10 +33,10 @@ Progress: [##################-] 96%
 | 04-modules-and-versioning | 3 | 24 min | 8 min |
 | 05-draft-system | 3 | 21 min | 7 min |
 | 06-validation-engine | 3 | 16 min | 5 min |
-| 07-pr-integration | 1 | 5 min | 5 min |
+| 07-pr-integration | 2 | 9 min | 4.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 6min, 11min, 4min, 6min, 5min
+- Last 5 plans: 11min, 4min, 6min, 5min, 4min
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -107,6 +107,10 @@ Recent decisions affecting current work:
 | 503 when OAuth not configured | 07-01 | Better DX than silent failure |
 | Store draft_token in session | 07-01 | Enables OAuth redirect to return to correct draft page |
 | public_repo scope for OAuth | 07-01 | Minimum scope needed for PR creation |
+| create_pr_with_token helper | 07-02 | Atomic PR workflow with user's OAuth token |
+| Structured PR body | 07-02 | Changes, validation, semver, wiki reference |
+| Draft status to SUBMITTED | 07-02 | Track PR creation, prevent resubmission |
+| OpenPRButton validation-aware | 07-02 | Disabled until validation passes and changes saved |
 
 ### Pending Todos
 
@@ -118,23 +122,23 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-22
-Stopped at: Completed 07-01-PLAN.md (OAuth Foundation)
+Last session: 2026-01-23
+Stopped at: Completed 07-02-PLAN.md (PR Creation)
 Resume file: None
 
-07-01 SUMMARY context:
-- OAuth router with /oauth/github/login and /oauth/github/callback endpoints
-- SessionMiddleware configured for OAuth state preservation
-- OAuth client registration conditional on credentials being configured
-- Draft token survives OAuth redirect round-trip via session storage
-- Next plan will consume access_token to create GitHub PR
+07-02 SUMMARY context:
+- GitHubClient extended with Git Data API methods for atomic PR creation
+- pr_builder service converts draft payload to repo file format
+- OAuth callback creates PR via create_pr_from_draft and redirects with result
+- OpenPRButton component with validation-aware disabled states
+- PR success/error banners display results after OAuth redirect
+- Draft status updates to SUBMITTED after PR creation
 
 ## Phase 7 Progress
 
 Phase 7 (PR Integration) IN PROGRESS:
 - 07-01: OAuth Foundation (COMPLETE)
-- 07-02: PR Creation (PENDING)
-- 07-03: PR UI Flow (PENDING)
+- 07-02: PR Creation (COMPLETE)
 
 ## Phase 6 Progress
 
