@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2025-01-20)
 
 ## Current Position
 
-Phase: 6 of 7 (Validation Engine)
-Plan: 3 of 3 in current phase
-Status: Phase complete
-Last activity: 2026-01-22 - Completed 06-03-PLAN.md (Validation UI Integration)
+Phase: 7 of 7 (PR Integration)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-01-22 - Completed 07-01-PLAN.md (OAuth Foundation)
 
-Progress: [##################] 95%
+Progress: [##################-] 96%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 18
+- Total plans completed: 19
 - Average duration: 7 min
-- Total execution time: 2.1 hours
+- Total execution time: 2.2 hours
 
 **By Phase:**
 
@@ -33,9 +33,10 @@ Progress: [##################] 95%
 | 04-modules-and-versioning | 3 | 24 min | 8 min |
 | 05-draft-system | 3 | 21 min | 7 min |
 | 06-validation-engine | 3 | 16 min | 5 min |
+| 07-pr-integration | 1 | 5 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 4min, 6min, 11min, 4min, 6min
+- Last 5 plans: 6min, 11min, 4min, 6min, 5min
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -99,6 +100,13 @@ Recent decisions affecting current work:
 | Prop drilling validation results | 06-03 | Simple, explicit data flow without global state |
 | Compact badges inline by default | 06-03 | Prevent clutter in diff viewer, hover for details |
 | Entity type mapping plural->singular | 06-03 | Frontend uses plural keys, backend uses singular |
+| SessionMiddleware before other middleware | 07-01 | OAuth requires session early in request processing |
+| 30min session max_age | 07-01 | Long enough for OAuth flow, short enough for security |
+| same_site lax for sessions | 07-01 | Required for OAuth callback redirects |
+| Conditional OAuth registration | 07-01 | Only register when GITHUB_CLIENT_ID/SECRET configured |
+| 503 when OAuth not configured | 07-01 | Better DX than silent failure |
+| Store draft_token in session | 07-01 | Enables OAuth redirect to return to correct draft page |
+| public_repo scope for OAuth | 07-01 | Minimum scope needed for PR creation |
 
 ### Pending Todos
 
@@ -111,15 +119,22 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-22
-Stopped at: Completed 06-03-PLAN.md (Validation UI Integration)
+Stopped at: Completed 07-01-PLAN.md (OAuth Foundation)
 Resume file: None
 
-06-03 SUMMARY context:
-- ValidationSummary component shows overall validation status
-- ValidationBadge shows inline severity indicators with tooltips
-- DraftPage renders validation summary after header
-- DraftDiffViewer shows badges inline next to each entity
-- Semver badge with color coding (major=red, minor=blue, patch=green)
+07-01 SUMMARY context:
+- OAuth router with /oauth/github/login and /oauth/github/callback endpoints
+- SessionMiddleware configured for OAuth state preservation
+- OAuth client registration conditional on credentials being configured
+- Draft token survives OAuth redirect round-trip via session storage
+- Next plan will consume access_token to create GitHub PR
+
+## Phase 7 Progress
+
+Phase 7 (PR Integration) IN PROGRESS:
+- 07-01: OAuth Foundation (COMPLETE)
+- 07-02: PR Creation (PENDING)
+- 07-03: PR UI Flow (PENDING)
 
 ## Phase 6 Progress
 
