@@ -10,30 +10,30 @@ See: .planning/PROJECT.md (updated 2026-01-23)
 ## Current Position
 
 Phase: 8 of 14 (Database Foundation)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-01-23 -- v2.0 roadmap created
+Plan: 1 of 3 in current phase (completed)
+Status: In progress
+Last activity: 2026-01-24 -- Completed 08-01-PLAN.md (Entity Models)
 
-Progress: [##########..............] 47% (v1.0 complete, v2.0 starting)
+Progress: [##########..............] 48% (v1.0 complete, v2.0 phase 8 plan 1 done)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 20 (v1.0)
+- Total plans completed: 21 (20 v1.0 + 1 v2.0)
 - Average duration: ~30 min (v1.0 estimate)
-- Total execution time: ~10 hours (v1.0)
+- Total execution time: ~10h 3m
 
-**By Phase (v1.0):**
+**By Phase (v2.0):**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1-7 (v1.0) | 20 | ~10h | ~30m |
+| 08-database-foundation | 1/3 | 3m | 3m |
 
 **Recent Trend:**
 - v1.0 completed in 2 days
-- v2.0 is a full rebuild with 7 phases
+- v2.0 phase 8 plan 1: 3 minutes
 
-*Metrics reset for v2.0 -- updated after each plan completion*
+*Metrics updated after each plan completion*
 
 ## Accumulated Context
 
@@ -49,6 +49,9 @@ Recent decisions affecting current work:
 - [Phase 8 context]: Webhook-triggered ingest -- repo push triggers ingest, no manual refresh
 - [Phase 8 context]: Draft auto-rebase -- when new canonical is ingested, in-progress drafts rebase automatically
 - [Phase 8 context]: GitHub Actions version bumping -- auto-generate tarballs and bump semver on PR merge
+- [08-01]: Unique constraint on entity_key per table rather than composite key
+- [08-01]: OntologyVersion stored as table (not singleton) for flexibility
+- [08-01]: Entity model pattern: Base -> Table -> Public for all entity types
 
 ### Pending Todos
 
@@ -60,6 +63,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-23
-Stopped at: v2.0 roadmap created
+Last session: 2026-01-24
+Stopped at: Completed 08-01-PLAN.md (Entity Models)
 Resume file: None
