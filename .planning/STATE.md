@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-01-23)
 
 **Core value:** Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes, with zero platform accounts and strong validation feedback.
-**Current focus:** Phase 11 - Draft System
+**Current focus:** Phase 12 - Frontend + Graph Visualization
 
 ## Current Position
 
-Phase: 11 of 14 (Draft System)
-Plan: 5 of 5 in current phase (gap closure plan)
-Status: Phase complete
-Last activity: 2026-01-24 -- Completed 11-05-PLAN.md (Draft-aware Inheritance Gap Closure)
+Phase: 12 of 14 (Frontend + Graph Visualization)
+Plan: 0 of TBD in current phase
+Status: Planning needed
+Last activity: 2026-01-24 -- Completed Phase 11 (Draft System) with verification
 
-Progress: [####################....] 81% (v1.0 complete, v2.0 phase 11 complete)
+Progress: [######################..] 86% (v1.0 complete, v2.0 phases 8-11 complete)
 
 ## Performance Metrics
 

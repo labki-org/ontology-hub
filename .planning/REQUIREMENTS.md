@@ -48,13 +48,13 @@ Requirements for the platform rebuild. Each maps to roadmap phases.
 
 ### Draft System
 
-- [ ] **DRF-01**: Draft creation binds to base_commit_sha for tracking
-- [ ] **DRF-02**: Draft changes stored as JSON Patch for updates, full replacement for creates
-- [ ] **DRF-03**: Effective view computation overlays draft changes on canonical data
-- [ ] **DRF-04**: Localized re-materialization of inheritance during draft edits
-- [ ] **DRF-05**: Draft status lifecycle (draft, validated, submitted, merged, rejected)
-- [ ] **DRF-06**: MediaWiki push import creates draft_change rows from payload
-- [ ] **DRF-07**: Auto-rebase: when new canonical is ingested, in-progress drafts rebase automatically
+- [x] **DRF-01**: Draft creation binds to base_commit_sha for tracking
+- [x] **DRF-02**: Draft changes stored as JSON Patch for updates, full replacement for creates
+- [x] **DRF-03**: Effective view computation overlays draft changes on canonical data
+- [x] **DRF-04**: Localized re-materialization of inheritance during draft edits
+- [x] **DRF-05**: Draft status lifecycle (draft, validated, submitted, merged, rejected)
+- [x] **DRF-06**: MediaWiki push import creates draft_change rows from payload
+- [x] **DRF-07**: Auto-rebase: when new canonical is ingested, in-progress drafts rebase automatically
 
 ### Validation Engine
 
@@ -211,13 +211,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | GRP-02 | Phase 10 | Complete |
 | GRP-03 | Phase 10 | Complete |
 | GRP-04 | Phase 10 | Complete |
-| DRF-01 | Phase 11 | Pending |
-| DRF-02 | Phase 11 | Pending |
-| DRF-03 | Phase 11 | Pending |
-| DRF-04 | Phase 11 | Pending |
-| DRF-05 | Phase 11 | Pending |
-| DRF-06 | Phase 11 | Pending |
-| DRF-07 | Phase 11 | Pending |
+| DRF-01 | Phase 11 | Complete |
+| DRF-02 | Phase 11 | Complete |
+| DRF-03 | Phase 11 | Complete |
+| DRF-04 | Phase 11 | Complete |
+| DRF-05 | Phase 11 | Complete |
+| DRF-06 | Phase 11 | Complete |
+| DRF-07 | Phase 11 | Complete |
 | FE-01 | Phase 12 | Pending |
 | FE-02 | Phase 12 | Pending |
 | FE-03 | Phase 12 | Pending |

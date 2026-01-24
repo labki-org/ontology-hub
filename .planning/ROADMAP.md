@@ -27,7 +27,7 @@ Phases 1-7 delivered the complete MVP: Docker infrastructure, GitHub indexing, R
 - [x] **Phase 8: Database Foundation** - Versioned schema with normalized relationships
 - [x] **Phase 9: Ingest Pipeline** - Populate schema from canonical repo
 - [x] **Phase 10: Query Layer** - Version-scoped reads with graph endpoints
-- [ ] **Phase 11: Draft System** - JSON Patch storage with effective view computation
+- [x] **Phase 11: Draft System** - JSON Patch storage with effective view computation
 - [ ] **Phase 12: Frontend + Graph Visualization** - Unified browse/draft UI with module hulls
 - [ ] **Phase 13: Entity Detail Pages** - All entity types with edit mode
 - [ ] **Phase 14: Validation + Workflow + PR** - Final validation and PR submission
@@ -100,7 +100,7 @@ Plans:
 - [x] 11-02-PLAN.md — Draft change management (add/update/delete with JSON Patch validation)
 - [x] 11-03-PLAN.md — Auto-rebase service (conflict detection, webhook integration)
 - [x] 11-04-PLAN.md — MediaWiki import endpoint (explicit action signals)
-- [ ] 11-05-PLAN.md — Draft-aware inheritance (gap closure for DRF-04)
+- [x] 11-05-PLAN.md — Draft-aware inheritance (gap closure for DRF-04)
 
 ### Phase 12: Frontend + Graph Visualization
 **Goal**: Build unified browse/draft frontend with graph panel featuring module hull overlays
@@ -150,7 +150,7 @@ Phases execute in numeric order: 8 -> 8.1 -> 8.2 -> 9 -> ...
 | 8. Database Foundation | v2.0 | 3/3 | Complete | 2026-01-24 |
 | 9. Ingest Pipeline | v2.0 | 4/4 | Complete | 2026-01-24 |
 | 10. Query Layer | v2.0 | 3/3 | Complete | 2026-01-24 |
-| 11. Draft System | v2.0 | 4/5 | Gap closure | - |
+| 11. Draft System | v2.0 | 5/5 | Complete | 2026-01-24 |
 | 12. Frontend + Graph | v2.0 | 0/TBD | Not started | - |
 | 13. Entity Detail Pages | v2.0 | 0/TBD | Not started | - |
 | 14. Validation + Workflow + PR | v2.0 | 0/TBD | Not started | - |
@@ -158,4 +158,4 @@ Phases execute in numeric order: 8 -> 8.1 -> 8.2 -> 9 -> ...
 ---
 *Roadmap created: 2026-01-23*
 *v2.0 phases: 8-14 (7 phases, 92 requirements)*
-*Last updated: 2026-01-24 (Phase 11 gap closure plan added)*
+*Last updated: 2026-01-24 (Phase 11 complete)*
