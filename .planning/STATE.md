@@ -10,16 +10,16 @@ See: .planning/PROJECT.md (updated 2026-01-23)
 ## Current Position
 
 Phase: 11 of 14 (Draft System)
-Plan: 3 of 3 in current phase
+Plan: 4 of 4 in current phase
 Status: Phase complete
-Last activity: 2026-01-24 -- Completed 11-03-PLAN.md (Auto-Rebase Service)
+Last activity: 2026-01-24 -- Completed 11-04-PLAN.md (MediaWiki Push Import)
 
-Progress: [####################....] 79% (v1.0 complete, v2.0 phase 11 complete)
+Progress: [####################....] 81% (v1.0 complete, v2.0 phase 11 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 33 (20 v1.0 + 13 v2.0)
+- Total plans completed: 34 (20 v1.0 + 14 v2.0)
 - Average duration: ~30 min (v1.0 estimate)
 - Total execution time: ~10h 36m
 
@@ -30,7 +30,7 @@ Progress: [####################....] 79% (v1.0 complete, v2.0 phase 11 complete)
 | 08-database-foundation | 3/3 | 9m | 3m |
 | 09-ingest-pipeline | 4/4 | 9m | 2m |
 | 10-query-layer | 3/3 | 9m | 3m |
-| 11-draft-system | 3/3 | 10m | 3m |
+| 11-draft-system | 4/4 | 14m | 4m |
 
 **Recent Trend:**
 - v1.0 completed in 2 days
@@ -47,6 +47,7 @@ Progress: [####################....] 79% (v1.0 complete, v2.0 phase 11 complete)
 - v2.0 phase 11 plan 1: 4 minutes
 - v2.0 phase 11 plan 2: 4 minutes
 - v2.0 phase 11 plan 3: 2 minutes
+- v2.0 phase 11 plan 4: 4 minutes
 
 *Metrics updated after each plan completion*
 
@@ -97,6 +98,8 @@ Recent decisions affecting current work:
 - [11-02]: Changes only allowed when draft status is DRAFT
 - [11-03]: Original draft_change.patch never modified during rebase - preserves for manual resolution
 - [11-03]: Deprecated mark_drafts_stale (kept for backward compatibility)
+- [11-04]: Explicit action field on MediaWiki changes (not inferred from entity existence)
+- [11-04]: Each MediaWiki push creates NEW draft (not appended to existing)
 
 ### Pending Todos
 
@@ -109,5 +112,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-24
-Stopped at: Completed 11-03-PLAN.md (Auto-Rebase Service)
+Stopped at: Completed 11-04-PLAN.md (MediaWiki Push Import)
 Resume file: None
