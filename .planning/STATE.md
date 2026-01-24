@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-23)
 ## Current Position
 
 Phase: 12 of 14 (Frontend + Graph Visualization)
-Plan: 4 of 6 in current phase
+Plan: 3 of 6 in current phase
 Status: In progress
-Last activity: 2026-01-24 -- Completed 12-04-PLAN.md (Force-Directed Graph Visualization)
+Last activity: 2026-01-24 -- Completed 12-03-PLAN.md (Sidebar & Draft UI)
 
-Progress: [######################..] 88% (v1.0 complete, v2.0 phases 8-11 complete, phase 12 plans 1-4 complete)
+Progress: [######################..] 88% (v1.0 complete, v2.0 phases 8-11 complete, phase 12 plans 1-3 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 39 (20 v1.0 + 19 v2.0)
+- Total plans completed: 38 (20 v1.0 + 18 v2.0)
 - Average duration: ~30 min (v1.0 estimate)
-- Total execution time: ~10h 47m
+- Total execution time: ~10h 44m
 
 **By Phase (v2.0):**
 
@@ -31,7 +31,7 @@ Progress: [######################..] 88% (v1.0 complete, v2.0 phases 8-11 comple
 | 09-ingest-pipeline | 4/4 | 9m | 2m |
 | 10-query-layer | 3/3 | 9m | 3m |
 | 11-draft-system | 5/5 | 16m | 3m |
-| 12-frontend-graph-visualization | 4/6 | 11m | 3m |
+| 12-frontend-graph-visualization | 3/6 | 8m | 3m |
 
 **Recent Trend:**
 - v1.0 completed in 2 days
@@ -51,9 +51,8 @@ Progress: [######################..] 88% (v1.0 complete, v2.0 phases 8-11 comple
 - v2.0 phase 11 plan 4: 4 minutes
 - v2.0 phase 11 plan 5: 2 minutes (gap closure)
 - v2.0 phase 12 plan 1: 2 minutes (frontend infrastructure)
-- v2.0 phase 12 plan 2: 3 minutes (graph stores + API client)
-- v2.0 phase 12 plan 3: 3 minutes (entity search)
-- v2.0 phase 12 plan 4: 3 minutes (force-directed graph)
+- v2.0 phase 12 plan 2: 1 minute (graph stores + API client)
+- v2.0 phase 12 plan 3: 3 minutes (sidebar & draft UI)
 
 *Metrics updated after each plan completion*
 
@@ -112,11 +111,10 @@ Recent decisions affecting current work:
 - [12-01]: Vertical split layout: graph top (60%), detail bottom (40%)
 - [12-01]: Persist panel sizes via localStorage with autoSaveId='browse-layout'
 - [12-01]: Separate v2 API hooks file for clean separation from v1 hooks
-- [12-04]: Force simulation auto-stops at alpha < 0.01 threshold for performance
-- [12-04]: Clone nodes before d3-force simulation to avoid React state mutation warnings
-- [12-04]: fitView only on initial graph load, not on every update
-- [12-04]: Edge type filtering via graphStore.edgeTypeFilter Set
-- [12-04]: Change status shown via border colors and badges (green=added, yellow=modified, red=deleted)
+- [12-03]: EntitySearch component with live filtering and 150ms debounce
+- [12-03]: Draft title uses wiki_url from payload or falls back to draft ID
+- [12-03]: Simple dropdown pattern for DraftSelector (no Radix popover needed)
+- [12-03]: Change badges use green/yellow/red with +/~/- symbols
 
 ### Pending Todos
 
@@ -129,5 +127,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-24
-Stopped at: Completed 12-04-PLAN.md (Force-Directed Graph Visualization)
+Stopped at: Completed 12-03-PLAN.md (Sidebar & Draft UI)
 Resume file: None
