@@ -1,7 +1,7 @@
 export function TemplateDetail({
   entityKey,
-  draftId,
-  isEditing,
+  draftId: _draftId,
+  isEditing: _isEditing,
 }: {
   entityKey: string
   draftId?: string

@@ -31,7 +31,7 @@ export const useDetailStore = create<DetailState>((set, get) => ({
   breadcrumbs: [],
 
   openDetail: (entityKey, entityType) => {
-    const { breadcrumbs, entityKey: currentKey } = get()
+    const { entityKey: currentKey } = get()
 
     // If opening from closed state, start fresh breadcrumbs
     if (!get().isOpen) {
