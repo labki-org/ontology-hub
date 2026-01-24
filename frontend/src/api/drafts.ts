@@ -6,6 +6,8 @@ import type {
   DraftCreateResponse,
   DraftPatchPayload,
   VersionDiffResponse,
+  DraftChangeCreate,
+  DraftChangeResponse,
 } from './types'
 
 // Fetch functions
@@ -32,6 +34,17 @@ async function updateDraft(
   return apiFetch(`/drafts/${token}`, {
     method: 'PATCH',
     body: JSON.stringify(payload),
+  })
+}
+
+export async function addDraftChange(
+  token: string,
+  change: DraftChangeCreate
+): Promise<DraftChangeResponse> {
+  return apiFetch(`/drafts/${token}/changes`, {
+    method: 'POST',
+    body: JSON.stringify(change),
+    v2: true,
   })
 }
 
