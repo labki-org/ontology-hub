@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-23)
 ## Current Position
 
 Phase: 11 of 14 (Draft System)
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-01-24 -- Completed 11-02-PLAN.md (Draft Change Endpoints)
+Plan: 3 of 3 in current phase
+Status: Phase complete
+Last activity: 2026-01-24 -- Completed 11-03-PLAN.md (Auto-Rebase Service)
 
-Progress: [###################.....] 76% (v1.0 complete, v2.0 phase 11 plan 2 complete)
+Progress: [####################....] 79% (v1.0 complete, v2.0 phase 11 complete)
 
 ## Performance Metrics
 
@@ -30,7 +30,7 @@ Progress: [###################.....] 76% (v1.0 complete, v2.0 phase 11 plan 2 co
 | 08-database-foundation | 3/3 | 9m | 3m |
 | 09-ingest-pipeline | 4/4 | 9m | 2m |
 | 10-query-layer | 3/3 | 9m | 3m |
-| 11-draft-system | 2/3 | 8m | 4m |
+| 11-draft-system | 3/3 | 10m | 3m |
 
 **Recent Trend:**
 - v1.0 completed in 2 days
@@ -46,6 +46,7 @@ Progress: [###################.....] 76% (v1.0 complete, v2.0 phase 11 plan 2 co
 - v2.0 phase 10 plan 3: 2 minutes
 - v2.0 phase 11 plan 1: 4 minutes
 - v2.0 phase 11 plan 2: 4 minutes
+- v2.0 phase 11 plan 3: 2 minutes
 
 *Metrics updated after each plan completion*
 
@@ -94,6 +95,8 @@ Recent decisions affecting current work:
 - [11-02]: JSON Patch validation via jsonpatch.JsonPatch constructor
 - [11-02]: Entity existence check: UPDATE/DELETE require canonical entity, CREATE requires entity not exist
 - [11-02]: Changes only allowed when draft status is DRAFT
+- [11-03]: Original draft_change.patch never modified during rebase - preserves for manual resolution
+- [11-03]: Deprecated mark_drafts_stale (kept for backward compatibility)
 
 ### Pending Todos
 
@@ -106,5 +109,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-24
-Stopped at: Completed 11-02-PLAN.md (Draft Change Endpoints)
+Stopped at: Completed 11-03-PLAN.md (Auto-Rebase Service)
 Resume file: None
