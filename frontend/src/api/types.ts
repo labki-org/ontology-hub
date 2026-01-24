@@ -244,6 +244,47 @@ export interface DraftValidationReport {
   semver_reasons: string[]
 }
 
+// v2 Entity types with change status
+export interface EntityWithStatus {
+  entity_key: string
+  label: string
+  description?: string | null
+  change_status?: 'added' | 'modified' | 'deleted' | 'unchanged'
+  deleted?: boolean
+}
+
+export interface EntityListResponseV2 {
+  items: EntityWithStatus[]
+  next_cursor: string | null
+  has_next: boolean
+}
+
+export interface PropertyProvenance {
+  entity_key: string
+  label: string
+  is_direct: boolean
+  is_inherited: boolean
+  is_required: boolean
+  source_category: string
+  inheritance_depth: number
+}
+
+export interface CategoryDetailV2 {
+  entity_key: string
+  label: string
+  description?: string | null
+  parents: string[]
+  properties: PropertyProvenance[]
+  change_status?: 'added' | 'modified' | 'deleted' | 'unchanged'
+  deleted?: boolean
+  patch_error?: string
+}
+
+export interface OntologyVersionInfo {
+  commit_sha: string
+  ingested_at: string
+}
+
 // Graph types (from backend app/schemas/graph.py)
 export interface GraphNode {
   id: string
