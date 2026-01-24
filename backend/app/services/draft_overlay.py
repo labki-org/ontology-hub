@@ -225,6 +225,242 @@ class DraftOverlayService:
             return True
         return False
 
+    async def get_draft_aware_inherited_properties(
+        self,
+        session: AsyncSession,
+        category_entity_key: str,
+        canonical_category_id: Optional[uuid.UUID],
+    ) -> list[dict]:
+        """Compute inherited properties with draft parent changes applied.
+
+        When a draft modifies a category's parents (via JSON Patch on the
+        "parents" field), this method:
+        1. Gets canonical inherited properties from category_property_effective
+        2. Detects draft changes to this category's parents
+        3. Walks the draft-modified inheritance graph to compute additional
+           inherited properties from draft-added parents
+        4. Excludes properties that would be inherited from draft-removed parents
+
+        Args:
+            session: Async database session
+            category_entity_key: Entity key of the category to compute inheritance for
+            canonical_category_id: UUID of canonical category, or None if draft-created
+
+        Returns:
+            List of PropertyProvenance-compatible dicts with:
+            - entity_key: property entity_key
+            - label: property label
+            - is_direct: False (all inherited)
+            - is_inherited: True
+            - is_required: bool
+            - source_category: entity_key of source
+            - inheritance_depth: int
+
+            Returns empty list if no draft context or no parent changes in draft.
+        """
+        from sqlalchemy import text
+
+        # No draft context - caller should use canonical query
+        if not self.draft_id:
+            return []
+
+        # Load draft changes
+        changes = await self._load_draft_changes()
+        change_key = f"category:{category_entity_key}"
+        draft_change = changes.get(change_key)
+
+        # No change for this category in draft - caller can use canonical
+        if not draft_change:
+            return []
+
+        # Only UPDATE changes can modify parents
+        if draft_change.change_type != ChangeType.UPDATE:
+            return []
+
+        # Check if patch modifies parents
+        patch_ops = draft_change.patch or []
+        modifies_parents = any(
+            op.get("path", "").startswith("/parents") for op in patch_ops
+        )
+
+        if not modifies_parents:
+            return []
+
+        # Get canonical parents list
+        canonical_parents: list[str] = []
+        if canonical_category_id:
+            canonical_parents_query = text("""
+                SELECT c.entity_key
+                FROM category_parent cp
+                JOIN categories c ON c.id = cp.parent_id
+                WHERE cp.category_id = :category_id
+            """)
+            result = await session.execute(
+                canonical_parents_query, {"category_id": canonical_category_id}
+            )
+            canonical_parents = [row[0] for row in result.fetchall()]
+
+        # Apply patch to get effective parents
+        canonical_json = {"parents": canonical_parents}
+        try:
+            patch = jsonpatch.JsonPatch(patch_ops)
+            effective_json = patch.apply(deepcopy(canonical_json))
+            effective_parents: list[str] = effective_json.get("parents", [])
+        except jsonpatch.JsonPatchException:
+            # Patch failed - return empty, caller will use canonical
+            return []
+
+        # If parents unchanged after patch, caller can use canonical
+        if set(effective_parents) == set(canonical_parents):
+            return []
+
+        # Parents changed - compute inheritance manually
+        # Walk the parent chain to collect all ancestors with depth
+        # Visited tracks (entity_key, depth) to find min depth per category
+        ancestors: dict[str, int] = {}  # entity_key -> min depth
+        visited: set[str] = set()
+
+        async def walk_parents(parent_keys: list[str], depth: int) -> None:
+            """Recursively walk parent chain, tracking depth."""
+            for parent_key in parent_keys:
+                if parent_key in visited:
+                    continue
+                visited.add(parent_key)
+
+                # Track min depth for this ancestor
+                if parent_key not in ancestors or depth < ancestors[parent_key]:
+                    ancestors[parent_key] = depth
+
+                # Check if this parent has draft changes to its parents
+                parent_change_key = f"category:{parent_key}"
+                parent_change = changes.get(parent_change_key)
+
+                grandparent_keys: list[str] = []
+
+                if parent_change and parent_change.change_type == ChangeType.UPDATE:
+                    # Apply patch to get effective grandparents
+                    parent_patch = parent_change.patch or []
+                    if any(
+                        op.get("path", "").startswith("/parents")
+                        for op in parent_patch
+                    ):
+                        # Get canonical grandparents
+                        gp_query = text("""
+                            SELECT c2.entity_key
+                            FROM categories c
+                            JOIN category_parent cp ON cp.category_id = c.id
+                            JOIN categories c2 ON c2.id = cp.parent_id
+                            WHERE c.entity_key = :entity_key
+                        """)
+                        gp_result = await session.execute(
+                            gp_query, {"entity_key": parent_key}
+                        )
+                        canonical_grandparents = [row[0] for row in gp_result.fetchall()]
+
+                        try:
+                            gp_patch = jsonpatch.JsonPatch(parent_patch)
+                            gp_effective = gp_patch.apply(
+                                {"parents": canonical_grandparents}
+                            )
+                            grandparent_keys = gp_effective.get("parents", [])
+                        except jsonpatch.JsonPatchException:
+                            grandparent_keys = canonical_grandparents
+                    else:
+                        # No parent changes in this category's patch
+                        gp_query = text("""
+                            SELECT c2.entity_key
+                            FROM categories c
+                            JOIN category_parent cp ON cp.category_id = c.id
+                            JOIN categories c2 ON c2.id = cp.parent_id
+                            WHERE c.entity_key = :entity_key
+                        """)
+                        gp_result = await session.execute(
+                            gp_query, {"entity_key": parent_key}
+                        )
+                        grandparent_keys = [row[0] for row in gp_result.fetchall()]
+                else:
+                    # No draft change for this parent - use canonical
+                    gp_query = text("""
+                        SELECT c2.entity_key
+                        FROM categories c
+                        JOIN category_parent cp ON cp.category_id = c.id
+                        JOIN categories c2 ON c2.id = cp.parent_id
+                        WHERE c.entity_key = :entity_key
+                    """)
+                    gp_result = await session.execute(
+                        gp_query, {"entity_key": parent_key}
+                    )
+                    grandparent_keys = [row[0] for row in gp_result.fetchall()]
+
+                if grandparent_keys:
+                    await walk_parents(grandparent_keys, depth + 1)
+
+        # Start walking from effective parents at depth 1
+        await walk_parents(effective_parents, 1)
+
+        # Now collect properties from all ancestors
+        properties: list[dict] = []
+
+        # Get direct properties for the category itself (depth=0)
+        if canonical_category_id:
+            direct_props_query = text("""
+                SELECT p.entity_key, p.label, cp.is_required
+                FROM category_property cp
+                JOIN properties p ON p.id = cp.property_id
+                WHERE cp.category_id = :category_id
+            """)
+            direct_result = await session.execute(
+                direct_props_query, {"category_id": canonical_category_id}
+            )
+            for row in direct_result.fetchall():
+                properties.append({
+                    "entity_key": row[0],
+                    "label": row[1],
+                    "is_direct": True,
+                    "is_inherited": False,
+                    "is_required": row[2],
+                    "source_category": category_entity_key,
+                    "inheritance_depth": 0,
+                })
+
+        # Get properties from each ancestor
+        for ancestor_key, depth in ancestors.items():
+            # Get ancestor's direct properties
+            ancestor_props_query = text("""
+                SELECT p.entity_key, p.label, cp.is_required
+                FROM category_property cp
+                JOIN properties p ON p.id = cp.property_id
+                JOIN categories c ON c.id = cp.category_id
+                WHERE c.entity_key = :entity_key
+            """)
+            ancestor_result = await session.execute(
+                ancestor_props_query, {"entity_key": ancestor_key}
+            )
+            for row in ancestor_result.fetchall():
+                properties.append({
+                    "entity_key": row[0],
+                    "label": row[1],
+                    "is_direct": False,
+                    "is_inherited": True,
+                    "is_required": row[2],
+                    "source_category": ancestor_key,
+                    "inheritance_depth": depth,
+                })
+
+        # Deduplicate properties - keep the one with min depth
+        seen_props: dict[str, dict] = {}
+        for prop in properties:
+            prop_key = prop["entity_key"]
+            if prop_key not in seen_props:
+                seen_props[prop_key] = prop
+            elif prop["inheritance_depth"] < seen_props[prop_key]["inheritance_depth"]:
+                seen_props[prop_key] = prop
+
+        # Return sorted by depth, then label
+        result = list(seen_props.values())
+        result.sort(key=lambda p: (p["inheritance_depth"], p["label"]))
+        return result
+
 
 async def get_draft_context(
     session: SessionDep,
