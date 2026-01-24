@@ -77,7 +77,11 @@ Plans:
   3. Category detail returns parents, direct properties, and inherited properties with provenance
   4. Neighborhood graph endpoint returns nodes/edges within specified depth with module membership
   5. Graph nodes include change status badges (added/modified/deleted) when draft context provided
-**Plans**: TBD
+**Plans:** 3 plans
+Plans:
+- [ ] 10-01-PLAN.md — Response schemas + DraftOverlayService (jsonpatch, change_status)
+- [ ] 10-02-PLAN.md — Entity query endpoints (categories, properties, modules, bundles)
+- [ ] 10-03-PLAN.md — Graph endpoints (neighborhood, module-scoped with CTEs)
 
 ### Phase 11: Draft System
 **Goal**: Store draft changes as JSON Patch deltas with server-side effective view computation and auto-rebase on canonical updates
@@ -139,7 +143,7 @@ Phases execute in numeric order: 8 -> 8.1 -> 8.2 -> 9 -> ...
 | 1-7 | v1.0 | 20/20 | Complete | 2026-01-23 |
 | 8. Database Foundation | v2.0 | 3/3 | Complete | 2026-01-24 |
 | 9. Ingest Pipeline | v2.0 | 4/4 | Complete | 2026-01-24 |
-| 10. Query Layer | v2.0 | 0/TBD | Not started | - |
+| 10. Query Layer | v2.0 | 0/3 | Not started | - |
 | 11. Draft System | v2.0 | 0/TBD | Not started | - |
 | 12. Frontend + Graph | v2.0 | 0/TBD | Not started | - |
 | 13. Entity Detail Pages | v2.0 | 0/TBD | Not started | - |
@@ -148,4 +152,4 @@ Phases execute in numeric order: 8 -> 8.1 -> 8.2 -> 9 -> ...
 ---
 *Roadmap created: 2026-01-23*
 *v2.0 phases: 8-14 (7 phases, 92 requirements)*
-*Last updated: 2026-01-24 (Phase 9 complete)*
+*Last updated: 2026-01-24 (Phase 10 planned)*
