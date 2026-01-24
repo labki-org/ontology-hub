@@ -10,29 +10,30 @@ See: .planning/PROJECT.md (updated 2026-01-23)
 ## Current Position
 
 Phase: 8 of 14 (Database Foundation)
-Plan: 2 of 3 in current phase (completed)
-Status: In progress
-Last activity: 2026-01-24 -- Completed 08-02-PLAN.md (Relationship Tables)
+Plan: 3 of 3 in current phase (completed)
+Status: Phase 8 complete
+Last activity: 2026-01-24 -- Completed 08-03-PLAN.md (Draft Tables)
 
-Progress: [###########.............] 50% (v1.0 complete, v2.0 phase 8 plans 1-2 done)
+Progress: [############............] 53% (v1.0 complete, v2.0 phase 8 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 22 (20 v1.0 + 2 v2.0)
+- Total plans completed: 23 (20 v1.0 + 3 v2.0)
 - Average duration: ~30 min (v1.0 estimate)
-- Total execution time: ~10h 5m
+- Total execution time: ~10h 9m
 
 **By Phase (v2.0):**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 08-database-foundation | 2/3 | 5m | 2.5m |
+| 08-database-foundation | 3/3 | 9m | 3m |
 
 **Recent Trend:**
 - v1.0 completed in 2 days
 - v2.0 phase 8 plan 1: 3 minutes
 - v2.0 phase 8 plan 2: 2 minutes
+- v2.0 phase 8 plan 3: 4 minutes
 
 *Metrics updated after each plan completion*
 
@@ -56,6 +57,9 @@ Recent decisions affecting current work:
 - [08-02]: Foreign keys use plural table names (categories.id, not category.id)
 - [08-02]: ModuleEntity uses entity_key for polymorphic membership across 6 entity types
 - [08-02]: CategoryPropertyEffective is read-only SQLModel for materialized view queries
+- [08-03]: Draft uses singular table name (draft) matching model convention
+- [08-03]: New enums use _v2 suffix (draftstatus_v2) to avoid collision with v1.0
+- [08-03]: Rebase tracking fields stored as strings for flexibility
 
 ### Pending Todos
 
@@ -68,5 +72,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-24
-Stopped at: Completed 08-02-PLAN.md (Relationship Tables)
+Stopped at: Completed 08-03-PLAN.md (Draft Tables) - Phase 8 complete
 Resume file: None
