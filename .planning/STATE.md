@@ -10,28 +10,29 @@ See: .planning/PROJECT.md (updated 2026-01-23)
 ## Current Position
 
 Phase: 8 of 14 (Database Foundation)
-Plan: 1 of 3 in current phase (completed)
+Plan: 2 of 3 in current phase (completed)
 Status: In progress
-Last activity: 2026-01-24 -- Completed 08-01-PLAN.md (Entity Models)
+Last activity: 2026-01-24 -- Completed 08-02-PLAN.md (Relationship Tables)
 
-Progress: [##########..............] 48% (v1.0 complete, v2.0 phase 8 plan 1 done)
+Progress: [###########.............] 50% (v1.0 complete, v2.0 phase 8 plans 1-2 done)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 21 (20 v1.0 + 1 v2.0)
+- Total plans completed: 22 (20 v1.0 + 2 v2.0)
 - Average duration: ~30 min (v1.0 estimate)
-- Total execution time: ~10h 3m
+- Total execution time: ~10h 5m
 
 **By Phase (v2.0):**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 08-database-foundation | 1/3 | 3m | 3m |
+| 08-database-foundation | 2/3 | 5m | 2.5m |
 
 **Recent Trend:**
 - v1.0 completed in 2 days
 - v2.0 phase 8 plan 1: 3 minutes
+- v2.0 phase 8 plan 2: 2 minutes
 
 *Metrics updated after each plan completion*
 
@@ -52,6 +53,9 @@ Recent decisions affecting current work:
 - [08-01]: Unique constraint on entity_key per table rather than composite key
 - [08-01]: OntologyVersion stored as table (not singleton) for flexibility
 - [08-01]: Entity model pattern: Base -> Table -> Public for all entity types
+- [08-02]: Foreign keys use plural table names (categories.id, not category.id)
+- [08-02]: ModuleEntity uses entity_key for polymorphic membership across 6 entity types
+- [08-02]: CategoryPropertyEffective is read-only SQLModel for materialized view queries
 
 ### Pending Todos
 
@@ -64,5 +68,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-24
-Stopped at: Completed 08-01-PLAN.md (Entity Models)
+Stopped at: Completed 08-02-PLAN.md (Relationship Tables)
 Resume file: None
