@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-23)
 
 **Core value:** Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes, with zero platform accounts and strong validation feedback.
-**Current focus:** Phase 9 - Ingest Pipeline (COMPLETE)
+**Current focus:** Phase 10 - Query Layer (IN PROGRESS)
 
 ## Current Position
 
-Phase: 9 of 14 (Ingest Pipeline)
-Plan: 4 of 4 in current phase
-Status: Phase complete
-Last activity: 2026-01-24 -- Completed 09-04-PLAN.md (Webhook Wiring)
+Phase: 10 of 14 (Query Layer)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-01-24 -- Completed 10-01-PLAN.md (Response Schemas and Draft Overlay)
 
-Progress: [###############.........] 62% (v1.0 complete, v2.0 phase 9 complete)
+Progress: [################........] 65% (v1.0 complete, v2.0 plan 10-01 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 27 (20 v1.0 + 7 v2.0)
+- Total plans completed: 28 (20 v1.0 + 8 v2.0)
 - Average duration: ~30 min (v1.0 estimate)
-- Total execution time: ~10h 16m
+- Total execution time: ~10h 19m
 
 **By Phase (v2.0):**
 
@@ -29,6 +29,7 @@ Progress: [###############.........] 62% (v1.0 complete, v2.0 phase 9 complete)
 |-------|-------|-------|----------|
 | 08-database-foundation | 3/3 | 9m | 3m |
 | 09-ingest-pipeline | 4/4 | 9m | 2m |
+| 10-query-layer | 1/3 | 3m | 3m |
 
 **Recent Trend:**
 - v1.0 completed in 2 days
@@ -39,6 +40,7 @@ Progress: [###############.........] 62% (v1.0 complete, v2.0 phase 9 complete)
 - v2.0 phase 9 plan 2: 2 minutes
 - v2.0 phase 9 plan 3: 2 minutes
 - v2.0 phase 9 plan 4: 3 minutes
+- v2.0 phase 10 plan 1: 3 minutes
 
 *Metrics updated after each plan completion*
 
@@ -73,6 +75,9 @@ Recent decisions affecting current work:
 - [09-03]: Mat view refresh in separate transaction after main commit
 - [09-04]: Keep v1.0 trigger_sync_background for backward compatibility
 - [09-04]: Mark drafts stale only for DRAFT and VALIDATED statuses
+- [10-01]: Application-layer overlay computation using Python jsonpatch library
+- [10-01]: deepcopy before applying JSON Patch to avoid mutating cached data
+- [10-01]: validation_alias for underscore-prefixed fields (_change_status -> change_status)
 
 ### Pending Todos
 
@@ -85,5 +90,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-24
-Stopped at: Completed 09-04-PLAN.md (Webhook Wiring) - Phase 9 complete
+Stopped at: Completed 10-01-PLAN.md (Response Schemas and Draft Overlay)
 Resume file: None
