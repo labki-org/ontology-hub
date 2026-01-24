@@ -7,6 +7,11 @@ This module re-exports all v2.0 models for single import point:
 
 # Enums
 from app.models.v2.enums import EntityType, IngestStatus
+from app.models.v2.draft import (
+    ChangeType,
+    DraftSource,
+    DraftStatus,
+)
 
 # Ontology version tracking
 from app.models.v2.ontology_version import (
@@ -41,10 +46,21 @@ from app.models.v2.category_property_effective import (
     refresh_category_property_effective,
 )
 
+# Draft models
+from app.models.v2.draft import (
+    Draft,
+    DraftChange,
+    DraftChangePublic,
+    DraftPublic,
+)
+
 __all__ = [
     # Enums
     "EntityType",
     "IngestStatus",
+    "DraftStatus",
+    "ChangeType",
+    "DraftSource",
     # Ontology version
     "OntologyVersion",
     "OntologyVersionBase",
@@ -85,4 +101,9 @@ __all__ = [
     "CATEGORY_PROPERTY_EFFECTIVE_REFRESH_SQL",
     "DROP_CATEGORY_PROPERTY_EFFECTIVE_SQL",
     "refresh_category_property_effective",
+    # Draft models
+    "Draft",
+    "DraftChange",
+    "DraftPublic",
+    "DraftChangePublic",
 ]
