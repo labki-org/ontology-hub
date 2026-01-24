@@ -1,7 +1,9 @@
 import { useEffect } from 'react'
 import { createBrowserRouter, RouterProvider, useLocation, useNavigate } from 'react-router-dom'
 import { MainLayout } from '@/components/layout/MainLayout'
+import { MainLayoutV2 } from '@/components/layout/MainLayoutV2'
 import { HomePage } from '@/pages/HomePage'
+import { BrowsePage } from '@/pages/BrowsePage'
 import { CategoryPage } from '@/pages/CategoryPage'
 import { PropertyPage } from '@/pages/PropertyPage'
 import { SubobjectPage } from '@/pages/SubobjectPage'
@@ -95,6 +97,16 @@ const router = createBrowserRouter([
       {
         path: 'draft/:token',
         element: <DraftPage />,
+      },
+    ],
+  },
+  {
+    path: '/browse',
+    element: <MainLayoutV2 />,
+    children: [
+      {
+        index: true,
+        element: <BrowsePage />,
       },
     ],
   },
