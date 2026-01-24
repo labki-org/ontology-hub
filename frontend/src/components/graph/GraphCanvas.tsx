@@ -7,6 +7,7 @@ import {
   type Node,
   MarkerType,
   useReactFlow,
+  useViewport,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 
@@ -25,6 +26,8 @@ import type { GraphNode as ApiGraphNode, GraphEdge as ApiGraphEdge } from '@/api
 interface GraphCanvasProps {
   entityKey?: string
   draftId?: string
+  /** When true, offset graph center to the left to make room for detail panel */
+  detailPanelOpen?: boolean
 }
 
 /**
@@ -38,7 +41,7 @@ interface GraphCanvasProps {
  * - Shows change status indicators in draft mode
  * - Displays cycle warning badge
  */
-export function GraphCanvas({ entityKey: propEntityKey, draftId }: GraphCanvasProps) {
+export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen = false }: GraphCanvasProps) {
   const selectedEntityKey = useGraphStore((s) => s.selectedEntityKey)
   const selectedEntityType = useGraphStore((s) => s.selectedEntityType)
   const depth = useGraphStore((s) => s.depth)
@@ -51,19 +54,27 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId }: GraphCanvasPr
   const isCategory = selectedEntityType === 'category'
 
   // Fetch graph data (only for categories)
-  const { data, isLoading, error } = useNeighborhoodGraph(
+  // Use keepPreviousData to avoid flash when switching entities
+  const { data, isLoading, error, isFetching } = useNeighborhoodGraph(
     isCategory ? entityKey : null,
     'category',
     depth,
     draftId
   )
 
+  // Track previous data to keep showing graph while loading new entity
+  const prevDataRef = useRef(data)
+  if (data && !isFetching) {
+    prevDataRef.current = data
+  }
+  const displayData = data ?? prevDataRef.current
+
   // Convert API response to React Flow format
   const { initialNodes, filteredEdges } = useMemo(() => {
-    if (!data) return { initialNodes: [], filteredEdges: [] }
+    if (!displayData) return { initialNodes: [], filteredEdges: [] }
 
     // Convert nodes
-    const nodes: Node[] = data.nodes.map((node: ApiGraphNode) => ({
+    const nodes: Node[] = displayData.nodes.map((node: ApiGraphNode) => ({
       id: node.id,
       type: 'entity',
       position: { x: 0, y: 0 }, // Will be set by force layout
@@ -77,7 +88,7 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId }: GraphCanvasPr
     }))
 
     // Filter edges by edge_type
-    const edges: Edge[] = data.edges
+    const edges: Edge[] = displayData.edges
       .filter((edge: ApiGraphEdge) => edgeTypeFilter.has(edge.edge_type))
       .map((edge: ApiGraphEdge, index: number) => ({
         id: `e${index}-${edge.source}-${edge.target}`,
@@ -101,7 +112,7 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId }: GraphCanvasPr
       }))
 
     return { initialNodes: nodes, filteredEdges: edges }
-  }, [data, edgeTypeFilter])
+  }, [displayData, edgeTypeFilter])
 
   // Apply force layout
   const { nodes, isRunning, restartSimulation } = useForceLayout(
@@ -124,25 +135,84 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId }: GraphCanvasPr
 
   // Track if this is the first render for fitView
   const hasFitViewRef = useRef(false)
-  const { fitView } = useReactFlow()
+  const { fitView, setViewport } = useReactFlow()
+  const viewport = useViewport()
 
-  // Fit view only on initial load (not on every update)
-  useEffect(() => {
-    if (nodes.length > 0 && !hasFitViewRef.current) {
-      // Delay fitView slightly to ensure nodes are rendered
-      setTimeout(() => {
-        fitView({ padding: 0.2, duration: 300 })
-        hasFitViewRef.current = true
-      }, 100)
+  // Detail panel width for offset calculation (must match BrowsePage)
+  const DETAIL_PANEL_WIDTH = 520
+
+  // Reference to the container for measuring dimensions
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // Helper to fit view with offset for detail panel - calculates in one step
+  const fitViewWithOffset = () => {
+    if (!nodes.length) return
+
+    // Calculate the bounding box of all nodes
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
+    for (const node of nodes) {
+      minX = Math.min(minX, node.position.x)
+      maxX = Math.max(maxX, node.position.x + 172) // node width ~172px
+      minY = Math.min(minY, node.position.y)
+      maxY = Math.max(maxY, node.position.y + 36) // node height ~36px
     }
-  }, [nodes, fitView])
+
+    const graphWidth = maxX - minX
+    const graphHeight = maxY - minY
+    const graphCenterX = (minX + maxX) / 2
+    const graphCenterY = (minY + maxY) / 2
+
+    // Get container dimensions
+    const container = containerRef.current
+    if (!container) {
+      // Fallback to simple fitView if no container ref
+      fitView({ padding: 0.8, duration: 300 })
+      return
+    }
+
+    const containerWidth = container.clientWidth
+    const containerHeight = container.clientHeight
+
+    // Available width (subtract panel width if open)
+    const availableWidth = detailPanelOpen ? containerWidth - DETAIL_PANEL_WIDTH : containerWidth
+    const availableHeight = containerHeight
+
+    // Calculate zoom to fit with padding
+    const padding = 0.8
+    const scaleX = availableWidth / (graphWidth * (1 + padding))
+    const scaleY = availableHeight / (graphHeight * (1 + padding))
+    const zoom = Math.min(scaleX, scaleY, 1) // Cap at 1x zoom
+
+    // Calculate viewport position to center the graph in the available area
+    // When panel is open, center in the left portion of the screen
+    const availableCenterX = detailPanelOpen ? availableWidth / 2 : containerWidth / 2
+    const availableCenterY = containerHeight / 2
+
+    const x = availableCenterX - graphCenterX * zoom
+    const y = availableCenterY - graphCenterY * zoom
+
+    setViewport({ x, y, zoom }, { duration: 300 })
+  }
+
+  // Fit view when nodes change (simulation is already complete)
+  useEffect(() => {
+    if (nodes.length > 0) {
+      // Small delay to ensure React has rendered the nodes
+      const timeout = setTimeout(() => {
+        fitViewWithOffset()
+        hasFitViewRef.current = true
+      }, 50)
+      return () => clearTimeout(timeout)
+    }
+  }, [nodes, detailPanelOpen])
 
   // Reset hasFitViewRef when entityKey changes (new graph)
   useEffect(() => {
     hasFitViewRef.current = false
   }, [entityKey])
 
-  if (isLoading) {
+  // Only show loading skeleton on initial load, not when switching entities
+  if (isLoading && !prevDataRef.current) {
     return (
       <div className="h-full flex items-center justify-center">
         <Skeleton className="h-24 w-48" />
@@ -186,8 +256,17 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId }: GraphCanvasPr
   }
 
   return (
-    <div className="h-full w-full relative">
-      {data?.has_cycles && (
+    <div ref={containerRef} className="h-full w-full relative">
+      {/* Loading indicator when fetching new data */}
+      {isFetching && (
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20">
+          <Badge variant="secondary" className="animate-pulse">
+            Loading...
+          </Badge>
+        </div>
+      )}
+
+      {displayData?.has_cycles && (
         <Badge
           variant="destructive"
           className="absolute top-2 left-2 z-10 flex items-center gap-1"
@@ -197,10 +276,9 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId }: GraphCanvasPr
         </Badge>
       )}
 
-      <GraphControls onResetLayout={restartSimulation} isSimulating={isRunning} />
-
-      {/* Module hull controls - positioned below graph controls */}
-      <div className="absolute top-[280px] right-4 z-10">
+      {/* Controls bar - horizontal at top left */}
+      <div className="absolute top-4 left-4 z-10 flex items-start gap-2">
+        <GraphControls onResetLayout={restartSimulation} isSimulating={isRunning} />
         <ModuleHullControls modules={moduleIds} />
       </div>
 
@@ -217,8 +295,8 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId }: GraphCanvasPr
         <Controls />
       </ReactFlow>
 
-      {/* Module hull overlays - rendered below nodes */}
-      <HullLayer nodes={nodes} />
+      {/* Module hull overlays - rendered with viewport transform to match graph */}
+      <HullLayer nodes={nodes} viewport={viewport} />
     </div>
   )
 }

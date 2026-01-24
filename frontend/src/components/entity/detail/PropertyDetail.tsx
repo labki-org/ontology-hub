@@ -257,8 +257,8 @@ export function PropertyDetail({
                 key={category.entity_key}
                 className="flex items-center justify-between p-2 rounded hover:bg-muted/50 cursor-pointer"
                 onClick={() => {
-                  const selectEntity = useDetailStore.getState().selectEntity
-                  selectEntity(category.entity_key, 'category')
+                  const openDetail = useDetailStore.getState().openDetail
+                  openDetail(category.entity_key, 'category')
                 }}
               >
                 <div className="flex-1">

@@ -9,10 +9,9 @@ import {
 import type { Node, Edge } from '@xyflow/react'
 
 interface ForceLayoutOptions {
-  chargeStrength?: number // default -800
-  linkDistance?: number // default 120
-  collisionRadius?: number // default 80
-  alphaDecay?: number // default 0.02
+  chargeStrength?: number
+  linkDistance?: number
+  collisionRadius?: number
 }
 
 interface D3Node {
@@ -26,35 +25,28 @@ interface D3Node {
 /**
  * Integrate d3-force simulation with React Flow nodes.
  *
- * This hook runs a force-directed layout simulation and updates node positions
- * on each tick. The simulation automatically stops when stabilized (alpha < 0.01).
+ * This hook runs a force-directed layout simulation synchronously to completion
+ * before returning positioned nodes. This prevents visible "settling" animation.
  *
- * Based on research findings:
- * - Clone nodes before simulation to avoid React state mutation warnings
- * - Auto-stop when alpha < 0.01 for performance
- * - Use forceCollide to prevent node overlap
- *
- * @param initialNodes - React Flow nodes to position
- * @param edges - React Flow edges for link force
- * @param options - Force simulation configuration
- * @returns { nodes, isRunning, restartSimulation, stopSimulation }
+ * Features:
+ * - Runs simulation to completion before showing nodes (no flickering)
+ * - Manual restart available for user-triggered re-layout
+ * - Uses forceCollide to prevent node overlap
  */
 export function useForceLayout(
   initialNodes: Node[],
   edges: Edge[],
   options?: ForceLayoutOptions
 ) {
-  const [nodes, setNodes] = useState<Node[]>(initialNodes)
+  const [nodes, setNodes] = useState<Node[]>([])
   const [isRunning, setIsRunning] = useState(false)
-  const simulationRef = useRef<any>(null)
-  // Keep track of d3 nodes for tick handler closure
+  const simulationRef = useRef<ReturnType<typeof forceSimulation<D3Node>> | null>(null)
   const d3NodesRef = useRef<D3Node[]>([])
 
   const {
-    chargeStrength = -800,
-    linkDistance = 120,
-    collisionRadius = 80,
-    alphaDecay = 0.02,
+    chargeStrength = -400,
+    linkDistance = 80,
+    collisionRadius = 50,
   } = options ?? {}
 
   useEffect(() => {
@@ -64,16 +56,22 @@ export function useForceLayout(
       return
     }
 
-    // Sync state when initialNodes change
-    setNodes(initialNodes)
-
-    // Clone nodes for d3-force simulation to avoid mutation warnings
-    const d3Nodes: D3Node[] = initialNodes.map((node) => ({
-      id: node.id,
-      x: node.position?.x ?? Math.random() * 500,
-      y: node.position?.y ?? Math.random() * 500,
-    }))
-    // Store in ref for tick handler access
+    // Create d3 nodes with deterministic initial positions
+    const d3Nodes: D3Node[] = initialNodes.map((node, index) => {
+      // Use deterministic position based on ID hash
+      let hash = 0
+      for (const char of node.id) {
+        hash = ((hash << 5) - hash) + char.charCodeAt(0)
+        hash |= 0
+      }
+      const angle = (Math.abs(hash) % 360) * (Math.PI / 180)
+      const radius = 50 + (index * 20)
+      return {
+        id: node.id,
+        x: Math.cos(angle) * radius,
+        y: Math.sin(angle) * radius,
+      }
+    })
     d3NodesRef.current = d3Nodes
 
     // Convert edges to d3-force link format
@@ -93,16 +91,51 @@ export function useForceLayout(
           .distance(linkDistance)
       )
       .force('collide', forceCollide(collisionRadius))
-      .alphaDecay(alphaDecay)
+      .alphaDecay(0.05)
+      .stop() // Don't auto-run
+
+    // Run simulation to completion synchronously (no animation)
+    // This typically takes ~300 iterations to stabilize
+    const maxIterations = 300
+    for (let i = 0; i < maxIterations; i++) {
+      simulation.tick()
+      if (simulation.alpha() < 0.01) break
+    }
+
+    // Set final positioned nodes
+    const positionedNodes = initialNodes.map((node) => {
+      const d3Node = d3Nodes.find((n) => n.id === node.id)
+      return {
+        ...node,
+        position: {
+          x: d3Node?.x ?? 0,
+          y: d3Node?.y ?? 0,
+        },
+      }
+    })
+
+    setNodes(positionedNodes)
+    simulationRef.current = simulation
+
+    return () => {
+      simulation.stop()
+    }
+  }, [initialNodes, edges, chargeStrength, linkDistance, collisionRadius])
+
+  // Restart simulation with animation (for user-triggered re-layout)
+  const restartSimulation = useCallback(() => {
+    if (!simulationRef.current || !d3NodesRef.current.length) return
 
     setIsRunning(true)
 
-    // Update node positions on each tick using initialNodes as base
-    // (d3 mutates d3Nodes in place, so we read positions from there)
+    const simulation = simulationRef.current
+    simulation.alpha(0.5).restart()
+
+    // Update nodes on each tick during animated restart
     simulation.on('tick', () => {
       const currentD3Nodes = d3NodesRef.current
-      setNodes(
-        initialNodes.map((node) => {
+      setNodes((prevNodes) =>
+        prevNodes.map((node) => {
           const d3Node = currentD3Nodes.find((n) => n.id === node.id)
           return {
             ...node,
@@ -115,34 +148,9 @@ export function useForceLayout(
       )
     })
 
-    // Auto-stop when stabilized
     simulation.on('end', () => {
       setIsRunning(false)
     })
-
-    // Manual stop check (alpha threshold)
-    const checkStabilized = setInterval(() => {
-      if (simulation.alpha() < 0.01) {
-        simulation.stop()
-        setIsRunning(false)
-        clearInterval(checkStabilized)
-      }
-    }, 100)
-
-    simulationRef.current = simulation
-
-    return () => {
-      simulation.stop()
-      clearInterval(checkStabilized)
-      setIsRunning(false)
-    }
-  }, [initialNodes, edges, chargeStrength, linkDistance, collisionRadius, alphaDecay])
-
-  const restartSimulation = useCallback(() => {
-    if (simulationRef.current) {
-      simulationRef.current.alpha(0.5).restart()
-      setIsRunning(true)
-    }
   }, [])
 
   const stopSimulation = useCallback(() => {

@@ -143,8 +143,8 @@ export function SubobjectDetail({
                 key={propertyKey}
                 className="flex items-center justify-between p-2 rounded hover:bg-muted/50 cursor-pointer"
                 onClick={() => {
-                  const selectEntity = useDetailStore.getState().selectEntity
-                  selectEntity(propertyKey, 'property')
+                  const openDetail = useDetailStore.getState().openDetail
+                  openDetail(propertyKey, 'property')
                 }}
               >
                 <div className="flex-1">
