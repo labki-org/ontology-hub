@@ -18,6 +18,8 @@ import { AlertTriangle } from 'lucide-react'
 import { graphNodeTypes } from './GraphNode'
 import { GraphControls } from './GraphControls'
 import { useForceLayout } from './useForceLayout'
+import { HullLayer } from './HullLayer'
+import { ModuleHullControls } from './ModuleHullControls'
 import type { GraphNode as ApiGraphNode, GraphEdge as ApiGraphEdge } from '@/api/types'
 
 interface GraphCanvasProps {
@@ -103,6 +105,19 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId }: GraphCanvasPr
     filteredEdges
   )
 
+  // Extract unique module IDs for hull controls
+  const moduleIds = useMemo(() => {
+    const moduleSet = new Set<string>()
+    for (const node of nodes) {
+      if (node.data.modules && Array.isArray(node.data.modules)) {
+        for (const moduleId of node.data.modules) {
+          moduleSet.add(moduleId)
+        }
+      }
+    }
+    return Array.from(moduleSet)
+  }, [nodes])
+
   // Track if this is the first render for fitView
   const hasFitViewRef = useRef(false)
   const { fitView } = useReactFlow()
@@ -169,6 +184,11 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId }: GraphCanvasPr
 
       <GraphControls onResetLayout={restartSimulation} isSimulating={isRunning} />
 
+      {/* Module hull controls - positioned below graph controls */}
+      <div className="absolute top-[280px] right-4 z-10">
+        <ModuleHullControls modules={moduleIds} />
+      </div>
+
       <ReactFlow
         nodes={nodes}
         edges={filteredEdges}
@@ -181,6 +201,9 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId }: GraphCanvasPr
         <Background color="#ddd" gap={16} />
         <Controls />
       </ReactFlow>
+
+      {/* Module hull overlays - rendered below nodes */}
+      <HullLayer nodes={nodes} />
     </div>
   )
 }
