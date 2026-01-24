@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-23)
 ## Current Position
 
 Phase: 12 of 14 (Frontend + Graph Visualization)
-Plan: 5 of 6 in current phase
-Status: In progress
-Last activity: 2026-01-24 -- Completed 12-05-PLAN.md (Module Hull Overlays)
+Plan: 6 of 6 in current phase
+Status: Phase complete
+Last activity: 2026-01-24 -- Completed 12-06-PLAN.md (Unified Browse/Draft Integration)
 
-Progress: [#######################.] 90% (v1.0 complete, v2.0 phases 8-11 complete, phase 12 plans 1-5 complete)
+Progress: [########################] 92% (v1.0 complete, v2.0 phases 8-11 complete, phase 12 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 40 (20 v1.0 + 20 v2.0)
+- Total plans completed: 41 (20 v1.0 + 21 v2.0)
 - Average duration: ~30 min (v1.0 estimate)
-- Total execution time: ~10h 48m
+- Total execution time: ~10h 51m
 
 **By Phase (v2.0):**
 
@@ -31,7 +31,7 @@ Progress: [#######################.] 90% (v1.0 complete, v2.0 phases 8-11 comple
 | 09-ingest-pipeline | 4/4 | 9m | 2m |
 | 10-query-layer | 3/3 | 9m | 3m |
 | 11-draft-system | 5/5 | 16m | 3m |
-| 12-frontend-graph-visualization | 5/6 | 12m | 2m |
+| 12-frontend-graph-visualization | 6/6 | 15m | 2m |
 
 **Recent Trend:**
 - v1.0 completed in 2 days
@@ -55,6 +55,7 @@ Progress: [#######################.] 90% (v1.0 complete, v2.0 phases 8-11 comple
 - v2.0 phase 12 plan 3: 3 minutes (sidebar & draft UI)
 - v2.0 phase 12 plan 4: 2 minutes (force-directed graph canvas)
 - v2.0 phase 12 plan 5: 2 minutes (module hull overlays)
+- v2.0 phase 12 plan 6: 3 minutes (unified browse/draft integration)
 
 *Metrics updated after each plan completion*
 
@@ -121,6 +122,10 @@ Recent decisions affecting current work:
 - [12-05]: Empty visibleModules Set means show all (default behavior)
 - [12-05]: 12-color Tailwind-inspired palette with hash-based assignment
 - [12-05]: Position ModuleHullControls below GraphControls in top-right
+- [12-06]: EntityDetailPanel focuses on categories initially (other entity types in Phase 13)
+- [12-06]: BrowsePage syncs entity selection bidirectionally with URL
+- [12-06]: Draft mode activated purely via URL parameter (no global state)
+- [12-06]: /browse route separate from / to maintain v1 backward compatibility
 
 ### Pending Todos
 
@@ -133,5 +138,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-24
-Stopped at: Completed 12-05-PLAN.md (Module Hull Overlays)
+Stopped at: Completed 12-06-PLAN.md (Unified Browse/Draft Integration)
 Resume file: None
