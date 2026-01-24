@@ -44,7 +44,11 @@ Phases 1-7 delivered the complete MVP: Docker infrastructure, GitHub indexing, R
   3. Relationship tables (category_parent, category_property, module_entity, bundle_module) capture normalized relationships
   4. category_property_effective materialized view precomputes inherited properties with source + depth provenance
   5. draft and draft_change tables ready for delta storage with base_commit_sha for auto-rebase
-**Plans**: TBD
+**Plans:** 3 plans
+Plans:
+- [ ] 08-01-PLAN.md — Core entity models (ontology_version + 6 entity tables)
+- [ ] 08-02-PLAN.md — Relationship tables + materialized view SQL
+- [ ] 08-03-PLAN.md — Draft tables + Alembic migration
 
 ### Phase 9: Ingest Pipeline
 **Goal**: Populate v2.0 schema from labki-schemas repo via webhook, replacing previous data with latest
@@ -128,7 +132,7 @@ Phases execute in numeric order: 8 -> 8.1 -> 8.2 -> 9 -> ...
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 1-7 | v1.0 | 20/20 | Complete | 2026-01-23 |
-| 8. Database Foundation | v2.0 | 0/TBD | Not started | - |
+| 8. Database Foundation | v2.0 | 0/3 | Planned | - |
 | 9. Ingest Pipeline | v2.0 | 0/TBD | Not started | - |
 | 10. Query Layer | v2.0 | 0/TBD | Not started | - |
 | 11. Draft System | v2.0 | 0/TBD | Not started | - |
@@ -139,4 +143,4 @@ Phases execute in numeric order: 8 -> 8.1 -> 8.2 -> 9 -> ...
 ---
 *Roadmap created: 2026-01-23*
 *v2.0 phases: 8-14 (7 phases, 92 requirements)*
-*Last updated: 2026-01-23 (simplified versioning model)*
+*Last updated: 2026-01-23 (Phase 8 planned)*
