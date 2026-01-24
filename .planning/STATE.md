@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-23)
 ## Current Position
 
 Phase: 12 of 14 (Frontend + Graph Visualization)
-Plan: 3 of 6 in current phase
+Plan: 5 of 6 in current phase
 Status: In progress
-Last activity: 2026-01-24 -- Completed 12-03-PLAN.md (Sidebar & Draft UI)
+Last activity: 2026-01-24 -- Completed 12-05-PLAN.md (Module Hull Overlays)
 
-Progress: [######################..] 88% (v1.0 complete, v2.0 phases 8-11 complete, phase 12 plans 1-3 complete)
+Progress: [#######################.] 90% (v1.0 complete, v2.0 phases 8-11 complete, phase 12 plans 1-5 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 38 (20 v1.0 + 18 v2.0)
+- Total plans completed: 40 (20 v1.0 + 20 v2.0)
 - Average duration: ~30 min (v1.0 estimate)
-- Total execution time: ~10h 44m
+- Total execution time: ~10h 48m
 
 **By Phase (v2.0):**
 
@@ -31,7 +31,7 @@ Progress: [######################..] 88% (v1.0 complete, v2.0 phases 8-11 comple
 | 09-ingest-pipeline | 4/4 | 9m | 2m |
 | 10-query-layer | 3/3 | 9m | 3m |
 | 11-draft-system | 5/5 | 16m | 3m |
-| 12-frontend-graph-visualization | 3/6 | 8m | 3m |
+| 12-frontend-graph-visualization | 5/6 | 12m | 2m |
 
 **Recent Trend:**
 - v1.0 completed in 2 days
@@ -53,6 +53,8 @@ Progress: [######################..] 88% (v1.0 complete, v2.0 phases 8-11 comple
 - v2.0 phase 12 plan 1: 2 minutes (frontend infrastructure)
 - v2.0 phase 12 plan 2: 1 minute (graph stores + API client)
 - v2.0 phase 12 plan 3: 3 minutes (sidebar & draft UI)
+- v2.0 phase 12 plan 4: 2 minutes (force-directed graph canvas)
+- v2.0 phase 12 plan 5: 2 minutes (module hull overlays)
 
 *Metrics updated after each plan completion*
 
@@ -115,6 +117,10 @@ Recent decisions affecting current work:
 - [12-03]: Draft title uses wiki_url from payload or falls back to draft ID
 - [12-03]: Simple dropdown pattern for DraftSelector (no Radix popover needed)
 - [12-03]: Change badges use green/yellow/red with +/~/- symbols
+- [12-05]: Expand hull by padding from centroid before computing convex hull
+- [12-05]: Empty visibleModules Set means show all (default behavior)
+- [12-05]: 12-color Tailwind-inspired palette with hash-based assignment
+- [12-05]: Position ModuleHullControls below GraphControls in top-right
 
 ### Pending Todos
 
@@ -127,5 +133,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-24
-Stopped at: Completed 12-03-PLAN.md (Sidebar & Draft UI)
+Stopped at: Completed 12-05-PLAN.md (Module Hull Overlays)
 Resume file: None
