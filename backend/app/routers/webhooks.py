@@ -11,12 +11,15 @@ import logging
 from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
+from sqlalchemy import select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.config import settings
 from app.database import async_session_maker
+from app.models.v2 import Draft, DraftStatus, OntologyVersion
 from app.services.github import GitHubClient
 from app.services.indexer import sync_repository
+from app.services.ingest_v2 import sync_repository_v2
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +63,7 @@ async def verify_github_signature(request: Request) -> bytes:
 
 
 async def trigger_sync_background(httpx_client: Any) -> None:
-    """Background task to sync repository.
+    """Background task to sync repository (v1.0 - kept for backward compatibility).
 
     Creates its own database session since FastAPI BackgroundTasks
     run after the request context is closed.
@@ -80,6 +83,75 @@ async def trigger_sync_background(httpx_client: Any) -> None:
             logger.info("Background sync complete: %s", result)
         except Exception as e:
             logger.error("Background sync failed: %s", e, exc_info=True)
+
+
+async def mark_drafts_stale(
+    session: AsyncSession,
+    old_commit_sha: str | None,
+    new_commit_sha: str,
+) -> int:
+    """Mark active drafts as stale when canonical changes.
+
+    Args:
+        session: Database session
+        old_commit_sha: Previous canonical commit (None if first ingest)
+        new_commit_sha: New canonical commit
+
+    Returns:
+        Number of drafts marked stale
+    """
+    if not old_commit_sha:
+        return 0
+
+    result = await session.execute(
+        update(Draft)
+        .where(Draft.base_commit_sha == old_commit_sha)
+        .where(Draft.status.in_([DraftStatus.DRAFT, DraftStatus.VALIDATED]))
+        .values(rebase_status="stale")
+    )
+    await session.commit()
+    return result.rowcount
+
+
+async def trigger_sync_background_v2(httpx_client: Any) -> None:
+    """Background task to sync repository using v2.0 ingest.
+
+    Creates its own database session since FastAPI BackgroundTasks
+    run after the request context is closed.
+
+    Args:
+        httpx_client: Pre-configured httpx.AsyncClient from app.state
+    """
+    async with async_session_maker() as session:
+        github_client = GitHubClient(httpx_client)
+        try:
+            # Get previous commit SHA for draft staleness detection
+            prev_version = (
+                await session.execute(
+                    select(OntologyVersion).order_by(OntologyVersion.created_at.desc())
+                )
+            ).scalars().first()
+            old_commit_sha = prev_version.commit_sha if prev_version else None
+
+            # Run v2.0 ingest
+            result = await sync_repository_v2(
+                github_client=github_client,
+                session=session,
+                owner=settings.GITHUB_REPO_OWNER,
+                repo=settings.GITHUB_REPO_NAME,
+            )
+            logger.info("v2.0 sync complete: %s", result)
+
+            # Mark drafts as stale if canonical changed
+            if result.get("status") == "completed" and old_commit_sha:
+                stale_count = await mark_drafts_stale(
+                    session, old_commit_sha, result["commit_sha"]
+                )
+                if stale_count > 0:
+                    logger.info("Marked %d drafts as stale", stale_count)
+
+        except Exception as e:
+            logger.error("v2.0 sync failed: %s", e, exc_info=True)
 
 
 @router.post("/github")
@@ -132,8 +204,8 @@ async def github_webhook(
             "reason": "GitHub integration not configured",
         }
 
-    # Trigger background sync
-    background_tasks.add_task(trigger_sync_background, httpx_client)
+    # Trigger background sync (v2.0)
+    background_tasks.add_task(trigger_sync_background_v2, httpx_client)
 
     logger.info(
         "Webhook received: push event with %d changed files (forced=%s)",
