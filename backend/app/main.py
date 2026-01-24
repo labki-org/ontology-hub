@@ -24,6 +24,7 @@ from app.routers import (
     versions_router,
     webhooks_router,
 )
+from app.routers.entities_v2 import router as entities_v2_router
 from app.services.github import GitHubClient
 from app.services.indexer import sync_repository
 
@@ -132,6 +133,7 @@ app.include_router(versions_router, prefix="/api/v1")
 app.include_router(webhooks_router, prefix="/api/v1")
 
 # v2.0 API routers
+app.include_router(entities_v2_router, prefix="/api/v2")
 app.include_router(graph_router, prefix="/api/v2")
 
 

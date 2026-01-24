@@ -452,3 +452,248 @@ async def list_templates(
         next_cursor=next_cursor,
         has_next=has_next,
     )
+
+
+# -----------------------------------------------------------------------------
+# Module endpoints
+# -----------------------------------------------------------------------------
+
+
+async def compute_module_closure(
+    session: SessionDep,
+    direct_category_keys: list[str],
+) -> list[str]:
+    """Compute transitive category dependencies for a module.
+
+    For each category in module, find categories it depends on (inherits from).
+    Closure = all ancestor categories not already in direct list.
+    Uses recursive CTE on category_parent table.
+
+    Args:
+        session: Async database session
+        direct_category_keys: List of category entity_keys directly in the module
+
+    Returns:
+        List of ancestor category entity_keys (transitive dependencies)
+    """
+    if not direct_category_keys:
+        return []
+
+    # Recursive CTE to find all ancestor categories
+    query = text("""
+        WITH RECURSIVE ancestors AS (
+            -- Base: direct module categories' parents
+            SELECT cp.parent_id as category_id
+            FROM category_parent cp
+            JOIN categories c ON c.id = cp.category_id
+            WHERE c.entity_key = ANY(:category_keys)
+
+            UNION
+
+            -- Recursive: parents of parents
+            SELECT cp.parent_id
+            FROM category_parent cp
+            JOIN ancestors a ON a.category_id = cp.category_id
+        )
+        SELECT DISTINCT c.entity_key
+        FROM ancestors a
+        JOIN categories c ON c.id = a.category_id
+        WHERE c.entity_key != ALL(:category_keys)
+    """)
+    result = await session.execute(query, {"category_keys": direct_category_keys})
+    return [row[0] for row in result.fetchall()]
+
+
+@router.get("/modules/{entity_key}", response_model=ModuleDetailResponse)
+@limiter.limit(RATE_LIMITS["entity_read"])
+async def get_module(
+    request: Request,
+    entity_key: str,
+    session: SessionDep,
+    draft_ctx: DraftContextDep,
+) -> ModuleDetailResponse:
+    """Get module detail with entities and closure (QRY-06).
+
+    Returns module with entities grouped by type and computed transitive
+    category dependencies (closure).
+
+    Rate limited to 200/minute per IP.
+    """
+    # Get canonical module
+    query = select(Module).where(Module.entity_key == entity_key)
+    result = await session.execute(query)
+    module = result.scalar_one_or_none()
+
+    effective = await draft_ctx.apply_overlay(module, "module", entity_key)
+
+    if not effective:
+        raise HTTPException(status_code=404, detail="Module not found")
+
+    # Get entities grouped by type
+    entities: dict[str, list[str]] = {}
+    direct_category_keys: list[str] = []
+
+    if module:
+        # Query module_entity to get all entities in this module
+        entity_query = (
+            select(ModuleEntity.entity_type, ModuleEntity.entity_key)
+            .where(ModuleEntity.module_id == module.id)
+            .order_by(ModuleEntity.entity_type, ModuleEntity.entity_key)
+        )
+        entity_result = await session.execute(entity_query)
+
+        for row in entity_result.fetchall():
+            entity_type = row[0].value  # Convert enum to string
+            ent_key = row[1]
+
+            if entity_type not in entities:
+                entities[entity_type] = []
+            entities[entity_type].append(ent_key)
+
+            # Track categories for closure computation
+            if entity_type == "category":
+                direct_category_keys.append(ent_key)
+
+        # Compute closure (transitive category dependencies)
+        closure = await compute_module_closure(session, direct_category_keys)
+    else:
+        # Draft-created module - extract entities from effective JSON if present
+        entities = effective.get("entities", {})
+        closure = []  # No closure for draft-created modules yet
+
+    return ModuleDetailResponse(
+        entity_key=effective.get("entity_key", entity_key),
+        label=effective.get("label", ""),
+        version=effective.get("version"),
+        entities=entities,
+        closure=closure,
+        change_status=effective.get("_change_status"),
+        deleted=effective.get("_deleted", False),
+    )
+
+
+# -----------------------------------------------------------------------------
+# Bundle endpoints
+# -----------------------------------------------------------------------------
+
+
+async def compute_bundle_closure(
+    session: SessionDep,
+    direct_module_keys: list[str],
+) -> list[str]:
+    """Compute transitive module dependencies for a bundle.
+
+    Module A depends on Module B if A has a category that inherits from
+    a category in B. Uses category_parent and module_entity tables.
+
+    Args:
+        session: Async database session
+        direct_module_keys: List of module entity_keys directly in the bundle
+
+    Returns:
+        List of dependent module entity_keys (transitive dependencies)
+    """
+    if not direct_module_keys:
+        return []
+
+    # Find modules containing ancestor categories of direct modules' categories
+    query = text("""
+        WITH RECURSIVE category_ancestors AS (
+            -- Base: categories in direct modules
+            SELECT me.entity_key as category_key, m.entity_key as source_module_key
+            FROM module_entity me
+            JOIN modules m ON m.id = me.module_id
+            WHERE m.entity_key = ANY(:module_keys)
+              AND me.entity_type = 'category'
+        ),
+        parent_categories AS (
+            -- Get parent categories of all module categories
+            SELECT
+                parent_cat.entity_key as category_key,
+                ca.source_module_key
+            FROM category_ancestors ca
+            JOIN categories c ON c.entity_key = ca.category_key
+            JOIN category_parent cp ON cp.category_id = c.id
+            JOIN categories parent_cat ON parent_cat.id = cp.parent_id
+        ),
+        all_ancestors AS (
+            -- Recursive: find all ancestor categories
+            SELECT category_key, source_module_key FROM parent_categories
+
+            UNION
+
+            SELECT
+                parent_cat.entity_key,
+                aa.source_module_key
+            FROM all_ancestors aa
+            JOIN categories c ON c.entity_key = aa.category_key
+            JOIN category_parent cp ON cp.category_id = c.id
+            JOIN categories parent_cat ON parent_cat.id = cp.parent_id
+        )
+        -- Find modules containing these ancestor categories
+        SELECT DISTINCT m.entity_key
+        FROM all_ancestors aa
+        JOIN categories c ON c.entity_key = aa.category_key
+        JOIN module_entity me ON me.entity_key = aa.category_key AND me.entity_type = 'category'
+        JOIN modules m ON m.id = me.module_id
+        WHERE m.entity_key != ALL(:module_keys)
+    """)
+    result = await session.execute(query, {"module_keys": direct_module_keys})
+    return [row[0] for row in result.fetchall()]
+
+
+@router.get("/bundles/{entity_key}", response_model=BundleDetailResponse)
+@limiter.limit(RATE_LIMITS["entity_read"])
+async def get_bundle(
+    request: Request,
+    entity_key: str,
+    session: SessionDep,
+    draft_ctx: DraftContextDep,
+) -> BundleDetailResponse:
+    """Get bundle detail with modules and closure (QRY-07).
+
+    Returns bundle with direct modules and computed transitive module
+    dependencies (closure).
+
+    Rate limited to 200/minute per IP.
+    """
+    # Get canonical bundle
+    query = select(Bundle).where(Bundle.entity_key == entity_key)
+    result = await session.execute(query)
+    bundle = result.scalar_one_or_none()
+
+    effective = await draft_ctx.apply_overlay(bundle, "bundle", entity_key)
+
+    if not effective:
+        raise HTTPException(status_code=404, detail="Bundle not found")
+
+    # Get direct modules
+    modules: list[str] = []
+
+    if bundle:
+        # Query bundle_module to get all modules in this bundle
+        module_query = (
+            select(Module.entity_key)
+            .join(BundleModule, BundleModule.module_id == Module.id)
+            .where(BundleModule.bundle_id == bundle.id)
+            .order_by(Module.entity_key)
+        )
+        module_result = await session.execute(module_query)
+        modules = [row[0] for row in module_result.fetchall()]
+
+        # Compute closure (transitive module dependencies)
+        closure = await compute_bundle_closure(session, modules)
+    else:
+        # Draft-created bundle - extract modules from effective JSON if present
+        modules = effective.get("modules", [])
+        closure = []  # No closure for draft-created bundles yet
+
+    return BundleDetailResponse(
+        entity_key=effective.get("entity_key", entity_key),
+        label=effective.get("label", ""),
+        version=effective.get("version"),
+        modules=modules,
+        closure=closure,
+        change_status=effective.get("_change_status"),
+        deleted=effective.get("_deleted", False),
+    )
