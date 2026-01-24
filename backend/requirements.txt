@@ -11,6 +11,7 @@ authlib>=1.6.0
 itsdangerous>=2.0.0
 jsonschema>=4.23.0
 referencing>=0.35.0
+jsonpatch>=1.33
 
 # Testing
 pytest>=8.0.0
