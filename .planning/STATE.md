@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-23)
 ## Current Position
 
 Phase: 11 of 14 (Draft System)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-01-24 -- Completed 11-01-PLAN.md (v2.0 Draft CRUD Endpoints)
+Last activity: 2026-01-24 -- Completed 11-02-PLAN.md (Draft Change Endpoints)
 
-Progress: [###################.....] 75% (v1.0 complete, v2.0 phase 11 plan 1 complete)
+Progress: [###################.....] 76% (v1.0 complete, v2.0 phase 11 plan 2 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 32 (20 v1.0 + 12 v2.0)
+- Total plans completed: 33 (20 v1.0 + 13 v2.0)
 - Average duration: ~30 min (v1.0 estimate)
-- Total execution time: ~10h 32m
+- Total execution time: ~10h 36m
 
 **By Phase (v2.0):**
 
@@ -30,7 +30,7 @@ Progress: [###################.....] 75% (v1.0 complete, v2.0 phase 11 plan 1 co
 | 08-database-foundation | 3/3 | 9m | 3m |
 | 09-ingest-pipeline | 4/4 | 9m | 2m |
 | 10-query-layer | 3/3 | 9m | 3m |
-| 11-draft-system | 1/3 | 4m | 4m |
+| 11-draft-system | 2/3 | 8m | 4m |
 
 **Recent Trend:**
 - v1.0 completed in 2 days
@@ -45,6 +45,7 @@ Progress: [###################.....] 75% (v1.0 complete, v2.0 phase 11 plan 1 co
 - v2.0 phase 10 plan 2: 4 minutes
 - v2.0 phase 10 plan 3: 2 minutes
 - v2.0 phase 11 plan 1: 4 minutes
+- v2.0 phase 11 plan 2: 4 minutes
 
 *Metrics updated after each plan completion*
 
@@ -90,6 +91,9 @@ Recent decisions affecting current work:
 - [11-01]: Separate Pydantic schemas from SQLModel models for API contract decoupling
 - [11-01]: Return 503 when no OntologyVersion exists (graceful handling of empty database)
 - [11-01]: VALIDATED->DRAFT transition allowed for rework scenarios
+- [11-02]: JSON Patch validation via jsonpatch.JsonPatch constructor
+- [11-02]: Entity existence check: UPDATE/DELETE require canonical entity, CREATE requires entity not exist
+- [11-02]: Changes only allowed when draft status is DRAFT
 
 ### Pending Todos
 
@@ -102,5 +106,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-24
-Stopped at: Completed 11-01-PLAN.md (v2.0 Draft CRUD Endpoints)
+Stopped at: Completed 11-02-PLAN.md (Draft Change Endpoints)
 Resume file: None
