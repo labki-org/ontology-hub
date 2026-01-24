@@ -9,15 +9,15 @@ Requirements for the platform rebuild. Each maps to roadmap phases.
 
 ### Database Foundation
 
-- [ ] **DB-01**: ontology_version table tracks current canonical state (commit_sha, ingest_status, ingested_at) — only latest version retained
-- [ ] **DB-02**: Entity tables (category, property, subobject, module, bundle, template) store canonical JSON with entity_key and source_path
-- [ ] **DB-03**: category_parent table stores parent relationships (no version scoping — only latest exists)
-- [ ] **DB-04**: category_property table stores property membership with required flag and origin (direct/inherited)
-- [ ] **DB-05**: category_property_effective materialized view precomputes inherited properties with source + depth provenance
-- [ ] **DB-06**: module_entity table stores module membership for all entity types
-- [ ] **DB-07**: bundle_module table stores bundle-to-module relationships
-- [ ] **DB-08**: draft table stores base_commit_sha (for auto-rebase), status, title, source (hub_ui/mediawiki_push)
-- [ ] **DB-09**: draft_change table stores change_type, entity_type, entity_key, patch (JSON Patch), replacement_json
+- [x] **DB-01**: ontology_version table tracks current canonical state (commit_sha, ingest_status, ingested_at) — only latest version retained
+- [x] **DB-02**: Entity tables (category, property, subobject, module, bundle, template) store canonical JSON with entity_key and source_path
+- [x] **DB-03**: category_parent table stores parent relationships (no version scoping — only latest exists)
+- [x] **DB-04**: category_property table stores property membership with required flag and origin (direct/inherited)
+- [x] **DB-05**: category_property_effective materialized view precomputes inherited properties with source + depth provenance
+- [x] **DB-06**: module_entity table stores module membership for all entity types
+- [x] **DB-07**: bundle_module table stores bundle-to-module relationships
+- [x] **DB-08**: draft table stores base_commit_sha (for auto-rebase), status, title, source (hub_ui/mediawiki_push)
+- [x] **DB-09**: draft_change table stores change_type, entity_type, entity_key, patch (JSON Patch), replacement_json
 
 ### Ingest Pipeline
 
@@ -184,15 +184,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DB-01 | Phase 8 | Pending |
-| DB-02 | Phase 8 | Pending |
-| DB-03 | Phase 8 | Pending |
-| DB-04 | Phase 8 | Pending |
-| DB-05 | Phase 8 | Pending |
-| DB-06 | Phase 8 | Pending |
-| DB-07 | Phase 8 | Pending |
-| DB-08 | Phase 8 | Pending |
-| DB-09 | Phase 8 | Pending |
+| DB-01 | Phase 8 | Complete |
+| DB-02 | Phase 8 | Complete |
+| DB-03 | Phase 8 | Complete |
+| DB-04 | Phase 8 | Complete |
+| DB-05 | Phase 8 | Complete |
+| DB-06 | Phase 8 | Complete |
+| DB-07 | Phase 8 | Complete |
+| DB-08 | Phase 8 | Complete |
+| DB-09 | Phase 8 | Complete |
 | ING-01 | Phase 9 | Pending |
 | ING-02 | Phase 9 | Pending |
 | ING-03 | Phase 9 | Pending |
@@ -284,4 +284,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-23*
-*Last updated: 2026-01-23 (simplified versioning model)*
+*Last updated: 2026-01-24 (Phase 8 complete)*

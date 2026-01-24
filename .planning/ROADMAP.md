@@ -24,7 +24,7 @@ Phases 1-7 delivered the complete MVP: Docker infrastructure, GitHub indexing, R
 - Integer phases (8, 9, ...): Planned milestone work
 - Decimal phases (8.1, 8.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 8: Database Foundation** - Versioned schema with normalized relationships
+- [x] **Phase 8: Database Foundation** - Versioned schema with normalized relationships
 - [ ] **Phase 9: Ingest Pipeline** - Populate schema from canonical repo
 - [ ] **Phase 10: Query Layer** - Version-scoped reads with graph endpoints
 - [ ] **Phase 11: Draft System** - JSON Patch storage with effective view computation
@@ -46,9 +46,9 @@ Phases 1-7 delivered the complete MVP: Docker infrastructure, GitHub indexing, R
   5. draft and draft_change tables ready for delta storage with base_commit_sha for auto-rebase
 **Plans:** 3 plans
 Plans:
-- [ ] 08-01-PLAN.md — Core entity models (ontology_version + 6 entity tables)
-- [ ] 08-02-PLAN.md — Relationship tables + materialized view SQL
-- [ ] 08-03-PLAN.md — Draft tables + Alembic migration
+- [x] 08-01-PLAN.md — Core entity models (ontology_version + 6 entity tables)
+- [x] 08-02-PLAN.md — Relationship tables + materialized view SQL
+- [x] 08-03-PLAN.md — Draft tables + Alembic migration
 
 ### Phase 9: Ingest Pipeline
 **Goal**: Populate v2.0 schema from labki-schemas repo via webhook, replacing previous data with latest
@@ -132,7 +132,7 @@ Phases execute in numeric order: 8 -> 8.1 -> 8.2 -> 9 -> ...
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 1-7 | v1.0 | 20/20 | Complete | 2026-01-23 |
-| 8. Database Foundation | v2.0 | 0/3 | Planned | - |
+| 8. Database Foundation | v2.0 | 3/3 | Complete | 2026-01-24 |
 | 9. Ingest Pipeline | v2.0 | 0/TBD | Not started | - |
 | 10. Query Layer | v2.0 | 0/TBD | Not started | - |
 | 11. Draft System | v2.0 | 0/TBD | Not started | - |
@@ -143,4 +143,4 @@ Phases execute in numeric order: 8 -> 8.1 -> 8.2 -> 9 -> ...
 ---
 *Roadmap created: 2026-01-23*
 *v2.0 phases: 8-14 (7 phases, 92 requirements)*
-*Last updated: 2026-01-23 (Phase 8 planned)*
+*Last updated: 2026-01-24 (Phase 8 complete)*
