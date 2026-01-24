@@ -6,24 +6,35 @@
 <domain>
 ## Phase Boundary
 
-Establish v2.0 schema with versioned canonical tables, normalized relationship storage, and materialized inheritance views. This phase creates the database foundation — entity tables, relationship tables, version tracking, and draft structure.
+Establish v2.0 schema with canonical tables, normalized relationship storage, and materialized inheritance views. This phase creates the database foundation — entity tables, relationship tables, version tracking, and draft structure.
 
 </domain>
 
 <decisions>
 ## Implementation Decisions
 
-### Ontology Versioning Model
-- **Top-level ontology versions** using major.minor.patch semver
-- An `ontology_version` represents a fully consistent snapshot with exact module/bundle versions included
-- Modules and bundles are versioned entities that live WITHIN an ontology version (not independent)
-- Drafts within a major version can only bump minor or patch
-- Breaking changes require bumping the ontology major version
+### Versioning Model (Simplified)
+- **Ontology Hub only maintains the latest version** — no historical versions in the database
+- Modules and Bundles have semver versions, but only the latest of each is stored in Ontology Hub
+- **labki-schemas repo is the version archive** — all past versions preserved there
+- `ontology_version` table tracks current canonical state with commit SHA
 
-### Version Retention Policy
-- Keep the latest of every major version for ontology, bundle, and module
-- Example: If ontology is at v3.2.1, retain v1.latest, v2.latest, v3.2.1
-- Same pattern applies to bundles and modules within their respective ontology versions
+### Repo Structure for Versioning (labki-schemas)
+- `/modules/{module-name}/` subdirectory for each module containing:
+  - JSON file with entity list + current version number
+  - `/versions/` subdirectory with tarballs of entity JSON for each version
+- `/bundles/{bundle-name}/` follows the same pattern
+- **GitHub Actions** auto-generates and commits tarballs on PR merge
+- **GitHub Actions** intelligently bumps version numbers: major (breaking), minor (non-breaking), patch (text changes)
+
+### Ingest Trigger
+- Webhook notifies Ontology Hub when new version is available
+- Ontology Hub ingests from latest commit
+
+### Draft Handling
+- Drafts are always against the current latest canonical
+- **Auto-rebase:** If new version is ingested while draft is in progress, draft auto-rebases onto new canonical
+- Draft changes stored as JSON Patch for updates, full replacement for creates
 
 ### Inheritance Materialization
 - `category_property_effective` view stores **source category + depth** for provenance
@@ -38,19 +49,18 @@ Establish v2.0 schema with versioned canonical tables, normalized relationship s
 - **Metadata:** Auto-generated title and description from changes, plus user-editable comment field
 
 ### Claude's Discretion
-- Purge timing for old minor/patch versions within a major (immediate vs grace period)
 - Whether draft inheritance is computed dynamically per-edit or on save
 - Exact table naming and indexing strategy
-- How to handle entities with no EXIF-equivalent metadata
+- Auto-rebase conflict resolution strategy
 
 </decisions>
 
 <specifics>
 ## Specific Ideas
 
-- "Users must sync to the latest of their major version before submitting edits"
-- Sidebar should show all current entities in the ontology, with entity detail pages showing which module/bundle versions contain that entity
-- Graph view scopes to a specific ontology version for consistency
+- Sidebar shows all current entities in the ontology (latest version only)
+- Entity detail pages show module/bundle membership with version info
+- Graph view displays the single canonical ontology state
 
 </specifics>
 
@@ -64,4 +74,4 @@ None — discussion stayed within phase scope
 ---
 
 *Phase: 08-database-foundation*
-*Context gathered: 2026-01-23*
+*Context gathered: 2026-01-23 (revised)*

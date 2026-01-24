@@ -35,35 +35,35 @@ Phases 1-7 delivered the complete MVP: Docker infrastructure, GitHub indexing, R
 ## Phase Details
 
 ### Phase 8: Database Foundation
-**Goal**: Establish v2.0 schema with versioned canonical tables, normalized relationship storage, and materialized inheritance views
+**Goal**: Establish v2.0 schema with canonical tables, normalized relationship storage, and materialized inheritance views (only latest version retained)
 **Depends on**: Nothing (first phase of v2.0)
 **Requirements**: DB-01, DB-02, DB-03, DB-04, DB-05, DB-06, DB-07, DB-08, DB-09
 **Success Criteria** (what must be TRUE):
-  1. ontology_version table tracks canonical versions with commit SHA and ingest status
-  2. Entity tables (category, property, subobject, module, bundle, template) store canonical JSON with version scoping
+  1. ontology_version table tracks current canonical state (commit SHA, ingest status) — only latest retained
+  2. Entity tables (category, property, subobject, module, bundle, template) store canonical JSON with entity_key and source_path
   3. Relationship tables (category_parent, category_property, module_entity, bundle_module) capture normalized relationships
-  4. category_property_effective materialized view precomputes inherited properties with provenance
-  5. draft and draft_change tables ready for delta storage
+  4. category_property_effective materialized view precomputes inherited properties with source + depth provenance
+  5. draft and draft_change tables ready for delta storage with base_commit_sha for auto-rebase
 **Plans**: TBD
 
 ### Phase 9: Ingest Pipeline
-**Goal**: Populate v2.0 schema from canonical GitHub repository at any ref (commit, tag, branch)
+**Goal**: Populate v2.0 schema from labki-schemas repo via webhook, replacing previous data with latest
 **Depends on**: Phase 8
-**Requirements**: ING-01, ING-02, ING-03, ING-04, ING-05, ING-06
+**Requirements**: ING-01, ING-02, ING-03, ING-04, ING-05, ING-06, ING-07
 **Success Criteria** (what must be TRUE):
-  1. Pipeline can fetch repo at specified ref and validate JSON files against _schema.json
-  2. All entity types parsed and stored in canonical tables with correct entity_key and source_path
+  1. Webhook endpoint receives push notification and triggers ingest from latest commit
+  2. All entity types parsed and stored in canonical tables (replacing previous data)
   3. Relationship tables populated (category_parent, category_property, module_entity, bundle_module)
   4. category_property_effective materialized view refreshed with correct inheritance
   5. Ingest warnings/errors captured in ontology_version record
 **Plans**: TBD
 
 ### Phase 10: Query Layer
-**Goal**: Provide version-scoped entity queries and graph data endpoints supporting both canonical and draft contexts
+**Goal**: Provide entity queries and graph endpoints supporting canonical and draft contexts
 **Depends on**: Phase 9
 **Requirements**: QRY-01, QRY-02, QRY-03, QRY-04, QRY-05, QRY-06, QRY-07, GRP-01, GRP-02, GRP-03, GRP-04
 **Success Criteria** (what must be TRUE):
-  1. Entity queries accept ontology_version_id and return canonical data for that version
+  1. Entity queries return current canonical data (only one version exists)
   2. Entity queries accept draft_id and return effective view (canonical + draft overlay computed server-side)
   3. Category detail returns parents, direct properties, and inherited properties with provenance
   4. Neighborhood graph endpoint returns nodes/edges within specified depth with module membership
@@ -71,15 +71,16 @@ Phases 1-7 delivered the complete MVP: Docker infrastructure, GitHub indexing, R
 **Plans**: TBD
 
 ### Phase 11: Draft System
-**Goal**: Store draft changes as JSON Patch deltas with server-side effective view computation and localized re-materialization
+**Goal**: Store draft changes as JSON Patch deltas with server-side effective view computation and auto-rebase on canonical updates
 **Depends on**: Phase 10
-**Requirements**: DRF-01, DRF-02, DRF-03, DRF-04, DRF-05, DRF-06
+**Requirements**: DRF-01, DRF-02, DRF-03, DRF-04, DRF-05, DRF-06, DRF-07
 **Success Criteria** (what must be TRUE):
-  1. Draft creation binds to base_ontology_version_id for stable base state
+  1. Draft creation binds to base_commit_sha for tracking
   2. Draft changes stored as JSON Patch for updates, full replacement for creates
   3. Effective view computation overlays draft changes on canonical data correctly
   4. Localized re-materialization handles inheritance changes during draft edits
-  5. MediaWiki push import creates draft_change rows from payload
+  5. Auto-rebase: when new canonical is ingested, in-progress drafts rebase automatically
+  6. MediaWiki push import creates draft_change rows from payload
 **Plans**: TBD
 
 ### Phase 12: Frontend + Graph Visualization
@@ -137,4 +138,5 @@ Phases execute in numeric order: 8 -> 8.1 -> 8.2 -> 9 -> ...
 
 ---
 *Roadmap created: 2026-01-23*
-*v2.0 phases: 8-14 (7 phases, 90 requirements)*
+*v2.0 phases: 8-14 (7 phases, 92 requirements)*
+*Last updated: 2026-01-23 (simplified versioning model)*

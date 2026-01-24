@@ -45,6 +45,10 @@ Recent decisions affecting current work:
 - [v2.0 start]: Full rebuild approach -- replace v1.0 implementation completely, reuse working code where appropriate
 - [v2.0 start]: Hybrid patch format -- JSON Patch for updates, full replacement for creates
 - [v2.0 start]: Materialized inheritance tables -- precompute category_property_effective at ingest
+- [Phase 8 context]: Latest-only versioning -- Ontology Hub retains only current version; labki-schemas repo is the version archive
+- [Phase 8 context]: Webhook-triggered ingest -- repo push triggers ingest, no manual refresh
+- [Phase 8 context]: Draft auto-rebase -- when new canonical is ingested, in-progress drafts rebase automatically
+- [Phase 8 context]: GitHub Actions version bumping -- auto-generate tarballs and bump semver on PR merge
 
 ### Pending Todos
 

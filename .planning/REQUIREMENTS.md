@@ -9,24 +9,25 @@ Requirements for the platform rebuild. Each maps to roadmap phases.
 
 ### Database Foundation
 
-- [ ] **DB-01**: ontology_version table tracks source_repo, ref_type, ref_name, commit_sha, ingest_status
+- [ ] **DB-01**: ontology_version table tracks current canonical state (commit_sha, ingest_status, ingested_at) — only latest version retained
 - [ ] **DB-02**: Entity tables (category, property, subobject, module, bundle, template) store canonical JSON with entity_key and source_path
-- [ ] **DB-03**: category_parent table stores parent relationships with ontology_version_id scoping
+- [ ] **DB-03**: category_parent table stores parent relationships (no version scoping — only latest exists)
 - [ ] **DB-04**: category_property table stores property membership with required flag and origin (direct/inherited)
-- [ ] **DB-05**: category_property_effective materialized view precomputes inherited properties with provenance
+- [ ] **DB-05**: category_property_effective materialized view precomputes inherited properties with source + depth provenance
 - [ ] **DB-06**: module_entity table stores module membership for all entity types
 - [ ] **DB-07**: bundle_module table stores bundle-to-module relationships
-- [ ] **DB-08**: draft table stores base_ontology_version_id, status, title, source (hub_ui/mediawiki_push)
+- [ ] **DB-08**: draft table stores base_commit_sha (for auto-rebase), status, title, source (hub_ui/mediawiki_push)
 - [ ] **DB-09**: draft_change table stores change_type, entity_type, entity_key, patch (JSON Patch), replacement_json
 
 ### Ingest Pipeline
 
-- [ ] **ING-01**: Pull repo at specified ref (commit SHA, tag, or branch)
-- [ ] **ING-02**: Validate all JSON files against _schema.json files from repo
-- [ ] **ING-03**: Parse and populate canonical entity tables
-- [ ] **ING-04**: Compute and populate relationship tables (category_parent, category_property, module_entity, bundle_module)
-- [ ] **ING-05**: Refresh category_property_effective materialized view
-- [ ] **ING-06**: Store ingest warnings/errors in ontology_version record
+- [ ] **ING-01**: Webhook endpoint receives push notification and triggers ingest
+- [ ] **ING-02**: Pull latest commit from labki-schemas repo
+- [ ] **ING-03**: Validate all JSON files against _schema.json files from repo
+- [ ] **ING-04**: Parse and populate canonical entity tables (replacing previous data)
+- [ ] **ING-05**: Compute and populate relationship tables (category_parent, category_property, module_entity, bundle_module)
+- [ ] **ING-06**: Refresh category_property_effective materialized view
+- [ ] **ING-07**: Store ingest warnings/errors in ontology_version record
 
 ### Query Layer
 
@@ -47,12 +48,13 @@ Requirements for the platform rebuild. Each maps to roadmap phases.
 
 ### Draft System
 
-- [ ] **DRF-01**: Draft creation with base_ontology_version_id binding
+- [ ] **DRF-01**: Draft creation binds to base_commit_sha for tracking
 - [ ] **DRF-02**: Draft changes stored as JSON Patch for updates, full replacement for creates
 - [ ] **DRF-03**: Effective view computation overlays draft changes on canonical data
 - [ ] **DRF-04**: Localized re-materialization of inheritance during draft edits
-- [ ] **DRF-05**: Draft status lifecycle (active, submitted, merged, abandoned)
+- [ ] **DRF-05**: Draft status lifecycle (draft, validated, submitted, merged, rejected)
 - [ ] **DRF-06**: MediaWiki push import creates draft_change rows from payload
+- [ ] **DRF-07**: Auto-rebase: when new canonical is ingested, in-progress drafts rebase automatically
 
 ### Validation Engine
 
@@ -68,7 +70,7 @@ Requirements for the platform rebuild. Each maps to roadmap phases.
 - [ ] **FE-01**: Left sidebar with collapsible sections for each entity type
 - [ ] **FE-02**: Search box filters entities across all types
 - [ ] **FE-03**: Entity lists show change badges in draft mode (added/modified/deleted)
-- [ ] **FE-04**: Version selector for canonical mode (choose ontology version)
+- [ ] **FE-04**: Current ontology version display (commit SHA, module/bundle versions)
 - [ ] **FE-05**: Draft selector shows current draft with status
 - [ ] **FE-06**: Same UI components serve both browse and draft modes
 
@@ -197,6 +199,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ING-04 | Phase 9 | Pending |
 | ING-05 | Phase 9 | Pending |
 | ING-06 | Phase 9 | Pending |
+| ING-07 | Phase 9 | Pending |
 | QRY-01 | Phase 10 | Pending |
 | QRY-02 | Phase 10 | Pending |
 | QRY-03 | Phase 10 | Pending |
@@ -214,6 +217,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DRF-04 | Phase 11 | Pending |
 | DRF-05 | Phase 11 | Pending |
 | DRF-06 | Phase 11 | Pending |
+| DRF-07 | Phase 11 | Pending |
 | FE-01 | Phase 12 | Pending |
 | FE-02 | Phase 12 | Pending |
 | FE-03 | Phase 12 | Pending |
@@ -274,10 +278,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PR-05 | Phase 14 | Pending |
 
 **Coverage:**
-- v2.0 requirements: 90 total
-- Mapped to phases: 90
+- v2.0 requirements: 92 total
+- Mapped to phases: 92
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-01-23*
-*Last updated: 2026-01-23 after roadmap creation*
+*Last updated: 2026-01-23 (simplified versioning model)*
