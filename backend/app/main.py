@@ -15,6 +15,7 @@ from app.dependencies.rate_limit import limiter, rate_limit_exceeded_handler
 # Import all models to register them with SQLModel.metadata before create_all
 from app.models import Entity, Module, Profile, Draft  # noqa: F401
 from app.routers import (
+    draft_changes_router,
     drafts_router,
     drafts_v2_router,
     entities_router,
@@ -137,6 +138,7 @@ app.include_router(webhooks_router, prefix="/api/v1")
 app.include_router(entities_v2_router, prefix="/api/v2")
 app.include_router(graph_router, prefix="/api/v2")
 app.include_router(drafts_v2_router, prefix="/api/v2")
+app.include_router(draft_changes_router, prefix="/api/v2")
 
 
 @app.get("/health")
