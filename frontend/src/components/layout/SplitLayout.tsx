@@ -1,5 +1,5 @@
 import { ReactNode } from 'react'
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
+import { Group, Panel, Separator } from 'react-resizable-panels'
 
 interface SplitLayoutProps {
   children: [ReactNode, ReactNode]
@@ -11,15 +11,15 @@ export function SplitLayout({ children, className }: SplitLayoutProps) {
 
   return (
     <div className={className}>
-      <PanelGroup direction="vertical" autoSaveId="browse-layout">
+      <Group direction="vertical" autoSaveId="browse-layout">
         <Panel defaultSize={60} minSize={30}>
           {graphPanel}
         </Panel>
-        <PanelResizeHandle className="h-1.5 bg-border hover:bg-primary transition" />
+        <Separator className="h-1.5 bg-border hover:bg-primary transition" />
         <Panel defaultSize={40} minSize={20}>
           {detailPanel}
         </Panel>
-      </PanelGroup>
+      </Group>
     </div>
   )
 }
