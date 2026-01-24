@@ -19,9 +19,9 @@ Progress: [########################.] 94% (v1.0 complete, v2.0 phases 8-12 compl
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 46 (20 v1.0 + 26 v2.0)
+- Total plans completed: 47 (20 v1.0 + 27 v2.0)
 - Average duration: ~30 min (v1.0 estimate)
-- Total execution time: ~11h 15m
+- Total execution time: ~11h 20m
 
 **By Phase (v2.0):**
 
@@ -32,7 +32,7 @@ Progress: [########################.] 94% (v1.0 complete, v2.0 phases 8-12 compl
 | 10-query-layer | 3/3 | 9m | 3m |
 | 11-draft-system | 5/5 | 16m | 3m |
 | 12-frontend-graph-visualization | 6/6 | 15m | 2m |
-| 13-entity-detail-pages | 6/TBD | 24m | 4m |
+| 13-entity-detail-pages | 7/TBD | 29m | 4m |
 
 **Recent Trend:**
 - v1.0 completed in 2 days
@@ -61,6 +61,7 @@ Progress: [########################.] 94% (v1.0 complete, v2.0 phases 8-12 compl
 - v2.0 phase 13 plan 2: 3 minutes (entity form components)
 - v2.0 phase 13 plan 3: 7 minutes (entity detail modal infrastructure)
 - v2.0 phase 13 plan 4: 4 minutes (category detail page)
+- v2.0 phase 13 plan 5: 5 minutes (property and subobject detail pages)
 - v2.0 phase 13 plan 6: 5 minutes (module and bundle detail pages)
 
 *Metrics updated after each plan completion*
@@ -145,6 +146,9 @@ Recent decisions affecting current work:
 - [13-04]: PropertiesSection groups inherited properties by source category with depth info
 - [13-04]: Type guard used to narrow union type from useCategory hook
 - [13-04]: Parents rendered as clickable badges for navigation
+- [13-05]: Select component for enum-like fields (datatype, cardinality) provides better UX than text input
+- [13-05]: Property where-used shows categories using the property with change status badges
+- [13-05]: Subobject where-used placeholder since backend API doesn't exist yet
 - [13-06]: Closure visualization separates direct members from transitive dependencies
 - [13-06]: Entity grouping by type with count badges for clarity
 - [13-06]: Version information section only shown in draft context (when draftId present)
@@ -160,5 +164,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-24
-Stopped at: Completed 13-06-PLAN.md (Module and Bundle detail pages)
+Stopped at: Completed 13-05-PLAN.md (Property and Subobject detail pages)
 Resume file: None
