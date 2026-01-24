@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-01-23)
 
 **Core value:** Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes, with zero platform accounts and strong validation feedback.
-**Current focus:** Phase 12 - Frontend + Graph Visualization
+**Current focus:** Phase 13 - Entity Detail Pages
 
 ## Current Position
 
-Phase: 12 of 14 (Frontend + Graph Visualization)
-Plan: 6 of 6 in current phase
-Status: Phase complete
-Last activity: 2026-01-24 -- Completed 12-06-PLAN.md (Unified Browse/Draft Integration)
+Phase: 13 of 14 (Entity Detail Pages)
+Plan: 0 of TBD in current phase
+Status: Planning needed
+Last activity: 2026-01-24 -- Completed Phase 12 (Frontend + Graph Visualization) with verification
 
-Progress: [########################] 92% (v1.0 complete, v2.0 phases 8-11 complete, phase 12 complete)
+Progress: [########################.] 92% (v1.0 complete, v2.0 phases 8-12 complete)
 
 ## Performance Metrics
 
@@ -138,5 +138,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-24
-Stopped at: Completed 12-06-PLAN.md (Unified Browse/Draft Integration)
+Stopped at: Completed Phase 12 (Frontend + Graph Visualization)
 Resume file: None

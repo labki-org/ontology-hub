@@ -28,7 +28,7 @@ Phases 1-7 delivered the complete MVP: Docker infrastructure, GitHub indexing, R
 - [x] **Phase 9: Ingest Pipeline** - Populate schema from canonical repo
 - [x] **Phase 10: Query Layer** - Version-scoped reads with graph endpoints
 - [x] **Phase 11: Draft System** - JSON Patch storage with effective view computation
-- [ ] **Phase 12: Frontend + Graph Visualization** - Unified browse/draft UI with module hulls
+- [x] **Phase 12: Frontend + Graph Visualization** - Unified browse/draft UI with module hulls
 - [ ] **Phase 13: Entity Detail Pages** - All entity types with edit mode
 - [ ] **Phase 14: Validation + Workflow + PR** - Final validation and PR submission
 
@@ -114,12 +114,12 @@ Plans:
   5. Module hull overlays render using d3-polygon with multi-hull display and toggle controls
 **Plans:** 6 plans
 Plans:
-- [ ] 12-01-PLAN.md — Core layout + dependencies (SplitLayout, v2 API hooks)
-- [ ] 12-02-PLAN.md — Graph stores + API client (graphStore, hullStore, graph hooks)
-- [ ] 12-03-PLAN.md — Sidebar with draft badges (SidebarV2, search, DraftBanner)
-- [ ] 12-04-PLAN.md — Force-directed graph canvas (GraphCanvas, useForceLayout)
-- [ ] 12-05-PLAN.md — Module hull overlays (ModuleHull, HullLayer, controls)
-- [ ] 12-06-PLAN.md — Integration + routing (BrowsePage, MainLayoutV2)
+- [x] 12-01-PLAN.md — Core layout + dependencies (SplitLayout, v2 API hooks)
+- [x] 12-02-PLAN.md — Graph stores + API client (graphStore, hullStore, graph hooks)
+- [x] 12-03-PLAN.md — Sidebar with draft badges (SidebarV2, search, DraftBanner)
+- [x] 12-04-PLAN.md — Force-directed graph canvas (GraphCanvas, useForceLayout)
+- [x] 12-05-PLAN.md — Module hull overlays (ModuleHull, HullLayer, controls)
+- [x] 12-06-PLAN.md — Integration + routing (BrowsePage, MainLayoutV2)
 
 ### Phase 13: Entity Detail Pages
 **Goal**: Implement detail pages for all six entity types with view and edit modes
@@ -158,11 +158,11 @@ Phases execute in numeric order: 8 -> 8.1 -> 8.2 -> 9 -> ...
 | 9. Ingest Pipeline | v2.0 | 4/4 | Complete | 2026-01-24 |
 | 10. Query Layer | v2.0 | 3/3 | Complete | 2026-01-24 |
 | 11. Draft System | v2.0 | 5/5 | Complete | 2026-01-24 |
-| 12. Frontend + Graph | v2.0 | 0/6 | In progress | - |
+| 12. Frontend + Graph | v2.0 | 6/6 | Complete | 2026-01-24 |
 | 13. Entity Detail Pages | v2.0 | 0/TBD | Not started | - |
 | 14. Validation + Workflow + PR | v2.0 | 0/TBD | Not started | - |
 
 ---
 *Roadmap created: 2026-01-23*
 *v2.0 phases: 8-14 (7 phases, 92 requirements)*
-*Last updated: 2026-01-24 (Phase 12 planning complete)*
+*Last updated: 2026-01-24 (Phase 12 complete)*

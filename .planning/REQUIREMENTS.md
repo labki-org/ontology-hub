@@ -67,22 +67,22 @@ Requirements for the platform rebuild. Each maps to roadmap phases.
 
 ### Frontend Browsing
 
-- [ ] **FE-01**: Left sidebar with collapsible sections for each entity type
-- [ ] **FE-02**: Search box filters entities across all types
-- [ ] **FE-03**: Entity lists show change badges in draft mode (added/modified/deleted)
-- [ ] **FE-04**: Current ontology version display (commit SHA, module/bundle versions)
-- [ ] **FE-05**: Draft selector shows current draft with status
-- [ ] **FE-06**: Same UI components serve both browse and draft modes
+- [x] **FE-01**: Left sidebar with collapsible sections for each entity type
+- [x] **FE-02**: Search box filters entities across all types
+- [x] **FE-03**: Entity lists show change badges in draft mode (added/modified/deleted)
+- [x] **FE-04**: Current ontology version display (commit SHA, module/bundle versions)
+- [x] **FE-05**: Draft selector shows current draft with status
+- [x] **FE-06**: Same UI components serve both browse and draft modes
 
 ### Graph Visualization
 
-- [ ] **GV-01**: Graph panel on category page centered on selected category
-- [ ] **GV-02**: Depth control (1-3 levels)
-- [ ] **GV-03**: Edge type filter (inheritance, properties, subobjects)
-- [ ] **GV-04**: Module hull overlays using d3-polygon convex hulls
-- [ ] **GV-05**: Multi-hull display (multiple modules visible simultaneously)
-- [ ] **GV-06**: Module selection panel to toggle hull visibility
-- [ ] **GV-07**: Click-to-focus and pan/zoom navigation
+- [x] **GV-01**: Graph panel on category page centered on selected category
+- [x] **GV-02**: Depth control (1-3 levels)
+- [x] **GV-03**: Edge type filter (inheritance, properties, subobjects)
+- [x] **GV-04**: Module hull overlays using d3-polygon convex hulls
+- [x] **GV-05**: Multi-hull display (multiple modules visible simultaneously)
+- [x] **GV-06**: Module selection panel to toggle hull visibility
+- [x] **GV-07**: Click-to-focus and pan/zoom navigation
 
 ### Category Detail
 
@@ -218,19 +218,19 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DRF-05 | Phase 11 | Complete |
 | DRF-06 | Phase 11 | Complete |
 | DRF-07 | Phase 11 | Complete |
-| FE-01 | Phase 12 | Pending |
-| FE-02 | Phase 12 | Pending |
-| FE-03 | Phase 12 | Pending |
-| FE-04 | Phase 12 | Pending |
-| FE-05 | Phase 12 | Pending |
-| FE-06 | Phase 12 | Pending |
-| GV-01 | Phase 12 | Pending |
-| GV-02 | Phase 12 | Pending |
-| GV-03 | Phase 12 | Pending |
-| GV-04 | Phase 12 | Pending |
-| GV-05 | Phase 12 | Pending |
-| GV-06 | Phase 12 | Pending |
-| GV-07 | Phase 12 | Pending |
+| FE-01 | Phase 12 | Complete |
+| FE-02 | Phase 12 | Complete |
+| FE-03 | Phase 12 | Complete |
+| FE-04 | Phase 12 | Complete |
+| FE-05 | Phase 12 | Complete |
+| FE-06 | Phase 12 | Complete |
+| GV-01 | Phase 12 | Complete |
+| GV-02 | Phase 12 | Complete |
+| GV-03 | Phase 12 | Complete |
+| GV-04 | Phase 12 | Complete |
+| GV-05 | Phase 12 | Complete |
+| GV-06 | Phase 12 | Complete |
+| GV-07 | Phase 12 | Complete |
 | CAT-01 | Phase 13 | Pending |
 | CAT-02 | Phase 13 | Pending |
 | CAT-03 | Phase 13 | Pending |
@@ -284,4 +284,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-23*
-*Last updated: 2026-01-24 (Phase 10 complete)*
+*Last updated: 2026-01-24 (Phase 12 complete)*
