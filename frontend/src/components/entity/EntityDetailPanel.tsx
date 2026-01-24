@@ -7,7 +7,10 @@ import {
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Button } from '@/components/ui/button'
+import { Maximize2 } from 'lucide-react'
 import { useGraphStore } from '@/stores/graphStore'
+import { useDetailStore } from '@/stores/detailStore'
 import type { CategoryDetailV2 } from '@/api/types'
 
 interface EntityDetailPanelProps {
@@ -37,6 +40,21 @@ export function EntityDetailPanel({
   error = null,
 }: EntityDetailPanelProps) {
   const setSelectedEntity = useGraphStore((s) => s.setSelectedEntity)
+  const openDetail = useDetailStore((s) => s.openDetail)
+
+  // Handle double-click to open full detail modal
+  const handleDoubleClick = () => {
+    if (entityKey && entityType) {
+      openDetail(entityKey, entityType)
+    }
+  }
+
+  // Handle "View Full Details" button click
+  const handleOpenDetail = () => {
+    if (entityKey && entityType) {
+      openDetail(entityKey, entityType)
+    }
+  }
 
   if (!entityKey) {
     return (
@@ -295,15 +313,25 @@ export function EntityDetailPanel({
   }
 
   return (
-    <div className="h-full overflow-auto p-6">
+    <div className="h-full overflow-auto p-6" onDoubleClick={handleDoubleClick}>
       <Card>
         <CardHeader>
-          <div className="flex items-center gap-2">
-            <CardTitle className="text-2xl">{label}</CardTitle>
-            <Badge variant="outline" className="text-xs">
-              {entityType}
-            </Badge>
-            {renderChangeStatusBadge()}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-2xl">{label}</CardTitle>
+              <Badge variant="outline" className="text-xs">
+                {entityType}
+              </Badge>
+              {renderChangeStatusBadge()}
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleOpenDetail}
+              title="View Full Details"
+            >
+              <Maximize2 className="h-4 w-4" />
+            </Button>
           </div>
           {description && (
             <CardDescription>{description}</CardDescription>
