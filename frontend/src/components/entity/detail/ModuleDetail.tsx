@@ -1,10 +1,13 @@
+import { useEffect, useState, useCallback } from 'react'
 import { useModule } from '@/api/entitiesV2'
-import type { ModuleDetailV2 } from '@/api/types'
+import type { ModuleDetailV2, EntityType } from '@/api/types'
+import { useAutoSave } from '@/hooks/useAutoSave'
+import { useDetailStore } from '@/stores/detailStore'
 import { AccordionSection } from '@/components/entity/sections/AccordionSection'
-import { EditableField } from '@/components/entity/form/EditableField'
-import { VisualChangeMarker } from '@/components/entity/form/VisualChangeMarker'
+import { EntityHeader } from '../sections/EntityHeader'
+import { EditableList } from '../form/EditableList'
 import { Badge } from '@/components/ui/badge'
-import { Loader2 } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface ModuleDetailProps {
   entityKey: string
@@ -21,42 +24,125 @@ interface ModuleDetailProps {
  */
 export function ModuleDetail({ entityKey, draftId, isEditing }: ModuleDetailProps) {
   const { data: module, isLoading, error } = useModule(entityKey, draftId)
+  const openDetail = useDetailStore((s) => s.openDetail)
+  const pushBreadcrumb = useDetailStore((s) => s.pushBreadcrumb)
+
+  // Track original values for change detection
+  const [originalValues, setOriginalValues] = useState<{ label?: string }>({})
+
+  // Local editable state
+  const [editedLabel, setEditedLabel] = useState('')
+  const [editedEntities, setEditedEntities] = useState<Record<string, string[]>>({})
+
+  // Auto-save hook
+  const { saveChange, isSaving } = useAutoSave({
+    draftToken: draftId || '',
+    entityType: 'module',
+    entityKey,
+    debounceMs: 500,
+  })
+
+  // Type assertion since useModule returns EntityWithStatus | ModuleDetailV2
+  const moduleDetail = module as ModuleDetailV2 | undefined
+
+  // Initialize state when module loads
+  useEffect(() => {
+    if (moduleDetail) {
+      setEditedLabel(moduleDetail.label)
+      setEditedEntities(moduleDetail.entities || {})
+      setOriginalValues({ label: moduleDetail.label })
+      pushBreadcrumb(entityKey, 'module', moduleDetail.label)
+    }
+  }, [moduleDetail, entityKey, pushBreadcrumb])
+
+  // Change handlers with auto-save
+  const handleLabelChange = useCallback(
+    (value: string) => {
+      setEditedLabel(value)
+      if (draftId) {
+        saveChange([{ op: 'replace', path: '/label', value }])
+      }
+    },
+    [draftId, saveChange]
+  )
+
+  const handleAddEntity = useCallback(
+    (entityType: string, entKey: string) => {
+      const newEntities = { ...editedEntities }
+      if (!newEntities[entityType]) newEntities[entityType] = []
+      newEntities[entityType] = [...newEntities[entityType], entKey]
+      setEditedEntities(newEntities)
+      if (draftId) {
+        saveChange([{ op: 'replace', path: '/entities', value: newEntities }])
+      }
+    },
+    [editedEntities, draftId, saveChange]
+  )
+
+  const handleRemoveEntity = useCallback(
+    (entityType: string, entKey: string) => {
+      const newEntities = { ...editedEntities }
+      newEntities[entityType] = (newEntities[entityType] || []).filter((k) => k !== entKey)
+      setEditedEntities(newEntities)
+      if (draftId) {
+        saveChange([{ op: 'replace', path: '/entities', value: newEntities }])
+      }
+    },
+    [editedEntities, draftId, saveChange]
+  )
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="p-6 space-y-4">
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-32 w-full" />
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="p-4 text-destructive">
-        Error loading module: {error instanceof Error ? error.message : 'Unknown error'}
+      <div className="p-6 text-center text-destructive">
+        <p className="font-medium">Failed to load module</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          {error instanceof Error ? error.message : 'Unknown error'}
+        </p>
       </div>
     )
   }
 
-  if (!module) {
-    return <div className="p-4 text-muted-foreground">Module not found</div>
+  if (!moduleDetail) {
+    return (
+      <div className="p-6 text-center text-muted-foreground">
+        <p>Module not found</p>
+      </div>
+    )
   }
-
-  // Type assertion since useModule returns EntityWithStatus | ModuleDetailV2
-  const moduleDetail = module as ModuleDetailV2
 
   // Get change status
   const changeStatus = moduleDetail.change_status || 'unchanged'
   const isDeleted = moduleDetail.deleted || false
 
   // Calculate total members count
-  const totalMembers = Object.values(moduleDetail.entities || {}).reduce(
+  const totalMembers = Object.values(editedEntities).reduce(
     (sum, members) => sum + members.length,
     0
   )
 
+  // Entity types to iterate
+  const entityTypes = ['category', 'property', 'subobject', 'template']
+
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
+      {/* Saving indicator */}
+      {isSaving && (
+        <div className="fixed top-4 right-4 bg-primary text-primary-foreground px-3 py-1 rounded text-sm z-50">
+          Saving...
+        </div>
+      )}
+
       {/* Deleted marker */}
       {isDeleted && (
         <div className="bg-destructive/10 border border-destructive rounded p-3 text-sm">
@@ -64,33 +150,25 @@ export function ModuleDetail({ entityKey, draftId, isEditing }: ModuleDetailProp
         </div>
       )}
 
-      {/* Basic info */}
-      <div className="space-y-4">
-        <EditableField
-          value={moduleDetail.label}
-          originalValue={undefined} // TODO: Get original value from canonical when in draft
-          onChange={(value) => {
-            // TODO: Auto-save via draft changes API
-            console.log('Update label:', value)
-          }}
-          onRevert={() => {
-            // TODO: Revert to original
-            console.log('Revert label')
-          }}
-          isEditing={isEditing}
-          label="Label"
-          placeholder="Module label"
-        />
+      {/* Header */}
+      <EntityHeader
+        entityKey={entityKey}
+        label={editedLabel}
+        description={null}
+        entityType="module"
+        changeStatus={changeStatus}
+        isEditing={isEditing}
+        originalLabel={originalValues.label}
+        onLabelChange={handleLabelChange}
+      />
 
-        {moduleDetail.version && (
-          <VisualChangeMarker status={changeStatus} className="py-2">
-            <div className="text-sm">
-              <span className="text-muted-foreground">Version: </span>
-              <Badge variant="outline">{moduleDetail.version}</Badge>
-            </div>
-          </VisualChangeMarker>
-        )}
-      </div>
+      {/* Version badge */}
+      {moduleDetail.version && (
+        <div className="text-sm">
+          <span className="text-muted-foreground">Version: </span>
+          <Badge variant="outline">{moduleDetail.version}</Badge>
+        </div>
+      )}
 
       {/* Direct members grouped by entity type */}
       <AccordionSection
@@ -100,59 +178,37 @@ export function ModuleDetail({ entityKey, draftId, isEditing }: ModuleDetailProp
         defaultOpen={true}
       >
         <div className="space-y-4">
-          {Object.entries(moduleDetail.entities || {}).map(([entityType, members]) => (
+          {entityTypes.map((entityType) => (
             <div key={entityType} className="space-y-2">
               <h4 className="text-sm font-medium text-muted-foreground capitalize">
                 {entityType}s
                 <Badge variant="secondary" className="ml-2 text-xs">
-                  {members.length}
+                  {editedEntities[entityType]?.length || 0}
                 </Badge>
               </h4>
-              <div className="pl-4 space-y-1">
-                {members.length === 0 ? (
-                  <div className="text-sm text-muted-foreground italic">
-                    No {entityType}s
-                  </div>
-                ) : (
-                  <ul className="space-y-1">
-                    {members.map((memberKey) => (
-                      <li key={memberKey} className="text-sm">
-                        <VisualChangeMarker status="unchanged">
-                          <div className="flex items-center justify-between py-1 px-2 hover:bg-accent rounded">
-                            <span className="font-mono text-xs">{memberKey}</span>
-                            {isEditing && (
-                              <button
-                                className="text-destructive hover:text-destructive/80 text-xs"
-                                onClick={() => {
-                                  // TODO: Remove member
-                                  console.log('Remove member:', memberKey)
-                                }}
-                              >
-                                Remove
-                              </button>
-                            )}
-                          </div>
-                        </VisualChangeMarker>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                {isEditing && (
-                  <button
-                    className="text-sm text-primary hover:text-primary/80 mt-2"
-                    onClick={() => {
-                      // TODO: Add member UI
-                      console.log('Add', entityType)
-                    }}
-                  >
-                    + Add {entityType}
-                  </button>
-                )}
+              <div className="pl-4">
+                <EditableList
+                  items={editedEntities[entityType] || []}
+                  onAdd={(key) => handleAddEntity(entityType, key)}
+                  onRemove={(key) => handleRemoveEntity(entityType, key)}
+                  isEditing={isEditing}
+                  placeholder={`Add ${entityType}...`}
+                  emptyMessage={`No ${entityType}s in module`}
+                  renderItem={(key) => (
+                    <Badge
+                      variant="secondary"
+                      className="cursor-pointer hover:bg-secondary/80"
+                      onClick={() => openDetail(key, entityType as EntityType)}
+                    >
+                      {key}
+                    </Badge>
+                  )}
+                />
               </div>
             </div>
           ))}
 
-          {Object.keys(moduleDetail.entities || {}).length === 0 && (
+          {Object.keys(editedEntities).length === 0 && (
             <div className="text-sm text-muted-foreground italic">
               No members in this module
             </div>
@@ -175,7 +231,13 @@ export function ModuleDetail({ entityKey, draftId, isEditing }: ModuleDetailProp
             <ul className="space-y-1 pl-4">
               {moduleDetail.closure.map((categoryKey) => (
                 <li key={categoryKey} className="text-sm font-mono text-xs py-1">
-                  {categoryKey}
+                  <Badge
+                    variant="outline"
+                    className="cursor-pointer hover:bg-secondary/80"
+                    onClick={() => openDetail(categoryKey, 'category')}
+                  >
+                    {categoryKey}
+                  </Badge>
                 </li>
               ))}
             </ul>
@@ -205,7 +267,6 @@ export function ModuleDetail({ entityKey, draftId, isEditing }: ModuleDetailProp
             <div className="text-sm">
               <span className="text-muted-foreground">Suggested: </span>
               <Badge variant="secondary">
-                {/* TODO: Calculate based on change type */}
                 {changeStatus === 'added'
                   ? 'New module'
                   : changeStatus === 'modified'
