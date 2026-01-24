@@ -154,7 +154,18 @@ Plans:
   3. Draft banner shows title, status, validate button, and submit PR button (disabled until validation passes)
   4. Diff view shows per-entity changes grouped by type with change highlighting
   5. PR creation generates file changes, creates branch/commit, and opens PR with structured summary including semver suggestions
-**Plans**: TBD
+**Plans:** 10 plans
+Plans:
+- [ ] 14-01-PLAN.md — Validation service v2 (adapt validators for DraftChange model)
+- [ ] 14-02-PLAN.md — Auto-revert + status management (draft workflow transitions)
+- [ ] 14-03-PLAN.md — Validate endpoint (POST /drafts/{token}/validate)
+- [ ] 14-04-PLAN.md — PR builder v2 (file generation from DraftChange records)
+- [ ] 14-05-PLAN.md — Submit endpoint (POST /drafts/{token}/submit with OAuth)
+- [ ] 14-06-PLAN.md — Frontend API hooks + workflow state (draftApiV2, draftStoreV2)
+- [ ] 14-07-PLAN.md — DraftBannerV2 + FloatingActionBar + ValidationSummaryV2
+- [ ] 14-08-PLAN.md — DraftDiffViewerV2 (per-entity change viewer)
+- [ ] 14-09-PLAN.md — PR wizard (multi-step submission dialog)
+- [ ] 14-10-PLAN.md — Integration (BrowsePage wiring + DraftSelector update)
 
 ## Progress
 
@@ -170,9 +181,9 @@ Phases execute in numeric order: 8 -> 8.1 -> 8.2 -> 9 -> ...
 | 11. Draft System | v2.0 | 5/5 | Complete | 2026-01-24 |
 | 12. Frontend + Graph | v2.0 | 6/6 | Complete | 2026-01-24 |
 | 13. Entity Detail Pages | v2.0 | 9/9 | Complete | 2026-01-24 |
-| 14. Validation + Workflow + PR | v2.0 | 0/TBD | Not started | - |
+| 14. Validation + Workflow + PR | v2.0 | 0/10 | Planned | - |
 
 ---
 *Roadmap created: 2026-01-23*
 *v2.0 phases: 8-14 (7 phases, 92 requirements)*
-*Last updated: 2026-01-24 (Phase 13 complete)*
+*Last updated: 2026-01-24 (Phase 14 planned)*
