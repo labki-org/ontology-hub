@@ -155,9 +155,19 @@ async def get_category(
         # Draft-created category - extract parents from effective JSON if present
         parents = effective.get("parents", [])
 
-    # Get properties with provenance from materialized view
+    # Get properties with provenance
+    # Check for draft-aware inheritance first (when draft modifies parents)
     properties: list[PropertyProvenance] = []
-    if category:
+    draft_properties = await draft_ctx.get_draft_aware_inherited_properties(
+        session, entity_key, category.id if category else None
+    )
+
+    if draft_properties:
+        # Draft modifies parents - use computed inheritance
+        for prop in draft_properties:
+            properties.append(PropertyProvenance(**prop))
+    elif category:
+        # No draft parent changes or no draft context - use canonical materialized view
         # Query the category_property_effective materialized view
         # joined with properties table to get property labels
         props_query = text("""
