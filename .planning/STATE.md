@@ -5,35 +5,38 @@
 See: .planning/PROJECT.md (updated 2026-01-23)
 
 **Core value:** Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes, with zero platform accounts and strong validation feedback.
-**Current focus:** Phase 8 - Database Foundation
+**Current focus:** Phase 9 - Ingest Pipeline
 
 ## Current Position
 
-Phase: 8 of 14 (Database Foundation)
-Plan: 3 of 3 in current phase (completed)
-Status: Phase 8 complete
-Last activity: 2026-01-24 -- Completed 08-03-PLAN.md (Draft Tables)
+Phase: 9 of 14 (Ingest Pipeline)
+Plan: 2 of 4 in current phase
+Status: In progress
+Last activity: 2026-01-24 -- Completed 09-02-PLAN.md (Entity Parser)
 
-Progress: [############............] 53% (v1.0 complete, v2.0 phase 8 complete)
+Progress: [#############...........] 55% (v1.0 complete, v2.0 phase 9 plan 2 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 23 (20 v1.0 + 3 v2.0)
+- Total plans completed: 25 (20 v1.0 + 5 v2.0)
 - Average duration: ~30 min (v1.0 estimate)
-- Total execution time: ~10h 9m
+- Total execution time: ~10h 13m
 
 **By Phase (v2.0):**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 08-database-foundation | 3/3 | 9m | 3m |
+| 09-ingest-pipeline | 2/4 | 4m | 2m |
 
 **Recent Trend:**
 - v1.0 completed in 2 days
 - v2.0 phase 8 plan 1: 3 minutes
 - v2.0 phase 8 plan 2: 2 minutes
 - v2.0 phase 8 plan 3: 4 minutes
+- v2.0 phase 9 plan 1: 2 minutes
+- v2.0 phase 9 plan 2: 2 minutes
 
 *Metrics updated after each plan completion*
 
@@ -60,6 +63,9 @@ Recent decisions affecting current work:
 - [08-03]: Draft uses singular table name (draft) matching model convention
 - [08-03]: New enums use _v2 suffix (draftstatus_v2) to avoid collision with v1.0
 - [08-03]: Rebase tracking fields stored as strings for flexibility
+- [09-01]: Used requirements.txt instead of pyproject.toml for dependencies (project convention)
+- [09-02]: PendingRelationship uses extra dict for type-specific fields (is_required, entity_type)
+- [09-02]: Parse methods return tuple of (entity, relationships) for types with relationships
 
 ### Pending Todos
 
@@ -72,5 +78,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-24
-Stopped at: Completed 08-03-PLAN.md (Draft Tables) - Phase 8 complete
+Stopped at: Completed 09-02-PLAN.md (Entity Parser)
 Resume file: None
