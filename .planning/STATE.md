@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-23)
 ## Current Position
 
 Phase: 13 of 14 (Entity Detail Pages)
-Plan: 8 of TBD in current phase
+Plan: 9 of TBD in current phase
 Status: In progress
-Last activity: 2026-01-24 -- Completed 13-08-PLAN.md (Browse integration with modal)
+Last activity: 2026-01-24 -- Completed 13-09-PLAN.md (ModuleDetail + BundleDetail edit mode gap closure)
 
 Progress: [########################.] 95% (v1.0 complete, v2.0 phases 8-12 complete, phase 13 in progress)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 48 (20 v1.0 + 28 v2.0)
+- Total plans completed: 49 (20 v1.0 + 29 v2.0)
 - Average duration: ~30 min (v1.0 estimate)
-- Total execution time: ~11h 24m
+- Total execution time: ~11h 27m
 
 **By Phase (v2.0):**
 
@@ -32,7 +32,7 @@ Progress: [########################.] 95% (v1.0 complete, v2.0 phases 8-12 compl
 | 10-query-layer | 3/3 | 9m | 3m |
 | 11-draft-system | 5/5 | 16m | 3m |
 | 12-frontend-graph-visualization | 6/6 | 15m | 2m |
-| 13-entity-detail-pages | 8/TBD | 33m | 4m |
+| 13-entity-detail-pages | 9/TBD | 36m | 4m |
 
 **Recent Trend:**
 - v1.0 completed in 2 days
@@ -65,6 +65,7 @@ Progress: [########################.] 95% (v1.0 complete, v2.0 phases 8-12 compl
 - v2.0 phase 13 plan 6: 5 minutes (module and bundle detail pages)
 - v2.0 phase 13 plan 7: 4 minutes (template detail page)
 - v2.0 phase 13 plan 8: 4 minutes (browse integration with modal)
+- v2.0 phase 13 plan 9: 3 minutes (gap closure: ModuleDetail + BundleDetail edit mode)
 
 *Metrics updated after each plan completion*
 
@@ -158,6 +159,8 @@ Recent decisions affecting current work:
 - [13-08]: Maximize2 button provides explicit affordance for opening detail modal
 - [13-08]: Modal and panel coexist - panel for quick preview, modal for full detail and editing
 - [13-08]: openDetail from detailStore is the canonical way to navigate to entity detail modal
+- [13-09]: EntityHeader component pattern for consistent header layout across all detail pages
+- [13-09]: ModuleDetail and BundleDetail upgraded from view-only stubs to full edit mode
 
 ### Pending Todos
 
@@ -170,5 +173,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-24
-Stopped at: Completed 13-08-PLAN.md (Browse integration with modal)
+Stopped at: Completed 13-09-PLAN.md (ModuleDetail + BundleDetail edit mode gap closure)
 Resume file: None
