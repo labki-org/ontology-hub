@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-23)
 
 **Core value:** Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes, with zero platform accounts and strong validation feedback.
-**Current focus:** Phase 10 - Query Layer (COMPLETE)
+**Current focus:** Phase 11 - Draft System
 
 ## Current Position
 
-Phase: 10 of 14 (Query Layer)
-Plan: 3 of 3 in current phase
-Status: Phase complete
-Last activity: 2026-01-24 -- Completed 10-02-PLAN.md (v2.0 Entity Query Endpoints)
+Phase: 11 of 14 (Draft System)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-01-24 -- Completed 11-01-PLAN.md (v2.0 Draft CRUD Endpoints)
 
-Progress: [##################......] 70% (v1.0 complete, v2.0 phase 10 complete)
+Progress: [###################.....] 75% (v1.0 complete, v2.0 phase 11 plan 1 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 31 (20 v1.0 + 11 v2.0)
+- Total plans completed: 32 (20 v1.0 + 12 v2.0)
 - Average duration: ~30 min (v1.0 estimate)
-- Total execution time: ~10h 28m
+- Total execution time: ~10h 32m
 
 **By Phase (v2.0):**
 
@@ -30,6 +30,7 @@ Progress: [##################......] 70% (v1.0 complete, v2.0 phase 10 complete)
 | 08-database-foundation | 3/3 | 9m | 3m |
 | 09-ingest-pipeline | 4/4 | 9m | 2m |
 | 10-query-layer | 3/3 | 9m | 3m |
+| 11-draft-system | 1/3 | 4m | 4m |
 
 **Recent Trend:**
 - v1.0 completed in 2 days
@@ -43,6 +44,7 @@ Progress: [##################......] 70% (v1.0 complete, v2.0 phase 10 complete)
 - v2.0 phase 10 plan 1: 3 minutes
 - v2.0 phase 10 plan 2: 4 minutes
 - v2.0 phase 10 plan 3: 2 minutes
+- v2.0 phase 11 plan 1: 4 minutes
 
 *Metrics updated after each plan completion*
 
@@ -85,6 +87,9 @@ Recent decisions affecting current work:
 - [10-02]: Draft-created entities have empty closure (no canonical relationships yet)
 - [10-03]: Path array in recursive CTE prevents infinite loops from circular inheritance
 - [10-03]: Cycle detection uses separate CTE query with has_cycle flag propagation
+- [11-01]: Separate Pydantic schemas from SQLModel models for API contract decoupling
+- [11-01]: Return 503 when no OntologyVersion exists (graceful handling of empty database)
+- [11-01]: VALIDATED->DRAFT transition allowed for rework scenarios
 
 ### Pending Todos
 
@@ -97,5 +102,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-24
-Stopped at: Completed Phase 10 (Query Layer) - verified and complete
+Stopped at: Completed 11-01-PLAN.md (v2.0 Draft CRUD Endpoints)
 Resume file: None
