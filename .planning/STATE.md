@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-23)
 ## Current Position
 
 Phase: 11 of 14 (Draft System)
-Plan: 4 of 4 in current phase
+Plan: 5 of 5 in current phase (gap closure plan)
 Status: Phase complete
-Last activity: 2026-01-24 -- Completed 11-04-PLAN.md (MediaWiki Push Import)
+Last activity: 2026-01-24 -- Completed 11-05-PLAN.md (Draft-aware Inheritance Gap Closure)
 
 Progress: [####################....] 81% (v1.0 complete, v2.0 phase 11 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 34 (20 v1.0 + 14 v2.0)
+- Total plans completed: 35 (20 v1.0 + 15 v2.0)
 - Average duration: ~30 min (v1.0 estimate)
-- Total execution time: ~10h 36m
+- Total execution time: ~10h 38m
 
 **By Phase (v2.0):**
 
@@ -30,7 +30,7 @@ Progress: [####################....] 81% (v1.0 complete, v2.0 phase 11 complete)
 | 08-database-foundation | 3/3 | 9m | 3m |
 | 09-ingest-pipeline | 4/4 | 9m | 2m |
 | 10-query-layer | 3/3 | 9m | 3m |
-| 11-draft-system | 4/4 | 14m | 4m |
+| 11-draft-system | 5/5 | 16m | 3m |
 
 **Recent Trend:**
 - v1.0 completed in 2 days
@@ -48,6 +48,7 @@ Progress: [####################....] 81% (v1.0 complete, v2.0 phase 11 complete)
 - v2.0 phase 11 plan 2: 4 minutes
 - v2.0 phase 11 plan 3: 2 minutes
 - v2.0 phase 11 plan 4: 4 minutes
+- v2.0 phase 11 plan 5: 2 minutes (gap closure)
 
 *Metrics updated after each plan completion*
 
@@ -100,6 +101,8 @@ Recent decisions affecting current work:
 - [11-03]: Deprecated mark_drafts_stale (kept for backward compatibility)
 - [11-04]: Explicit action field on MediaWiki changes (not inferred from entity existence)
 - [11-04]: Each MediaWiki push creates NEW draft (not appended to existing)
+- [11-05]: Draft-aware inheritance via recursive parent walk with visited set
+- [11-05]: Empty list from get_draft_aware_inherited_properties signals fallback to canonical
 
 ### Pending Todos
 
@@ -112,5 +115,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-24
-Stopped at: Completed 11-04-PLAN.md (MediaWiki Push Import)
+Stopped at: Completed 11-05-PLAN.md (Draft-aware Inheritance Gap Closure)
 Resume file: None
