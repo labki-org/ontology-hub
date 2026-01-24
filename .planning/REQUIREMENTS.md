@@ -31,20 +31,20 @@ Requirements for the platform rebuild. Each maps to roadmap phases.
 
 ### Query Layer
 
-- [ ] **QRY-01**: Entity queries accept ontology_version_id for canonical reads
-- [ ] **QRY-02**: Entity queries accept draft_id and return effective view (canonical + draft overlay)
-- [ ] **QRY-03**: API computes effective view server-side; frontend never merges
-- [ ] **QRY-04**: Category detail returns parents, direct properties, inherited properties with provenance
-- [ ] **QRY-05**: Property detail returns categories using it (where-used)
-- [ ] **QRY-06**: Module detail returns direct entities and computed closure (auto-included dependencies)
-- [ ] **QRY-07**: Bundle detail returns modules and computed closure
+- [x] **QRY-01**: Entity queries accept ontology_version_id for canonical reads
+- [x] **QRY-02**: Entity queries accept draft_id and return effective view (canonical + draft overlay)
+- [x] **QRY-03**: API computes effective view server-side; frontend never merges
+- [x] **QRY-04**: Category detail returns parents, direct properties, inherited properties with provenance
+- [x] **QRY-05**: Property detail returns categories using it (where-used)
+- [x] **QRY-06**: Module detail returns direct entities and computed closure (auto-included dependencies)
+- [x] **QRY-07**: Bundle detail returns modules and computed closure
 
 ### Graph Endpoints
 
-- [ ] **GRP-01**: Neighborhood graph endpoint returns nodes/edges within depth of selected entity
-- [ ] **GRP-02**: Module-scoped graph endpoint returns nodes/edges for specified module
-- [ ] **GRP-03**: Graph endpoints return module membership for hull rendering
-- [ ] **GRP-04**: Graph nodes include change status badges (added/modified/deleted) in draft context
+- [x] **GRP-01**: Neighborhood graph endpoint returns nodes/edges within depth of selected entity
+- [x] **GRP-02**: Module-scoped graph endpoint returns nodes/edges for specified module
+- [x] **GRP-03**: Graph endpoints return module membership for hull rendering
+- [x] **GRP-04**: Graph nodes include change status badges (added/modified/deleted) in draft context
 
 ### Draft System
 
@@ -200,17 +200,17 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ING-05 | Phase 9 | Complete |
 | ING-06 | Phase 9 | Complete |
 | ING-07 | Phase 9 | Complete |
-| QRY-01 | Phase 10 | Pending |
-| QRY-02 | Phase 10 | Pending |
-| QRY-03 | Phase 10 | Pending |
-| QRY-04 | Phase 10 | Pending |
-| QRY-05 | Phase 10 | Pending |
-| QRY-06 | Phase 10 | Pending |
-| QRY-07 | Phase 10 | Pending |
-| GRP-01 | Phase 10 | Pending |
-| GRP-02 | Phase 10 | Pending |
-| GRP-03 | Phase 10 | Pending |
-| GRP-04 | Phase 10 | Pending |
+| QRY-01 | Phase 10 | Complete |
+| QRY-02 | Phase 10 | Complete |
+| QRY-03 | Phase 10 | Complete |
+| QRY-04 | Phase 10 | Complete |
+| QRY-05 | Phase 10 | Complete |
+| QRY-06 | Phase 10 | Complete |
+| QRY-07 | Phase 10 | Complete |
+| GRP-01 | Phase 10 | Complete |
+| GRP-02 | Phase 10 | Complete |
+| GRP-03 | Phase 10 | Complete |
+| GRP-04 | Phase 10 | Complete |
 | DRF-01 | Phase 11 | Pending |
 | DRF-02 | Phase 11 | Pending |
 | DRF-03 | Phase 11 | Pending |
@@ -284,4 +284,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-23*
-*Last updated: 2026-01-24 (Phase 9 complete)*
+*Last updated: 2026-01-24 (Phase 10 complete)*
