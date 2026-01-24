@@ -132,16 +132,17 @@ Plans:
   4. Module page shows direct members, computed closure, dependencies, suggested version increment, and edit icons
   5. Bundle page shows modules, computed closure, suggested version increment, and edit icons
   6. Template page shows wikitext content with simple text editor in draft mode
-**Plans:** 8 plans
+**Plans:** 9 plans
 Plans:
-- [ ] 13-01-PLAN.md — Infrastructure (shadcn/ui components, TypeScript types, useAutoSave hook)
-- [ ] 13-02-PLAN.md — Form components (EditableField, VisualChangeMarker, EditableList, EntityHeader)
-- [ ] 13-03-PLAN.md — Modal + sections (EntityDetailModal, detailStore, MembershipSection, WhereUsedSection)
-- [ ] 13-04-PLAN.md — CategoryDetail (parents, direct/inherited properties with provenance)
-- [ ] 13-05-PLAN.md — PropertyDetail + SubobjectDetail (datatype, cardinality, where-used)
-- [ ] 13-06-PLAN.md — ModuleDetail + BundleDetail (members, closure, version increment)
-- [ ] 13-07-PLAN.md — TemplateDetail (wikitext display and editor)
-- [ ] 13-08-PLAN.md — Integration (BrowsePage modal integration, double-click handling)
+- [x] 13-01-PLAN.md — Infrastructure (shadcn/ui components, TypeScript types, useAutoSave hook)
+- [x] 13-02-PLAN.md — Form components (EditableField, VisualChangeMarker, EditableList, EntityHeader)
+- [x] 13-03-PLAN.md — Modal + sections (EntityDetailModal, detailStore, MembershipSection, WhereUsedSection)
+- [x] 13-04-PLAN.md — CategoryDetail (parents, direct/inherited properties with provenance)
+- [x] 13-05-PLAN.md — PropertyDetail + SubobjectDetail (datatype, cardinality, where-used)
+- [x] 13-06-PLAN.md — ModuleDetail + BundleDetail (members, closure, version increment)
+- [x] 13-07-PLAN.md — TemplateDetail (wikitext display and editor)
+- [x] 13-08-PLAN.md — Integration (BrowsePage modal integration, double-click handling)
+- [ ] 13-09-PLAN.md — Gap closure: ModuleDetail + BundleDetail edit mode
 
 ### Phase 14: Validation + Workflow + PR
 **Goal**: Complete validation engine, draft workflow UI, and GitHub PR submission
@@ -168,10 +169,10 @@ Phases execute in numeric order: 8 -> 8.1 -> 8.2 -> 9 -> ...
 | 10. Query Layer | v2.0 | 3/3 | Complete | 2026-01-24 |
 | 11. Draft System | v2.0 | 5/5 | Complete | 2026-01-24 |
 | 12. Frontend + Graph | v2.0 | 6/6 | Complete | 2026-01-24 |
-| 13. Entity Detail Pages | v2.0 | 0/8 | Planning complete | - |
+| 13. Entity Detail Pages | v2.0 | 8/9 | Gap closure | - |
 | 14. Validation + Workflow + PR | v2.0 | 0/TBD | Not started | - |
 
 ---
 *Roadmap created: 2026-01-23*
 *v2.0 phases: 8-14 (7 phases, 92 requirements)*
-*Last updated: 2026-01-24 (Phase 13 planned)*
+*Last updated: 2026-01-24 (Phase 13 gap closure planned)*
