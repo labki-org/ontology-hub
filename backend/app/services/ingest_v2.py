@@ -224,3 +224,130 @@ class IngestService:
     async def refresh_mat_view(self) -> None:
         """Refresh materialized view in separate transaction."""
         await refresh_category_property_effective(self._session)
+
+
+async def sync_repository_v2(
+    github_client: GitHubClient,
+    session: AsyncSession,
+    owner: str,
+    repo: str,
+) -> dict[str, Any]:
+    """Perform full v2.0 repository sync from GitHub to database.
+
+    Fetches all entity files, validates against schemas, parses entities,
+    atomically replaces all canonical data, and refreshes mat view.
+
+    Args:
+        github_client: Configured GitHubClient
+        session: SQLModel async session
+        owner: Repository owner
+        repo: Repository name
+
+    Returns:
+        Dict with sync stats: commit_sha, entity_counts, warnings, errors, duration
+    """
+    start_time = time.time()
+    logger.info("Starting v2.0 repository sync for %s/%s", owner, repo)
+
+    service = IngestService(github_client, session)
+
+    # 1. Get latest commit SHA
+    commit_sha = await github_client.get_latest_commit_sha(owner, repo)
+    logger.info("Syncing to commit %s", commit_sha)
+
+    # 2. Load schema files
+    schemas = await service.load_schemas(owner, repo, commit_sha)
+    logger.info("Loaded %d schema files", len(schemas))
+
+    # 3. Load entity files
+    entity_files = await service.load_entity_files(owner, repo, commit_sha)
+    total_files = sum(len(files) for files in entity_files.values())
+    logger.info("Loaded %d entity files", total_files)
+
+    # 4. Validate all files against schemas
+    validator = SchemaValidator(schemas)
+    validation_errors = validator.validate_all({
+        entity_type: [(path, content) for path, content in files]
+        for entity_type, files in entity_files.items()
+    })
+
+    if validation_errors:
+        # Log errors and abort - don't ingest invalid data
+        for error in validation_errors[:10]:  # Log first 10
+            logger.error("Validation error: %s", error)
+        if len(validation_errors) > 10:
+            logger.error("... and %d more validation errors", len(validation_errors) - 10)
+
+        # Create failed OntologyVersion record
+        version = OntologyVersion(
+            commit_sha=commit_sha,
+            ingest_status=IngestStatus.FAILED,
+            errors=validation_errors,
+        )
+        session.add(version)
+        await session.commit()
+
+        return {
+            "commit_sha": commit_sha,
+            "status": "failed",
+            "errors": validation_errors,
+            "duration": time.time() - start_time,
+        }
+
+    # 5. Parse all entities
+    parser = EntityParser()
+    parsed = parser.parse_all(entity_files)
+    logger.info(
+        "Parsed entities: %s",
+        parsed.entity_counts(),
+    )
+
+    # 6. Atomic replacement within transaction
+    async with session.begin():
+        # Delete all existing canonical data
+        await service.delete_all_canonical()
+        logger.info("Deleted existing canonical data")
+
+        # Insert new entities
+        await service.insert_entities(parsed)
+        logger.info("Inserted entities")
+
+        # Resolve and insert relationships
+        await service.resolve_and_insert_relationships(parsed.relationships)
+        logger.info("Inserted relationships")
+
+        # Create OntologyVersion record
+        version = OntologyVersion(
+            commit_sha=commit_sha,
+            ingest_status=IngestStatus.COMPLETED,
+            entity_counts=parsed.entity_counts(),
+            warnings=service._warnings if service._warnings else None,
+            ingested_at=datetime.utcnow(),
+        )
+        session.add(version)
+
+        # Transaction commits on context exit
+
+    # 7. Refresh mat view (must be separate transaction)
+    try:
+        await service.refresh_mat_view()
+        logger.info("Refreshed category_property_effective mat view")
+    except Exception as e:
+        logger.warning("Mat view refresh failed (non-blocking): %s", e)
+        service._warnings.append(f"Mat view refresh failed: {e}")
+
+    duration = time.time() - start_time
+    logger.info(
+        "v2.0 sync complete in %.2fs: %s, %d warnings",
+        duration,
+        parsed.entity_counts(),
+        len(service._warnings),
+    )
+
+    return {
+        "commit_sha": commit_sha,
+        "status": "completed",
+        "entity_counts": parsed.entity_counts(),
+        "warnings": service._warnings if service._warnings else None,
+        "duration": duration,
+    }
