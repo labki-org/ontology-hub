@@ -5,30 +5,30 @@
 See: .planning/PROJECT.md (updated 2026-01-23)
 
 **Core value:** Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes, with zero platform accounts and strong validation feedback.
-**Current focus:** Phase 9 - Ingest Pipeline
+**Current focus:** Phase 9 - Ingest Pipeline (COMPLETE)
 
 ## Current Position
 
 Phase: 9 of 14 (Ingest Pipeline)
-Plan: 3 of 4 in current phase
-Status: In progress
-Last activity: 2026-01-24 -- Completed 09-03-PLAN.md (Ingest Service)
+Plan: 4 of 4 in current phase
+Status: Phase complete
+Last activity: 2026-01-24 -- Completed 09-04-PLAN.md (Webhook Wiring)
 
-Progress: [##############..........] 58% (v1.0 complete, v2.0 phase 9 plan 3 complete)
+Progress: [###############.........] 62% (v1.0 complete, v2.0 phase 9 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 26 (20 v1.0 + 6 v2.0)
+- Total plans completed: 27 (20 v1.0 + 7 v2.0)
 - Average duration: ~30 min (v1.0 estimate)
-- Total execution time: ~10h 13m
+- Total execution time: ~10h 16m
 
 **By Phase (v2.0):**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 08-database-foundation | 3/3 | 9m | 3m |
-| 09-ingest-pipeline | 3/4 | 6m | 2m |
+| 09-ingest-pipeline | 4/4 | 9m | 2m |
 
 **Recent Trend:**
 - v1.0 completed in 2 days
@@ -38,6 +38,7 @@ Progress: [##############..........] 58% (v1.0 complete, v2.0 phase 9 plan 3 com
 - v2.0 phase 9 plan 1: 2 minutes
 - v2.0 phase 9 plan 2: 2 minutes
 - v2.0 phase 9 plan 3: 2 minutes
+- v2.0 phase 9 plan 4: 3 minutes
 
 *Metrics updated after each plan completion*
 
@@ -70,6 +71,8 @@ Recent decisions affecting current work:
 - [09-03]: FK deletion order: relationships first, then entities, then OntologyVersion
 - [09-03]: Entities flushed for UUID generation before relationship resolution
 - [09-03]: Mat view refresh in separate transaction after main commit
+- [09-04]: Keep v1.0 trigger_sync_background for backward compatibility
+- [09-04]: Mark drafts stale only for DRAFT and VALIDATED statuses
 
 ### Pending Todos
 
@@ -82,5 +85,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-24
-Stopped at: Completed 09-03-PLAN.md (Ingest Service)
+Stopped at: Completed 09-04-PLAN.md (Webhook Wiring) - Phase 9 complete
 Resume file: None
