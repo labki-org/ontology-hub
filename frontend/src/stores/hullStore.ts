@@ -66,20 +66,21 @@ export const useHullStore = create<HullState>()(
           const str = localStorage.getItem(name)
           if (!str) return null
           const parsed = JSON.parse(str)
-          return {
+          return JSON.stringify({
             state: {
               ...parsed.state,
               visibleModules: new Set(parsed.state.visibleModules),
             },
-          }
+          })
         },
         setItem: (name, value) => {
+          const parsed = typeof value === 'string' ? JSON.parse(value) : value
           localStorage.setItem(
             name,
             JSON.stringify({
               state: {
-                ...value.state,
-                visibleModules: Array.from(value.state.visibleModules),
+                ...parsed.state,
+                visibleModules: Array.from(parsed.state.visibleModules),
               },
             })
           )

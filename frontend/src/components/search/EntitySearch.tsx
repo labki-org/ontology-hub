@@ -1,5 +1,4 @@
 import { Search } from 'lucide-react'
-import type { EntityWithStatus } from '@/api/types'
 
 interface EntitySearchProps {
   value: string

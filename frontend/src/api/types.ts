@@ -306,3 +306,88 @@ export interface GraphResponse {
   edges: GraphEdge[]
   has_cycles: boolean
 }
+
+// Additional v2 entity detail types
+
+// Property detail (matches PropertyDetailResponse)
+export interface PropertyDetailV2 {
+  entity_key: string
+  label: string
+  description?: string | null
+  datatype: string
+  cardinality: string
+  change_status?: 'added' | 'modified' | 'deleted' | 'unchanged'
+  deleted?: boolean
+}
+
+// Subobject detail (similar structure to basic entity)
+export interface SubobjectDetailV2 {
+  entity_key: string
+  label: string
+  description?: string | null
+  properties?: string[]  // Property keys
+  change_status?: 'added' | 'modified' | 'deleted' | 'unchanged'
+  deleted?: boolean
+}
+
+// Module detail (matches ModuleDetailResponse)
+export interface ModuleDetailV2 {
+  entity_key: string
+  label: string
+  version?: string | null
+  entities: Record<string, string[]>  // { category: [...], property: [...] }
+  closure: string[]  // Transitive dependencies
+  change_status?: 'added' | 'modified' | 'deleted' | 'unchanged'
+  deleted?: boolean
+}
+
+// Bundle detail (matches BundleDetailResponse)
+export interface BundleDetailV2 {
+  entity_key: string
+  label: string
+  version?: string | null
+  modules: string[]
+  closure: string[]  // Transitive module dependencies
+  change_status?: 'added' | 'modified' | 'deleted' | 'unchanged'
+  deleted?: boolean
+}
+
+// Template detail
+export interface TemplateDetailV2 {
+  entity_key: string
+  label: string
+  description?: string | null
+  wikitext?: string  // Template content
+  change_status?: 'added' | 'modified' | 'deleted' | 'unchanged'
+  deleted?: boolean
+}
+
+// Draft change types for edit mode
+export type ChangeType = 'CREATE' | 'UPDATE' | 'DELETE'
+
+export interface DraftChangeCreate {
+  change_type: ChangeType
+  entity_type: string
+  entity_key: string
+  patch?: Array<{ op: string; path: string; value?: unknown }>
+  replacement_json?: Record<string, unknown>
+}
+
+export interface DraftChangeResponse {
+  id: string
+  change_type: ChangeType
+  entity_type: string
+  entity_key: string
+  patch?: Array<{ op: string; path: string; value?: unknown }>
+  replacement_json?: Record<string, unknown>
+  created_at: string
+}
+
+// Union type for any entity detail
+export type EntityDetailV2 =
+  | CategoryDetailV2
+  | PropertyDetailV2
+  | SubobjectDetailV2
+  | ModuleDetailV2
+  | BundleDetailV2
+  | TemplateDetailV2

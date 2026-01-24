@@ -32,7 +32,6 @@ interface EntityDetailPanelProps {
 export function EntityDetailPanel({
   entityKey,
   entityType = 'category',
-  draftId,
   data,
   isLoading = false,
   error = null,

@@ -70,7 +70,6 @@ function getCategoriesInModules(
 }
 
 export function DependencyFeedback({
-  entityId,
   assignedModules,
   entitySchema,
   allCategoryAssignments,
