@@ -1,10 +1,13 @@
+import { useEffect, useState, useCallback } from 'react'
 import { useBundle } from '@/api/entitiesV2'
 import type { BundleDetailV2 } from '@/api/types'
+import { useAutoSave } from '@/hooks/useAutoSave'
+import { useDetailStore } from '@/stores/detailStore'
 import { AccordionSection } from '@/components/entity/sections/AccordionSection'
-import { EditableField } from '@/components/entity/form/EditableField'
-import { VisualChangeMarker } from '@/components/entity/form/VisualChangeMarker'
+import { EntityHeader } from '../sections/EntityHeader'
+import { EditableList } from '../form/EditableList'
 import { Badge } from '@/components/ui/badge'
-import { Loader2 } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface BundleDetailProps {
   entityKey: string
@@ -21,41 +24,118 @@ interface BundleDetailProps {
  */
 export function BundleDetail({ entityKey, draftId, isEditing }: BundleDetailProps) {
   const { data: bundle, isLoading, error } = useBundle(entityKey, draftId)
+  const openDetail = useDetailStore((s) => s.openDetail)
+  const pushBreadcrumb = useDetailStore((s) => s.pushBreadcrumb)
+
+  // Track original values for change detection
+  const [originalValues, setOriginalValues] = useState<{ label?: string }>({})
+
+  // Local editable state
+  const [editedLabel, setEditedLabel] = useState('')
+  const [editedModules, setEditedModules] = useState<string[]>([])
+
+  // Auto-save hook
+  const { saveChange, isSaving } = useAutoSave({
+    draftToken: draftId || '',
+    entityType: 'bundle',
+    entityKey,
+    debounceMs: 500,
+  })
+
+  // Type assertion since useBundle returns EntityWithStatus | BundleDetailV2
+  const bundleDetail = bundle as BundleDetailV2 | undefined
+
+  // Initialize state when bundle loads
+  useEffect(() => {
+    if (bundleDetail) {
+      setEditedLabel(bundleDetail.label)
+      setEditedModules(bundleDetail.modules || [])
+      setOriginalValues({ label: bundleDetail.label })
+      pushBreadcrumb(entityKey, 'bundle', bundleDetail.label)
+    }
+  }, [bundleDetail, entityKey, pushBreadcrumb])
+
+  // Change handlers with auto-save
+  const handleLabelChange = useCallback(
+    (value: string) => {
+      setEditedLabel(value)
+      if (draftId) {
+        saveChange([{ op: 'replace', path: '/label', value }])
+      }
+    },
+    [draftId, saveChange]
+  )
+
+  const handleAddModule = useCallback(
+    (moduleKey: string) => {
+      const newModules = [...editedModules, moduleKey]
+      setEditedModules(newModules)
+      if (draftId) {
+        saveChange([{ op: 'replace', path: '/modules', value: newModules }])
+      }
+    },
+    [editedModules, draftId, saveChange]
+  )
+
+  const handleRemoveModule = useCallback(
+    (moduleKey: string) => {
+      const newModules = editedModules.filter((m) => m !== moduleKey)
+      setEditedModules(newModules)
+      if (draftId) {
+        saveChange([{ op: 'replace', path: '/modules', value: newModules }])
+      }
+    },
+    [editedModules, draftId, saveChange]
+  )
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="p-6 space-y-4">
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-32 w-full" />
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="p-4 text-destructive">
-        Error loading bundle: {error instanceof Error ? error.message : 'Unknown error'}
+      <div className="p-6 text-center text-destructive">
+        <p className="font-medium">Failed to load bundle</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          {error instanceof Error ? error.message : 'Unknown error'}
+        </p>
       </div>
     )
   }
 
-  if (!bundle) {
-    return <div className="p-4 text-muted-foreground">Bundle not found</div>
+  if (!bundleDetail) {
+    return (
+      <div className="p-6 text-center text-muted-foreground">
+        <p>Bundle not found</p>
+      </div>
+    )
   }
-
-  // Type assertion since useBundle returns EntityWithStatus | BundleDetailV2
-  const bundleDetail = bundle as BundleDetailV2
 
   // Get change status
   const changeStatus = bundleDetail.change_status || 'unchanged'
   const isDeleted = bundleDetail.deleted || false
 
   // Calculate additional modules in closure (not in direct list)
-  const directModules = new Set(bundleDetail.modules || [])
+  const directModules = new Set(editedModules)
   const additionalModules =
     bundleDetail.closure?.filter((mod) => !directModules.has(mod)) || []
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
+      {/* Saving indicator */}
+      {isSaving && (
+        <div className="fixed top-4 right-4 bg-primary text-primary-foreground px-3 py-1 rounded text-sm z-50">
+          Saving...
+        </div>
+      )}
+
       {/* Deleted marker */}
       {isDeleted && (
         <div className="bg-destructive/10 border border-destructive rounded p-3 text-sm">
@@ -63,84 +143,54 @@ export function BundleDetail({ entityKey, draftId, isEditing }: BundleDetailProp
         </div>
       )}
 
-      {/* Basic info */}
-      <div className="space-y-4">
-        <EditableField
-          value={bundleDetail.label}
-          originalValue={undefined} // TODO: Get original value from canonical when in draft
-          onChange={(value) => {
-            // TODO: Auto-save via draft changes API
-            console.log('Update label:', value)
-          }}
-          onRevert={() => {
-            // TODO: Revert to original
-            console.log('Revert label')
-          }}
-          isEditing={isEditing}
-          label="Label"
-          placeholder="Bundle label"
-        />
+      {/* Header */}
+      <EntityHeader
+        entityKey={entityKey}
+        label={editedLabel}
+        description={null}
+        entityType="bundle"
+        changeStatus={changeStatus}
+        isEditing={isEditing}
+        originalLabel={originalValues.label}
+        onLabelChange={handleLabelChange}
+      />
 
-        {bundleDetail.version && (
-          <VisualChangeMarker status={changeStatus} className="py-2">
-            <div className="text-sm">
-              <span className="text-muted-foreground">Version: </span>
-              <Badge variant="outline">{bundleDetail.version}</Badge>
-            </div>
-          </VisualChangeMarker>
-        )}
-      </div>
+      {/* Version badge */}
+      {bundleDetail.version && (
+        <div className="text-sm">
+          <span className="text-muted-foreground">Version: </span>
+          <Badge variant="outline">{bundleDetail.version}</Badge>
+        </div>
+      )}
 
       {/* Direct modules */}
       <AccordionSection
         id="modules"
         title="Modules"
-        count={bundleDetail.modules?.length || 0}
+        count={editedModules.length}
         defaultOpen={true}
       >
         <div className="space-y-2">
           <p className="text-sm text-muted-foreground">
             Modules directly included in this bundle
           </p>
-          {bundleDetail.modules && bundleDetail.modules.length > 0 ? (
-            <ul className="space-y-1 pl-4">
-              {bundleDetail.modules.map((moduleKey) => (
-                <li key={moduleKey} className="text-sm">
-                  <VisualChangeMarker status="unchanged">
-                    <div className="flex items-center justify-between py-1 px-2 hover:bg-accent rounded">
-                      <span className="font-mono text-xs">{moduleKey}</span>
-                      {isEditing && (
-                        <button
-                          className="text-destructive hover:text-destructive/80 text-xs"
-                          onClick={() => {
-                            // TODO: Remove module
-                            console.log('Remove module:', moduleKey)
-                          }}
-                        >
-                          Remove
-                        </button>
-                      )}
-                    </div>
-                  </VisualChangeMarker>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="text-sm text-muted-foreground italic">
-              No modules in this bundle
-            </div>
-          )}
-          {isEditing && (
-            <button
-              className="text-sm text-primary hover:text-primary/80 mt-2"
-              onClick={() => {
-                // TODO: Add module UI
-                console.log('Add module')
-              }}
-            >
-              + Add module
-            </button>
-          )}
+          <EditableList
+            items={editedModules}
+            onAdd={handleAddModule}
+            onRemove={handleRemoveModule}
+            isEditing={isEditing}
+            placeholder="Add module..."
+            emptyMessage="No modules in bundle"
+            renderItem={(moduleKey) => (
+              <Badge
+                variant="secondary"
+                className="cursor-pointer hover:bg-secondary/80"
+                onClick={() => openDetail(moduleKey, 'module')}
+              >
+                {moduleKey}
+              </Badge>
+            )}
+          />
         </div>
       </AccordionSection>
 
@@ -159,18 +209,24 @@ export function BundleDetail({ entityKey, draftId, isEditing }: BundleDetailProp
           {bundleDetail.closure && bundleDetail.closure.length > 0 ? (
             <div className="space-y-3">
               {/* Direct modules in closure */}
-              {bundleDetail.modules && bundleDetail.modules.length > 0 && (
+              {editedModules.length > 0 && (
                 <div>
                   <h5 className="text-xs font-medium text-muted-foreground uppercase mb-1">
-                    Direct ({bundleDetail.modules.length})
+                    Direct ({editedModules.length})
                   </h5>
                   <ul className="space-y-1 pl-4">
-                    {bundleDetail.modules.map((moduleKey) => (
+                    {editedModules.map((moduleKey) => (
                       <li
                         key={moduleKey}
                         className="text-sm font-mono text-xs py-1 text-primary"
                       >
-                        {moduleKey}
+                        <Badge
+                          variant="outline"
+                          className="cursor-pointer hover:bg-secondary/80"
+                          onClick={() => openDetail(moduleKey, 'module')}
+                        >
+                          {moduleKey}
+                        </Badge>
                       </li>
                     ))}
                   </ul>
@@ -186,7 +242,13 @@ export function BundleDetail({ entityKey, draftId, isEditing }: BundleDetailProp
                   <ul className="space-y-1 pl-4">
                     {additionalModules.map((moduleKey) => (
                       <li key={moduleKey} className="text-sm font-mono text-xs py-1">
-                        {moduleKey}
+                        <Badge
+                          variant="outline"
+                          className="cursor-pointer hover:bg-secondary/80"
+                          onClick={() => openDetail(moduleKey, 'module')}
+                        >
+                          {moduleKey}
+                        </Badge>
                       </li>
                     ))}
                   </ul>
@@ -219,7 +281,6 @@ export function BundleDetail({ entityKey, draftId, isEditing }: BundleDetailProp
             <div className="text-sm">
               <span className="text-muted-foreground">Suggested: </span>
               <Badge variant="secondary">
-                {/* TODO: Calculate based on change type */}
                 {changeStatus === 'added'
                   ? 'New bundle'
                   : changeStatus === 'modified'
