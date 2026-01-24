@@ -17,6 +17,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.config import settings
 from app.database import async_session_maker
 from app.models.v2 import Draft, DraftStatus, OntologyVersion
+from app.services.draft_rebase import auto_rebase_drafts
 from app.services.github import GitHubClient
 from app.services.indexer import sync_repository
 from app.services.ingest_v2 import sync_repository_v2
@@ -85,12 +86,17 @@ async def trigger_sync_background(httpx_client: Any) -> None:
             logger.error("Background sync failed: %s", e, exc_info=True)
 
 
+# Deprecated: Use auto_rebase_drafts from app.services.draft_rebase instead
+# Kept for backward compatibility but not called in v2.0 webhook flow
 async def mark_drafts_stale(
     session: AsyncSession,
     old_commit_sha: str | None,
     new_commit_sha: str,
 ) -> int:
     """Mark active drafts as stale when canonical changes.
+
+    DEPRECATED: Use auto_rebase_drafts() instead, which tests patch applicability
+    rather than just marking all drafts as stale.
 
     Args:
         session: Database session
@@ -142,13 +148,16 @@ async def trigger_sync_background_v2(httpx_client: Any) -> None:
             )
             logger.info("v2.0 sync complete: %s", result)
 
-            # Mark drafts as stale if canonical changed
+            # Auto-rebase drafts after canonical update
             if result.get("status") == "completed" and old_commit_sha:
-                stale_count = await mark_drafts_stale(
+                rebase_stats = await auto_rebase_drafts(
                     session, old_commit_sha, result["commit_sha"]
                 )
-                if stale_count > 0:
-                    logger.info("Marked %d drafts as stale", stale_count)
+                logger.info(
+                    "Auto-rebase: %d clean, %d conflicts",
+                    rebase_stats["rebased"],
+                    rebase_stats["conflicted"],
+                )
 
         except Exception as e:
             logger.error("v2.0 sync failed: %s", e, exc_info=True)
