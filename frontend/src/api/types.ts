@@ -243,3 +243,25 @@ export interface DraftValidationReport {
   suggested_semver: SemverSuggestion
   semver_reasons: string[]
 }
+
+// Graph types (from backend app/schemas/graph.py)
+export interface GraphNode {
+  id: string
+  label: string
+  entity_type: string
+  depth?: number
+  modules: string[]
+  change_status?: 'added' | 'modified' | 'deleted' | 'unchanged'
+}
+
+export interface GraphEdge {
+  source: string
+  target: string
+  edge_type: string
+}
+
+export interface GraphResponse {
+  nodes: GraphNode[]
+  edges: GraphEdge[]
+  has_cycles: boolean
+}
