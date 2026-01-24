@@ -1,20 +1,22 @@
 import { useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { ReactFlowProvider } from '@xyflow/react'
-import { SplitLayout } from '@/components/layout/SplitLayout'
+import { X } from 'lucide-react'
 import { GraphCanvas } from '@/components/graph/GraphCanvas'
 import { EntityDetailPanel } from '@/components/entity/EntityDetailPanel'
+import { EntityDetailModal } from '@/components/entity/EntityDetailModal'
 import { useGraphStore } from '@/stores/graphStore'
 import { useCategory, useProperty, useSubobject, useModule, useBundle, useTemplate } from '@/api/entitiesV2'
+import { Button } from '@/components/ui/button'
 
 /**
- * Main browse/draft page with unified UI for both modes.
+ * Main browse/draft page with full-screen graph and slide-in detail panel.
  *
  * Features:
- * - Split layout with graph (top) and detail (bottom) panels
+ * - Full-screen graph visualization
+ * - Slide-in detail panel overlay on the right
+ * - Graph centers content away from detail panel when open
  * - Same UI serves both canonical browse and draft mode
- * - URL draft_id parameter activates draft context
- * - Entity selection syncs between sidebar, graph, and detail panel
  *
  * URL structure:
  * - /browse - canonical browse, no entity selected
@@ -35,7 +37,10 @@ export function BrowsePage() {
   const draftId = searchParams.get('draft_id') || undefined
   const entityFromUrl = searchParams.get('entity')
 
-  // Fetch entity data based on type - moved here from EntityDetailPanel to work around rendering issue
+  // Detail panel is open when an entity is selected
+  const isDetailOpen = !!selectedEntityKey
+
+  // Fetch entity data based on type
   const entityKey = selectedEntityKey || ''
   const categoryQuery = useCategory(selectedEntityType === 'category' ? entityKey : '', draftId)
   const propertyQuery = useProperty(selectedEntityType === 'property' ? entityKey : '', draftId)
@@ -60,14 +65,13 @@ export function BrowsePage() {
   // Sync URL entity param to graphStore ONLY on initial mount
   useEffect(() => {
     if (!initialSyncDone.current && entityFromUrl) {
-      setSelectedEntity(entityFromUrl, 'category') // URL doesn't store type, default to category
+      setSelectedEntity(entityFromUrl, 'category')
       initialSyncDone.current = true
     }
   }, [entityFromUrl, setSelectedEntity])
 
   // Sync graphStore selection to URL when it changes (one-way: store → URL)
   useEffect(() => {
-    // Skip during initial sync
     if (!initialSyncDone.current && entityFromUrl) {
       initialSyncDone.current = true
       return
@@ -89,22 +93,54 @@ export function BrowsePage() {
     }
   }, [selectedEntityKey, searchParams, setSearchParams, entityFromUrl])
 
+  // Close detail panel
+  const handleCloseDetail = () => {
+    setSelectedEntity(null, 'category')
+  }
+
   return (
     <ReactFlowProvider>
-      <SplitLayout className="h-full">
-        {/* Top panel: Graph visualization */}
-        <GraphCanvas entityKey={selectedEntityKey ?? undefined} draftId={draftId} />
-
-        {/* Bottom panel: Entity detail */}
-        <EntityDetailPanel
-          entityKey={selectedEntityKey}
-          entityType={selectedEntityType}
+      <div className="h-full w-full relative">
+        {/* Full-screen graph - shifts left when detail panel is open */}
+        <GraphCanvas
+          entityKey={selectedEntityKey ?? undefined}
           draftId={draftId}
-          data={entityQuery.data}
-          isLoading={entityQuery.isLoading}
-          error={entityQuery.error}
+          detailPanelOpen={isDetailOpen}
         />
-      </SplitLayout>
+
+        {/* Slide-in detail panel overlay */}
+        <div
+          className={`
+            absolute top-0 right-0 h-full w-[520px] max-w-[90vw]
+            bg-background border-l shadow-xl
+            transform transition-transform duration-300 ease-in-out
+            ${isDetailOpen ? 'translate-x-0' : 'translate-x-full'}
+          `}
+        >
+          {/* Close button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-2 right-2 z-10"
+            onClick={handleCloseDetail}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+
+          {/* Detail content */}
+          <EntityDetailPanel
+            entityKey={selectedEntityKey}
+            entityType={selectedEntityType}
+            draftId={draftId}
+            data={entityQuery.data}
+            isLoading={entityQuery.isLoading}
+            error={entityQuery.error}
+          />
+        </div>
+
+        {/* Entity detail modal - renders when opened via double-click or button */}
+        <EntityDetailModal draftId={draftId} />
+      </div>
     </ReactFlowProvider>
   )
 }
