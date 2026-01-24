@@ -16,6 +16,7 @@ from app.dependencies.rate_limit import limiter, rate_limit_exceeded_handler
 from app.models import Entity, Module, Profile, Draft  # noqa: F401
 from app.routers import (
     drafts_router,
+    drafts_v2_router,
     entities_router,
     graph_router,
     modules_router,
@@ -135,6 +136,7 @@ app.include_router(webhooks_router, prefix="/api/v1")
 # v2.0 API routers
 app.include_router(entities_v2_router, prefix="/api/v2")
 app.include_router(graph_router, prefix="/api/v2")
+app.include_router(drafts_v2_router, prefix="/api/v2")
 
 
 @app.get("/health")
