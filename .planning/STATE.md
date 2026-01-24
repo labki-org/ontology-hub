@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-01-23)
 
 **Core value:** Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes, with zero platform accounts and strong validation feedback.
-**Current focus:** Phase 13 - Entity Detail Pages
+**Current focus:** Phase 14 - Validation + Workflow + PR
 
 ## Current Position
 
-Phase: 13 of 14 (Entity Detail Pages)
-Plan: 9 of TBD in current phase
-Status: In progress
-Last activity: 2026-01-24 -- Completed 13-09-PLAN.md (ModuleDetail + BundleDetail edit mode gap closure)
+Phase: 13 of 14 (Entity Detail Pages) — COMPLETE
+Plan: 9 of 9 in current phase
+Status: Phase complete, verified
+Last activity: 2026-01-24 -- Phase 13 verification passed (6/6 must-haves)
 
-Progress: [########################.] 95% (v1.0 complete, v2.0 phases 8-12 complete, phase 13 in progress)
+Progress: [#########################.] 97% (v1.0 complete, v2.0 phases 8-13 complete, phase 14 not started)
 
 ## Performance Metrics
 
@@ -32,7 +32,7 @@ Progress: [########################.] 95% (v1.0 complete, v2.0 phases 8-12 compl
 | 10-query-layer | 3/3 | 9m | 3m |
 | 11-draft-system | 5/5 | 16m | 3m |
 | 12-frontend-graph-visualization | 6/6 | 15m | 2m |
-| 13-entity-detail-pages | 9/TBD | 36m | 4m |
+| 13-entity-detail-pages | 9/9 | 36m | 4m |
 
 **Recent Trend:**
 - v1.0 completed in 2 days
@@ -173,5 +173,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-24
-Stopped at: Completed 13-09-PLAN.md (ModuleDetail + BundleDetail edit mode gap closure)
+Stopped at: Phase 13 complete — all 9 plans executed, verification passed (6/6)
 Resume file: None
