@@ -94,7 +94,12 @@ Plans:
   4. Localized re-materialization handles inheritance changes during draft edits
   5. Auto-rebase: when new canonical is ingested, in-progress drafts rebase automatically
   6. MediaWiki push import creates draft_change rows from payload
-**Plans**: TBD
+**Plans:** 4 plans
+Plans:
+- [ ] 11-01-PLAN.md — Draft CRUD endpoints (v2 router, capability URLs)
+- [ ] 11-02-PLAN.md — Draft change management (add/update/delete with JSON Patch validation)
+- [ ] 11-03-PLAN.md — Auto-rebase service (conflict detection, webhook integration)
+- [ ] 11-04-PLAN.md — MediaWiki import endpoint (explicit action signals)
 
 ### Phase 12: Frontend + Graph Visualization
 **Goal**: Build unified browse/draft frontend with graph panel featuring module hull overlays
@@ -144,7 +149,7 @@ Phases execute in numeric order: 8 -> 8.1 -> 8.2 -> 9 -> ...
 | 8. Database Foundation | v2.0 | 3/3 | Complete | 2026-01-24 |
 | 9. Ingest Pipeline | v2.0 | 4/4 | Complete | 2026-01-24 |
 | 10. Query Layer | v2.0 | 3/3 | Complete | 2026-01-24 |
-| 11. Draft System | v2.0 | 0/TBD | Not started | - |
+| 11. Draft System | v2.0 | 0/4 | Not started | - |
 | 12. Frontend + Graph | v2.0 | 0/TBD | Not started | - |
 | 13. Entity Detail Pages | v2.0 | 0/TBD | Not started | - |
 | 14. Validation + Workflow + PR | v2.0 | 0/TBD | Not started | - |
@@ -152,4 +157,4 @@ Phases execute in numeric order: 8 -> 8.1 -> 8.2 -> 9 -> ...
 ---
 *Roadmap created: 2026-01-23*
 *v2.0 phases: 8-14 (7 phases, 92 requirements)*
-*Last updated: 2026-01-24 (Phase 10 complete)*
+*Last updated: 2026-01-24 (Phase 11 planned)*
