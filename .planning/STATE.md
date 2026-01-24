@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-23)
 ## Current Position
 
 Phase: 12 of 14 (Frontend + Graph Visualization)
-Plan: 0 of TBD in current phase
-Status: Planning needed
-Last activity: 2026-01-24 -- Completed Phase 11 (Draft System) with verification
+Plan: 2 of TBD in current phase
+Status: In progress
+Last activity: 2026-01-24 -- Completed 12-02-PLAN.md (Graph State & API)
 
-Progress: [######################..] 86% (v1.0 complete, v2.0 phases 8-11 complete)
+Progress: [######################..] 87% (v1.0 complete, v2.0 phases 8-11 complete, phase 12 in progress)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 35 (20 v1.0 + 15 v2.0)
+- Total plans completed: 37 (20 v1.0 + 17 v2.0)
 - Average duration: ~30 min (v1.0 estimate)
-- Total execution time: ~10h 38m
+- Total execution time: ~10h 40m
 
 **By Phase (v2.0):**
 
@@ -31,6 +31,7 @@ Progress: [######################..] 86% (v1.0 complete, v2.0 phases 8-11 comple
 | 09-ingest-pipeline | 4/4 | 9m | 2m |
 | 10-query-layer | 3/3 | 9m | 3m |
 | 11-draft-system | 5/5 | 16m | 3m |
+| 12-frontend-graph-visualization | 2/TBD | 2m | 1m |
 
 **Recent Trend:**
 - v1.0 completed in 2 days
@@ -49,6 +50,8 @@ Progress: [######################..] 86% (v1.0 complete, v2.0 phases 8-11 comple
 - v2.0 phase 11 plan 3: 2 minutes
 - v2.0 phase 11 plan 4: 4 minutes
 - v2.0 phase 11 plan 5: 2 minutes (gap closure)
+- v2.0 phase 12 plan 1: 1 minute (SplitLayout component)
+- v2.0 phase 12 plan 2: 1 minute (graph state & API)
 
 *Metrics updated after each plan completion*
 
@@ -103,6 +106,9 @@ Recent decisions affecting current work:
 - [11-04]: Each MediaWiki push creates NEW draft (not appended to existing)
 - [11-05]: Draft-aware inheritance via recursive parent walk with visited set
 - [11-05]: Empty list from get_draft_aware_inherited_properties signals fallback to canonical
+- [12-02]: Graph state (selection, expansion) resets on refresh; hull visibility persists in localStorage
+- [12-02]: Custom storage adapter for Set serialization in zustand persist middleware
+- [12-02]: API hooks enabled only when entity/module key is truthy
 
 ### Pending Todos
 
@@ -115,5 +121,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-24
-Stopped at: Completed 11-05-PLAN.md (Draft-aware Inheritance Gap Closure)
+Stopped at: Completed 12-02-PLAN.md (Graph State & API)
 Resume file: None
