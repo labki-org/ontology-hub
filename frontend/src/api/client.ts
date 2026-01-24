@@ -1,4 +1,5 @@
-const API_BASE = import.meta.env.VITE_API_URL || '/api/v1'
+const API_V1_BASE = import.meta.env.VITE_API_URL || '/api/v1'
+const API_V2_BASE = '/api/v2'
 
 export class ApiError extends Error {
   status: number
@@ -10,17 +11,24 @@ export class ApiError extends Error {
   }
 }
 
+interface ApiFetchOptions extends RequestInit {
+  /** Use v2 API base instead of v1 */
+  v2?: boolean
+}
+
 export async function apiFetch<T>(
   endpoint: string,
-  options?: RequestInit
+  options?: ApiFetchOptions
 ): Promise<T> {
-  const url = `${API_BASE}${endpoint}`
+  const { v2, ...fetchOptions } = options ?? {}
+  const base = v2 ? API_V2_BASE : API_V1_BASE
+  const url = `${base}${endpoint}`
 
   const response = await fetch(url, {
-    ...options,
+    ...fetchOptions,
     headers: {
       'Content-Type': 'application/json',
-      ...options?.headers,
+      ...fetchOptions.headers,
     },
   })
 

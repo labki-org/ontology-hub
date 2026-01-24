@@ -28,7 +28,7 @@ export function useNeighborhoodGraph(
         params.set('draft_id', draftId)
       }
 
-      return apiFetch<GraphResponse>(`/api/v2/graph/neighborhood?${params}`)
+      return apiFetch<GraphResponse>(`/graph/neighborhood?${params}`, { v2: true })
     },
     enabled: !!entityKey,
   })
@@ -50,9 +50,9 @@ export function useModuleGraph(moduleKey: string | null, draftId?: string) {
       }
 
       const queryString = params.toString()
-      const url = `/api/v2/graph/module/${moduleKey}${queryString ? `?${queryString}` : ''}`
+      const url = `/graph/module/${moduleKey}${queryString ? `?${queryString}` : ''}`
 
-      return apiFetch<GraphResponse>(url)
+      return apiFetch<GraphResponse>(url, { v2: true })
     },
     enabled: !!moduleKey,
   })

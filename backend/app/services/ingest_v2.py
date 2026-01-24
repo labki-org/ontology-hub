@@ -198,9 +198,12 @@ class IngestService:
             elif rel.type == "module_entity":
                 module_id = modules.get(rel.source_key)
                 if module_id:
+                    # Convert enum to value string for storage
+                    entity_type = rel.extra["entity_type"]
+                    entity_type_value = entity_type.value if hasattr(entity_type, 'value') else entity_type
                     self._session.add(ModuleEntity(
                         module_id=module_id,
-                        entity_type=rel.extra["entity_type"],
+                        entity_type=entity_type_value,
                         entity_key=rel.target_key,
                     ))
                 else:

@@ -114,6 +114,9 @@ class DraftOverlayService:
                 if canonical_json:
                     result = deepcopy(canonical_json)
                     result["_change_status"] = "unchanged"
+                    # Ensure entity_key is present (canonical_json uses "id")
+                    if "entity_key" not in result and "id" in result:
+                        result["entity_key"] = result["id"]
                     return result
             return None
 
@@ -122,6 +125,9 @@ class DraftOverlayService:
             if draft_change.replacement_json:
                 result = deepcopy(draft_change.replacement_json)
                 result["_change_status"] = "added"
+                # Ensure entity_key is present
+                if "entity_key" not in result and "id" in result:
+                    result["entity_key"] = result["id"]
                 return result
             return None
 
@@ -133,6 +139,9 @@ class DraftOverlayService:
                     result = deepcopy(canonical_json)
                     result["_change_status"] = "deleted"
                     result["_deleted"] = True
+                    # Ensure entity_key is present
+                    if "entity_key" not in result and "id" in result:
+                        result["entity_key"] = result["id"]
                     return result
             # Deleted entity that doesn't exist in canonical (shouldn't happen)
             return None
@@ -159,6 +168,9 @@ class DraftOverlayService:
                 else:
                     result = base
                 result["_change_status"] = "modified"
+                # Ensure entity_key is present
+                if "entity_key" not in result and "id" in result:
+                    result["entity_key"] = result["id"]
                 return result
             except jsonpatch.JsonPatchException as e:
                 # Patch failed - return canonical with error marker
@@ -166,6 +178,9 @@ class DraftOverlayService:
                 result = deepcopy(canonical_json)
                 result["_change_status"] = "unchanged"
                 result["_patch_error"] = str(e)
+                # Ensure entity_key is present
+                if "entity_key" not in result and "id" in result:
+                    result["entity_key"] = result["id"]
                 return result
 
         return None

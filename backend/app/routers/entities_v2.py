@@ -33,6 +33,8 @@ from app.models.v2 import (
     CategoryProperty,
     Module,
     ModuleEntity,
+    OntologyVersion,
+    OntologyVersionPublic,
     Property,
     Subobject,
     Template,
@@ -49,6 +51,38 @@ from app.schemas.entity_v2 import (
 from app.services.draft_overlay import DraftContextDep
 
 router = APIRouter(tags=["entities-v2"])
+
+
+# -----------------------------------------------------------------------------
+# Ontology Version endpoint
+# -----------------------------------------------------------------------------
+
+
+@router.get("/ontology-version", response_model=OntologyVersionPublic)
+@limiter.limit(RATE_LIMITS["entity_read"])
+async def get_ontology_version(
+    request: Request,
+    session: SessionDep,
+) -> OntologyVersionPublic:
+    """Get current ontology version info.
+
+    Returns the latest canonical ontology version with commit SHA,
+    ingest status, and entity counts.
+
+    Rate limited to 200/minute per IP.
+    """
+    # Get the latest ontology version (only one row)
+    query = select(OntologyVersion).order_by(OntologyVersion.created_at.desc()).limit(1)
+    result = await session.execute(query)
+    version = result.scalar_one_or_none()
+
+    if not version:
+        raise HTTPException(
+            status_code=404,
+            detail="No ontology version found. Run ingest first.",
+        )
+
+    return OntologyVersionPublic.model_validate(version)
 
 
 # -----------------------------------------------------------------------------
@@ -469,6 +503,55 @@ async def list_templates(
 # -----------------------------------------------------------------------------
 
 
+@router.get("/modules", response_model=EntityListResponse)
+@limiter.limit(RATE_LIMITS["entity_list"])
+async def list_modules(
+    request: Request,
+    session: SessionDep,
+    draft_ctx: DraftContextDep,
+    cursor: Optional[str] = Query(
+        None, description="Last entity_key from previous page for pagination"
+    ),
+    limit: int = Query(20, ge=1, le=100, description="Max items per page"),
+) -> EntityListResponse:
+    """List modules with cursor-based pagination and draft overlay.
+
+    Rate limited to 100/minute per IP.
+    """
+    query = select(Module).order_by(Module.entity_key)
+
+    if cursor:
+        query = query.where(Module.entity_key > cursor)
+
+    query = query.limit(limit + 1)
+
+    result = await session.execute(query)
+    modules = list(result.scalars().all())
+
+    has_next = len(modules) > limit
+    if has_next:
+        modules = modules[:limit]
+
+    items: list[EntityWithStatus] = []
+    for mod in modules:
+        effective = await draft_ctx.apply_overlay(mod, "module", mod.entity_key)
+        if effective:
+            items.append(EntityWithStatus.model_validate(effective))
+
+    draft_creates = await draft_ctx.get_draft_creates("module")
+    for create in draft_creates:
+        items.append(EntityWithStatus.model_validate(create))
+
+    items.sort(key=lambda x: x.entity_key)
+    next_cursor = items[-1].entity_key if has_next and items else None
+
+    return EntityListResponse(
+        items=items,
+        next_cursor=next_cursor,
+        has_next=has_next,
+    )
+
+
 async def compute_module_closure(
     session: SessionDep,
     direct_category_keys: list[str],
@@ -585,6 +668,55 @@ async def get_module(
 # -----------------------------------------------------------------------------
 # Bundle endpoints
 # -----------------------------------------------------------------------------
+
+
+@router.get("/bundles", response_model=EntityListResponse)
+@limiter.limit(RATE_LIMITS["entity_list"])
+async def list_bundles(
+    request: Request,
+    session: SessionDep,
+    draft_ctx: DraftContextDep,
+    cursor: Optional[str] = Query(
+        None, description="Last entity_key from previous page for pagination"
+    ),
+    limit: int = Query(20, ge=1, le=100, description="Max items per page"),
+) -> EntityListResponse:
+    """List bundles with cursor-based pagination and draft overlay.
+
+    Rate limited to 100/minute per IP.
+    """
+    query = select(Bundle).order_by(Bundle.entity_key)
+
+    if cursor:
+        query = query.where(Bundle.entity_key > cursor)
+
+    query = query.limit(limit + 1)
+
+    result = await session.execute(query)
+    bundles = list(result.scalars().all())
+
+    has_next = len(bundles) > limit
+    if has_next:
+        bundles = bundles[:limit]
+
+    items: list[EntityWithStatus] = []
+    for bnd in bundles:
+        effective = await draft_ctx.apply_overlay(bnd, "bundle", bnd.entity_key)
+        if effective:
+            items.append(EntityWithStatus.model_validate(effective))
+
+    draft_creates = await draft_ctx.get_draft_creates("bundle")
+    for create in draft_creates:
+        items.append(EntityWithStatus.model_validate(create))
+
+    items.sort(key=lambda x: x.entity_key)
+    next_cursor = items[-1].entity_key if has_next and items else None
+
+    return EntityListResponse(
+        items=items,
+        next_cursor=next_cursor,
+        has_next=has_next,
+    )
 
 
 async def compute_bundle_closure(

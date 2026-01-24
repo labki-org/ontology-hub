@@ -40,15 +40,19 @@ interface GraphCanvasProps {
  */
 export function GraphCanvas({ entityKey: propEntityKey, draftId }: GraphCanvasProps) {
   const selectedEntityKey = useGraphStore((s) => s.selectedEntityKey)
+  const selectedEntityType = useGraphStore((s) => s.selectedEntityType)
   const depth = useGraphStore((s) => s.depth)
   const edgeTypeFilter = useGraphStore((s) => s.edgeTypeFilter)
 
   // Use prop entityKey or fall back to selectedEntityKey from store
   const entityKey = propEntityKey ?? selectedEntityKey
 
-  // Fetch graph data
+  // Graph visualization only supports categories - skip fetch for other entity types
+  const isCategory = selectedEntityType === 'category'
+
+  // Fetch graph data (only for categories)
   const { data, isLoading, error } = useNeighborhoodGraph(
-    entityKey,
+    isCategory ? entityKey : null,
     'category',
     depth,
     draftId
@@ -158,6 +162,17 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId }: GraphCanvasPr
     return (
       <div className="h-full flex items-center justify-center text-muted-foreground">
         Select an entity to visualize
+      </div>
+    )
+  }
+
+  if (!isCategory) {
+    return (
+      <div className="h-full flex items-center justify-center text-muted-foreground">
+        <div className="text-center">
+          <p>Graph view is available for categories only</p>
+          <p className="text-sm mt-1">Select a category to see its inheritance graph</p>
+        </div>
       </div>
     )
   }

@@ -30,6 +30,7 @@ from app.routers import (
 from app.routers.entities_v2 import router as entities_v2_router
 from app.services.github import GitHubClient
 from app.services.indexer import sync_repository
+from app.services.ingest_v2 import sync_repository_v2
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -172,7 +173,7 @@ async def trigger_sync(
     request: Request,
     session: AsyncSession = Depends(get_session),
 ):
-    """Trigger full repository sync from GitHub.
+    """Trigger full repository sync from GitHub (v1.0).
 
     Fetches all entity, module, and profile files from the configured
     GitHub repository and upserts them into the database.
@@ -182,6 +183,29 @@ async def trigger_sync(
     """
     github_client = get_github_client(request)
     result = await sync_repository(
+        github_client=github_client,
+        session=session,
+        owner=settings.GITHUB_REPO_OWNER,
+        repo=settings.GITHUB_REPO_NAME,
+    )
+    return result
+
+
+@app.post("/admin/sync-v2")
+async def trigger_sync_v2(
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+):
+    """Trigger full v2.0 repository sync from GitHub.
+
+    Fetches all entity files, validates against schemas, parses entities,
+    atomically replaces all canonical data, and refreshes mat view.
+
+    Returns:
+        Sync statistics including commit_sha, entity_counts, warnings, duration
+    """
+    github_client = get_github_client(request)
+    result = await sync_repository_v2(
         github_client=github_client,
         session=session,
         owner=settings.GITHUB_REPO_OWNER,

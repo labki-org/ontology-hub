@@ -12,7 +12,7 @@ from sqlalchemy import text
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.models.v2 import Category, CategoryParent, Module, ModuleEntity, EntityType
+from app.models.v2 import Category, CategoryParent, Module, ModuleEntity
 from app.schemas.graph import GraphEdge, GraphNode, GraphResponse
 from app.services.draft_overlay import DraftOverlayService
 
@@ -83,32 +83,53 @@ class GraphQueryService:
             if not draft_match:
                 raise ValueError(f"Category '{entity_key}' not found")
 
-        # Execute recursive CTE for neighborhood traversal
-        # The CTE finds all ancestors and descendants within depth levels
+        # Execute recursive CTEs for neighborhood traversal
+        # Uses separate CTEs for ancestors and descendants (PostgreSQL limitation)
         # Path array prevents infinite loops from circular inheritance
         cte_query = text("""
-            WITH RECURSIVE neighborhood AS (
-                -- Base: starting category
-                SELECT c.id, c.entity_key, c.label, 0 as depth, 'start' as direction, ARRAY[c.id] as path
+            WITH RECURSIVE
+            -- Base: starting category
+            start_cat AS (
+                SELECT c.id, c.entity_key, c.label
                 FROM categories c WHERE c.entity_key = :entity_key
-
-                UNION ALL
-
-                -- Ancestors (parents)
-                SELECT c.id, c.entity_key, c.label, n.depth + 1, 'ancestor'::text, n.path || c.id
+            ),
+            -- Ancestors (parents, grandparents, etc.)
+            ancestors AS (
+                SELECT c.id, c.entity_key, c.label, 1 as depth, ARRAY[c.id] as path
                 FROM categories c
                 JOIN category_parent cp ON cp.parent_id = c.id
-                JOIN neighborhood n ON n.id = cp.category_id
-                WHERE n.depth < :max_depth AND NOT c.id = ANY(n.path)
+                JOIN start_cat s ON s.id = cp.category_id
 
                 UNION ALL
 
-                -- Descendants (children)
-                SELECT c.id, c.entity_key, c.label, n.depth + 1, 'descendant'::text, n.path || c.id
+                SELECT c.id, c.entity_key, c.label, a.depth + 1, a.path || c.id
+                FROM categories c
+                JOIN category_parent cp ON cp.parent_id = c.id
+                JOIN ancestors a ON a.id = cp.category_id
+                WHERE a.depth < :max_depth AND NOT c.id = ANY(a.path)
+            ),
+            -- Descendants (children, grandchildren, etc.)
+            descendants AS (
+                SELECT c.id, c.entity_key, c.label, 1 as depth, ARRAY[c.id] as path
                 FROM categories c
                 JOIN category_parent cp ON cp.category_id = c.id
-                JOIN neighborhood n ON n.id = cp.parent_id
-                WHERE n.depth < :max_depth AND NOT c.id = ANY(n.path)
+                JOIN start_cat s ON s.id = cp.parent_id
+
+                UNION ALL
+
+                SELECT c.id, c.entity_key, c.label, d.depth + 1, d.path || c.id
+                FROM categories c
+                JOIN category_parent cp ON cp.category_id = c.id
+                JOIN descendants d ON d.id = cp.parent_id
+                WHERE d.depth < :max_depth AND NOT c.id = ANY(d.path)
+            ),
+            -- Combine all nodes
+            neighborhood AS (
+                SELECT id, entity_key, label, 0 as depth FROM start_cat
+                UNION
+                SELECT id, entity_key, label, depth FROM ancestors
+                UNION
+                SELECT id, entity_key, label, depth FROM descendants
             )
             SELECT DISTINCT ON (id) id, entity_key, label, depth
             FROM neighborhood ORDER BY id, depth
@@ -253,9 +274,10 @@ class GraphQueryService:
             raise ValueError(f"Module '{module_key}' not found")
 
         # Get all category entity_keys in this module
+        # entity_type is stored as string value (e.g., "category")
         membership_query = select(ModuleEntity.entity_key).where(
             ModuleEntity.module_id == module.id,
-            ModuleEntity.entity_type == EntityType.CATEGORY,
+            ModuleEntity.entity_type == "category",
         )
         result = await self.session.execute(membership_query)
         entity_keys = [row[0] for row in result.fetchall()]
@@ -355,19 +377,14 @@ class GraphQueryService:
         if not entity_keys:
             return {}
 
-        # Map EntityType string to enum
-        try:
-            etype = EntityType(entity_type)
-        except ValueError:
-            return {}
-
         # Query module membership with module details
+        # entity_type is stored as string value (e.g., "category" not "CATEGORY")
         query = (
             select(ModuleEntity.entity_key, Module.entity_key.label("module_key"))
             .join(Module, Module.id == ModuleEntity.module_id)
             .where(
                 ModuleEntity.entity_key.in_(entity_keys),
-                ModuleEntity.entity_type == etype,
+                ModuleEntity.entity_type == entity_type,
             )
         )
 
@@ -402,26 +419,18 @@ class GraphQueryService:
         if not entity_keys:
             return []
 
-        # Query edges where both category and parent are in our set
-        edge_query = (
-            select(
-                Category.entity_key.label("child_key"),
-                text("p.entity_key as parent_key"),
-            )
-            .join(CategoryParent, CategoryParent.category_id == Category.id)
-            .join(
-                text("categories p"),
-                text("p.id = category_parent.parent_id"),
-            )
-            .where(
-                Category.entity_key.in_(entity_keys),
-                text("p.entity_key IN :parent_keys"),
-            )
-        )
+        # Use raw SQL for clarity with self-join on categories
+        edge_query = text("""
+            SELECT c.entity_key as child_key, p.entity_key as parent_key
+            FROM categories c
+            JOIN category_parent cp ON cp.category_id = c.id
+            JOIN categories p ON p.id = cp.parent_id
+            WHERE c.entity_key = ANY(:entity_keys)
+              AND p.entity_key = ANY(:entity_keys)
+        """)
 
-        # Execute with parameter binding
         result = await self.session.execute(
-            edge_query, {"parent_keys": tuple(entity_keys)}
+            edge_query, {"entity_keys": entity_keys}
         )
         rows = result.fetchall()
 

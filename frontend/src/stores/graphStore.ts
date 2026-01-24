@@ -8,6 +8,7 @@ enableMapSet()
 interface GraphState {
   // Selection and expansion state
   selectedEntityKey: string | null
+  selectedEntityType: string
   expandedNodes: Set<string>
 
   // View settings
@@ -18,7 +19,7 @@ interface GraphState {
   edgeTypeFilter: Set<string>
 
   // Actions
-  setSelectedEntity: (key: string | null) => void
+  setSelectedEntity: (key: string | null, entityType?: string) => void
   toggleNodeExpanded: (key: string) => void
   setDepth: (depth: number) => void
   toggleEntityType: (type: 'property' | 'subobject' | 'template') => void
@@ -28,6 +29,7 @@ interface GraphState {
 
 const initialState = {
   selectedEntityKey: null,
+  selectedEntityType: 'category',
   expandedNodes: new Set<string>(),
   depth: 2,
   showProperties: false,
@@ -40,9 +42,10 @@ export const useGraphStore = create<GraphState>()(
   immer((set) => ({
     ...initialState,
 
-    setSelectedEntity: (key) => {
+    setSelectedEntity: (key, entityType = 'category') => {
       set((state) => {
         state.selectedEntityKey = key
+        state.selectedEntityType = entityType
       })
     },
 
@@ -88,6 +91,7 @@ export const useGraphStore = create<GraphState>()(
     resetGraph: () => {
       set((state) => {
         state.selectedEntityKey = null
+        state.selectedEntityType = 'category'
         state.expandedNodes = new Set<string>()
         state.depth = 2
         state.showProperties = false

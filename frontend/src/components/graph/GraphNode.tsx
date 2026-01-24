@@ -22,7 +22,7 @@ function GraphNodeComponent({ data }: { data: GraphNodeData }) {
   const setSelectedEntity = useGraphStore((s) => s.setSelectedEntity)
 
   const handleClick = () => {
-    setSelectedEntity(data.entity_key)
+    setSelectedEntity(data.entity_key, data.entity_type)
   }
 
   // Determine border color and style based on change_status

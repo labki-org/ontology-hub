@@ -28,9 +28,10 @@ interface EntitySectionProps {
   entities: EntityWithStatus[]
   isLoading: boolean
   searchTerm: string
+  entityType: string
 }
 
-function EntitySection({ title, icon: Icon, entities, isLoading, searchTerm }: EntitySectionProps) {
+function EntitySection({ title, icon: Icon, entities, isLoading, searchTerm, entityType }: EntitySectionProps) {
   const setSelectedEntity = useGraphStore((state) => state.setSelectedEntity)
   const filteredEntities = useSearchFilter(searchTerm, entities)
 
@@ -60,7 +61,7 @@ function EntitySection({ title, icon: Icon, entities, isLoading, searchTerm }: E
             return (
               <li key={entity.entity_key}>
                 <button
-                  onClick={() => setSelectedEntity(entity.entity_key)}
+                  onClick={() => setSelectedEntity(entity.entity_key, entityType)}
                   className={`flex items-center gap-2 w-full px-2 py-1 text-sm rounded hover:bg-sidebar-accent truncate text-left ${
                     isDeleted ? 'line-through text-muted-foreground' : ''
                   }`}
@@ -182,6 +183,7 @@ export function SidebarV2() {
             entities={categories}
             isLoading={categoriesLoading}
             searchTerm={debouncedSearchTerm}
+            entityType="category"
           />
           <EntitySection
             title="Properties"
@@ -189,6 +191,7 @@ export function SidebarV2() {
             entities={properties}
             isLoading={propertiesLoading}
             searchTerm={debouncedSearchTerm}
+            entityType="property"
           />
           <EntitySection
             title="Subobjects"
@@ -196,6 +199,7 @@ export function SidebarV2() {
             entities={subobjects}
             isLoading={subobjectsLoading}
             searchTerm={debouncedSearchTerm}
+            entityType="subobject"
           />
         </div>
 
@@ -212,6 +216,7 @@ export function SidebarV2() {
             entities={modules}
             isLoading={modulesLoading}
             searchTerm={debouncedSearchTerm}
+            entityType="module"
           />
           <EntitySection
             title="Bundles"
@@ -219,6 +224,7 @@ export function SidebarV2() {
             entities={bundles}
             isLoading={bundlesLoading}
             searchTerm={debouncedSearchTerm}
+            entityType="bundle"
           />
         </div>
 
@@ -232,6 +238,7 @@ export function SidebarV2() {
             entities={templates}
             isLoading={templatesLoading}
             searchTerm={debouncedSearchTerm}
+            entityType="template"
           />
         </div>
       </nav>

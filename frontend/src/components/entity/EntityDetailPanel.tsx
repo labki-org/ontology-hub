@@ -1,4 +1,3 @@
-import { useCategory } from '@/api/entitiesV2'
 import {
   Card,
   CardHeader,
@@ -15,6 +14,10 @@ interface EntityDetailPanelProps {
   entityKey: string | null
   entityType?: string
   draftId?: string
+  // Data passed from parent (BrowsePage handles fetching)
+  data?: unknown
+  isLoading?: boolean
+  error?: Error | null
 }
 
 /**
@@ -23,18 +26,18 @@ interface EntityDetailPanelProps {
  * Displays in the bottom panel of the split layout. Shows details for whatever
  * entity is selected in graphStore.
  *
- * For now, focuses on category as primary entity type. Full detail pages with
- * edit mode are Phase 13.
+ * Data fetching is done by BrowsePage and passed as props to work around
+ * a rendering issue where hooks weren't executing in this component.
  */
 export function EntityDetailPanel({
   entityKey,
   entityType = 'category',
   draftId,
+  data,
+  isLoading = false,
+  error = null,
 }: EntityDetailPanelProps) {
   const setSelectedEntity = useGraphStore((s) => s.setSelectedEntity)
-
-  // Fetch category data (main use case for now)
-  const { data, isLoading, error } = useCategory(entityKey || '', draftId)
 
   if (!entityKey) {
     return (
@@ -79,130 +82,235 @@ export function EntityDetailPanel({
     )
   }
 
-  // Type guard to check if data is CategoryDetailV2
-  const categoryData = data as CategoryDetailV2
+  // Type-specific rendering
+  const entityData = data as Record<string, unknown>
+  const label = entityData.label as string
+  const description = entityData.description as string | undefined
+  const changeStatus = entityData.change_status as string | undefined
+
+  // Render change status badge
+  const renderChangeStatusBadge = () => {
+    if (!changeStatus || changeStatus === 'unchanged') return null
+    return (
+      <Badge
+        variant={
+          changeStatus === 'added'
+            ? 'default'
+            : changeStatus === 'modified'
+            ? 'secondary'
+            : 'destructive'
+        }
+        className={
+          changeStatus === 'added'
+            ? 'bg-green-500 hover:bg-green-600'
+            : changeStatus === 'modified'
+            ? 'bg-yellow-500 hover:bg-yellow-600'
+            : ''
+        }
+      >
+        {changeStatus === 'added'
+          ? '+ Added'
+          : changeStatus === 'modified'
+          ? '~ Modified'
+          : '- Deleted'}
+      </Badge>
+    )
+  }
+
+  // Render category-specific content
+  const renderCategoryContent = () => {
+    const categoryData = data as CategoryDetailV2
+    return (
+      <CardContent className="space-y-6">
+        {/* Parents section */}
+        <div>
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+            Parent Categories
+          </h3>
+          {categoryData.parents && categoryData.parents.length > 0 ? (
+            <div className="space-y-1">
+              {categoryData.parents.map((parent) => (
+                <button
+                  key={parent}
+                  onClick={() => setSelectedEntity(parent, 'category')}
+                  className="block text-sm text-primary hover:underline text-left"
+                >
+                  {parent}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground italic">No parent categories</p>
+          )}
+        </div>
+
+        {/* Properties section */}
+        <div>
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+            Properties
+          </h3>
+          {categoryData.properties && categoryData.properties.length > 0 ? (
+            <div className="space-y-2">
+              {categoryData.properties.map((prop) => (
+                <div
+                  key={prop.entity_key}
+                  className="p-3 border rounded-md bg-muted/30"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <button
+                      onClick={() => setSelectedEntity(prop.entity_key, 'property')}
+                      className="font-medium text-sm text-primary hover:underline"
+                    >
+                      {prop.label}
+                    </button>
+                    {prop.is_required && (
+                      <Badge variant="outline" className="text-xs">
+                        Required
+                      </Badge>
+                    )}
+                    {prop.is_direct && (
+                      <Badge variant="default" className="text-xs bg-blue-500">
+                        Direct
+                      </Badge>
+                    )}
+                    {prop.is_inherited && !prop.is_direct && (
+                      <Badge variant="secondary" className="text-xs">
+                        Inherited
+                      </Badge>
+                    )}
+                  </div>
+                  {prop.is_inherited && prop.source_category && (
+                    <p className="text-xs text-muted-foreground">
+                      From:{' '}
+                      <button
+                        onClick={() => setSelectedEntity(prop.source_category, 'category')}
+                        className="text-primary hover:underline"
+                      >
+                        {prop.source_category}
+                      </button>
+                      {prop.inheritance_depth > 0 && (
+                        <span> (depth: {prop.inheritance_depth})</span>
+                      )}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground italic">No properties</p>
+          )}
+        </div>
+      </CardContent>
+    )
+  }
+
+  // Render property-specific content
+  const renderPropertyContent = () => {
+    const propertyData = entityData
+    const datatype = propertyData.datatype as string | undefined
+    const cardinality = propertyData.cardinality as string | undefined
+
+    return (
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          {datatype && (
+            <div>
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+                Datatype
+              </h3>
+              <Badge variant="outline">{datatype}</Badge>
+            </div>
+          )}
+          {cardinality && (
+            <div>
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+                Cardinality
+              </h3>
+              <Badge variant="outline">{cardinality}</Badge>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    )
+  }
+
+  // Render subobject-specific content
+  const renderSubobjectContent = () => {
+    return (
+      <CardContent>
+        <p className="text-sm text-muted-foreground">Subobject details</p>
+      </CardContent>
+    )
+  }
+
+  // Render module-specific content
+  const renderModuleContent = () => {
+    const moduleData = entityData
+    const entities = moduleData.entities as string[] | undefined
+
+    return (
+      <CardContent className="space-y-4">
+        {entities && entities.length > 0 && (
+          <div>
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+              Entities
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {entities.map((entity) => (
+                <Badge key={entity} variant="secondary">
+                  {entity}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    )
+  }
+
+  // Render generic content for other entity types
+  const renderGenericContent = () => {
+    return (
+      <CardContent>
+        <pre className="text-xs bg-muted p-3 rounded overflow-auto max-h-64">
+          {JSON.stringify(data, null, 2)}
+        </pre>
+      </CardContent>
+    )
+  }
+
+  // Select content renderer based on entity type
+  const renderContent = () => {
+    switch (entityType) {
+      case 'category':
+        return renderCategoryContent()
+      case 'property':
+        return renderPropertyContent()
+      case 'subobject':
+        return renderSubobjectContent()
+      case 'module':
+        return renderModuleContent()
+      default:
+        return renderGenericContent()
+    }
+  }
 
   return (
     <div className="h-full overflow-auto p-6">
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <CardTitle className="text-2xl">{categoryData.label}</CardTitle>
-            {categoryData.change_status && categoryData.change_status !== 'unchanged' && (
-              <Badge
-                variant={
-                  categoryData.change_status === 'added'
-                    ? 'default'
-                    : categoryData.change_status === 'modified'
-                    ? 'secondary'
-                    : 'destructive'
-                }
-                className={
-                  categoryData.change_status === 'added'
-                    ? 'bg-green-500 hover:bg-green-600'
-                    : categoryData.change_status === 'modified'
-                    ? 'bg-yellow-500 hover:bg-yellow-600'
-                    : ''
-                }
-              >
-                {categoryData.change_status === 'added'
-                  ? '+ Added'
-                  : categoryData.change_status === 'modified'
-                  ? '~ Modified'
-                  : '- Deleted'}
-              </Badge>
-            )}
+            <CardTitle className="text-2xl">{label}</CardTitle>
+            <Badge variant="outline" className="text-xs">
+              {entityType}
+            </Badge>
+            {renderChangeStatusBadge()}
           </div>
-          {categoryData.description && (
-            <CardDescription>{categoryData.description}</CardDescription>
-          )}
-          {categoryData.patch_error && (
-            <div className="mt-2 text-sm text-destructive bg-destructive/10 p-2 rounded">
-              <strong>Patch Error:</strong> {categoryData.patch_error}
-            </div>
+          {description && (
+            <CardDescription>{description}</CardDescription>
           )}
         </CardHeader>
-
-        <CardContent className="space-y-6">
-          {/* Parents section */}
-          <div>
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-              Parent Categories
-            </h3>
-            {categoryData.parents && categoryData.parents.length > 0 ? (
-              <div className="space-y-1">
-                {categoryData.parents.map((parent) => (
-                  <button
-                    key={parent}
-                    onClick={() => setSelectedEntity(parent)}
-                    className="block text-sm text-primary hover:underline text-left"
-                  >
-                    {parent}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground italic">No parent categories</p>
-            )}
-          </div>
-
-          {/* Properties section */}
-          <div>
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-              Properties
-            </h3>
-            {categoryData.properties && categoryData.properties.length > 0 ? (
-              <div className="space-y-2">
-                {categoryData.properties.map((prop) => (
-                  <div
-                    key={prop.entity_key}
-                    className="p-3 border rounded-md bg-muted/30"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <button
-                        onClick={() => setSelectedEntity(prop.entity_key)}
-                        className="font-medium text-sm text-primary hover:underline"
-                      >
-                        {prop.label}
-                      </button>
-                      {prop.is_required && (
-                        <Badge variant="outline" className="text-xs">
-                          Required
-                        </Badge>
-                      )}
-                      {prop.is_direct && (
-                        <Badge variant="default" className="text-xs bg-blue-500">
-                          Direct
-                        </Badge>
-                      )}
-                      {prop.is_inherited && !prop.is_direct && (
-                        <Badge variant="secondary" className="text-xs">
-                          Inherited
-                        </Badge>
-                      )}
-                    </div>
-                    {prop.is_inherited && prop.source_category && (
-                      <p className="text-xs text-muted-foreground">
-                        From:{' '}
-                        <button
-                          onClick={() => setSelectedEntity(prop.source_category)}
-                          className="text-primary hover:underline"
-                        >
-                          {prop.source_category}
-                        </button>
-                        {prop.inheritance_depth > 0 && (
-                          <span> (depth: {prop.inheritance_depth})</span>
-                        )}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground italic">No properties</p>
-            )}
-          </div>
-        </CardContent>
+        {renderContent()}
       </Card>
     </div>
   )

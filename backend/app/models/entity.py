@@ -6,7 +6,7 @@ from enum import Enum
 from typing import Optional
 
 import sqlalchemy as sa
-from sqlalchemy import JSON, Column
+from sqlalchemy import JSON, Column, Enum as SAEnum
 from sqlmodel import Field, SQLModel
 
 
@@ -22,7 +22,9 @@ class EntityBase(SQLModel):
     """Base model for Entity with common fields."""
 
     entity_id: str = Field(index=True)  # Schema-defined ID (e.g., "Person", "hasName")
-    entity_type: EntityType
+    entity_type: EntityType = Field(
+        sa_column=Column(SAEnum(EntityType, name="entitytype", values_callable=lambda e: [x.value for x in e]))
+    )
     label: str
     description: Optional[str] = None
     schema_definition: dict = Field(default_factory=dict, sa_column=Column(JSON))

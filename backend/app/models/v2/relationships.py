@@ -6,6 +6,7 @@ JSONB arrays in v1.0.
 
 import uuid
 
+from sqlalchemy import Column, String
 from sqlmodel import Field, SQLModel
 
 from app.models.v2.enums import EntityType
@@ -49,8 +50,8 @@ class ModuleEntity(SQLModel, table=True):
     __tablename__ = "module_entity"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    module_id: uuid.UUID = Field(foreign_key="modules.id", index=True)
-    entity_type: EntityType
+    module_id: uuid.UUID = Field(foreign_key="modules_v2.id", index=True)
+    entity_type: EntityType = Field(sa_column=Column(String))  # Stored as string value
     entity_key: str = Field(index=True)
 
 
@@ -64,4 +65,4 @@ class BundleModule(SQLModel, table=True):
     __tablename__ = "bundle_module"
 
     bundle_id: uuid.UUID = Field(foreign_key="bundles.id", primary_key=True)
-    module_id: uuid.UUID = Field(foreign_key="modules.id", primary_key=True)
+    module_id: uuid.UUID = Field(foreign_key="modules_v2.id", primary_key=True)

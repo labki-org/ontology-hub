@@ -10,7 +10,7 @@ import type {
 // Fetch functions
 
 async function fetchOntologyVersion(): Promise<OntologyVersionInfo> {
-  return apiFetch('/api/v2/ontology-version')
+  return apiFetch('/ontology-version', { v2: true })
 }
 
 async function fetchEntitiesV2(
@@ -25,8 +25,8 @@ async function fetchEntitiesV2(
   if (draftId) params.set('draft_id', draftId)
 
   const queryString = params.toString()
-  const endpoint = `/api/v2/${entityType}${queryString ? `?${queryString}` : ''}`
-  return apiFetch(endpoint)
+  const endpoint = `/${entityType}${queryString ? `?${queryString}` : ''}`
+  return apiFetch(endpoint, { v2: true })
 }
 
 async function fetchEntityV2(
@@ -38,8 +38,8 @@ async function fetchEntityV2(
   if (draftId) params.set('draft_id', draftId)
 
   const queryString = params.toString()
-  const endpoint = `/api/v2/${entityType}/${entityKey}${queryString ? `?${queryString}` : ''}`
-  return apiFetch(endpoint)
+  const endpoint = `/${entityType}/${entityKey}${queryString ? `?${queryString}` : ''}`
+  return apiFetch(endpoint, { v2: true })
 }
 
 // Query hooks

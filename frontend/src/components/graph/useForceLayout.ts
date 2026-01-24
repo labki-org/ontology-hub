@@ -47,6 +47,8 @@ export function useForceLayout(
   const [nodes, setNodes] = useState<Node[]>(initialNodes)
   const [isRunning, setIsRunning] = useState(false)
   const simulationRef = useRef<any>(null)
+  // Keep track of d3 nodes for tick handler closure
+  const d3NodesRef = useRef<D3Node[]>([])
 
   const {
     chargeStrength = -800,
@@ -58,8 +60,12 @@ export function useForceLayout(
   useEffect(() => {
     if (!initialNodes.length) {
       setNodes([])
+      d3NodesRef.current = []
       return
     }
+
+    // Sync state when initialNodes change
+    setNodes(initialNodes)
 
     // Clone nodes for d3-force simulation to avoid mutation warnings
     const d3Nodes: D3Node[] = initialNodes.map((node) => ({
@@ -67,6 +73,8 @@ export function useForceLayout(
       x: node.position?.x ?? Math.random() * 500,
       y: node.position?.y ?? Math.random() * 500,
     }))
+    // Store in ref for tick handler access
+    d3NodesRef.current = d3Nodes
 
     // Convert edges to d3-force link format
     const d3Links = edges.map((edge) => ({
@@ -89,11 +97,13 @@ export function useForceLayout(
 
     setIsRunning(true)
 
-    // Update node positions on each tick
+    // Update node positions on each tick using initialNodes as base
+    // (d3 mutates d3Nodes in place, so we read positions from there)
     simulation.on('tick', () => {
-      setNodes((prevNodes) =>
-        prevNodes.map((node) => {
-          const d3Node = d3Nodes.find((n) => n.id === node.id)
+      const currentD3Nodes = d3NodesRef.current
+      setNodes(
+        initialNodes.map((node) => {
+          const d3Node = currentD3Nodes.find((n) => n.id === node.id)
           return {
             ...node,
             position: {
