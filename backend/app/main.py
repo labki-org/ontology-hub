@@ -17,6 +17,7 @@ from app.models import Entity, Module, Profile, Draft  # noqa: F401
 from app.routers import (
     drafts_router,
     entities_router,
+    graph_router,
     modules_router,
     oauth_router,
     register_oauth_client,
@@ -129,6 +130,9 @@ app.include_router(modules_router, prefix="/api/v1")
 app.include_router(oauth_router, prefix="/api/v1")
 app.include_router(versions_router, prefix="/api/v1")
 app.include_router(webhooks_router, prefix="/api/v1")
+
+# v2.0 API routers
+app.include_router(graph_router, prefix="/api/v2")
 
 
 @app.get("/health")
