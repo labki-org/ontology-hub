@@ -1,8 +1,13 @@
+import { useState } from 'react'
 import { useGraphStore } from '@/stores/graphStore'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Label } from '@/components/ui/label'
-import { RotateCw, Minus, Plus } from 'lucide-react'
+import { RotateCw, Minus, Plus, ChevronDown, ChevronRight, Settings2 } from 'lucide-react'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 
 interface GraphControlsProps {
   onResetLayout: () => void
@@ -10,14 +15,11 @@ interface GraphControlsProps {
 }
 
 /**
- * Control panel overlay for graph visualization.
- *
- * Features:
- * - Depth control (1-3) with +/- buttons
- * - Edge type filter checkboxes (inheritance, properties, subobjects)
- * - Reset Layout button to restart force simulation
+ * Compact, collapsible control bar for graph visualization.
+ * Displays horizontally at the top of the graph.
  */
 export function GraphControls({ onResetLayout, isSimulating }: GraphControlsProps) {
+  const [isOpen, setIsOpen] = useState(false)
   const depth = useGraphStore((s) => s.depth)
   const setDepth = useGraphStore((s) => s.setDepth)
   const edgeTypeFilter = useGraphStore((s) => s.edgeTypeFilter)
@@ -38,100 +40,107 @@ export function GraphControls({ onResetLayout, isSimulating }: GraphControlsProp
   }
 
   return (
-    <div className="absolute top-4 right-4 z-10 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border p-4 min-w-[200px]">
-      <div className="space-y-4">
-        {/* Depth control */}
-        <div>
-          <Label className="text-sm font-semibold mb-2 block">Depth</Label>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => handleDepthChange(-1)}
-              disabled={depth <= 1}
-            >
-              <Minus className="h-3 w-3" />
-            </Button>
-            <span className="text-sm font-medium w-8 text-center">{depth}</span>
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => handleDepthChange(1)}
-              disabled={depth >= 3}
-            >
-              <Plus className="h-3 w-3" />
-            </Button>
-          </div>
-        </div>
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border">
+        <CollapsibleTrigger asChild>
+          <button className="flex items-center gap-2 px-3 py-2 w-full hover:bg-muted/50 rounded-lg transition-colors">
+            <Settings2 className="h-4 w-4" />
+            <span className="text-sm font-medium">Graph Settings</span>
+            <span className="text-xs text-muted-foreground ml-1">
+              (Depth: {depth})
+            </span>
+            {isOpen ? (
+              <ChevronDown className="h-4 w-4 ml-auto" />
+            ) : (
+              <ChevronRight className="h-4 w-4 ml-auto" />
+            )}
+          </button>
+        </CollapsibleTrigger>
 
-        {/* Edge type filters */}
-        <div>
-          <Label className="text-sm font-semibold mb-2 block">Edge Types</Label>
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="edge-parent"
-                checked={edgeTypeFilter.has('parent')}
-                onCheckedChange={(checked) =>
-                  handleEdgeTypeToggle('parent', checked as boolean)
-                }
-              />
-              <label
-                htmlFor="edge-parent"
-                className="text-sm cursor-pointer select-none"
+        <CollapsibleContent>
+          <div className="px-3 pb-3 pt-1 border-t">
+            <div className="flex flex-wrap items-center gap-4">
+              {/* Depth control */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground">Depth:</span>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => handleDepthChange(-1)}
+                  disabled={depth <= 1}
+                >
+                  <Minus className="h-3 w-3" />
+                </Button>
+                <span className="text-sm font-medium w-4 text-center">{depth}</span>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => handleDepthChange(1)}
+                  disabled={depth >= 3}
+                >
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
+
+              <div className="h-4 w-px bg-border" />
+
+              {/* Edge type filters - inline */}
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-medium text-muted-foreground">Edges:</span>
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <Checkbox
+                    id="edge-parent"
+                    checked={edgeTypeFilter.has('parent')}
+                    onCheckedChange={(checked) =>
+                      handleEdgeTypeToggle('parent', checked as boolean)
+                    }
+                    className="h-3.5 w-3.5"
+                  />
+                  <span className="text-xs">Inheritance</span>
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <Checkbox
+                    id="edge-property"
+                    checked={edgeTypeFilter.has('property')}
+                    onCheckedChange={(checked) =>
+                      handleEdgeTypeToggle('property', checked as boolean)
+                    }
+                    className="h-3.5 w-3.5"
+                  />
+                  <span className="text-xs">Properties</span>
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <Checkbox
+                    id="edge-subobject"
+                    checked={edgeTypeFilter.has('subobject')}
+                    onCheckedChange={(checked) =>
+                      handleEdgeTypeToggle('subobject', checked as boolean)
+                    }
+                    className="h-3.5 w-3.5"
+                  />
+                  <span className="text-xs">Subobjects</span>
+                </label>
+              </div>
+
+              <div className="h-4 w-px bg-border" />
+
+              {/* Reset layout button */}
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={onResetLayout}
+                disabled={isSimulating}
               >
-                Inheritance
-              </label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="edge-property"
-                checked={edgeTypeFilter.has('property')}
-                onCheckedChange={(checked) =>
-                  handleEdgeTypeToggle('property', checked as boolean)
-                }
-              />
-              <label
-                htmlFor="edge-property"
-                className="text-sm cursor-pointer select-none"
-              >
-                Properties
-              </label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="edge-subobject"
-                checked={edgeTypeFilter.has('subobject')}
-                onCheckedChange={(checked) =>
-                  handleEdgeTypeToggle('subobject', checked as boolean)
-                }
-              />
-              <label
-                htmlFor="edge-subobject"
-                className="text-sm cursor-pointer select-none"
-              >
-                Subobjects
-              </label>
+                <RotateCw className="h-3 w-3 mr-1" />
+                Reset
+              </Button>
             </div>
           </div>
-        </div>
-
-        {/* Reset layout button */}
-        <div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full"
-            onClick={onResetLayout}
-            disabled={isSimulating}
-          >
-            <RotateCw className="h-3 w-3 mr-2" />
-            Reset Layout
-          </Button>
-        </div>
+        </CollapsibleContent>
       </div>
-    </div>
+    </Collapsible>
   )
 }

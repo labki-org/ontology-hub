@@ -3,8 +3,15 @@ import type { Node } from '@xyflow/react'
 import { ModuleHull } from './ModuleHull'
 import { useHullStore } from '@/stores/hullStore'
 
+interface Viewport {
+  x: number
+  y: number
+  zoom: number
+}
+
 interface HullLayerProps {
   nodes: Node[]
+  viewport: Viewport
 }
 
 // Predefined color palette for module hulls (12 distinct colors)
@@ -47,7 +54,7 @@ export function getModuleColor(moduleId: string): string {
  *
  * Rendered below nodes layer (pointer-events: none on hulls).
  */
-export function HullLayer({ nodes }: HullLayerProps) {
+export function HullLayer({ nodes, viewport }: HullLayerProps) {
   const visibleModules = useHullStore((s) => s.visibleModules)
 
   // Extract all unique module IDs from nodes
@@ -73,6 +80,9 @@ export function HullLayer({ nodes }: HullLayerProps) {
 
   if (visibleModuleIds.length === 0) return null
 
+  // Apply viewport transform to match React Flow's pan/zoom
+  const transform = `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`
+
   return (
     <svg
       style={{
@@ -83,9 +93,10 @@ export function HullLayer({ nodes }: HullLayerProps) {
         left: 0,
         pointerEvents: 'none',
         zIndex: 0,
+        overflow: 'visible',
       }}
     >
-      <g>
+      <g style={{ transform, transformOrigin: '0 0' }}>
         {visibleModuleIds.map((moduleId) => (
           <ModuleHull
             key={moduleId}

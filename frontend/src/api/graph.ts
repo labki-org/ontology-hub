@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { apiFetch } from './client'
 import type { GraphResponse } from './types'
 
@@ -31,6 +31,7 @@ export function useNeighborhoodGraph(
       return apiFetch<GraphResponse>(`/graph/neighborhood?${params}`, { v2: true })
     },
     enabled: !!entityKey,
+    placeholderData: keepPreviousData, // Keep showing previous graph while loading new one
   })
 }
 

@@ -35,17 +35,17 @@ export function ModuleHull({
     // Need at least 3 nodes for a hull
     if (moduleNodes.length < 3) return null
 
-    // Extract positions
-    const points = moduleNodes.map((n) => [n.position.x, n.position.y])
+    // Extract positions as typed tuples
+    const points: [number, number][] = moduleNodes.map((n) => [n.position.x, n.position.y])
 
     // Calculate centroid for padding expansion
-    const centroid = [
+    const centroid: [number, number] = [
       points.reduce((sum, p) => sum + p[0], 0) / points.length,
       points.reduce((sum, p) => sum + p[1], 0) / points.length,
     ]
 
     // Expand points outward from centroid by padding amount
-    const expandedPoints = points.map((p) => {
+    const expandedPoints: [number, number][] = points.map((p) => {
       const dx = p[0] - centroid[0]
       const dy = p[1] - centroid[1]
       const distance = Math.sqrt(dx * dx + dy * dy)
@@ -54,10 +54,7 @@ export function ModuleHull({
       if (distance === 0) return p
 
       const factor = (distance + padding) / distance
-      return [centroid[0] + dx * factor, centroid[1] + dy * factor] as [
-        number,
-        number
-      ]
+      return [centroid[0] + dx * factor, centroid[1] + dy * factor]
     })
 
     // Compute convex hull
