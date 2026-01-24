@@ -25,7 +25,7 @@ Phases 1-7 delivered the complete MVP: Docker infrastructure, GitHub indexing, R
 - Decimal phases (8.1, 8.2): Urgent insertions (marked with INSERTED)
 
 - [x] **Phase 8: Database Foundation** - Versioned schema with normalized relationships
-- [ ] **Phase 9: Ingest Pipeline** - Populate schema from canonical repo
+- [x] **Phase 9: Ingest Pipeline** - Populate schema from canonical repo
 - [ ] **Phase 10: Query Layer** - Version-scoped reads with graph endpoints
 - [ ] **Phase 11: Draft System** - JSON Patch storage with effective view computation
 - [ ] **Phase 12: Frontend + Graph Visualization** - Unified browse/draft UI with module hulls
@@ -62,10 +62,10 @@ Plans:
   5. Ingest warnings/errors captured in ontology_version record
 **Plans:** 4 plans
 Plans:
-- [ ] 09-01-PLAN.md — Schema validation service (jsonschema library)
-- [ ] 09-02-PLAN.md — Entity parser service (all 6 types + relationship extraction)
-- [ ] 09-03-PLAN.md — Ingest service core (atomic replacement, OntologyVersion, mat view)
-- [ ] 09-04-PLAN.md — Webhook integration (v2.0 trigger, draft staleness)
+- [x] 09-01-PLAN.md — Schema validation service (jsonschema library)
+- [x] 09-02-PLAN.md — Entity parser service (all 6 types + relationship extraction)
+- [x] 09-03-PLAN.md — Ingest service core (atomic replacement, OntologyVersion, mat view)
+- [x] 09-04-PLAN.md — Webhook integration (v2.0 trigger, draft staleness)
 
 ### Phase 10: Query Layer
 **Goal**: Provide entity queries and graph endpoints supporting canonical and draft contexts
@@ -138,7 +138,7 @@ Phases execute in numeric order: 8 -> 8.1 -> 8.2 -> 9 -> ...
 |-------|-----------|----------------|--------|-----------|
 | 1-7 | v1.0 | 20/20 | Complete | 2026-01-23 |
 | 8. Database Foundation | v2.0 | 3/3 | Complete | 2026-01-24 |
-| 9. Ingest Pipeline | v2.0 | 0/4 | Planning | - |
+| 9. Ingest Pipeline | v2.0 | 4/4 | Complete | 2026-01-24 |
 | 10. Query Layer | v2.0 | 0/TBD | Not started | - |
 | 11. Draft System | v2.0 | 0/TBD | Not started | - |
 | 12. Frontend + Graph | v2.0 | 0/TBD | Not started | - |
@@ -148,4 +148,4 @@ Phases execute in numeric order: 8 -> 8.1 -> 8.2 -> 9 -> ...
 ---
 *Roadmap created: 2026-01-23*
 *v2.0 phases: 8-14 (7 phases, 92 requirements)*
-*Last updated: 2026-01-24 (Phase 9 planned)*
+*Last updated: 2026-01-24 (Phase 9 complete)*

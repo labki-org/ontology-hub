@@ -21,13 +21,13 @@ Requirements for the platform rebuild. Each maps to roadmap phases.
 
 ### Ingest Pipeline
 
-- [ ] **ING-01**: Webhook endpoint receives push notification and triggers ingest
-- [ ] **ING-02**: Pull latest commit from labki-schemas repo
-- [ ] **ING-03**: Validate all JSON files against _schema.json files from repo
-- [ ] **ING-04**: Parse and populate canonical entity tables (replacing previous data)
-- [ ] **ING-05**: Compute and populate relationship tables (category_parent, category_property, module_entity, bundle_module)
-- [ ] **ING-06**: Refresh category_property_effective materialized view
-- [ ] **ING-07**: Store ingest warnings/errors in ontology_version record
+- [x] **ING-01**: Webhook endpoint receives push notification and triggers ingest
+- [x] **ING-02**: Pull latest commit from labki-schemas repo
+- [x] **ING-03**: Validate all JSON files against _schema.json files from repo
+- [x] **ING-04**: Parse and populate canonical entity tables (replacing previous data)
+- [x] **ING-05**: Compute and populate relationship tables (category_parent, category_property, module_entity, bundle_module)
+- [x] **ING-06**: Refresh category_property_effective materialized view
+- [x] **ING-07**: Store ingest warnings/errors in ontology_version record
 
 ### Query Layer
 
@@ -193,13 +193,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DB-07 | Phase 8 | Complete |
 | DB-08 | Phase 8 | Complete |
 | DB-09 | Phase 8 | Complete |
-| ING-01 | Phase 9 | Pending |
-| ING-02 | Phase 9 | Pending |
-| ING-03 | Phase 9 | Pending |
-| ING-04 | Phase 9 | Pending |
-| ING-05 | Phase 9 | Pending |
-| ING-06 | Phase 9 | Pending |
-| ING-07 | Phase 9 | Pending |
+| ING-01 | Phase 9 | Complete |
+| ING-02 | Phase 9 | Complete |
+| ING-03 | Phase 9 | Complete |
+| ING-04 | Phase 9 | Complete |
+| ING-05 | Phase 9 | Complete |
+| ING-06 | Phase 9 | Complete |
+| ING-07 | Phase 9 | Complete |
 | QRY-01 | Phase 10 | Pending |
 | QRY-02 | Phase 10 | Pending |
 | QRY-03 | Phase 10 | Pending |
@@ -284,4 +284,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-23*
-*Last updated: 2026-01-24 (Phase 8 complete)*
+*Last updated: 2026-01-24 (Phase 9 complete)*
