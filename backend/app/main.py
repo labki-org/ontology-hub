@@ -20,6 +20,7 @@ from app.routers import (
     drafts_v2_router,
     entities_router,
     graph_router,
+    mediawiki_import_router,
     modules_router,
     oauth_router,
     register_oauth_client,
@@ -139,6 +140,7 @@ app.include_router(entities_v2_router, prefix="/api/v2")
 app.include_router(graph_router, prefix="/api/v2")
 app.include_router(drafts_v2_router, prefix="/api/v2")
 app.include_router(draft_changes_router, prefix="/api/v2")
+app.include_router(mediawiki_import_router, prefix="/api/v2")
 
 
 @app.get("/health")
