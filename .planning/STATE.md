@@ -11,17 +11,17 @@ See: .planning/PROJECT.md (updated 2026-01-23)
 
 Phase: 10 of 14 (Query Layer)
 Plan: 3 of 3 in current phase
-Status: In progress
-Last activity: 2026-01-24 -- Completed 10-03-PLAN.md (Graph Query Endpoints)
+Status: Phase complete
+Last activity: 2026-01-24 -- Completed 10-02-PLAN.md (v2.0 Entity Query Endpoints)
 
-Progress: [#################.......] 68% (v1.0 complete, v2.0 plans 10-01, 10-03 complete)
+Progress: [##################......] 70% (v1.0 complete, v2.0 phase 10 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 30 (20 v1.0 + 10 v2.0)
+- Total plans completed: 31 (20 v1.0 + 11 v2.0)
 - Average duration: ~30 min (v1.0 estimate)
-- Total execution time: ~10h 24m
+- Total execution time: ~10h 28m
 
 **By Phase (v2.0):**
 
@@ -29,7 +29,7 @@ Progress: [#################.......] 68% (v1.0 complete, v2.0 plans 10-01, 10-03
 |-------|-------|-------|----------|
 | 08-database-foundation | 3/3 | 9m | 3m |
 | 09-ingest-pipeline | 4/4 | 9m | 2m |
-| 10-query-layer | 2/3 | 5m | 2.5m |
+| 10-query-layer | 3/3 | 9m | 3m |
 
 **Recent Trend:**
 - v1.0 completed in 2 days
@@ -41,6 +41,7 @@ Progress: [#################.......] 68% (v1.0 complete, v2.0 plans 10-01, 10-03
 - v2.0 phase 9 plan 3: 2 minutes
 - v2.0 phase 9 plan 4: 3 minutes
 - v2.0 phase 10 plan 1: 3 minutes
+- v2.0 phase 10 plan 2: 4 minutes
 - v2.0 phase 10 plan 3: 2 minutes
 
 *Metrics updated after each plan completion*
@@ -79,6 +80,9 @@ Recent decisions affecting current work:
 - [10-01]: Application-layer overlay computation using Python jsonpatch library
 - [10-01]: deepcopy before applying JSON Patch to avoid mutating cached data
 - [10-01]: validation_alias for underscore-prefixed fields (_change_status -> change_status)
+- [10-02]: Closure computed via recursive CTEs rather than application-layer graph traversal
+- [10-02]: Module closure returns ancestor categories; bundle closure returns dependent modules
+- [10-02]: Draft-created entities have empty closure (no canonical relationships yet)
 - [10-03]: Path array in recursive CTE prevents infinite loops from circular inheritance
 - [10-03]: Cycle detection uses separate CTE query with has_cycle flag propagation
 
@@ -93,5 +97,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-24
-Stopped at: Completed 10-03-PLAN.md (Graph Query Endpoints)
+Stopped at: Completed 10-02-PLAN.md (v2.0 Entity Query Endpoints) - Phase 10 complete
 Resume file: None
