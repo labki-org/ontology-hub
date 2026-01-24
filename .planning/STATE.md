@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-23)
 ## Current Position
 
 Phase: 13 of 14 (Entity Detail Pages)
-Plan: 0 of TBD in current phase
-Status: Planning needed
-Last activity: 2026-01-24 -- Completed Phase 12 (Frontend + Graph Visualization) with verification
+Plan: 1 of TBD in current phase
+Status: In progress
+Last activity: 2026-01-24 -- Completed 13-01-PLAN.md (Entity detail infrastructure)
 
-Progress: [########################.] 92% (v1.0 complete, v2.0 phases 8-12 complete)
+Progress: [########################.] 93% (v1.0 complete, v2.0 phases 8-12 complete, phase 13 started)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 41 (20 v1.0 + 21 v2.0)
+- Total plans completed: 42 (20 v1.0 + 22 v2.0)
 - Average duration: ~30 min (v1.0 estimate)
-- Total execution time: ~10h 51m
+- Total execution time: ~10h 56m
 
 **By Phase (v2.0):**
 
@@ -32,6 +32,7 @@ Progress: [########################.] 92% (v1.0 complete, v2.0 phases 8-12 compl
 | 10-query-layer | 3/3 | 9m | 3m |
 | 11-draft-system | 5/5 | 16m | 3m |
 | 12-frontend-graph-visualization | 6/6 | 15m | 2m |
+| 13-entity-detail-pages | 1/TBD | 5m | 5m |
 
 **Recent Trend:**
 - v1.0 completed in 2 days
@@ -56,6 +57,7 @@ Progress: [########################.] 92% (v1.0 complete, v2.0 phases 8-12 compl
 - v2.0 phase 12 plan 4: 2 minutes (force-directed graph canvas)
 - v2.0 phase 12 plan 5: 2 minutes (module hull overlays)
 - v2.0 phase 12 plan 6: 3 minutes (unified browse/draft integration)
+- v2.0 phase 13 plan 1: 5 minutes (entity detail infrastructure)
 
 *Metrics updated after each plan completion*
 
@@ -126,6 +128,9 @@ Recent decisions affecting current work:
 - [12-06]: BrowsePage syncs entity selection bidirectionally with URL
 - [12-06]: Draft mode activated purely via URL parameter (no global state)
 - [12-06]: /browse route separate from / to maintain v1 backward compatibility
+- [13-01]: useAutoSave uses request ID tracking to handle race conditions from rapid edits
+- [13-01]: 500ms debounce default for auto-save balances responsiveness and API load
+- [13-01]: EntityDetailV2 union type enables type-safe entity detail discrimination
 
 ### Pending Todos
 
@@ -138,5 +143,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-24
-Stopped at: Completed Phase 12 (Frontend + Graph Visualization)
+Stopped at: Completed 13-01-PLAN.md (Entity detail infrastructure)
 Resume file: None
