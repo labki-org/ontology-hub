@@ -22,6 +22,9 @@ enableMapSet()
  * - Submitted PR URL for display
  * - Change tracking for direct edits and transitive effects
  */
+/** Entity types that can be created */
+export type CreateModalEntityType = 'category' | 'property' | 'subobject' | 'template' | 'module' | 'bundle'
+
 interface DraftStoreV2State {
   // Draft context
   draftToken: string | null
@@ -37,6 +40,10 @@ interface DraftStoreV2State {
   // UI state
   prWizardOpen: boolean
 
+  // Create modal state
+  createModalOpen: boolean
+  createModalEntityType: CreateModalEntityType | null
+
   // Change tracking state
   directlyEditedEntities: Set<string>
   transitivelyAffectedEntities: Set<string>
@@ -51,6 +58,8 @@ interface DraftStoreV2State {
   clearValidation: () => void
   markEntityEdited: (entityKey: string, allNodes: GraphNode[], allEdges: GraphEdge[]) => void
   clearChangeTracking: () => void
+  openCreateModal: (entityType: CreateModalEntityType) => void
+  closeCreateModal: () => void
   reset: () => void
 }
 
@@ -61,6 +70,8 @@ const initialState = {
   isSubmitting: false,
   prWizardOpen: false,
   submittedPrUrl: null,
+  createModalOpen: false,
+  createModalEntityType: null as CreateModalEntityType | null,
   directlyEditedEntities: new Set<string>(),
   transitivelyAffectedEntities: new Set<string>(),
 }
@@ -142,6 +153,20 @@ export const useDraftStoreV2 = create<DraftStoreV2State>()(
       })
     },
 
+    openCreateModal: (entityType) => {
+      set((state) => {
+        state.createModalOpen = true
+        state.createModalEntityType = entityType
+      })
+    },
+
+    closeCreateModal: () => {
+      set((state) => {
+        state.createModalOpen = false
+        state.createModalEntityType = null
+      })
+    },
+
     reset: () => {
       set((state) => {
         state.draftToken = null
@@ -150,6 +175,8 @@ export const useDraftStoreV2 = create<DraftStoreV2State>()(
         state.isSubmitting = false
         state.prWizardOpen = false
         state.submittedPrUrl = null
+        state.createModalOpen = false
+        state.createModalEntityType = null
         state.directlyEditedEntities = new Set<string>()
         state.transitivelyAffectedEntities = new Set<string>()
       })
