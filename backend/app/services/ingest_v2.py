@@ -94,7 +94,10 @@ class IngestService:
         for entry in tree_entries:
             path = entry.get("path", "")
             parts = path.split("/")
-            if len(parts) < 2:
+
+            # Only process files directly in entity directories (e.g., "bundles/Default.json")
+            # Skip nested files like "bundles/Default/versions/1.0.0.json"
+            if len(parts) != 2:
                 continue
 
             directory = parts[0]
