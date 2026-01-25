@@ -204,6 +204,8 @@ export function useCreateEntityChange(token: string | undefined) {
   return useMutation({
     mutationFn: (params: CreateEntityParams) => createEntityChange(token!, params),
     onSuccess: () => {
+      // Invalidate draft query to refresh status (auto-reverts from validated to draft)
+      queryClient.invalidateQueries({ queryKey: ['v2', 'draft', token] })
       // Invalidate draft changes and entity lists to refresh sidebar
       queryClient.invalidateQueries({ queryKey: ['v2', 'draft-changes', token] })
       queryClient.invalidateQueries({ queryKey: ['v2', 'categories'] })
@@ -251,6 +253,8 @@ export function useDeleteEntityChange(token: string | undefined) {
   return useMutation({
     mutationFn: (params: DeleteEntityParams) => deleteEntityChange(token!, params),
     onSuccess: () => {
+      // Invalidate draft query to refresh status (auto-reverts from validated to draft)
+      queryClient.invalidateQueries({ queryKey: ['v2', 'draft', token] })
       // Invalidate draft changes and entity lists to refresh sidebar
       queryClient.invalidateQueries({ queryKey: ['v2', 'draft-changes', token] })
       queryClient.invalidateQueries({ queryKey: ['v2', 'categories'] })
@@ -283,6 +287,8 @@ export function useUndoDeleteChange(token: string | undefined) {
   return useMutation({
     mutationFn: (changeId: string) => removeChange(token!, changeId),
     onSuccess: () => {
+      // Invalidate draft query to refresh status (auto-reverts from validated to draft)
+      queryClient.invalidateQueries({ queryKey: ['v2', 'draft', token] })
       // Invalidate draft changes and entity lists to refresh sidebar
       queryClient.invalidateQueries({ queryKey: ['v2', 'draft-changes', token] })
       queryClient.invalidateQueries({ queryKey: ['v2', 'categories'] })

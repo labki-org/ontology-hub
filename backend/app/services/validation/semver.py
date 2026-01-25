@@ -8,7 +8,9 @@ Uses SchemaVer-inspired rules adapted for SemanticSchemas:
 
 from typing import Literal
 
+from typing import Union
 from app.schemas.validation import ValidationResult
+from app.schemas.validation_v2 import ValidationResultV2
 
 # Codes that indicate major (breaking) changes
 MAJOR_CODES = {
@@ -50,7 +52,7 @@ def classify_change(code: str) -> Literal["major", "minor", "patch"]:
 
 
 def compute_semver_suggestion(
-    results: list[ValidationResult],
+    results: list[Union[ValidationResult, ValidationResultV2]],
 ) -> tuple[Literal["major", "minor", "patch"], list[str]]:
     """Compute aggregate semver suggestion from validation results.
 
@@ -60,7 +62,7 @@ def compute_semver_suggestion(
     - Otherwise -> patch
 
     Args:
-        results: List of ValidationResult objects
+        results: List of ValidationResult or ValidationResultV2 objects
 
     Returns:
         Tuple of (suggested_semver, reasons_list)
@@ -70,8 +72,11 @@ def compute_semver_suggestion(
     patch_reasons: list[str] = []
 
     for result in results:
+        # Handle both v1 (entity_id) and v2 (entity_key) result types
+        entity_identifier = getattr(result, 'entity_key', None) or getattr(result, 'entity_id', 'unknown')
+
         if result.suggested_semver == "major":
-            reason = f"{result.code}: {result.entity_id}"
+            reason = f"{result.code}: {entity_identifier}"
             if result.old_value and result.new_value:
                 reason += f" ({result.old_value} -> {result.new_value})"
             elif result.old_value:
@@ -79,13 +84,13 @@ def compute_semver_suggestion(
             major_reasons.append(reason)
 
         elif result.suggested_semver == "minor":
-            reason = f"{result.code}: {result.entity_id}"
+            reason = f"{result.code}: {entity_identifier}"
             if result.new_value:
                 reason += f" ({result.new_value})"
             minor_reasons.append(reason)
 
         elif result.suggested_semver == "patch":
-            patch_reasons.append(f"{result.code}: {result.entity_id}")
+            patch_reasons.append(f"{result.code}: {entity_identifier}")
 
     # Determine overall suggestion (major > minor > patch)
     if major_reasons:

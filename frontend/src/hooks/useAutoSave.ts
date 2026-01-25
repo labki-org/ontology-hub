@@ -29,8 +29,25 @@ export function useAutoSave({
   const mutation = useMutation({
     mutationFn: (change: DraftChangeCreate) => addDraftChange(draftToken, change),
     onSuccess: () => {
+      // Invalidate draft query to refresh status (auto-reverts from validated to draft)
+      queryClient.invalidateQueries({ queryKey: ['v2', 'draft', draftToken] })
       // Invalidate entity queries to refresh with new draft overlay
-      queryClient.invalidateQueries({ queryKey: ['v2', entityType, entityKey] })
+      // Use partial match to catch queries with draftId in key
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey
+          return Array.isArray(key) &&
+            key[0] === 'v2' &&
+            key[1] === entityType &&
+            key[2] === entityKey
+        }
+      })
+      // Also invalidate list queries for this entity type (sidebar refresh)
+      // Handle irregular plural forms
+      const pluralType = entityType === 'category' ? 'categories' :
+                         entityType === 'property' ? 'properties' :
+                         `${entityType}s`
+      queryClient.invalidateQueries({ queryKey: ['v2', pluralType] })
       // Clear stale validation - draft has changed since last validation
       useDraftStoreV2.getState().clearValidation()
       // Also invalidate draft changes list to show updated change count
@@ -65,7 +82,7 @@ export function useAutoSave({
         }
 
         mutation.mutate({
-          change_type: 'UPDATE',
+          change_type: 'update',
           entity_type: entityType,
           entity_key: entityKey,
           patch,
