@@ -10,17 +10,17 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 ## Current Position
 
 Phase: 16 - Core Bug Fixes
-Plan: — (awaiting plan creation)
-Status: Phase roadmapped, ready for planning
-Last activity: 2026-01-24 — v2.1 roadmap created
+Plan: 01 of 2
+Status: In progress
+Last activity: 2026-01-25 - Completed 16-01-PLAN.md (subobject/template detail endpoints)
 
-Progress: [                              ] 0% (Phase 16 of 20)
+Progress: [#                             ] 3% (Phase 16 of 20, Plan 1 of ~2)
 
 **Phase 16 Goal:** Users can reliably view all entity types and use draft workflow actions.
 
 **Phase 16 Requirements:**
-- ENTITY-01: User can view subobject details without "Failed to load" error
-- ENTITY-02: User can view template details without "Failed to load" error
+- ENTITY-01: User can view subobject details without "Failed to load" error [DONE]
+- ENTITY-02: User can view template details without "Failed to load" error [DONE]
 - ENTITY-03: User can view module details without "Failed to load" error
 - ENTITY-04: User can view bundle details without "Failed to load" error
 - DRAFT-01: User can click Validate button in draft mode
@@ -36,9 +36,10 @@ Progress: [                              ] 0% (Phase 16 of 20)
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 61 (20 v1.0 + 41 v2.0)
+- Total plans completed: 62 (20 v1.0 + 41 v2.0 + 1 v2.1)
 - v1.0: 2 days
 - v2.0: 2 days
+- v2.1: In progress
 
 **Summary by Milestone:**
 
@@ -46,8 +47,8 @@ Progress: [                              ] 0% (Phase 16 of 20)
 |-----------|--------|-------|----------|
 | v1.0 MVP | 1-7 | 20 | 2 days |
 | v2.0 Platform Rebuild | 8-15 | 41 | 2 days |
-| v2.1 Bug Fixes & UX | 16-20 | TBD | In progress |
-| **Total** | 20 | 61+ | 4+ days |
+| v2.1 Bug Fixes & UX | 16-20 | 1+ | In progress |
+| **Total** | 20 | 62+ | 4+ days |
 
 ## Accumulated Context
 
@@ -56,11 +57,14 @@ Progress: [                              ] 0% (Phase 16 of 20)
 Decisions are logged in PROJECT.md Key Decisions table.
 
 Key v2.0 decisions:
-- Full rebuild approach — replace v1.0 implementation completely
-- Hybrid patch format — JSON Patch for updates, full replacement for creates
-- Materialized inheritance tables — precompute at ingest, localized re-materialization in drafts
-- Latest-only versioning — Ontology Hub retains only current version
-- Draft auto-rebase — in-progress drafts rebase when canonical updates
+- Full rebuild approach - replace v1.0 implementation completely
+- Hybrid patch format - JSON Patch for updates, full replacement for creates
+- Materialized inheritance tables - precompute at ingest, localized re-materialization in drafts
+- Latest-only versioning - Ontology Hub retains only current version
+- Draft auto-rebase - in-progress drafts rebase when canonical updates
+
+Key v2.1 decisions:
+- Follow existing endpoint patterns - PropertyDetailResponse pattern for SubobjectDetailResponse and TemplateDetailResponse
 
 ### Pending Todos
 
@@ -72,7 +76,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-24
-Stopped at: v2.1 roadmap created, ready for Phase 16 planning
+Last session: 2026-01-25
+Stopped at: Completed 16-01-PLAN.md
 Resume file: None
-Next action: `/gsd:plan-phase 16`
+Next action: Execute 16-02-PLAN.md (DRAFT-01, DRAFT-02, DRAFT-03)
