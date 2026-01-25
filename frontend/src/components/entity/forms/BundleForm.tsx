@@ -1,6 +1,6 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { categorySchema, type CategoryFormData } from './schemas'
+import { bundleCreateSchema, type BundleCreateFormData } from './schemas'
 import { FormField } from './FormField'
 import { EntityCombobox } from './EntityCombobox'
 import { RelationshipChips } from './RelationshipChips'
@@ -8,11 +8,11 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { useCategories } from '@/api/entitiesV2'
+import { useModules } from '@/api/entitiesV2'
 
-interface CategoryFormProps {
+interface BundleFormProps {
   /** Callback when form is submitted with valid data */
-  onSubmit: (data: CategoryFormData) => void
+  onSubmit: (data: BundleCreateFormData) => void
   /** Callback when cancel button is clicked */
   onCancel: () => void
   /** Callback when user wants to create a related entity */
@@ -24,18 +24,20 @@ interface CategoryFormProps {
 }
 
 /**
- * Category creation form with ID, Label, Description, and Parent Categories fields.
+ * Bundle creation form with ID, Version, Label, Description, and Modules fields.
  *
  * Features:
  * - Validates on blur (per CONTEXT.md)
  * - Create button disabled until form is valid
  * - ID field validates for kebab-case format
- * - Parents field with EntityCombobox for relationship management
+ * - Version field for semantic versioning
+ * - Uses relaxed bundleCreateSchema (allows creation without modules initially)
+ * - EntityCombobox for module selection with cascading create support
  *
  * @example
  * ```tsx
- * <CategoryForm
- *   onSubmit={(data) => createCategory(data)}
+ * <BundleForm
+ *   onSubmit={(data) => createBundle(data)}
  *   onCancel={() => closeModal()}
  *   onCreateRelatedEntity={(type, id) => openCreateModal(type, id)}
  *   isSubmitting={mutation.isPending}
@@ -43,31 +45,39 @@ interface CategoryFormProps {
  * />
  * ```
  */
-export function CategoryForm({
+export function BundleForm({
   onSubmit,
   onCancel,
   onCreateRelatedEntity,
   isSubmitting = false,
   draftId,
-}: CategoryFormProps) {
-  // Fetch available categories for parent selection
-  const { data: categoriesData } = useCategories(undefined, undefined, draftId)
-  const availableCategories = (categoriesData?.items || []).map((c) => ({
-    key: c.entity_key,
-    label: c.label,
+}: BundleFormProps) {
+  // Fetch available modules for selection
+  const { data: modulesData } = useModules(undefined, undefined, draftId)
+  const availableModules = (modulesData?.items || []).map((m) => ({
+    key: m.entity_key,
+    label: m.label,
   }))
-  const form = useForm<CategoryFormData>({
-    resolver: zodResolver(categorySchema),
+
+  const form = useForm<BundleCreateFormData>({
+    resolver: zodResolver(bundleCreateSchema),
     mode: 'onBlur',
     defaultValues: {
       id: '',
+      version: '',
       label: '',
       description: '',
-      parents: [],
+      modules: [],
     },
   })
 
   const { isValid } = form.formState
+
+  // Helper to get label for a key
+  const getLabel = (key: string) => {
+    const found = availableModules.find((m) => m.key === key)
+    return found ? found.label : key
+  }
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -76,12 +86,28 @@ export function CategoryForm({
         label="ID"
         required
         control={form.control}
-        description="Unique identifier for the category (lowercase, numbers, hyphens)"
+        description="Unique identifier for the bundle (lowercase, numbers, hyphens)"
         render={(field) => (
           <Input
             {...field}
             id="id"
-            placeholder="category-name"
+            placeholder="bundle-name"
+            autoComplete="off"
+          />
+        )}
+      />
+
+      <FormField
+        name="version"
+        label="Version"
+        required
+        control={form.control}
+        description="Semantic version (e.g., 1.0.0)"
+        render={(field) => (
+          <Input
+            {...field}
+            id="version"
+            placeholder="1.0.0"
             autoComplete="off"
           />
         )}
@@ -96,7 +122,7 @@ export function CategoryForm({
           <Input
             {...field}
             id="label"
-            placeholder="Category Name"
+            placeholder="Bundle Name"
             autoComplete="off"
           />
         )}
@@ -111,36 +137,38 @@ export function CategoryForm({
           <Textarea
             {...field}
             id="description"
-            placeholder="A brief description of this category..."
+            placeholder="A brief description of this bundle..."
             rows={3}
           />
         )}
       />
 
-      {/* Parent Categories relationship field */}
+      {/* Modules relationship field */}
       <div className="space-y-2">
-        <Label>Parent Categories</Label>
+        <Label className="flex items-center gap-1">
+          Modules
+          <span className="text-muted-foreground text-xs font-normal ml-1">
+            (add modules now or after creation)
+          </span>
+        </Label>
         <EntityCombobox
-          entityType="category"
-          availableEntities={availableCategories}
-          selectedKeys={form.watch('parents') || []}
-          onChange={(keys) => form.setValue('parents', keys)}
-          onCreateNew={(id) => onCreateRelatedEntity?.('category', id)}
-          placeholder="Add parent category..."
+          entityType="module"
+          availableEntities={availableModules}
+          selectedKeys={form.watch('modules') || []}
+          onChange={(keys) => form.setValue('modules', keys)}
+          onCreateNew={(id) => onCreateRelatedEntity?.('module', id)}
+          placeholder="Add module..."
         />
         <RelationshipChips
-          values={form.watch('parents') || []}
+          values={form.watch('modules') || []}
           onRemove={(key) => {
-            const current = form.getValues('parents') || []
+            const current = form.getValues('modules') || []
             form.setValue(
-              'parents',
+              'modules',
               current.filter((k) => k !== key)
             )
           }}
-          getLabel={(key) => {
-            const found = availableCategories.find((c) => c.key === key)
-            return found ? found.label : key
-          }}
+          getLabel={getLabel}
         />
       </div>
 
@@ -153,10 +181,7 @@ export function CategoryForm({
         >
           Cancel
         </Button>
-        <Button
-          type="submit"
-          disabled={!isValid || isSubmitting}
-        >
+        <Button type="submit" disabled={!isValid || isSubmitting}>
           {isSubmitting ? 'Creating...' : 'Create'}
         </Button>
       </div>
