@@ -27,6 +27,7 @@ import { canDelete } from '@/lib/dependencyChecker'
 import { cn } from '@/lib/utils'
 import type { EntityWithStatus } from '@/api/types'
 import { CreateEntityModal } from '@/components/entity/modals/CreateEntityModal'
+import { NestedModalStack } from '@/components/entity/modals/NestedModalStack'
 import { DeleteConfirmation } from '@/components/entity/DeleteConfirmation'
 import { DeletedItemBadge } from '@/components/entity/form/DeletedItemBadge'
 import { CategoryForm } from '@/components/entity/forms/CategoryForm'
@@ -208,6 +209,10 @@ export function SidebarV2() {
   const createModalOpen = useDraftStoreV2((s) => s.createModalOpen)
   const createModalEntityType = useDraftStoreV2((s) => s.createModalEntityType)
 
+  // Nested create modal state and actions (for cascading create flow)
+  const openNestedCreateModal = useDraftStoreV2((s) => s.openNestedCreateModal)
+  const setOnNestedEntityCreated = useDraftStoreV2((s) => s.setOnNestedEntityCreated)
+
   // Delete state and actions
   const deleteBlockedEntity = useDraftStoreV2((s) => s.deleteBlockedEntity)
   const setDeleteBlocked = useDraftStoreV2((s) => s.setDeleteBlocked)
@@ -300,6 +305,30 @@ export function SidebarV2() {
   const getModalTitle = () => {
     if (!createModalEntityType) return ''
     return `Create ${createModalEntityType.charAt(0).toUpperCase() + createModalEntityType.slice(1)}`
+  }
+
+  // Handle cascading create from relationship fields
+  // When user types a non-existent entity in a combobox and clicks "Create",
+  // this opens a nested modal prefilled with the typed ID
+  const handleCreateRelatedEntity = (
+    targetEntityType: string,
+    prefilledId: string,
+    parentFieldName: string
+  ) => {
+    if (!createModalEntityType) return
+
+    // Set callback to add created entity to parent form's selection
+    // Note: The actual form state update is handled by the parent form's callback
+    // which will be set by the form component itself
+
+    openNestedCreateModal({
+      entityType: targetEntityType as 'category' | 'property' | 'subobject' | 'template' | 'module' | 'bundle',
+      prefilledId,
+      parentContext: {
+        entityType: createModalEntityType,
+        fieldName: parentFieldName,
+      },
+    })
   }
 
   // Handle entity deletion with dependency checking
@@ -508,6 +537,11 @@ export function SidebarV2() {
             onSubmit={handleCreateSubmit}
             onCancel={closeCreateModal}
             isSubmitting={createEntity.isPending}
+            draftId={draftId}
+            onCreateRelatedEntity={(type, id) =>
+              handleCreateRelatedEntity(type, id, 'Parent Categories')
+            }
+            setOnNestedEntityCreated={setOnNestedEntityCreated}
           />
         )}
         {createModalEntityType === 'property' && (
@@ -536,6 +570,9 @@ export function SidebarV2() {
             onSubmit={handleCreateSubmit}
             onCancel={closeCreateModal}
             isSubmitting={createEntity.isPending}
+            draftId={draftId}
+            onCreateRelatedEntity={handleCreateRelatedEntity}
+            setOnNestedEntityCreated={setOnNestedEntityCreated}
           />
         )}
         {createModalEntityType === 'bundle' && (
@@ -543,9 +580,17 @@ export function SidebarV2() {
             onSubmit={handleCreateSubmit}
             onCancel={closeCreateModal}
             isSubmitting={createEntity.isPending}
+            draftId={draftId}
+            onCreateRelatedEntity={(type, id) =>
+              handleCreateRelatedEntity(type, id, 'Modules')
+            }
+            setOnNestedEntityCreated={setOnNestedEntityCreated}
           />
         )}
       </CreateEntityModal>
+
+      {/* Nested Create Modal for cascading entity creation */}
+      {draftToken && <NestedModalStack draftToken={draftToken} />}
     </aside>
   )
 }

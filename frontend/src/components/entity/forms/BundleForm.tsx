@@ -17,6 +17,8 @@ interface BundleFormProps {
   onCancel: () => void
   /** Callback when user wants to create a related entity */
   onCreateRelatedEntity?: (type: string, id: string) => void
+  /** Setter for the callback that will be invoked when nested entity is created */
+  setOnNestedEntityCreated?: (callback: ((entityKey: string) => void) | null) => void
   /** Whether the form is currently submitting */
   isSubmitting?: boolean
   /** Optional draft ID for entity resolution */
@@ -51,6 +53,7 @@ export function BundleForm({
   onSubmit,
   onCancel,
   onCreateRelatedEntity,
+  setOnNestedEntityCreated,
   isSubmitting = false,
   draftId,
   initialData,
@@ -159,7 +162,17 @@ export function BundleForm({
           availableEntities={availableModules}
           selectedKeys={form.watch('modules') || []}
           onChange={(keys) => form.setValue('modules', keys)}
-          onCreateNew={(id) => onCreateRelatedEntity?.('module', id)}
+          onCreateNew={
+            onCreateRelatedEntity && setOnNestedEntityCreated
+              ? (id) => {
+                  setOnNestedEntityCreated((newKey: string) => {
+                    const current = form.getValues('modules') || []
+                    form.setValue('modules', [...current, newKey])
+                  })
+                  onCreateRelatedEntity('module', id)
+                }
+              : undefined
+          }
           placeholder="Add module..."
         />
         <RelationshipChips

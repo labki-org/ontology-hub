@@ -20,8 +20,10 @@ interface ModuleFormProps {
   onSubmit: (data: ModuleCreateFormData) => void
   /** Callback when cancel button is clicked */
   onCancel: () => void
-  /** Callback when user wants to create a related entity */
-  onCreateRelatedEntity?: (type: string, id: string) => void
+  /** Callback when user wants to create a related entity (type, id, fieldName) */
+  onCreateRelatedEntity?: (type: string, id: string, fieldName: string) => void
+  /** Setter for the callback that will be invoked when nested entity is created */
+  setOnNestedEntityCreated?: (callback: ((entityKey: string) => void) | null) => void
   /** Whether the form is currently submitting */
   isSubmitting?: boolean
   /** Optional draft ID for entity resolution */
@@ -56,6 +58,7 @@ export function ModuleForm({
   onSubmit,
   onCancel,
   onCreateRelatedEntity,
+  setOnNestedEntityCreated,
   isSubmitting = false,
   draftId,
   initialData,
@@ -190,7 +193,17 @@ export function ModuleForm({
             availableEntities={availableCategories}
             selectedKeys={form.watch('categories') || []}
             onChange={(keys) => form.setValue('categories', keys)}
-            onCreateNew={(id) => onCreateRelatedEntity?.('category', id)}
+            onCreateNew={
+              onCreateRelatedEntity && setOnNestedEntityCreated
+                ? (id) => {
+                    setOnNestedEntityCreated((newKey: string) => {
+                      const current = form.getValues('categories') || []
+                      form.setValue('categories', [...current, newKey])
+                    })
+                    onCreateRelatedEntity('category', id, 'Categories')
+                  }
+                : undefined
+            }
             placeholder="Add category..."
           />
           <RelationshipChips
@@ -214,7 +227,17 @@ export function ModuleForm({
             availableEntities={availableProperties}
             selectedKeys={form.watch('properties') || []}
             onChange={(keys) => form.setValue('properties', keys)}
-            onCreateNew={(id) => onCreateRelatedEntity?.('property', id)}
+            onCreateNew={
+              onCreateRelatedEntity && setOnNestedEntityCreated
+                ? (id) => {
+                    setOnNestedEntityCreated((newKey: string) => {
+                      const current = form.getValues('properties') || []
+                      form.setValue('properties', [...current, newKey])
+                    })
+                    onCreateRelatedEntity('property', id, 'Properties')
+                  }
+                : undefined
+            }
             placeholder="Add property..."
           />
           <RelationshipChips
@@ -238,7 +261,17 @@ export function ModuleForm({
             availableEntities={availableSubobjects}
             selectedKeys={form.watch('subobjects') || []}
             onChange={(keys) => form.setValue('subobjects', keys)}
-            onCreateNew={(id) => onCreateRelatedEntity?.('subobject', id)}
+            onCreateNew={
+              onCreateRelatedEntity && setOnNestedEntityCreated
+                ? (id) => {
+                    setOnNestedEntityCreated((newKey: string) => {
+                      const current = form.getValues('subobjects') || []
+                      form.setValue('subobjects', [...current, newKey])
+                    })
+                    onCreateRelatedEntity('subobject', id, 'Subobjects')
+                  }
+                : undefined
+            }
             placeholder="Add subobject..."
           />
           <RelationshipChips
@@ -262,7 +295,17 @@ export function ModuleForm({
             availableEntities={availableTemplates}
             selectedKeys={form.watch('templates') || []}
             onChange={(keys) => form.setValue('templates', keys)}
-            onCreateNew={(id) => onCreateRelatedEntity?.('template', id)}
+            onCreateNew={
+              onCreateRelatedEntity && setOnNestedEntityCreated
+                ? (id) => {
+                    setOnNestedEntityCreated((newKey: string) => {
+                      const current = form.getValues('templates') || []
+                      form.setValue('templates', [...current, newKey])
+                    })
+                    onCreateRelatedEntity('template', id, 'Templates')
+                  }
+                : undefined
+            }
             placeholder="Add template..."
           />
           <RelationshipChips

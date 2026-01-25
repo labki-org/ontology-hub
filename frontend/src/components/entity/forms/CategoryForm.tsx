@@ -17,6 +17,8 @@ interface CategoryFormProps {
   onCancel: () => void
   /** Callback when user wants to create a related entity */
   onCreateRelatedEntity?: (type: string, id: string) => void
+  /** Setter for the callback that will be invoked when nested entity is created */
+  setOnNestedEntityCreated?: (callback: ((entityKey: string) => void) | null) => void
   /** Whether the form is currently submitting */
   isSubmitting?: boolean
   /** Optional draft ID for entity resolution */
@@ -49,6 +51,7 @@ export function CategoryForm({
   onSubmit,
   onCancel,
   onCreateRelatedEntity,
+  setOnNestedEntityCreated,
   isSubmitting = false,
   draftId,
   initialData,
@@ -128,7 +131,18 @@ export function CategoryForm({
           availableEntities={availableCategories}
           selectedKeys={form.watch('parents') || []}
           onChange={(keys) => form.setValue('parents', keys)}
-          onCreateNew={(id) => onCreateRelatedEntity?.('category', id)}
+          onCreateNew={
+            onCreateRelatedEntity && setOnNestedEntityCreated
+              ? (id) => {
+                  // Set callback to add created entity to this form's selection
+                  setOnNestedEntityCreated((newKey: string) => {
+                    const current = form.getValues('parents') || []
+                    form.setValue('parents', [...current, newKey])
+                  })
+                  onCreateRelatedEntity('category', id)
+                }
+              : undefined
+          }
           placeholder="Add parent category..."
         />
         <RelationshipChips
