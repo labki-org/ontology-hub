@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useCategory } from '@/api/entitiesV2'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useDetailStore } from '@/stores/detailStore'
+import { useDraftStoreV2 } from '@/stores/draftStoreV2'
 import { EntityHeader } from '../sections/EntityHeader'
 import { AccordionSection } from '../sections/AccordionSection'
 import { PropertiesSection } from '../sections/PropertiesSection'
@@ -9,6 +10,7 @@ import { MembershipSection } from '../sections/MembershipSection'
 import { EditableList } from '../form/EditableList'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import { cn } from '@/lib/utils'
 
 interface CategoryDetailProps {
   entityKey: string
@@ -32,6 +34,9 @@ export function CategoryDetail({
   const { data: rawCategory, isLoading, error } = useCategory(entityKey, draftId)
   const openDetail = useDetailStore((s) => s.openDetail)
   const pushBreadcrumb = useDetailStore((s) => s.pushBreadcrumb)
+
+  // Change tracking state for inheritance chain highlighting
+  const directEdits = useDraftStoreV2((s) => s.directlyEditedEntities)
 
   // Type guard: ensure we have CategoryDetailV2
   const category = rawCategory && 'parents' in rawCategory ? rawCategory : null
@@ -205,6 +210,45 @@ export function CategoryDetail({
           )}
         />
       </AccordionSection>
+
+      {/* Inheritance Chain section - shows parents with edit status */}
+      {category.parents && category.parents.length > 0 && (
+        <AccordionSection
+          id="inheritance-chain"
+          title="Inheritance Chain"
+          count={category.parents.length}
+          defaultOpen={false}
+        >
+          <div className="space-y-1">
+            {category.parents.map((parentKey) => {
+              const isParentEdited = directEdits.has(parentKey)
+              return (
+                <button
+                  key={parentKey}
+                  onClick={() => openDetail(parentKey, 'category')}
+                  className={cn(
+                    'w-full text-left px-2 py-1.5 text-sm rounded flex items-center gap-2',
+                    'hover:bg-sidebar-accent transition-colors',
+                    isParentEdited && 'bg-blue-100 dark:bg-blue-900/30 font-medium'
+                  )}
+                >
+                  <span className="flex-1 truncate">{parentKey}</span>
+                  {isParentEdited && (
+                    <Badge variant="secondary" className="text-xs bg-blue-200 dark:bg-blue-800">
+                      edited
+                    </Badge>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+          {category.parents.some((p) => directEdits.has(p)) && (
+            <p className="text-xs text-muted-foreground mt-2 px-2">
+              Edited ancestors may affect this category's inherited properties.
+            </p>
+          )}
+        </AccordionSection>
+      )}
 
       {/* Properties section with inheritance */}
       <PropertiesSection
