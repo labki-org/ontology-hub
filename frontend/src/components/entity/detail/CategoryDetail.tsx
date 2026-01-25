@@ -37,6 +37,10 @@ export function CategoryDetail({
 
   // Change tracking state for inheritance chain highlighting
   const directEdits = useDraftStoreV2((s) => s.directlyEditedEntities)
+  const transitiveAffects = useDraftStoreV2((s) => s.transitivelyAffectedEntities)
+
+  // Check if current entity is transitively affected by parent edits
+  const isTransitivelyAffected = transitiveAffects.has(entityKey)
 
   // Type guard: ensure we have CategoryDetailV2
   const category = rawCategory && 'parents' in rawCategory ? rawCategory : null
@@ -167,6 +171,15 @@ export function CategoryDetail({
       {isSaving && (
         <div className="fixed top-4 right-4 bg-primary text-primary-foreground px-3 py-1 rounded text-sm">
           Saving...
+        </div>
+      )}
+
+      {/* Transitive effect indicator */}
+      {isTransitivelyAffected && (
+        <div className="mb-4 p-2 rounded bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800">
+          <p className="text-sm text-blue-700 dark:text-blue-300">
+            This category may be affected by changes to a parent category.
+          </p>
         </div>
       )}
 
