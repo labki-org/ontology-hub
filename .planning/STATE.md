@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-23)
 ## Current Position
 
 Phase: 15 of 15 (V2 Frontend Wiring Fixes)
-Plan: 0 of ? in current phase
-Status: Phase created, needs planning
-Last activity: 2026-01-25 -- Phase 15 created from milestone audit gaps
+Plan: 1 of 1 in current phase
+Status: Phase complete
+Last activity: 2026-01-24 -- Completed 15-01-PLAN.md (v2 frontend wiring fixes)
 
-Progress: [###########################-] 97% (v1.0 complete, v2.0 phases 8-14 complete, phase 15: gap closure pending)
+Progress: [############################] 100% (v1.0 complete, v2.0 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 53 (20 v1.0 + 33 v2.0)
+- Total plans completed: 54 (20 v1.0 + 34 v2.0)
 - Average duration: ~30 min (v1.0 estimate)
-- Total execution time: ~11h 41m
+- Total execution time: ~11h 44m
 
 **By Phase (v2.0):**
 
@@ -34,6 +34,7 @@ Progress: [###########################-] 97% (v1.0 complete, v2.0 phases 8-14 co
 | 12-frontend-graph-visualization | 6/6 | 15m | 2m |
 | 13-entity-detail-pages | 9/9 | 36m | 4m |
 | 14-validation-workflow-pr | 10/10 | 23m | 2m |
+| 15-v2-frontend-wiring-fixes | 1/1 | 3m | 3m |
 
 **Recent Trend:**
 - v1.0 completed in 2 days
@@ -76,6 +77,7 @@ Progress: [###########################-] 97% (v1.0 complete, v2.0 phases 8-14 co
 - v2.0 phase 14 plan 7: 3 minutes (draft UI components v2)
 - v2.0 phase 14 plan 9: 3 minutes (PR submission wizard)
 - v2.0 phase 14 plan 10: 5 minutes (BrowsePage v2 integration)
+- v2.0 phase 15 plan 1: 3 minutes (v2 frontend wiring fixes - gap closure)
 
 *Metrics updated after each plan completion*
 
@@ -197,6 +199,9 @@ Recent decisions affecting current work:
 - [14-10]: Navigate to /browse route when entering draft mode (not / root)
 - [14-10]: FloatingActionBar uses inline div separator instead of missing Separator component
 - [14-10]: V2 draft workflow components conditionally rendered only when draftV2 data exists
+- [15-01]: Derive draftId from async fetch instead of URL to support draft_token workflow
+- [15-01]: Remove all v1 draft components from MainLayoutV2 to eliminate conflicts
+- [15-01]: Maintain backward compatibility with v1 draft_id URL parameter
 
 ### Pending Todos
 
@@ -208,6 +213,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-25
-Stopped at: Created Phase 15 (V2 Frontend Wiring Fixes) from milestone audit gaps - needs planning
+Last session: 2026-01-24
+Stopped at: Completed 15-01-PLAN.md (v2 frontend wiring fixes)
 Resume file: None
