@@ -5,6 +5,7 @@ Validates effective entity JSON against _schema.json definitions from the canoni
 
 import logging
 
+import httpx
 from jsonschema import Draft202012Validator
 from jsonschema.exceptions import ValidationError as JsonSchemaValidationError
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -109,23 +110,37 @@ async def _load_schemas_from_github() -> dict[str, dict]:
     """
     schemas = {}
 
-    # Initialize GitHub client
-    github = GitHubClient(token=settings.GITHUB_TOKEN)
+    # Check if GitHub token is configured
+    if not settings.GITHUB_TOKEN:
+        logger.warning("GITHUB_TOKEN not configured - skipping schema validation")
+        return schemas
 
-    # Load each schema file
-    for entity_type, schema_path in ENTITY_SCHEMA_PATHS.items():
-        try:
-            schema_json = await github.get_file_content(
-                owner=settings.GITHUB_REPO_OWNER,
-                repo=settings.GITHUB_REPO_NAME,
-                path=schema_path,
-                ref="main",  # Use main branch for schema validation
-            )
-            schemas[entity_type] = schema_json
-        except Exception as e:
-            # Schema not found - log warning but continue
-            # Some entity types may not have schemas yet
-            logger.warning(f"Could not load {schema_path}: {e}")
+    # Create temporary httpx client with GitHub auth headers
+    async with httpx.AsyncClient(
+        base_url="https://api.github.com",
+        headers={
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+            "Authorization": f"Bearer {settings.GITHUB_TOKEN}",
+        },
+        timeout=httpx.Timeout(connect=5.0, read=30.0, write=10.0, pool=5.0),
+    ) as http_client:
+        github = GitHubClient(http_client)
+
+        # Load each schema file
+        for entity_type, schema_path in ENTITY_SCHEMA_PATHS.items():
+            try:
+                schema_json = await github.get_file_content(
+                    owner=settings.GITHUB_REPO_OWNER,
+                    repo=settings.GITHUB_REPO_NAME,
+                    path=schema_path,
+                    ref="main",  # Use main branch for schema validation
+                )
+                schemas[entity_type] = schema_json
+            except Exception as e:
+                # Schema not found - log warning but continue
+                # Some entity types may not have schemas yet
+                logger.warning(f"Could not load {schema_path}: {e}")
 
     return schemas
 
