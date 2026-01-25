@@ -13,7 +13,7 @@ from sqlalchemy import text
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.models.v2 import Category, CategoryParent, Module, ModuleEntity, Property
+from app.models.v2 import Category, CategoryParent, Module, ModuleEntity, Property, Subobject
 from app.schemas.graph import GraphEdge, GraphNode, GraphResponse
 from app.services.draft_overlay import DraftOverlayService
 
@@ -228,6 +228,13 @@ class GraphQueryService:
         nodes.extend(property_nodes)
         edges.extend(property_edges)
 
+        # Add subobject nodes and edges for categories in the neighborhood
+        subobject_nodes, subobject_edges = await self._get_subobject_nodes_and_edges(
+            entity_keys
+        )
+        nodes.extend(subobject_nodes)
+        edges.extend(subobject_edges)
+
         # Check for cycles by looking for duplicate nodes in original CTE
         # (if any path contained a cycle, the CTE would have been truncated)
         cycle_check_query = text("""
@@ -369,6 +376,13 @@ class GraphQueryService:
         )
         nodes.extend(property_nodes)
         edges.extend(property_edges)
+
+        # Add subobject nodes belonging to this module
+        subobject_nodes, subobject_edges = await self._get_module_subobject_nodes(
+            module.id, module_key
+        )
+        nodes.extend(subobject_nodes)
+        edges.extend(subobject_edges)
 
         # Check for cycles within module graph
         has_cycles = await self._check_cycles_in_subgraph(entity_keys)
@@ -646,5 +660,179 @@ class GraphQueryService:
             )
 
         # Properties in module graph don't have edges to categories
+        # They're standalone module members
+        return nodes, []
+
+    async def _get_subobject_nodes_and_edges(
+        self,
+        category_keys: list[str],
+    ) -> tuple[list[GraphNode], list[GraphEdge]]:
+        """Get subobject nodes and edges for categories in the graph.
+
+        Categories reference subobjects via their canonical_json fields:
+        - optional_subobjects: list of subobject entity_keys
+        - required_subobjects: list of subobject entity_keys
+
+        Args:
+            category_keys: List of category entity keys to get subobjects for
+
+        Returns:
+            Tuple of (subobject nodes, subobject edges)
+        """
+        if not category_keys:
+            return [], []
+
+        # Get categories with their canonical_json to extract subobject references
+        categories_query = select(Category).where(
+            Category.entity_key.in_(category_keys)
+        )
+        result = await self.session.execute(categories_query)
+        categories = result.scalars().all()
+
+        # Extract subobject references from canonical_json
+        subobject_refs: dict[str, list[str]] = {}  # category_key -> [subobject_keys]
+        all_subobject_keys: set[str] = set()
+
+        for category in categories:
+            canonical = category.canonical_json or {}
+            subobj_keys = []
+
+            # Check optional_subobjects
+            optional = canonical.get("optional_subobjects", [])
+            if isinstance(optional, list):
+                subobj_keys.extend(optional)
+
+            # Check required_subobjects
+            required = canonical.get("required_subobjects", [])
+            if isinstance(required, list):
+                subobj_keys.extend(required)
+
+            if subobj_keys:
+                subobject_refs[category.entity_key] = subobj_keys
+                all_subobject_keys.update(subobj_keys)
+
+        if not all_subobject_keys:
+            return [], []
+
+        # Get subobject data
+        subobjects_query = select(Subobject).where(
+            Subobject.entity_key.in_(list(all_subobject_keys))
+        )
+        result = await self.session.execute(subobjects_query)
+        subobjects = result.scalars().all()
+
+        # Batch load module membership for subobjects
+        subobject_module_membership = await self._get_module_membership(
+            list(all_subobject_keys), "subobject"
+        )
+
+        # Build subobject nodes with draft overlay
+        nodes: list[GraphNode] = []
+        seen_subobjects: set[str] = set()
+
+        for subobj in subobjects:
+            if subobj.entity_key in seen_subobjects:
+                continue
+            seen_subobjects.add(subobj.entity_key)
+
+            # Apply draft overlay to get effective data with change_status
+            effective = await self.draft_overlay.apply_overlay(
+                subobj, "subobject", subobj.entity_key
+            )
+
+            change_status = None
+            if effective:
+                change_status = effective.get("_change_status")
+
+            nodes.append(
+                GraphNode(
+                    id=subobj.entity_key,
+                    label=subobj.label,
+                    entity_type="subobject",
+                    depth=None,  # Subobjects don't have depth in neighborhood
+                    modules=subobject_module_membership.get(subobj.entity_key, []),
+                    change_status=change_status,
+                )
+            )
+
+        # Build edges: category -> subobject with edge_type="subobject"
+        edges: list[GraphEdge] = []
+        for category_key, subobj_keys in subobject_refs.items():
+            for subobj_key in subobj_keys:
+                if subobj_key in seen_subobjects:  # Only add edge if subobject exists
+                    edges.append(
+                        GraphEdge(
+                            source=category_key,
+                            target=subobj_key,
+                            edge_type="subobject",
+                        )
+                    )
+
+        return nodes, edges
+
+    async def _get_module_subobject_nodes(
+        self,
+        module_id: uuid.UUID,
+        module_key: str,
+    ) -> tuple[list[GraphNode], list[GraphEdge]]:
+        """Get subobject nodes belonging to a module.
+
+        Subobjects in module graphs don't have edges to categories - they're
+        included as standalone module members for visualization.
+
+        Args:
+            module_id: Module database ID
+            module_key: Module entity key
+
+        Returns:
+            Tuple of (subobject nodes, empty edges list)
+        """
+        # Get subobject entity_keys in this module
+        membership_query = select(ModuleEntity.entity_key).where(
+            ModuleEntity.module_id == module_id,
+            ModuleEntity.entity_type == "subobject",
+        )
+        result = await self.session.execute(membership_query)
+        subobject_keys = [row[0] for row in result.fetchall()]
+
+        if not subobject_keys:
+            return [], []
+
+        # Get subobject data
+        subobjects_query = select(Subobject).where(
+            Subobject.entity_key.in_(subobject_keys)
+        )
+        result = await self.session.execute(subobjects_query)
+        subobjects = result.scalars().all()
+
+        # Batch load module membership for subobjects
+        subobject_module_membership = await self._get_module_membership(
+            subobject_keys, "subobject"
+        )
+
+        # Build subobject nodes with draft overlay
+        nodes: list[GraphNode] = []
+        for subobj in subobjects:
+            # Apply draft overlay to get effective data with change_status
+            effective = await self.draft_overlay.apply_overlay(
+                subobj, "subobject", subobj.entity_key
+            )
+
+            change_status = None
+            if effective:
+                change_status = effective.get("_change_status")
+
+            nodes.append(
+                GraphNode(
+                    id=subobj.entity_key,
+                    label=subobj.label,
+                    entity_type="subobject",
+                    depth=None,
+                    modules=subobject_module_membership.get(subobj.entity_key, [module_key]),
+                    change_status=change_status,
+                )
+            )
+
+        # Subobjects in module graph don't have edges to categories
         # They're standalone module members
         return nodes, []
