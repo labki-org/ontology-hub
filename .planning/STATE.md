@@ -10,33 +10,33 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 ## Current Position
 
 Phase: 16 - Core Bug Fixes
-Plan: 01 of 2
-Status: In progress
-Last activity: 2026-01-25 - Completed 16-01-PLAN.md (subobject/template detail endpoints)
+Plan: 02 of 2
+Status: Phase complete
+Last activity: 2026-01-25 - Completed 16-02-PLAN.md (draft workflow and entity details)
 
-Progress: [#                             ] 3% (Phase 16 of 20, Plan 1 of ~2)
+Progress: [##                            ] 6% (Phase 16 complete, 2/2 plans)
 
 **Phase 16 Goal:** Users can reliably view all entity types and use draft workflow actions.
 
 **Phase 16 Requirements:**
-- ENTITY-01: User can view subobject details without "Failed to load" error [DONE]
-- ENTITY-02: User can view template details without "Failed to load" error [DONE]
-- ENTITY-03: User can view module details without "Failed to load" error
-- ENTITY-04: User can view bundle details without "Failed to load" error
-- DRAFT-01: User can click Validate button in draft mode
-- DRAFT-02: User can click Submit PR button in draft mode
-- DRAFT-03: Auto-validation triggers when user makes changes to draft
+- ENTITY-01: User can view subobject details without "Failed to load" error [DONE - 16-01]
+- ENTITY-02: User can view template details without "Failed to load" error [DONE - 16-01]
+- ENTITY-03: User can view module details without "Failed to load" error [VERIFIED - 16-02]
+- ENTITY-04: User can view bundle details without "Failed to load" error [VERIFIED - 16-02]
+- DRAFT-01: User can click Validate button in draft mode [VERIFIED - 16-02]
+- DRAFT-02: User can click Submit PR button in draft mode [VERIFIED - 16-02]
+- DRAFT-03: Auto-validation triggers when user makes changes to draft [DONE - 16-02]
 
 **Phase 16 Success Criteria:**
-1. User can click on subobject/template/module/bundle and see details without error
-2. User can click Validate button and see validation results
-3. User can click Submit PR button and navigate to PR workflow
-4. User sees validation results update automatically after making draft changes
+1. User can click on subobject/template/module/bundle and see details without error [DONE]
+2. User can click Validate button and see validation results [DONE]
+3. User can click Submit PR button and navigate to PR workflow [DONE]
+4. User sees validation results update automatically after making draft changes [DONE]
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 62 (20 v1.0 + 41 v2.0 + 1 v2.1)
+- Total plans completed: 63 (20 v1.0 + 41 v2.0 + 2 v2.1)
 - v1.0: 2 days
 - v2.0: 2 days
 - v2.1: In progress
@@ -47,8 +47,8 @@ Progress: [#                             ] 3% (Phase 16 of 20, Plan 1 of ~2)
 |-----------|--------|-------|----------|
 | v1.0 MVP | 1-7 | 20 | 2 days |
 | v2.0 Platform Rebuild | 8-15 | 41 | 2 days |
-| v2.1 Bug Fixes & UX | 16-20 | 1+ | In progress |
-| **Total** | 20 | 62+ | 4+ days |
+| v2.1 Bug Fixes & UX | 16-20 | 2+ | In progress |
+| **Total** | 20 | 63+ | 4+ days |
 
 ## Accumulated Context
 
@@ -65,6 +65,7 @@ Key v2.0 decisions:
 
 Key v2.1 decisions:
 - Follow existing endpoint patterns - PropertyDetailResponse pattern for SubobjectDetailResponse and TemplateDetailResponse
+- Use getState() for Zustand store access in mutation callbacks (not hook)
 
 ### Pending Todos
 
@@ -77,6 +78,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed 16-01-PLAN.md
+Stopped at: Completed Phase 16 (all plans)
 Resume file: None
-Next action: Execute 16-02-PLAN.md (DRAFT-01, DRAFT-02, DRAFT-03)
+Next action: Start Phase 17 planning
