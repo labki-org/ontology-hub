@@ -5,6 +5,7 @@ import { useDetailStore } from '@/stores/detailStore'
 import { EntityHeader } from '../sections/EntityHeader'
 import { AccordionSection } from '../sections/AccordionSection'
 import { MembershipSection } from '../sections/MembershipSection'
+import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { VisualChangeMarker } from '../form/VisualChangeMarker'
 import {
@@ -14,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Pencil, X } from 'lucide-react'
 import type { PropertyDetailV2, EntityWithStatus } from '@/api/types'
 
 interface PropertyDetailProps {
@@ -57,6 +59,9 @@ export function PropertyDetail({
   const [editedDescription, setEditedDescription] = useState('')
   const [editedDatatype, setEditedDatatype] = useState('')
   const [editedCardinality, setEditedCardinality] = useState('')
+  // Hover-reveal edit mode state for select fields
+  const [isEditingDatatype, setIsEditingDatatype] = useState(false)
+  const [isEditingCardinality, setIsEditingCardinality] = useState(false)
 
   // Auto-save hook
   const { saveChange, isSaving } = useAutoSave({
@@ -105,6 +110,7 @@ export function PropertyDetail({
   const handleDatatypeChange = useCallback(
     (value: string) => {
       setEditedDatatype(value)
+      setIsEditingDatatype(false) // Close edit mode after selection
       if (draftId) saveChange([{ op: 'replace', path: '/datatype', value }])
     },
     [draftId, saveChange]
@@ -113,6 +119,7 @@ export function PropertyDetail({
   const handleCardinalityChange = useCallback(
     (value: string) => {
       setEditedCardinality(value)
+      setIsEditingCardinality(false) // Close edit mode after selection
       if (draftId) saveChange([{ op: 'replace', path: '/cardinality', value }])
     },
     [draftId, saveChange]
@@ -167,73 +174,111 @@ export function PropertyDetail({
       {/* Property Attributes */}
       <AccordionSection id="attributes" title="Attributes" defaultOpen>
         <div className="space-y-4">
-          {/* Datatype */}
+          {/* Datatype - hover-reveal edit pattern */}
           <div>
             <label className="text-sm font-medium text-muted-foreground block mb-2">
               Datatype
             </label>
-            {isEditing ? (
-              <VisualChangeMarker
-                status={isDatatypeModified ? 'modified' : 'unchanged'}
-                originalValue={originalValues.datatype}
-              >
-                <Select value={editedDatatype} onValueChange={handleDatatypeChange}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select datatype" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="text">Text</SelectItem>
-                    <SelectItem value="number">Number</SelectItem>
-                    <SelectItem value="boolean">Boolean</SelectItem>
-                    <SelectItem value="date">Date</SelectItem>
-                    <SelectItem value="url">URL</SelectItem>
-                    <SelectItem value="page">Page</SelectItem>
-                    <SelectItem value="email">Email</SelectItem>
-                  </SelectContent>
-                </Select>
-              </VisualChangeMarker>
-            ) : (
-              <VisualChangeMarker
-                status={isDatatypeModified ? 'modified' : 'unchanged'}
-                originalValue={originalValues.datatype}
-              >
-                <div className="py-1">
-                  <span className="font-medium">{editedDatatype}</span>
+            <VisualChangeMarker
+              status={isDatatypeModified ? 'modified' : 'unchanged'}
+              originalValue={originalValues.datatype}
+            >
+              {isEditingDatatype ? (
+                // Edit mode: Show Select dropdown with cancel button
+                <div className="flex items-center gap-2">
+                  <Select value={editedDatatype} onValueChange={handleDatatypeChange}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select datatype" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="text">Text</SelectItem>
+                      <SelectItem value="number">Number</SelectItem>
+                      <SelectItem value="boolean">Boolean</SelectItem>
+                      <SelectItem value="date">Date</SelectItem>
+                      <SelectItem value="url">URL</SelectItem>
+                      <SelectItem value="page">Page</SelectItem>
+                      <SelectItem value="email">Email</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => setIsEditingDatatype(false)}
+                    className="text-muted-foreground hover:text-foreground"
+                    aria-label="Cancel"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
                 </div>
-              </VisualChangeMarker>
-            )}
+              ) : (
+                // View mode: Show value with hover-reveal edit icon
+                <div className="group relative rounded-md px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                  <span className="font-medium">{editedDatatype}</span>
+                  {isEditing && (
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => setIsEditingDatatype(true)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+                      aria-label="Edit datatype"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </VisualChangeMarker>
           </div>
 
-          {/* Cardinality */}
+          {/* Cardinality - hover-reveal edit pattern */}
           <div>
             <label className="text-sm font-medium text-muted-foreground block mb-2">
               Cardinality
             </label>
-            {isEditing ? (
-              <VisualChangeMarker
-                status={isCardinalityModified ? 'modified' : 'unchanged'}
-                originalValue={originalValues.cardinality}
-              >
-                <Select value={editedCardinality} onValueChange={handleCardinalityChange}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select cardinality" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="single">Single</SelectItem>
-                    <SelectItem value="multiple">Multiple</SelectItem>
-                  </SelectContent>
-                </Select>
-              </VisualChangeMarker>
-            ) : (
-              <VisualChangeMarker
-                status={isCardinalityModified ? 'modified' : 'unchanged'}
-                originalValue={originalValues.cardinality}
-              >
-                <div className="py-1">
-                  <span className="font-medium">{editedCardinality}</span>
+            <VisualChangeMarker
+              status={isCardinalityModified ? 'modified' : 'unchanged'}
+              originalValue={originalValues.cardinality}
+            >
+              {isEditingCardinality ? (
+                // Edit mode: Show Select dropdown with cancel button
+                <div className="flex items-center gap-2">
+                  <Select value={editedCardinality} onValueChange={handleCardinalityChange}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select cardinality" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="single">Single</SelectItem>
+                      <SelectItem value="multiple">Multiple</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => setIsEditingCardinality(false)}
+                    className="text-muted-foreground hover:text-foreground"
+                    aria-label="Cancel"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
                 </div>
-              </VisualChangeMarker>
-            )}
+              ) : (
+                // View mode: Show value with hover-reveal edit icon
+                <div className="group relative rounded-md px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                  <span className="font-medium">{editedCardinality}</span>
+                  {isEditing && (
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => setIsEditingCardinality(true)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+                      aria-label="Edit cardinality"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </VisualChangeMarker>
           </div>
         </div>
       </AccordionSection>
