@@ -19,12 +19,19 @@ import {
   useTemplates,
   useOntologyVersion,
 } from '@/api/entitiesV2'
-import { useDraftV2 } from '@/api/draftApiV2'
+import { useDraftV2, useCreateEntityChange } from '@/api/draftApiV2'
 import { useGraphStore } from '@/stores/graphStore'
 import { useDraftStoreV2 } from '@/stores/draftStoreV2'
 import { getAffectedEntityCount } from '@/lib/dependencyGraph'
 import { cn } from '@/lib/utils'
 import type { EntityWithStatus } from '@/api/types'
+import { CreateEntityModal } from '@/components/entity/modals/CreateEntityModal'
+import { CategoryForm } from '@/components/entity/forms/CategoryForm'
+import { PropertyForm } from '@/components/entity/forms/PropertyForm'
+import { SubobjectForm } from '@/components/entity/forms/SubobjectForm'
+import { TemplateForm } from '@/components/entity/forms/TemplateForm'
+import { ModuleForm } from '@/components/entity/forms/ModuleForm'
+import { BundleForm } from '@/components/entity/forms/BundleForm'
 
 interface EntitySectionProps {
   title: string
@@ -147,8 +154,17 @@ export function SidebarV2() {
   // Draft mode state - determines if "+ New" buttons are visible
   const isDraftMode = !!draftToken
 
-  // Create modal actions
+  // Create modal state and actions
   const openCreateModal = useDraftStoreV2((s) => s.openCreateModal)
+  const closeCreateModal = useDraftStoreV2((s) => s.closeCreateModal)
+  const createModalOpen = useDraftStoreV2((s) => s.createModalOpen)
+  const createModalEntityType = useDraftStoreV2((s) => s.createModalEntityType)
+
+  // Entity creation mutation
+  const createEntity = useCreateEntityChange(draftToken)
+
+  // Graph store for selecting new entity after creation
+  const setSelectedEntity = useGraphStore((s) => s.setSelectedEntity)
 
   // Change tracking state for badge display
   const directEdits = useDraftStoreV2((s) => s.directlyEditedEntities)
@@ -198,6 +214,31 @@ export function SidebarV2() {
   const modules = modulesData?.items || []
   const bundles = bundlesData?.items || []
   const templates = templatesData?.items || []
+
+  // Handle entity creation form submission
+  const handleCreateSubmit = async (data: Record<string, unknown>) => {
+    if (!createModalEntityType) return
+
+    try {
+      await createEntity.mutateAsync({
+        entityType: createModalEntityType,
+        entityKey: data.id as string,
+        data,
+      })
+      closeCreateModal()
+      // Select the newly created entity in the graph
+      setSelectedEntity(data.id as string, createModalEntityType)
+    } catch (error) {
+      // Error handling - form should show error via mutation state
+      console.error('Failed to create entity:', error)
+    }
+  }
+
+  // Generate modal title from entity type
+  const getModalTitle = () => {
+    if (!createModalEntityType) return ''
+    return `Create ${createModalEntityType.charAt(0).toUpperCase() + createModalEntityType.slice(1)}`
+  }
 
   return (
     <aside className="w-64 border-r bg-sidebar text-sidebar-foreground flex flex-col">
@@ -311,6 +352,56 @@ export function SidebarV2() {
           />
         </div>
       </nav>
+
+      {/* Create Entity Modal */}
+      <CreateEntityModal
+        isOpen={createModalOpen}
+        onClose={closeCreateModal}
+        title={getModalTitle()}
+      >
+        {createModalEntityType === 'category' && (
+          <CategoryForm
+            onSubmit={handleCreateSubmit}
+            onCancel={closeCreateModal}
+            isSubmitting={createEntity.isPending}
+          />
+        )}
+        {createModalEntityType === 'property' && (
+          <PropertyForm
+            onSubmit={handleCreateSubmit}
+            onCancel={closeCreateModal}
+            isSubmitting={createEntity.isPending}
+          />
+        )}
+        {createModalEntityType === 'subobject' && (
+          <SubobjectForm
+            onSubmit={handleCreateSubmit}
+            onCancel={closeCreateModal}
+            isSubmitting={createEntity.isPending}
+          />
+        )}
+        {createModalEntityType === 'template' && (
+          <TemplateForm
+            onSubmit={handleCreateSubmit}
+            onCancel={closeCreateModal}
+            isSubmitting={createEntity.isPending}
+          />
+        )}
+        {createModalEntityType === 'module' && (
+          <ModuleForm
+            onSubmit={handleCreateSubmit}
+            onCancel={closeCreateModal}
+            isSubmitting={createEntity.isPending}
+          />
+        )}
+        {createModalEntityType === 'bundle' && (
+          <BundleForm
+            onSubmit={handleCreateSubmit}
+            onCancel={closeCreateModal}
+            isSubmitting={createEntity.isPending}
+          />
+        )}
+      </CreateEntityModal>
     </aside>
   )
 }
