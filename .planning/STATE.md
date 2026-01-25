@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 ## Current Position
 
 Phase: 17 - Graph View Fixes
-Plan: 03 of 3
-Status: In progress (wave 2 plans completing)
-Last activity: 2026-01-25 - Completed 17-03-PLAN.md (smooth module hulls)
+Plan: 3 of 3 (complete)
+Status: Phase complete
+Last activity: 2026-01-25 - Completed 17-02-PLAN.md (frontend graph visualization)
 
-Progress: [####                          ] 12% (Phase 17 in progress, 2/3 plans)
+Progress: [######                        ] 18% (Phase 17 complete, 3/3 plans)
 
 **Phase 17 Goal:** Graph view displays all entity types with proper relationships.
 
@@ -22,20 +22,20 @@ Progress: [####                          ] 12% (Phase 17 in progress, 2/3 plans)
 - GRAPH-01: Graph displays property nodes connected to categories [DONE - 17-01]
 - GRAPH-02: Graph displays subobject nodes connected to categories [DONE - 17-01]
 - GRAPH-03: Graph displays template nodes in module view [DONE - 17-01]
-- GRAPH-04: Frontend renders new node types with distinct visual styling [TODO - 17-02]
+- GRAPH-04: Frontend renders new node types with distinct visual styling [DONE - 17-02]
 - GRAPH-05: Smooth module hull boundaries [DONE - 17-03]
 
 **Phase 17 Success Criteria:**
 1. Graph API returns nodes with entity_type in ["category", "property", "subobject", "template"] [DONE]
 2. Edges correctly represent relationships [DONE]
-3. Frontend renders all node types distinctly [TODO - 17-02]
-4. Module hulls render as smooth curves [DONE - 17-03]
+3. Frontend renders all node types distinctly [DONE]
+4. Module hulls render as smooth curves [DONE]
 5. Backend tests pass [DONE]
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 65 (20 v1.0 + 41 v2.0 + 4 v2.1)
+- Total plans completed: 66 (20 v1.0 + 41 v2.0 + 5 v2.1)
 - v1.0: 2 days
 - v2.0: 2 days
 - v2.1: In progress
@@ -46,8 +46,8 @@ Progress: [####                          ] 12% (Phase 17 in progress, 2/3 plans)
 |-----------|--------|-------|----------|
 | v1.0 MVP | 1-7 | 20 | 2 days |
 | v2.0 Platform Rebuild | 8-15 | 41 | 2 days |
-| v2.1 Bug Fixes & UX | 16-20 | 4+ | In progress |
-| **Total** | 20 | 65+ | 4+ days |
+| v2.1 Bug Fixes & UX | 16-20 | 5+ | In progress |
+| **Total** | 20 | 66+ | 4+ days |
 
 ## Accumulated Context
 
@@ -70,6 +70,8 @@ Key v2.1 decisions:
 - Templates included only in module graphs (no direct category relationship)
 - Catmull-Rom alpha=0.5 for smooth hull curves
 - Discriminated union type for hull shape rendering (circle/ellipse/path)
+- SVG path generators for node shapes (roundedRect, diamond, hexagon, circle)
+- Store-based hover state for node highlighting
 
 ### Pending Todos
 
@@ -82,6 +84,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed 17-03-PLAN.md (smooth module hulls)
+Stopped at: Completed 17-02-PLAN.md (frontend graph visualization)
 Resume file: None
-Next action: `/gsd:execute-phase 17-02` (frontend graph visualization - wave 2 parallel)
+Next action: Phase 17 complete - proceed to Phase 18 or final review
