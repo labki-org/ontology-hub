@@ -86,6 +86,13 @@ Plans:
 
 **Requirements:** EDIT-01, EDIT-02, EDIT-03, EDIT-04
 
+**Plans:** 3 plans
+
+Plans:
+- [ ] 18-01-PLAN.md — Create InlineEditField and DeletedItemBadge components
+- [ ] 18-02-PLAN.md — Integrate hover-reveal editing into detail modals
+- [ ] 18-03-PLAN.md — Add editing to EntityDetailPanel (expanded sidebar view)
+
 **Success Criteria:**
 1. User sees pencil icon appear when hovering over editable field in detail modal (draft mode)
 2. User sees trash icon appear when hovering over deletable field in detail modal (draft mode)
@@ -144,7 +151,7 @@ Phases execute in numeric order: 1 -> 2 -> ... -> 20
 | 8-15 | v2.0 | 41/41 | Complete | 2026-01-25 |
 | 16 | v2.1 | 2/2 | Complete | 2026-01-25 |
 | 17 | v2.1 | 3/3 | Complete | 2026-01-24 |
-| 18 | v2.1 | 0/? | Pending | — |
+| 18 | v2.1 | 0/3 | Planned | — |
 | 19 | v2.1 | 4/4 | Complete | 2026-01-25 |
 | 20 | v2.1 | 0/? | Pending | — |
 
@@ -161,3 +168,4 @@ Phases execute in numeric order: 1 -> 2 -> ... -> 20
 *Phase 17 complete: 2026-01-24*
 *Phase 19 planned: 2026-01-25*
 *Phase 19 complete: 2026-01-25*
+*Phase 18 planned: 2026-01-25*
