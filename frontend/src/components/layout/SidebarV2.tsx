@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { ChevronRight, Boxes, Tag, Package, Layers, Archive, FileCode, Plus } from 'lucide-react'
+import { ChevronRight, Boxes, Tag, Package, Layers, Archive, FileCode, Plus, Trash2 } from 'lucide-react'
 import {
   Collapsible,
   CollapsibleContent,
@@ -19,13 +19,16 @@ import {
   useTemplates,
   useOntologyVersion,
 } from '@/api/entitiesV2'
-import { useDraftV2, useCreateEntityChange } from '@/api/draftApiV2'
+import { useDraftV2, useCreateEntityChange, useDeleteEntityChange, useUndoDeleteChange, useDraftChanges } from '@/api/draftApiV2'
 import { useGraphStore } from '@/stores/graphStore'
 import { useDraftStoreV2 } from '@/stores/draftStoreV2'
 import { getAffectedEntityCount } from '@/lib/dependencyGraph'
+import { canDelete } from '@/lib/dependencyChecker'
 import { cn } from '@/lib/utils'
 import type { EntityWithStatus } from '@/api/types'
 import { CreateEntityModal } from '@/components/entity/modals/CreateEntityModal'
+import { DeleteConfirmation } from '@/components/entity/DeleteConfirmation'
+import { DeletedItemBadge } from '@/components/entity/form/DeletedItemBadge'
 import { CategoryForm } from '@/components/entity/forms/CategoryForm'
 import { PropertyForm } from '@/components/entity/forms/PropertyForm'
 import { SubobjectForm } from '@/components/entity/forms/SubobjectForm'
@@ -39,12 +42,27 @@ interface EntitySectionProps {
   entities: EntityWithStatus[]
   isLoading: boolean
   searchTerm: string
-  entityType: string
+  entityType: 'category' | 'property' | 'subobject' | 'template' | 'module' | 'bundle'
   isDraftMode: boolean
   onAddNew?: () => void
+  onDelete?: (entityKey: string, entityLabel: string) => void
+  onUndoDelete?: (entityKey: string) => void
+  deletedEntityChanges: Map<string, string>
 }
 
-function EntitySection({ title, icon: Icon, entities, isLoading, searchTerm, entityType, isDraftMode, onAddNew }: EntitySectionProps) {
+function EntitySection({
+  title,
+  icon: Icon,
+  entities,
+  isLoading,
+  searchTerm,
+  entityType,
+  isDraftMode,
+  onAddNew,
+  onDelete,
+  onUndoDelete,
+  deletedEntityChanges,
+}: EntitySectionProps) {
   const setSelectedEntity = useGraphStore((state) => state.setSelectedEntity)
   const directEdits = useDraftStoreV2((s) => s.directlyEditedEntities)
   const transitiveAffects = useDraftStoreV2((s) => s.transitivelyAffectedEntities)
@@ -87,23 +105,41 @@ function EntitySection({ title, icon: Icon, entities, isLoading, searchTerm, ent
       <CollapsibleContent>
         <ul className="ml-7 space-y-0.5">
           {filteredEntities.map((entity) => {
-            const isDeleted = entity.change_status === 'deleted' || entity.deleted
+            const isDeleted = entity.change_status === 'deleted' || entity.deleted || deletedEntityChanges.has(entity.entity_key)
             const isDirectEdit = directEdits.has(entity.entity_key)
             const isTransitiveEffect = transitiveAffects.has(entity.entity_key)
+
+            // If entity is deleted and we're in draft mode, show DeletedItemBadge
+            if (isDeleted && isDraftMode && onUndoDelete) {
+              return (
+                <li key={entity.entity_key}>
+                  <DeletedItemBadge
+                    label={entity.label}
+                    onUndo={() => onUndoDelete(entity.entity_key)}
+                    className="px-2 py-1"
+                  />
+                </li>
+              )
+            }
+
             return (
-              <li key={entity.entity_key}>
-                <button
-                  onClick={() => setSelectedEntity(entity.entity_key, entityType)}
+              <li key={entity.entity_key} className="group">
+                <div
                   className={cn(
-                    'flex items-center gap-2 w-full px-2 py-1 text-sm rounded hover:bg-sidebar-accent truncate text-left',
+                    'flex items-center gap-1 w-full px-2 py-1 text-sm rounded hover:bg-sidebar-accent',
                     isDirectEdit && 'bg-blue-100 dark:bg-blue-900/30',
                     // Only show transitive if NOT direct edit (direct wins)
                     !isDirectEdit && isTransitiveEffect && 'bg-blue-50 dark:bg-blue-900/10',
                     isDeleted && 'line-through text-muted-foreground'
                   )}
-                  title={entity.label}
                 >
-                  <span className="flex-1 truncate">{entity.label}</span>
+                  <button
+                    onClick={() => setSelectedEntity(entity.entity_key, entityType)}
+                    className="flex-1 truncate text-left"
+                    title={entity.label}
+                  >
+                    {entity.label}
+                  </button>
                   {entity.change_status && entity.change_status !== 'unchanged' && (
                     <Badge
                       variant={
@@ -113,13 +149,11 @@ function EntitySection({ title, icon: Icon, entities, isLoading, searchTerm, ent
                           ? 'secondary'
                           : 'destructive'
                       }
-                      className={`ml-auto ${
-                        entity.change_status === 'added'
-                          ? 'bg-green-500 hover:bg-green-600'
-                          : entity.change_status === 'modified'
-                          ? 'bg-yellow-500 hover:bg-yellow-600'
-                          : ''
-                      }`}
+                      className={cn(
+                        'flex-shrink-0',
+                        entity.change_status === 'added' && 'bg-green-500 hover:bg-green-600',
+                        entity.change_status === 'modified' && 'bg-yellow-500 hover:bg-yellow-600'
+                      )}
                     >
                       {entity.change_status === 'added'
                         ? '+'
@@ -128,7 +162,21 @@ function EntitySection({ title, icon: Icon, entities, isLoading, searchTerm, ent
                         : '-'}
                     </Badge>
                   )}
-                </button>
+                  {/* Delete button - visible on hover in draft mode */}
+                  {isDraftMode && onDelete && !isDeleted && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onDelete(entity.entity_key, entity.label)
+                      }}
+                      className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-opacity"
+                      aria-label={`Delete ${entity.label}`}
+                      title={`Delete ${entity.label}`}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
               </li>
             )
           })}
@@ -151,7 +199,7 @@ export function SidebarV2() {
   // Derive draftId from fetched draft (v2 workflow) or fall back to URL param (v1 workflow)
   const draftId = draftV2.data?.id?.toString() || searchParams.get('draft_id') || undefined
 
-  // Draft mode state - determines if "+ New" buttons are visible
+  // Draft mode state - determines if "+ New" and delete buttons are visible
   const isDraftMode = !!draftToken
 
   // Create modal state and actions
@@ -160,11 +208,25 @@ export function SidebarV2() {
   const createModalOpen = useDraftStoreV2((s) => s.createModalOpen)
   const createModalEntityType = useDraftStoreV2((s) => s.createModalEntityType)
 
-  // Entity creation mutation
-  const createEntity = useCreateEntityChange(draftToken)
+  // Delete state and actions
+  const deleteBlockedEntity = useDraftStoreV2((s) => s.deleteBlockedEntity)
+  const setDeleteBlocked = useDraftStoreV2((s) => s.setDeleteBlocked)
+  const trackDeletedEntity = useDraftStoreV2((s) => s.trackDeletedEntity)
+  const untrackDeletedEntity = useDraftStoreV2((s) => s.untrackDeletedEntity)
+  const deletedEntityChanges = useDraftStoreV2((s) => s.deletedEntityChanges)
 
-  // Graph store for selecting new entity after creation
+  // Entity mutations
+  const createEntity = useCreateEntityChange(draftToken)
+  const deleteEntity = useDeleteEntityChange(draftToken)
+  const undoDelete = useUndoDeleteChange(draftToken)
+
+  // Fetch draft changes to find changeIds for undo
+  const { data: draftChangesData } = useDraftChanges(draftToken)
+
+  // Graph store for selecting new entity after creation and dependency checking
   const setSelectedEntity = useGraphStore((s) => s.setSelectedEntity)
+  const graphNodes = useGraphStore((s) => s.nodes)
+  const graphEdges = useGraphStore((s) => s.edges)
 
   // Change tracking state for badge display
   const directEdits = useDraftStoreV2((s) => s.directlyEditedEntities)
@@ -240,6 +302,59 @@ export function SidebarV2() {
     return `Create ${createModalEntityType.charAt(0).toUpperCase() + createModalEntityType.slice(1)}`
   }
 
+  // Handle entity deletion with dependency checking
+  const handleDelete = async (
+    entityType: 'category' | 'property' | 'subobject' | 'template' | 'module' | 'bundle',
+    entityKey: string,
+    entityLabel: string
+  ) => {
+    // Check if entity has dependents
+    const { canDelete: allowed, dependents } = canDelete(entityKey, graphNodes, graphEdges)
+
+    if (!allowed) {
+      // Show error with dependents list
+      setDeleteBlocked({ key: entityKey, label: entityLabel, dependents })
+      return
+    }
+
+    // Perform delete
+    try {
+      const result = await deleteEntity.mutateAsync({ entityType, entityKey })
+      // Track the change for undo capability
+      trackDeletedEntity(entityKey, result.id)
+    } catch (error) {
+      console.error('Failed to delete entity:', error)
+    }
+  }
+
+  // Handle undo delete
+  const handleUndoDelete = async (entityKey: string) => {
+    // Find the changeId for this entity
+    const changeId = deletedEntityChanges.get(entityKey)
+    if (!changeId) {
+      // Try to find from draft changes
+      const change = draftChangesData?.changes.find(
+        (c) => c.entity_key === entityKey && c.change_type === 'DELETE'
+      )
+      if (change) {
+        try {
+          await undoDelete.mutateAsync(change.id)
+          untrackDeletedEntity(entityKey)
+        } catch (error) {
+          console.error('Failed to undo delete:', error)
+        }
+      }
+      return
+    }
+
+    try {
+      await undoDelete.mutateAsync(changeId)
+      untrackDeletedEntity(entityKey)
+    } catch (error) {
+      console.error('Failed to undo delete:', error)
+    }
+  }
+
   return (
     <aside className="w-64 border-r bg-sidebar text-sidebar-foreground flex flex-col">
       <div className="p-4 border-b">
@@ -270,6 +385,17 @@ export function SidebarV2() {
       </div>
 
       <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
+        {/* Delete blocked error display */}
+        {deleteBlockedEntity && (
+          <div className="mb-2">
+            <DeleteConfirmation
+              entityLabel={deleteBlockedEntity.label}
+              dependents={deleteBlockedEntity.dependents}
+              onClose={() => setDeleteBlocked(null)}
+            />
+          </div>
+        )}
+
         {/* Schema group */}
         <div className="mb-2">
           <div className="px-2 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
@@ -284,6 +410,9 @@ export function SidebarV2() {
             entityType="category"
             isDraftMode={isDraftMode}
             onAddNew={() => openCreateModal('category')}
+            onDelete={(key, label) => handleDelete('category', key, label)}
+            onUndoDelete={handleUndoDelete}
+            deletedEntityChanges={deletedEntityChanges}
           />
           <EntitySection
             title="Properties"
@@ -294,6 +423,9 @@ export function SidebarV2() {
             entityType="property"
             isDraftMode={isDraftMode}
             onAddNew={() => openCreateModal('property')}
+            onDelete={(key, label) => handleDelete('property', key, label)}
+            onUndoDelete={handleUndoDelete}
+            deletedEntityChanges={deletedEntityChanges}
           />
           <EntitySection
             title="Subobjects"
@@ -304,6 +436,9 @@ export function SidebarV2() {
             entityType="subobject"
             isDraftMode={isDraftMode}
             onAddNew={() => openCreateModal('subobject')}
+            onDelete={(key, label) => handleDelete('subobject', key, label)}
+            onUndoDelete={handleUndoDelete}
+            deletedEntityChanges={deletedEntityChanges}
           />
         </div>
 
@@ -323,6 +458,9 @@ export function SidebarV2() {
             entityType="module"
             isDraftMode={isDraftMode}
             onAddNew={() => openCreateModal('module')}
+            onDelete={(key, label) => handleDelete('module', key, label)}
+            onUndoDelete={handleUndoDelete}
+            deletedEntityChanges={deletedEntityChanges}
           />
           <EntitySection
             title="Bundles"
@@ -333,6 +471,9 @@ export function SidebarV2() {
             entityType="bundle"
             isDraftMode={isDraftMode}
             onAddNew={() => openCreateModal('bundle')}
+            onDelete={(key, label) => handleDelete('bundle', key, label)}
+            onUndoDelete={handleUndoDelete}
+            deletedEntityChanges={deletedEntityChanges}
           />
         </div>
 
@@ -349,6 +490,9 @@ export function SidebarV2() {
             entityType="template"
             isDraftMode={isDraftMode}
             onAddNew={() => openCreateModal('template')}
+            onDelete={(key, label) => handleDelete('template', key, label)}
+            onUndoDelete={handleUndoDelete}
+            deletedEntityChanges={deletedEntityChanges}
           />
         </div>
       </nav>
