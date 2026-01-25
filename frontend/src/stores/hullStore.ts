@@ -61,32 +61,34 @@ export const useHullStore = create<HullState>()(
     }),
     {
       name: 'hull-visibility',
-      storage: createJSONStorage(() => ({
+      storage: {
         getItem: (name) => {
           const str = localStorage.getItem(name)
           if (!str) return null
-          const parsed = JSON.parse(str)
-          return JSON.stringify({
-            state: {
-              ...parsed.state,
-              visibleModules: new Set(parsed.state.visibleModules),
-            },
-          })
+          try {
+            const parsed = JSON.parse(str)
+            // Convert array back to Set
+            if (parsed.state?.visibleModules) {
+              parsed.state.visibleModules = new Set(parsed.state.visibleModules)
+            }
+            return parsed
+          } catch {
+            return null
+          }
         },
         setItem: (name, value) => {
-          const parsed = typeof value === 'string' ? JSON.parse(value) : value
-          localStorage.setItem(
-            name,
-            JSON.stringify({
-              state: {
-                ...parsed.state,
-                visibleModules: Array.from(parsed.state.visibleModules),
-              },
-            })
-          )
+          // Convert Set to array for storage
+          const toStore = {
+            ...value,
+            state: {
+              ...value.state,
+              visibleModules: Array.from(value.state.visibleModules || []),
+            },
+          }
+          localStorage.setItem(name, JSON.stringify(toStore))
         },
         removeItem: (name) => localStorage.removeItem(name),
-      })),
+      },
     }
   )
 )
