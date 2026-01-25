@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-23)
 ## Current Position
 
 Phase: 14 of 14 (Validation + Workflow + PR)
-Plan: 5 of 10 in current phase
+Plan: 8 of 10 in current phase
 Status: In progress
-Last activity: 2026-01-25 -- Completed 14-05-PLAN.md
+Last activity: 2026-01-25 -- Completed 14-08-PLAN.md
 
-Progress: [##########################] 98% (v1.0 complete, v2.0 phases 8-13 complete, phase 14: 5/10 plans)
+Progress: [##########################] 99% (v1.0 complete, v2.0 phases 8-13 complete, phase 14: 8/10 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 50 (20 v1.0 + 30 v2.0)
+- Total plans completed: 53 (20 v1.0 + 33 v2.0)
 - Average duration: ~30 min (v1.0 estimate)
-- Total execution time: ~11h 33m
+- Total execution time: ~11h 36m
 
 **By Phase (v2.0):**
 
@@ -33,7 +33,7 @@ Progress: [##########################] 98% (v1.0 complete, v2.0 phases 8-13 comp
 | 11-draft-system | 5/5 | 16m | 3m |
 | 12-frontend-graph-visualization | 6/6 | 15m | 2m |
 | 13-entity-detail-pages | 9/9 | 36m | 4m |
-| 14-validation-workflow-pr | 5/10 | 12m | 2m |
+| 14-validation-workflow-pr | 8/10 | 15m | 2m |
 
 **Recent Trend:**
 - v1.0 completed in 2 days
@@ -72,6 +72,9 @@ Progress: [##########################] 98% (v1.0 complete, v2.0 phases 8-13 comp
 - v2.0 phase 14 plan 3: 1 minute (validation endpoint)
 - v2.0 phase 14 plan 4: 2 minutes (PR builder v2 services)
 - v2.0 phase 14 plan 5: 4 minutes (PR submission endpoint)
+- v2.0 phase 14 plan 6: 1 minute (draft banner v2)
+- v2.0 phase 14 plan 7: 1 minute (floating action bar)
+- v2.0 phase 14 plan 8: 1 minute (diff viewer v2)
 
 *Metrics updated after each plan completion*
 
@@ -179,6 +182,10 @@ Recent decisions affecting current work:
 - [14-05]: OAuth flow accepts pr_title and user_comment as query params stored in session
 - [14-05]: Submit endpoint uses token from request body (not OAuth session)
 - [14-05]: OAuth callback uses v2 services: build_files_from_draft_v2, generate_pr_body_v2
+- [14-08]: Change grouping by entity_type with alphabetical sorting for predictable organization
+- [14-08]: Change type order within groups: CREATE, UPDATE, DELETE (matching Phase 12 conventions)
+- [14-08]: Expandable panels for CREATE show replacement_json, UPDATE show patch operations
+- [14-08]: Optional onEntityClick handler enables navigation to entity detail
 
 ### Pending Todos
 
@@ -191,5 +198,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed plan 14-05 (PR submission endpoint)
+Stopped at: Completed plan 14-08 (DraftDiffViewerV2 component)
 Resume file: None
