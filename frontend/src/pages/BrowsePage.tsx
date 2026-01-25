@@ -152,6 +152,13 @@ export function BrowsePage() {
     )
   }
 
+  // DEBUG: Trace draft data flow
+  console.log('[BrowsePage] draftToken:', draftToken)
+  console.log('[BrowsePage] draftV2.data:', draftV2.data)
+  console.log('[BrowsePage] draftV2.status:', draftV2.data?.status)
+  console.log('[BrowsePage] draftV2.isLoading:', draftV2.isLoading)
+  console.log('[BrowsePage] draftV2.error:', draftV2.error)
+
   return (
     <ReactFlowProvider>
       <div className="h-full w-full relative flex flex-col">
@@ -206,7 +213,7 @@ export function BrowsePage() {
           </div>
 
           {/* Entity detail modal - renders when opened via double-click or button */}
-          <EntityDetailModal draftId={draftId} />
+          <EntityDetailModal draftId={draftId} draftToken={draftToken} />
         </div>
 
         {/* V2 Floating Action Bar - only shown when draftV2 exists */}

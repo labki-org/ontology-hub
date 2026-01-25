@@ -22,34 +22,39 @@ export function FloatingActionBar({
   onSubmitPR,
   isValidating = false,
 }: FloatingActionBarProps) {
+  // DEBUG: Trace received props
+  console.log('[FloatingActionBar] draft:', draft)
+  console.log('[FloatingActionBar] draft.status:', draft?.status)
+  console.log('[FloatingActionBar] isDraft:', draft?.status === 'DRAFT')
+
   // Status badge variant based on draft status
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'DRAFT':
+      case 'draft':
         return (
           <Badge variant="outline" className="uppercase">
             {status}
           </Badge>
         )
-      case 'VALIDATED':
+      case 'validated':
         return (
           <Badge className="bg-green-500 hover:bg-green-600 border-green-600 text-white uppercase">
             {status}
           </Badge>
         )
-      case 'SUBMITTED':
+      case 'submitted':
         return (
           <Badge className="bg-blue-500 hover:bg-blue-600 border-blue-600 text-white uppercase">
             {status}
           </Badge>
         )
-      case 'MERGED':
+      case 'merged':
         return (
           <Badge className="bg-purple-500 hover:bg-purple-600 border-purple-600 text-white uppercase">
             {status}
           </Badge>
         )
-      case 'REJECTED':
+      case 'rejected':
         return (
           <Badge className="bg-red-500 hover:bg-red-600 border-red-600 text-white uppercase">
             {status}
@@ -60,8 +65,8 @@ export function FloatingActionBar({
     }
   }
 
-  const isDraft = draft.status === 'DRAFT'
-  const isValidated = draft.status === 'VALIDATED'
+  const isDraft = draft.status === 'draft'
+  const isValidated = draft.status === 'validated'
 
   return (
     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">

@@ -29,34 +29,40 @@ export function DraftBannerV2({
 }: DraftBannerV2Props) {
   const [isReportOpen, setIsReportOpen] = useState(false)
 
+  // DEBUG: Trace received props
+  console.log('[DraftBannerV2] draft:', draft)
+  console.log('[DraftBannerV2] draft.status:', draft?.status)
+  console.log('[DraftBannerV2] isDraft:', draft?.status === 'DRAFT')
+  console.log('[DraftBannerV2] isValidated:', draft?.status === 'VALIDATED')
+
   // Status badge variant based on draft status
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'DRAFT':
+      case 'draft':
         return (
           <Badge variant="outline" className="uppercase">
             {status}
           </Badge>
         )
-      case 'VALIDATED':
+      case 'validated':
         return (
           <Badge className="bg-green-500 hover:bg-green-600 border-green-600 text-white uppercase">
             {status}
           </Badge>
         )
-      case 'SUBMITTED':
+      case 'submitted':
         return (
           <Badge className="bg-blue-500 hover:bg-blue-600 border-blue-600 text-white uppercase">
             {status}
           </Badge>
         )
-      case 'MERGED':
+      case 'merged':
         return (
           <Badge className="bg-purple-500 hover:bg-purple-600 border-purple-600 text-white uppercase">
             {status}
           </Badge>
         )
-      case 'REJECTED':
+      case 'rejected':
         return (
           <Badge className="bg-red-500 hover:bg-red-600 border-red-600 text-white uppercase">
             {status}
@@ -67,8 +73,8 @@ export function DraftBannerV2({
     }
   }
 
-  const isDraft = draft.status === 'DRAFT'
-  const isValidated = draft.status === 'VALIDATED'
+  const isDraft = draft.status === 'draft'
+  const isValidated = draft.status === 'validated'
 
   return (
     <div className="bg-amber-50 border-b border-amber-200">
