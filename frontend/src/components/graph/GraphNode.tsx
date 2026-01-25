@@ -1,5 +1,6 @@
 import { Handle, Position } from '@xyflow/react'
 import { useGraphStore } from '@/stores/graphStore'
+import { useDraftStoreV2 } from '@/stores/draftStoreV2'
 
 type GraphNodeData = {
   label: string
@@ -146,15 +147,30 @@ function GraphNodeComponent({ data }: { data: GraphNodeData }) {
   const setSelectedEntity = useGraphStore((s) => s.setSelectedEntity)
   const hoveredNodeId = useGraphStore((s) => s.hoveredNodeId)
 
+  // Change propagation state
+  const directEdits = useDraftStoreV2((s) => s.directlyEditedEntities)
+  const transitiveAffects = useDraftStoreV2((s) => s.transitivelyAffectedEntities)
+
   const handleClick = () => {
     setSelectedEntity(data.entity_key, data.entity_type)
   }
 
   const entityType = data.entity_type ?? 'category'
   const size = NODE_SIZES[entityType] ?? 50
-  const fillColor = ENTITY_COLORS[entityType] ?? '#94a3b8'
   const borderColor = ENTITY_BORDER_COLORS[entityType] ?? '#64748b'
   const path = getNodePath(entityType)
+
+  // Calculate change propagation state
+  const isDirectEdit = directEdits.has(data.entity_key)
+  const isTransitiveEffect = transitiveAffects.has(data.entity_key)
+
+  // Base fill color by entity type, override for change propagation
+  let fillColor = ENTITY_COLORS[entityType] ?? '#94a3b8'
+  if (isDirectEdit) {
+    fillColor = '#93c5fd' // blue-300 - strong highlight for directly edited
+  } else if (isTransitiveEffect) {
+    fillColor = '#dbeafe' // blue-100 - subtle highlight for transitively affected
+  }
 
   // Calculate highlight state for hover dimming
   const getOpacity = (): number => {
