@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 ## Current Position
 
 Phase: 18 - Inline Editing UX
-Plan: 1 of 1 (planned so far)
-Status: Plan 01 complete
-Last activity: 2026-01-25 - Completed 18-01-PLAN.md (core inline editing components)
+Plan: 3 of 3 complete
+Status: Phase 18 complete
+Last activity: 2026-01-25 - Completed 18-03-PLAN.md (EntityDetailPanel inline editing)
 
-Progress: [#####-------------------------] 17% (Phase 18 in progress, 1/1 plans complete)
+Progress: [######------------------------] 20% (Phase 18 complete)
 
 **Phase 18 Goal:** Users can edit entities in-place with intuitive hover controls in draft mode.
 
@@ -22,19 +22,19 @@ Progress: [#####-------------------------] 17% (Phase 18 in progress, 1/1 plans 
 - INLINE-01: Hover-reveal edit/delete icons [DONE - 18-01]
 - INLINE-02: Edit mode with explicit save/cancel [DONE - 18-01]
 - INLINE-03: Soft delete visual treatment [DONE - 18-01]
-- INLINE-04: Integration with entity detail views [PENDING]
+- INLINE-04: Integration with entity detail views [DONE - 18-02, 18-03]
 
 **Phase 18 Success Criteria:**
 1. InlineEditField component with group-hover pattern [DONE]
 2. DeletedItemBadge component for soft delete [DONE]
 3. Keyboard shortcuts (Escape/Enter) [DONE]
 4. Unit tests for InlineEditField [DONE]
-5. Integration with CategoryDetail and other views [PENDING]
+5. Integration with CategoryDetail and other views [DONE - EntityHeader, EntityDetailPanel]
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 71 (20 v1.0 + 41 v2.0 + 10 v2.1)
+- Total plans completed: 72 (20 v1.0 + 41 v2.0 + 11 v2.1)
 - v1.0: 2 days
 - v2.0: 2 days
 - v2.1: In progress
@@ -45,8 +45,8 @@ Progress: [#####-------------------------] 17% (Phase 18 in progress, 1/1 plans 
 |-----------|--------|-------|----------|
 | v1.0 MVP | 1-7 | 20 | 2 days |
 | v2.0 Platform Rebuild | 8-15 | 41 | 2 days |
-| v2.1 Bug Fixes & UX | 16-20 | 10 | In progress |
-| **Total** | 20 | 71 | 4+ days |
+| v2.1 Bug Fixes & UX | 16-20 | 11 | In progress |
+| **Total** | 20 | 72 | 4+ days |
 
 ## Accumulated Context
 
@@ -78,6 +78,8 @@ Key v2.1 decisions:
 - Blue highlighting consistent across sidebar, graph, and detail modal
 - Click-away discards changes silently (explicit save required) for inline editing
 - Set up vitest with jsdom for React component testing
+- Only label/description editable in panel view (full editing requires modal)
+- usePanelEditState pattern for local edit state with auto-save in entity views
 
 ### Pending Todos
 
@@ -90,6 +92,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed 18-01-PLAN.md (core inline editing components)
+Stopped at: Completed 18-03-PLAN.md (EntityDetailPanel inline editing)
 Resume file: None
-Next action: Continue Phase 18 integration or Phase 20 planning
+Next action: Phase 18 complete, proceed to Phase 19 or 20
