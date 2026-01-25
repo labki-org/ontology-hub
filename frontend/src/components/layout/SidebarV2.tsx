@@ -22,6 +22,7 @@ import {
 import { useDraftV2 } from '@/api/draftApiV2'
 import { useGraphStore } from '@/stores/graphStore'
 import { useDraftStoreV2 } from '@/stores/draftStoreV2'
+import { getAffectedEntityCount } from '@/lib/dependencyGraph'
 import { cn } from '@/lib/utils'
 import type { EntityWithStatus } from '@/api/types'
 
@@ -126,6 +127,11 @@ export function SidebarV2() {
   // Derive draftId from fetched draft (v2 workflow) or fall back to URL param (v1 workflow)
   const draftId = draftV2.data?.id?.toString() || searchParams.get('draft_id') || undefined
 
+  // Change tracking state for badge display
+  const directEdits = useDraftStoreV2((s) => s.directlyEditedEntities)
+  const transitiveAffects = useDraftStoreV2((s) => s.transitivelyAffectedEntities)
+  const affectedCount = getAffectedEntityCount(directEdits, transitiveAffects)
+
   const [searchTerm, setSearchTerm] = useState('')
   const debouncedSearchTerm = useDebounce(searchTerm, 150)
 
@@ -179,6 +185,18 @@ export function SidebarV2() {
         {versionInfo && (
           <div className="text-xs text-muted-foreground mt-1">
             v {versionInfo.commit_sha.slice(0, 7)}
+          </div>
+        )}
+        {draftToken && (
+          <Badge variant="outline" className="text-xs mt-1">
+            Draft Mode
+          </Badge>
+        )}
+        {draftToken && affectedCount > 0 && (
+          <div className="text-xs text-muted-foreground mt-1">
+            <Badge variant="secondary" className="bg-blue-100 dark:bg-blue-900/30">
+              {affectedCount} {affectedCount === 1 ? 'entity' : 'entities'} affected
+            </Badge>
           </div>
         )}
       </div>
