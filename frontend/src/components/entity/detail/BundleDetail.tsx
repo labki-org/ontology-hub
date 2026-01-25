@@ -1,11 +1,13 @@
 import { useEffect, useState, useCallback } from 'react'
-import { useBundle } from '@/api/entitiesV2'
+import { useBundle, useModules } from '@/api/entitiesV2'
 import type { BundleDetailV2 } from '@/api/types'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useDetailStore } from '@/stores/detailStore'
+import { useDraftStoreV2 } from '@/stores/draftStoreV2'
 import { AccordionSection } from '@/components/entity/sections/AccordionSection'
 import { EntityHeader } from '../sections/EntityHeader'
-import { EditableList } from '../form/EditableList'
+import { EntityCombobox } from '../forms/EntityCombobox'
+import { RelationshipChips } from '../forms/RelationshipChips'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -24,8 +26,17 @@ interface BundleDetailProps {
  */
 export function BundleDetail({ entityKey, draftId, isEditing }: BundleDetailProps) {
   const { data: bundle, isLoading, error } = useBundle(entityKey, draftId)
+  const { data: modulesData } = useModules(undefined, undefined, draftId)
+
   const openDetail = useDetailStore((s) => s.openDetail)
   const pushBreadcrumb = useDetailStore((s) => s.pushBreadcrumb)
+  const openCreateModal = useDraftStoreV2((s) => s.openCreateModal)
+
+  // Build available modules for selection
+  const availableModules = (modulesData?.items || []).map((m) => ({
+    key: m.entity_key,
+    label: m.label,
+  }))
 
   // Track original values for change detection
   const [originalValues, setOriginalValues] = useState<{ label?: string }>({})
@@ -170,27 +181,44 @@ export function BundleDetail({ entityKey, draftId, isEditing }: BundleDetailProp
         count={editedModules.length}
         defaultOpen={true}
       >
-        <div className="space-y-2">
+        <div className="space-y-3">
           <p className="text-sm text-muted-foreground">
             Modules directly included in this bundle
           </p>
-          <EditableList
-            items={editedModules}
-            onAdd={handleAddModule}
+
+          {/* Current modules as chips */}
+          <RelationshipChips
+            values={editedModules}
             onRemove={handleRemoveModule}
-            isEditing={isEditing}
-            placeholder="Add module..."
-            emptyMessage="No modules in bundle"
-            renderItem={(moduleKey) => (
-              <Badge
-                variant="secondary"
-                className="cursor-pointer hover:bg-secondary/80"
-                onClick={() => openDetail(moduleKey, 'module')}
-              >
-                {moduleKey}
-              </Badge>
-            )}
+            disabled={!isEditing}
+            getLabel={(key) => {
+              const mod = availableModules.find((m) => m.key === key)
+              return mod?.label || key
+            }}
           />
+
+          {/* Empty state */}
+          {editedModules.length === 0 && !isEditing && (
+            <p className="text-sm text-muted-foreground italic">No modules in bundle</p>
+          )}
+
+          {/* Add module via combobox in edit mode */}
+          {isEditing && (
+            <EntityCombobox
+              entityType="module"
+              availableEntities={availableModules.filter((m) => !editedModules.includes(m.key))}
+              selectedKeys={[]}
+              onChange={(keys) => {
+                if (keys.length > 0) {
+                  handleAddModule(keys[0])
+                }
+              }}
+              onCreateNew={() => {
+                openCreateModal('module')
+              }}
+              placeholder="Add module..."
+            />
+          )}
         </div>
       </AccordionSection>
 
