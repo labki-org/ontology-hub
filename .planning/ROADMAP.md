@@ -102,6 +102,14 @@ Plans:
 
 **Requirements:** PROP-01, PROP-02, PROP-03
 
+**Plans:** 4 plans
+
+Plans:
+- [ ] 19-01-PLAN.md — Extend draftStoreV2 with change tracking and create dependency graph utility
+- [ ] 19-02-PLAN.md — Add sidebar highlighting and affected entity count badge
+- [ ] 19-03-PLAN.md — Add graph node and edge change propagation visualization
+- [ ] 19-04-PLAN.md — Add inheritance chain section to CategoryDetail
+
 **Success Criteria:**
 1. User sees directly edited entity highlighted with strong visual indicator (e.g., bold border, colored background) in sidebar
 2. User sees transitively affected entities highlighted with subtle visual indicator (e.g., light background, dotted border) in sidebar
@@ -137,7 +145,7 @@ Phases execute in numeric order: 1 -> 2 -> ... -> 20
 | 16 | v2.1 | 2/2 | Complete | 2026-01-25 |
 | 17 | v2.1 | 3/3 | Complete | 2026-01-24 |
 | 18 | v2.1 | 0/? | Pending | — |
-| 19 | v2.1 | 0/? | Pending | — |
+| 19 | v2.1 | 0/4 | Planned | — |
 | 20 | v2.1 | 0/? | Pending | — |
 
 **Total:** 66 plans completed across 17 phases (v1.0 + v2.0 + Phases 16-17)
@@ -151,3 +159,4 @@ Phases execute in numeric order: 1 -> 2 -> ... -> 20
 *Phase 16 complete: 2026-01-25*
 *Phase 17 planned: 2026-01-24*
 *Phase 17 complete: 2026-01-24*
+*Phase 19 planned: 2026-01-25*
