@@ -14,12 +14,13 @@ interface FormFieldProps<TFieldValues extends FieldValues> {
   /** React Hook Form control object */
   control: Control<TFieldValues>
   /** Render function that receives field props and renders the input */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   render: (field: {
-    value: TFieldValues[Path<TFieldValues>]
-    onChange: (...event: unknown[]) => void
+    value: string
+    onChange: (...event: any[]) => void
     onBlur: () => void
     name: string
-    ref: React.Ref<HTMLElement>
+    ref: React.Ref<any>
     'data-invalid'?: boolean
   }) => ReactNode
   /** Optional description text below the label */
