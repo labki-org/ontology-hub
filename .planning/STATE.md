@@ -80,6 +80,8 @@ Key v2.1 decisions:
 - Set up vitest with jsdom for React component testing
 - Only label/description editable in panel view (full editing requires modal)
 - usePanelEditState pattern for local edit state with auto-save in entity views
+- Keep EditableField for multiline description, use InlineEditField for single-line label
+- Soft-deleted parents stay in position with DeletedItemBadge until save
 
 ### Pending Todos
 
