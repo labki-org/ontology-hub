@@ -10,26 +10,25 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 ## Current Position
 
 Phase: 20 - Entity Management
-Plan: 5 of N complete
-Status: Plan 05 complete
-Last activity: 2026-01-25 - Completed 20-05-PLAN.md (Entity Combobox and Relationship Chips)
+Plan: 6 of N complete (01, 02, 03, 04, 05 complete)
+Status: Plan 04 complete
+Last activity: 2026-01-25 - Completed 20-04-PLAN.md (Sidebar + New Buttons)
 
-Progress: [#########---------------------] 30% (20-05 complete)
+Progress: [##########--------------------] 33% (20-04 complete)
 
 **Phase 20 Goal:** Create and delete entities within drafts with modal forms and validation.
 
-**Phase 20 Plan 05 Completed:**
+**Phase 20 Plan 04 Completed:**
+- Create modal state in draftStoreV2 (createModalOpen, createModalEntityType)
+- "+ New" buttons in sidebar EntitySection headers (draft mode only)
+- CreateEntityModal integration with dynamic form switching
+- Entity creation flow: click + New -> fill form -> submit -> entity in sidebar + graph
+
+**Phase 20 Plan 05 Previously Completed:**
 - EntityCombobox with cmdk for type-ahead search and create-if-not-exists
 - RelationshipChips for displaying removable relationship badges
-- CategoryForm with parent categories combobox
-- ModuleForm with entity type comboboxes (categories, properties, subobjects, templates)
+- ModuleForm with entity type comboboxes
 - BundleForm with modules combobox
-
-**Phase 20 Plan 03 Summary Created (retroactive):**
-- TemplateForm with wikitext textarea (monospace font)
-- ModuleForm with version field and relaxed moduleCreateSchema
-- BundleForm with version field and relaxed bundleCreateSchema
-- Dual-schema pattern: relaxed for creation, full validation for editing
 
 ## Performance Metrics
 
@@ -93,6 +92,9 @@ Key v2.1 decisions:
 - getLabel prop on RelationshipChips for custom label resolution (20-05)
 - Relaxed schemas for creation (moduleCreateSchema, bundleCreateSchema) vs full validation for editing (20-03)
 - Wikitext field uses font-mono and min-h-[150px] for template syntax visibility (20-03)
+- + New button placed outside CollapsibleTrigger to avoid toggle on click (20-04)
+- Modal title generated dynamically from entity type (20-04)
+- New entity selected in graph after successful creation (20-04)
 
 ### Pending Todos
 
@@ -105,6 +107,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Created 20-03-SUMMARY.md (retroactive documentation)
+Stopped at: Completed 20-04-PLAN.md (Sidebar + New Buttons)
 Resume file: None
-Next action: Continue with Phase 20 plan 04 or 06
+Next action: Continue with Phase 20 plan 06 (Delete Entity functionality)
