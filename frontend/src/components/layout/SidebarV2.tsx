@@ -21,6 +21,8 @@ import {
 } from '@/api/entitiesV2'
 import { useDraftV2 } from '@/api/draftApiV2'
 import { useGraphStore } from '@/stores/graphStore'
+import { useDraftStoreV2 } from '@/stores/draftStoreV2'
+import { cn } from '@/lib/utils'
 import type { EntityWithStatus } from '@/api/types'
 
 interface EntitySectionProps {
@@ -34,6 +36,8 @@ interface EntitySectionProps {
 
 function EntitySection({ title, icon: Icon, entities, isLoading, searchTerm, entityType }: EntitySectionProps) {
   const setSelectedEntity = useGraphStore((state) => state.setSelectedEntity)
+  const directEdits = useDraftStoreV2((s) => s.directlyEditedEntities)
+  const transitiveAffects = useDraftStoreV2((s) => s.transitivelyAffectedEntities)
   const filteredEntities = useSearchFilter(searchTerm, entities)
 
   if (isLoading) {
@@ -59,13 +63,19 @@ function EntitySection({ title, icon: Icon, entities, isLoading, searchTerm, ent
         <ul className="ml-7 space-y-0.5">
           {filteredEntities.map((entity) => {
             const isDeleted = entity.change_status === 'deleted' || entity.deleted
+            const isDirectEdit = directEdits.has(entity.entity_key)
+            const isTransitiveEffect = transitiveAffects.has(entity.entity_key)
             return (
               <li key={entity.entity_key}>
                 <button
                   onClick={() => setSelectedEntity(entity.entity_key, entityType)}
-                  className={`flex items-center gap-2 w-full px-2 py-1 text-sm rounded hover:bg-sidebar-accent truncate text-left ${
-                    isDeleted ? 'line-through text-muted-foreground' : ''
-                  }`}
+                  className={cn(
+                    'flex items-center gap-2 w-full px-2 py-1 text-sm rounded hover:bg-sidebar-accent truncate text-left',
+                    isDirectEdit && 'bg-blue-100 dark:bg-blue-900/30',
+                    // Only show transitive if NOT direct edit (direct wins)
+                    !isDirectEdit && isTransitiveEffect && 'bg-blue-50 dark:bg-blue-900/10',
+                    isDeleted && 'line-through text-muted-foreground'
+                  )}
                   title={entity.label}
                 >
                   <span className="flex-1 truncate">{entity.label}</span>
