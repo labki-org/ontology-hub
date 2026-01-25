@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-23)
 ## Current Position
 
 Phase: 14 of 14 (Validation + Workflow + PR)
-Plan: 6 of 10 in current phase
+Plan: 5 of 10 in current phase
 Status: In progress
-Last activity: 2026-01-24 -- Completed 14-06-PLAN.md
+Last activity: 2026-01-25 -- Completed 14-05-PLAN.md
 
-Progress: [##########################] 98% (v1.0 complete, v2.0 phases 8-13 complete, phase 14: 6/10 plans)
+Progress: [##########################] 98% (v1.0 complete, v2.0 phases 8-13 complete, phase 14: 5/10 plans)
 
 ## Performance Metrics
 
@@ -33,7 +33,7 @@ Progress: [##########################] 98% (v1.0 complete, v2.0 phases 8-13 comp
 | 11-draft-system | 5/5 | 16m | 3m |
 | 12-frontend-graph-visualization | 6/6 | 15m | 2m |
 | 13-entity-detail-pages | 9/9 | 36m | 4m |
-| 14-validation-workflow-pr | 6/10 | 8m | 2m |
+| 14-validation-workflow-pr | 5/10 | 12m | 2m |
 
 **Recent Trend:**
 - v1.0 completed in 2 days
@@ -70,7 +70,8 @@ Progress: [##########################] 98% (v1.0 complete, v2.0 phases 8-13 comp
 - v2.0 phase 14 plan 1: 4 minutes (v2 validation service)
 - v2.0 phase 14 plan 2: 1 minute (draft workflow transitions)
 - v2.0 phase 14 plan 3: 1 minute (validation endpoint)
-- v2.0 phase 14 plan 6: 2 minutes (frontend API hooks and state)
+- v2.0 phase 14 plan 4: 2 minutes (PR builder v2 services)
+- v2.0 phase 14 plan 5: 4 minutes (PR submission endpoint)
 
 *Metrics updated after each plan completion*
 
@@ -174,9 +175,10 @@ Recent decisions affecting current work:
 - [14-03]: Validation endpoint returns full report even when validation fails (transparency)
 - [14-03]: Terminal status drafts (SUBMITTED/MERGED/REJECTED) cannot be re-validated (400 error)
 - [14-03]: Rebase conflicts add warning to report without blocking validation
-- [14-06]: TanStack Query manages draft data, Zustand manages ephemeral workflow UI state
-- [14-06]: Mutation hooks invalidate draft query on success to trigger refresh
-- [14-06]: ValidationReportV2 uses entity_key field to match v2 model (not entity_id)
+- [14-05]: Re-validate draft before PR creation to ensure canonical hasn't changed
+- [14-05]: OAuth flow accepts pr_title and user_comment as query params stored in session
+- [14-05]: Submit endpoint uses token from request body (not OAuth session)
+- [14-05]: OAuth callback uses v2 services: build_files_from_draft_v2, generate_pr_body_v2
 
 ### Pending Todos
 
@@ -188,6 +190,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-24
-Stopped at: Completed plan 14-06 (frontend API hooks and state)
+Last session: 2026-01-25
+Stopped at: Completed plan 14-05 (PR submission endpoint)
 Resume file: None
