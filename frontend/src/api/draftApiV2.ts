@@ -166,3 +166,52 @@ export function useCreateDraft() {
     },
   })
 }
+
+// Entity creation types and hooks
+
+export interface CreateEntityParams {
+  entityType: 'category' | 'property' | 'subobject' | 'template' | 'module' | 'bundle'
+  entityKey: string
+  data: Record<string, unknown>
+}
+
+async function createEntityChange(
+  token: string,
+  params: CreateEntityParams
+): Promise<DraftChangeV2> {
+  return apiFetch(`/drafts/${token}/changes`, {
+    v2: true,
+    method: 'POST',
+    body: JSON.stringify({
+      change_type: 'CREATE',
+      entity_type: params.entityType,
+      entity_key: params.entityKey,
+      replacement_json: params.data,
+    }),
+  })
+}
+
+/**
+ * Mutation hook for creating new entities within a draft.
+ * Creates a CREATE change that will be applied when the draft is submitted.
+ *
+ * @param token - Draft capability token
+ * @returns React Query mutation with createEntityChange
+ */
+export function useCreateEntityChange(token: string | undefined) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (params: CreateEntityParams) => createEntityChange(token!, params),
+    onSuccess: () => {
+      // Invalidate draft changes and entity lists to refresh sidebar
+      queryClient.invalidateQueries({ queryKey: ['v2', 'draft-changes', token] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'categories'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'properties'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'subobjects'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'templates'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'modules'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'bundles'] })
+    },
+  })
+}
