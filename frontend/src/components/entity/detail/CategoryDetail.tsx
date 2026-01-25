@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { useCategory } from '@/api/entitiesV2'
+import { useCategory, useCategories } from '@/api/entitiesV2'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useDetailStore } from '@/stores/detailStore'
 import { useDraftStoreV2 } from '@/stores/draftStoreV2'
@@ -8,11 +8,10 @@ import { AccordionSection } from '../sections/AccordionSection'
 import { PropertiesSection } from '../sections/PropertiesSection'
 import { MembershipSection } from '../sections/MembershipSection'
 import { DeletedItemBadge } from '../form/DeletedItemBadge'
+import { EntityCombobox } from '../forms/EntityCombobox'
+import { RelationshipChips } from '../forms/RelationshipChips'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Trash2, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface CategoryDetailProps {
@@ -35,8 +34,18 @@ export function CategoryDetail({
   isEditing,
 }: CategoryDetailProps) {
   const { data: rawCategory, isLoading, error } = useCategory(entityKey, draftId)
+  const { data: categoriesData } = useCategories(undefined, undefined, draftId)
   const openDetail = useDetailStore((s) => s.openDetail)
   const pushBreadcrumb = useDetailStore((s) => s.pushBreadcrumb)
+  const openCreateModal = useDraftStoreV2((s) => s.openCreateModal)
+
+  // Build available categories for parent selection (excluding self)
+  const availableCategories = (categoriesData?.items || [])
+    .filter((c) => c.entity_key !== entityKey)
+    .map((c) => ({
+      key: c.entity_key,
+      label: c.label,
+    }))
 
   // Change tracking state for inheritance chain highlighting
   const directEdits = useDraftStoreV2((s) => s.directlyEditedEntities)
@@ -61,8 +70,6 @@ export function CategoryDetail({
   const [editedParents, setEditedParents] = useState<string[]>([])
   // Track soft-deleted parents (stay in position with "Deleted" badge until save)
   const [deletedParents, setDeletedParents] = useState<Set<string>>(new Set())
-  // State for adding new parent
-  const [newParent, setNewParent] = useState('')
 
   // Auto-save hook
   const { saveChange, isSaving } = useAutoSave({
@@ -144,16 +151,18 @@ export function CategoryDetail({
   )
 
   // Handler for adding new parent
-  const handleAddNewParent = useCallback(() => {
-    if (newParent.trim() && !editedParents.includes(newParent.trim())) {
-      const newParents = [...editedParents, newParent.trim()]
-      setEditedParents(newParents)
-      setNewParent('')
-      if (draftId) {
-        saveChange([{ op: 'replace', path: '/parents', value: newParents }])
+  const handleAddNewParent = useCallback(
+    (parentKey: string) => {
+      if (parentKey && !editedParents.includes(parentKey)) {
+        const newParents = [...editedParents.filter((p) => !deletedParents.has(p)), parentKey]
+        setEditedParents(newParents)
+        if (draftId) {
+          saveChange([{ op: 'replace', path: '/parents', value: newParents }])
+        }
       }
-    }
-  }, [newParent, editedParents, draftId, saveChange])
+    },
+    [editedParents, deletedParents, draftId, saveChange]
+  )
 
   const handleRevertDescription = useCallback(() => {
     setEditedDescription(originalValues.description || '')
@@ -219,81 +228,61 @@ export function CategoryDetail({
         onRevertDescription={handleRevertDescription}
       />
 
-      {/* Parents section with hover-reveal delete icons and soft delete */}
+      {/* Parents section with EntityCombobox for adding and RelationshipChips for display */}
       <AccordionSection
         id="parents"
         title="Parent Categories"
-        count={editedParents.length + deletedParents.size}
+        count={editedParents.filter((p) => !deletedParents.has(p)).length}
       >
-        <div className="space-y-2">
-          {/* Render active parents with hover-reveal delete icon */}
-          <div className="flex flex-wrap gap-2">
-            {editedParents.map((parent) => (
-              <div key={parent} className="group relative">
-                <Badge
-                  variant="secondary"
-                  className={cn(
-                    'cursor-pointer hover:bg-secondary/80 pr-8',
-                    isEditing && 'group-hover:pr-8'
-                  )}
-                  onClick={() => openDetail(parent, 'category')}
-                >
-                  {parent}
-                </Badge>
-                {/* Hover-reveal delete icon */}
-                {isEditing && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-1/2 -translate-y-1/2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleDeleteParent(parent)
-                    }}
-                    aria-label={`Delete parent ${parent}`}
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                )}
-              </div>
-            ))}
+        <div className="space-y-3">
+          {/* Current parents as chips */}
+          <RelationshipChips
+            values={editedParents.filter((p) => !deletedParents.has(p))}
+            onRemove={handleDeleteParent}
+            disabled={!isEditing}
+            getLabel={(key) => {
+              const cat = availableCategories.find((c) => c.key === key)
+              return cat?.label || key
+            }}
+          />
 
-            {/* Render soft-deleted parents with DeletedItemBadge */}
-            {Array.from(deletedParents).map((parent) => (
-              <DeletedItemBadge
-                key={`deleted-${parent}`}
-                label={parent}
-                onUndo={() => handleUndoDeleteParent(parent)}
-              />
-            ))}
-          </div>
+          {/* Soft-deleted parents with undo option */}
+          {Array.from(deletedParents).map((parent) => (
+            <DeletedItemBadge
+              key={`deleted-${parent}`}
+              label={availableCategories.find((c) => c.key === parent)?.label || parent}
+              onUndo={() => handleUndoDeleteParent(parent)}
+            />
+          ))}
 
           {/* Empty state */}
-          {editedParents.length === 0 && deletedParents.size === 0 && !isEditing && (
-            <p className="text-sm text-muted-foreground italic">
-              No parent categories (root category)
-            </p>
-          )}
+          {editedParents.filter((p) => !deletedParents.has(p)).length === 0 &&
+            deletedParents.size === 0 &&
+            !isEditing && (
+              <p className="text-sm text-muted-foreground italic">
+                No parent categories (root category)
+              </p>
+            )}
 
-          {/* Add parent input in edit mode */}
+          {/* Add parent via combobox in edit mode */}
           {isEditing && (
-            <div className="flex gap-2">
-              <Input
-                value={newParent}
-                onChange={(e) => setNewParent(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleAddNewParent()
-                    e.preventDefault()
-                  }
-                }}
-                placeholder="Add parent category..."
-                className="max-w-xs"
-              />
-              <Button variant="outline" size="sm" onClick={handleAddNewParent}>
-                <Plus className="h-4 w-4 mr-1" /> Add
-              </Button>
-            </div>
+            <EntityCombobox
+              entityType="category"
+              availableEntities={availableCategories.filter(
+                (c) => !editedParents.includes(c.key) || deletedParents.has(c.key)
+              )}
+              selectedKeys={[]}
+              onChange={(keys) => {
+                if (keys.length > 0) {
+                  handleAddNewParent(keys[0])
+                }
+              }}
+              onCreateNew={() => {
+                // Open create modal for new category
+                openCreateModal('category')
+              }}
+              placeholder="Add parent category..."
+            />
           )}
         </div>
       </AccordionSection>
