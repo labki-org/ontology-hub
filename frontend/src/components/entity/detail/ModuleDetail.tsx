@@ -1,11 +1,19 @@
 import { useEffect, useState, useCallback } from 'react'
-import { useModule } from '@/api/entitiesV2'
+import {
+  useModule,
+  useCategories,
+  useProperties,
+  useSubobjects,
+  useTemplates,
+} from '@/api/entitiesV2'
 import type { ModuleDetailV2, EntityType } from '@/api/types'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useDetailStore } from '@/stores/detailStore'
+import { useDraftStoreV2, type CreateModalEntityType } from '@/stores/draftStoreV2'
 import { AccordionSection } from '@/components/entity/sections/AccordionSection'
 import { EntityHeader } from '../sections/EntityHeader'
-import { EditableList } from '../form/EditableList'
+import { EntityCombobox } from '../forms/EntityCombobox'
+import { RelationshipChips } from '../forms/RelationshipChips'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -24,8 +32,34 @@ interface ModuleDetailProps {
  */
 export function ModuleDetail({ entityKey, draftId, isEditing }: ModuleDetailProps) {
   const { data: module, isLoading, error } = useModule(entityKey, draftId)
+  const { data: categoriesData } = useCategories(undefined, undefined, draftId)
+  const { data: propertiesData } = useProperties(undefined, undefined, draftId)
+  const { data: subobjectsData } = useSubobjects(undefined, undefined, draftId)
+  const { data: templatesData } = useTemplates(undefined, undefined, draftId)
+
   const openDetail = useDetailStore((s) => s.openDetail)
   const pushBreadcrumb = useDetailStore((s) => s.pushBreadcrumb)
+  const openCreateModal = useDraftStoreV2((s) => s.openCreateModal)
+
+  // Build available entities for each type
+  const availableEntitiesByType: Record<string, Array<{ key: string; label: string }>> = {
+    category: (categoriesData?.items || []).map((c) => ({
+      key: c.entity_key,
+      label: c.label,
+    })),
+    property: (propertiesData?.items || []).map((p) => ({
+      key: p.entity_key,
+      label: p.label,
+    })),
+    subobject: (subobjectsData?.items || []).map((s) => ({
+      key: s.entity_key,
+      label: s.label,
+    })),
+    template: (templatesData?.items || []).map((t) => ({
+      key: t.entity_key,
+      label: t.label,
+    })),
+  }
 
   // Track original values for change detection
   const [originalValues, setOriginalValues] = useState<{ label?: string }>({})
@@ -178,37 +212,61 @@ export function ModuleDetail({ entityKey, draftId, isEditing }: ModuleDetailProp
         defaultOpen={true}
       >
         <div className="space-y-4">
-          {entityTypes.map((entityType) => (
-            <div key={entityType} className="space-y-2">
-              <h4 className="text-sm font-medium text-muted-foreground capitalize">
-                {entityType}s
-                <Badge variant="secondary" className="ml-2 text-xs">
-                  {editedEntities[entityType]?.length || 0}
-                </Badge>
-              </h4>
-              <div className="pl-4">
-                <EditableList
-                  items={editedEntities[entityType] || []}
-                  onAdd={(key) => handleAddEntity(entityType, key)}
-                  onRemove={(key) => handleRemoveEntity(entityType, key)}
-                  isEditing={isEditing}
-                  placeholder={`Add ${entityType}...`}
-                  emptyMessage={`No ${entityType}s in module`}
-                  renderItem={(key) => (
-                    <Badge
-                      variant="secondary"
-                      className="cursor-pointer hover:bg-secondary/80"
-                      onClick={() => openDetail(key, entityType as EntityType)}
-                    >
-                      {key}
-                    </Badge>
-                  )}
-                />
-              </div>
-            </div>
-          ))}
+          {entityTypes.map((entityType) => {
+            const currentEntities = editedEntities[entityType] || []
+            const availableEntities = availableEntitiesByType[entityType] || []
+            return (
+              <div key={entityType} className="space-y-2">
+                <h4 className="text-sm font-medium text-muted-foreground capitalize">
+                  {entityType}s
+                  <Badge variant="secondary" className="ml-2 text-xs">
+                    {currentEntities.length}
+                  </Badge>
+                </h4>
+                <div className="pl-4 space-y-2">
+                  {/* Current entities as chips */}
+                  <RelationshipChips
+                    values={currentEntities}
+                    onRemove={(key) => handleRemoveEntity(entityType, key)}
+                    disabled={!isEditing}
+                    getLabel={(key) => {
+                      const entity = availableEntities.find((e) => e.key === key)
+                      return entity?.label || key
+                    }}
+                  />
 
-          {Object.keys(editedEntities).length === 0 && (
+                  {/* Empty state */}
+                  {currentEntities.length === 0 && !isEditing && (
+                    <p className="text-sm text-muted-foreground italic">
+                      No {entityType}s in module
+                    </p>
+                  )}
+
+                  {/* Add entity via combobox in edit mode */}
+                  {isEditing && (
+                    <EntityCombobox
+                      entityType={entityType as EntityType}
+                      availableEntities={availableEntities.filter(
+                        (e) => !currentEntities.includes(e.key)
+                      )}
+                      selectedKeys={[]}
+                      onChange={(keys) => {
+                        if (keys.length > 0) {
+                          handleAddEntity(entityType, keys[0])
+                        }
+                      }}
+                      onCreateNew={() => {
+                        openCreateModal(entityType as CreateModalEntityType)
+                      }}
+                      placeholder={`Add ${entityType}...`}
+                    />
+                  )}
+                </div>
+              </div>
+            )
+          })}
+
+          {Object.keys(editedEntities).length === 0 && !isEditing && (
             <div className="text-sm text-muted-foreground italic">
               No members in this module
             </div>
