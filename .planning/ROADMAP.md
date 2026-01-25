@@ -4,7 +4,7 @@
 
 - [x] **v1.0 MVP** - Phases 1-7 (shipped 2026-01-23)
 - [x] **v2.0 Platform Rebuild** - Phases 8-15 (shipped 2026-01-25)
-- [ ] **v2.1 Bug Fixes & UX Improvements** - Phases 16-20 (in progress)
+- [ ] **v2.1 Bug Fixes & UX Improvements** - Phases 16-22 (audit: 3 bugs found, gap closure phases 21-22)
 
 ## Phases
 
@@ -135,15 +135,15 @@ Plans:
 **Plans:** 9 plans
 
 Plans:
-- [ ] 20-01-PLAN.md — Create form infrastructure (FormField, Zod schemas, API mutation)
-- [ ] 20-02-PLAN.md — Create simple entity forms (Category, Property, Subobject)
-- [ ] 20-03-PLAN.md — Create complex entity forms (Template, Module, Bundle)
-- [ ] 20-04-PLAN.md — Integrate "+ New" buttons into sidebar with create modal
-- [ ] 20-05-PLAN.md — Create EntityCombobox for relationship management
-- [ ] 20-06-PLAN.md — Implement entity deletion with dependency checking
-- [ ] 20-07-PLAN.md — Implement cascading create flow for nested entities
-- [ ] 20-08-PLAN.md — Integrate relationship editing into entity detail views
-- [ ] 20-09-PLAN.md — Human verification of complete entity management flow
+- [x] 20-01-PLAN.md — Create form infrastructure (FormField, Zod schemas, API mutation)
+- [x] 20-02-PLAN.md — Create simple entity forms (Category, Property, Subobject)
+- [x] 20-03-PLAN.md — Create complex entity forms (Template, Module, Bundle)
+- [x] 20-04-PLAN.md — Integrate "+ New" buttons into sidebar with create modal
+- [x] 20-05-PLAN.md — Create EntityCombobox for relationship management
+- [x] 20-06-PLAN.md — Implement entity deletion with dependency checking
+- [x] 20-07-PLAN.md — Implement cascading create flow for nested entities
+- [x] 20-08-PLAN.md — Integrate relationship editing into entity detail views
+- [x] 20-09-PLAN.md — Human verification of complete entity management flow
 
 **Success Criteria:**
 1. User sees "+ New Category" button in sidebar Categories section (draft mode only)
@@ -153,10 +153,52 @@ Plans:
 
 ---
 
+### Phase 21: Critical Bug Fixes (Gap Closure)
+
+**Goal:** Restore core draft workflow - users can validate and submit PRs.
+
+**Dependencies:** Phase 20 (builds on existing entity management)
+
+**Requirements:** DRAFT-01, DRAFT-02 (re-verify), Flow 6, Flow 7
+
+**Gap Closure:** Closes BUG-003 from v2.1 audit
+
+Plans:
+- [ ] 21-01-PLAN.md — Debug and fix hasChanges computation and button disabled state
+
+**Success Criteria:**
+1. User can click Validate button in draft mode when changes exist
+2. User can click Submit PR button in draft mode when changes exist
+3. Validation results appear after clicking Validate
+4. PR wizard opens after clicking Submit PR
+
+---
+
+### Phase 22: Entity Lifecycle Bug Fixes (Gap Closure)
+
+**Goal:** Complete entity lifecycle - new entities appear in graph and can be deleted.
+
+**Dependencies:** Phase 21 (critical workflow must work first)
+
+**Requirements:** MGMT-07 (complete), GRAPH-05 (new)
+
+**Gap Closure:** Closes BUG-001, BUG-002 from v2.1 audit
+
+Plans:
+- [ ] 22-01-PLAN.md — Fix graph query invalidation after entity creation
+- [ ] 22-02-PLAN.md — Fix delete functionality for newly created entities
+
+**Success Criteria:**
+1. User creates new entity and sees it appear in graph view immediately
+2. User can delete a newly created entity from the current draft session
+3. Graph updates correctly after entity deletion
+
+---
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> ... -> 20
+Phases execute in numeric order: 1 -> 2 -> ... -> 22
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -166,10 +208,12 @@ Phases execute in numeric order: 1 -> 2 -> ... -> 20
 | 17 | v2.1 | 3/3 | Complete | 2026-01-24 |
 | 18 | v2.1 | 3/3 | Complete | 2026-01-25 |
 | 19 | v2.1 | 4/4 | Complete | 2026-01-25 |
-| 20 | v2.1 | 0/9 | Planned | — |
+| 20 | v2.1 | 9/9 | Complete | 2026-01-25 |
+| 21 | v2.1 | 0/1 | Pending | — |
+| 22 | v2.1 | 0/2 | Pending | — |
 
-**Total:** 73 plans completed across 19 phases (v1.0 + v2.0 + Phases 16-19)
-**v2.1:** 5 phases, 26 requirements, 12 plans executed (Phases 16-19), 9 plans planned (Phase 20)
+**Total:** 82 plans completed across 22 phases (v1.0 + v2.0 + v2.1)
+**v2.1:** 7 phases, 26 requirements, 21/24 plans complete (3 gap closure plans pending)
 
 ---
 *Roadmap created: 2026-01-23*
@@ -184,3 +228,5 @@ Phases execute in numeric order: 1 -> 2 -> ... -> 20
 *Phase 18 planned: 2026-01-25*
 *Phase 18 complete: 2026-01-25*
 *Phase 20 planned: 2026-01-25*
+*Phase 20 complete: 2026-01-25*
+*Gap closure phases 21-22 added: 2026-01-25 (from audit)*
