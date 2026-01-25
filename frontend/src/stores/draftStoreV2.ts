@@ -45,6 +45,19 @@ interface DraftStoreV2State {
   createModalOpen: boolean
   createModalEntityType: CreateModalEntityType | null
 
+  // Nested create modal state (for cascading create flow)
+  nestedCreateModal: {
+    isOpen: boolean
+    entityType: CreateModalEntityType | null
+    prefilledId: string
+    parentContext: {
+      entityType: string
+      fieldName: string
+    } | null
+  }
+  // Callback for when nested entity is created
+  onNestedEntityCreated: ((entityKey: string) => void) | null
+
   // Change tracking state
   directlyEditedEntities: Set<string>
   transitivelyAffectedEntities: Set<string>
@@ -67,6 +80,13 @@ interface DraftStoreV2State {
   clearChangeTracking: () => void
   openCreateModal: (entityType: CreateModalEntityType) => void
   closeCreateModal: () => void
+  openNestedCreateModal: (params: {
+    entityType: CreateModalEntityType
+    prefilledId: string
+    parentContext: { entityType: string; fieldName: string }
+  }) => void
+  closeNestedCreateModal: () => void
+  setOnNestedEntityCreated: (callback: ((entityKey: string) => void) | null) => void
   trackDeletedEntity: (entityKey: string, changeId: string) => void
   untrackDeletedEntity: (entityKey: string) => void
   setDeleteBlocked: (entity: { key: string; label: string; dependents: DependentEntity[] } | null) => void
@@ -82,6 +102,13 @@ const initialState = {
   submittedPrUrl: null,
   createModalOpen: false,
   createModalEntityType: null as CreateModalEntityType | null,
+  nestedCreateModal: {
+    isOpen: false,
+    entityType: null as CreateModalEntityType | null,
+    prefilledId: '',
+    parentContext: null as { entityType: string; fieldName: string } | null,
+  },
+  onNestedEntityCreated: null as ((entityKey: string) => void) | null,
   directlyEditedEntities: new Set<string>(),
   transitivelyAffectedEntities: new Set<string>(),
   deletedEntityChanges: new Map<string, string>(),
@@ -179,6 +206,30 @@ export const useDraftStoreV2 = create<DraftStoreV2State>()(
       })
     },
 
+    openNestedCreateModal: (params) => {
+      set((state) => {
+        state.nestedCreateModal.isOpen = true
+        state.nestedCreateModal.entityType = params.entityType
+        state.nestedCreateModal.prefilledId = params.prefilledId
+        state.nestedCreateModal.parentContext = params.parentContext
+      })
+    },
+
+    closeNestedCreateModal: () => {
+      set((state) => {
+        state.nestedCreateModal.isOpen = false
+        state.nestedCreateModal.entityType = null
+        state.nestedCreateModal.prefilledId = ''
+        state.nestedCreateModal.parentContext = null
+      })
+    },
+
+    setOnNestedEntityCreated: (callback) => {
+      set((state) => {
+        state.onNestedEntityCreated = callback
+      })
+    },
+
     trackDeletedEntity: (entityKey, changeId) => {
       set((state) => {
         state.deletedEntityChanges.set(entityKey, changeId)
@@ -207,6 +258,13 @@ export const useDraftStoreV2 = create<DraftStoreV2State>()(
         state.submittedPrUrl = null
         state.createModalOpen = false
         state.createModalEntityType = null
+        state.nestedCreateModal = {
+          isOpen: false,
+          entityType: null,
+          prefilledId: '',
+          parentContext: null,
+        }
+        state.onNestedEntityCreated = null
         state.directlyEditedEntities = new Set<string>()
         state.transitivelyAffectedEntities = new Set<string>()
         state.deletedEntityChanges = new Map<string, string>()
