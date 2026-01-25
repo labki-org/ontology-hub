@@ -52,9 +52,12 @@ class Draft(SQLModel, table=True):
     capability_hash: str = Field(unique=True, index=True)  # SHA-256 of token
     base_commit_sha: str  # For auto-rebase detection
     status: DraftStatus = Field(
-        default=DraftStatus.DRAFT, sa_column=Column(SAEnum(DraftStatus))
+        default=DraftStatus.DRAFT,
+        sa_column=Column(SAEnum(DraftStatus, name="draftstatus_v2", values_callable=lambda e: [x.value for x in e])),
     )
-    source: DraftSource = Field(sa_column=Column(SAEnum(DraftSource)))
+    source: DraftSource = Field(
+        sa_column=Column(SAEnum(DraftSource, name="draftsource", values_callable=lambda e: [x.value for x in e])),
+    )
     title: str | None = None  # Auto-generated or user-provided
     description: str | None = None  # Auto-generated summary
     user_comment: str | None = None  # User-editable notes
@@ -86,7 +89,9 @@ class DraftChange(SQLModel, table=True):
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     draft_id: uuid.UUID = Field(foreign_key="draft.id", index=True)
-    change_type: ChangeType = Field(sa_column=Column(SAEnum(ChangeType)))
+    change_type: ChangeType = Field(
+        sa_column=Column(SAEnum(ChangeType, name="changetype", values_callable=lambda e: [x.value for x in e])),
+    )
     entity_type: str  # "category", "property", etc. (string, not enum FK)
     entity_key: str = Field(index=True)  # The entity being changed
     patch: dict | None = Field(

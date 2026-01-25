@@ -127,7 +127,7 @@ def draft_to_response(draft: Draft, change_count: int) -> DraftResponse:
     )
 
 
-@router.post("/", response_model=DraftCreateResponse, status_code=201)
+@router.post("", response_model=DraftCreateResponse, status_code=201)
 @limiter.limit(RATE_LIMITS["draft_create"])
 async def create_draft(
     request: Request,  # Required for SlowAPI rate limiting
