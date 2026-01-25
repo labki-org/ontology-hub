@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { ChevronRight, Boxes, Tag, Package, Layers, Archive, FileCode } from 'lucide-react'
+import { ChevronRight, Boxes, Tag, Package, Layers, Archive, FileCode, Plus } from 'lucide-react'
 import {
   Collapsible,
   CollapsibleContent,
@@ -33,9 +33,11 @@ interface EntitySectionProps {
   isLoading: boolean
   searchTerm: string
   entityType: string
+  isDraftMode: boolean
+  onAddNew?: () => void
 }
 
-function EntitySection({ title, icon: Icon, entities, isLoading, searchTerm, entityType }: EntitySectionProps) {
+function EntitySection({ title, icon: Icon, entities, isLoading, searchTerm, entityType, isDraftMode, onAddNew }: EntitySectionProps) {
   const setSelectedEntity = useGraphStore((state) => state.setSelectedEntity)
   const directEdits = useDraftStoreV2((s) => s.directlyEditedEntities)
   const transitiveAffects = useDraftStoreV2((s) => s.transitivelyAffectedEntities)
@@ -52,14 +54,29 @@ function EntitySection({ title, icon: Icon, entities, isLoading, searchTerm, ent
 
   return (
     <Collapsible defaultOpen>
-      <CollapsibleTrigger className="flex items-center w-full px-2 py-1.5 rounded hover:bg-sidebar-accent text-sm group">
-        <ChevronRight className="h-4 w-4 transition-transform group-data-[state=open]:rotate-90" />
-        <Icon className="h-4 w-4 ml-1 mr-2" />
-        <span className="font-medium">{title}</span>
-        <Badge variant="secondary" className="ml-auto">
-          {filteredEntities.length}
-        </Badge>
-      </CollapsibleTrigger>
+      <div className="flex items-center w-full">
+        <CollapsibleTrigger className="flex items-center flex-1 px-2 py-1.5 rounded hover:bg-sidebar-accent text-sm group">
+          <ChevronRight className="h-4 w-4 transition-transform group-data-[state=open]:rotate-90" />
+          <Icon className="h-4 w-4 ml-1 mr-2" />
+          <span className="font-medium">{title}</span>
+          <Badge variant="secondary" className="ml-auto">
+            {filteredEntities.length}
+          </Badge>
+        </CollapsibleTrigger>
+        {isDraftMode && onAddNew && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onAddNew()
+            }}
+            className="p-1 mr-1 rounded hover:bg-sidebar-accent"
+            aria-label={`Add new ${title.toLowerCase().slice(0, -1)}`}
+            title={`Add new ${title.toLowerCase().slice(0, -1)}`}
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        )}
+      </div>
       <CollapsibleContent>
         <ul className="ml-7 space-y-0.5">
           {filteredEntities.map((entity) => {
@@ -126,6 +143,12 @@ export function SidebarV2() {
 
   // Derive draftId from fetched draft (v2 workflow) or fall back to URL param (v1 workflow)
   const draftId = draftV2.data?.id?.toString() || searchParams.get('draft_id') || undefined
+
+  // Draft mode state - determines if "+ New" buttons are visible
+  const isDraftMode = !!draftToken
+
+  // Create modal actions
+  const openCreateModal = useDraftStoreV2((s) => s.openCreateModal)
 
   // Change tracking state for badge display
   const directEdits = useDraftStoreV2((s) => s.directlyEditedEntities)
@@ -218,6 +241,8 @@ export function SidebarV2() {
             isLoading={categoriesLoading}
             searchTerm={debouncedSearchTerm}
             entityType="category"
+            isDraftMode={isDraftMode}
+            onAddNew={() => openCreateModal('category')}
           />
           <EntitySection
             title="Properties"
@@ -226,6 +251,8 @@ export function SidebarV2() {
             isLoading={propertiesLoading}
             searchTerm={debouncedSearchTerm}
             entityType="property"
+            isDraftMode={isDraftMode}
+            onAddNew={() => openCreateModal('property')}
           />
           <EntitySection
             title="Subobjects"
@@ -234,6 +261,8 @@ export function SidebarV2() {
             isLoading={subobjectsLoading}
             searchTerm={debouncedSearchTerm}
             entityType="subobject"
+            isDraftMode={isDraftMode}
+            onAddNew={() => openCreateModal('subobject')}
           />
         </div>
 
@@ -251,6 +280,8 @@ export function SidebarV2() {
             isLoading={modulesLoading}
             searchTerm={debouncedSearchTerm}
             entityType="module"
+            isDraftMode={isDraftMode}
+            onAddNew={() => openCreateModal('module')}
           />
           <EntitySection
             title="Bundles"
@@ -259,6 +290,8 @@ export function SidebarV2() {
             isLoading={bundlesLoading}
             searchTerm={debouncedSearchTerm}
             entityType="bundle"
+            isDraftMode={isDraftMode}
+            onAddNew={() => openCreateModal('bundle')}
           />
         </div>
 
@@ -273,6 +306,8 @@ export function SidebarV2() {
             isLoading={templatesLoading}
             searchTerm={debouncedSearchTerm}
             entityType="template"
+            isDraftMode={isDraftMode}
+            onAddNew={() => openCreateModal('template')}
           />
         </div>
       </nav>
