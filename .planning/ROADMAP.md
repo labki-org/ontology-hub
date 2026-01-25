@@ -63,6 +63,13 @@ Plans:
 
 **Requirements:** GRAPH-01, GRAPH-02, GRAPH-03, GRAPH-04
 
+**Plans:** 3 plans
+
+Plans:
+- [ ] 17-01-PLAN.md — Extend graph query API to return property/subobject/template nodes
+- [ ] 17-02-PLAN.md — Add SVG shape differentiation and hover highlighting to GraphNode
+- [ ] 17-03-PLAN.md — Implement smooth Catmull-Rom hull curves with module labels
+
 **Success Criteria:**
 1. User sees properties as distinct colored nodes in graph view (not just categories)
 2. User sees subobjects as distinct colored nodes in graph view
@@ -128,7 +135,7 @@ Phases execute in numeric order: 1 -> 2 -> ... -> 20
 | 1-7 | v1.0 | 20/20 | Complete | 2026-01-23 |
 | 8-15 | v2.0 | 41/41 | Complete | 2026-01-25 |
 | 16 | v2.1 | 2/2 | Complete | 2026-01-25 |
-| 17 | v2.1 | 0/? | Pending | — |
+| 17 | v2.1 | 0/3 | Planned | — |
 | 18 | v2.1 | 0/? | Pending | — |
 | 19 | v2.1 | 0/? | Pending | — |
 | 20 | v2.1 | 0/? | Pending | — |
@@ -142,3 +149,4 @@ Phases execute in numeric order: 1 -> 2 -> ... -> 20
 *v2.1 roadmap added: 2026-01-24*
 *Phase 16 planned: 2026-01-24*
 *Phase 16 complete: 2026-01-25*
+*Phase 17 planned: 2026-01-24*
