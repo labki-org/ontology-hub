@@ -163,8 +163,10 @@ Plans:
 
 **Gap Closure:** Closes BUG-003 from v2.1 audit
 
+**Plans:** 1 plan
+
 Plans:
-- [ ] 21-01-PLAN.md — Debug and fix hasChanges computation and button disabled state
+- [ ] 21-01-PLAN.md — Debug and fix Validate/Submit PR button disabled state
 
 **Success Criteria:**
 1. User can click Validate button in draft mode when changes exist
@@ -209,7 +211,7 @@ Phases execute in numeric order: 1 -> 2 -> ... -> 22
 | 18 | v2.1 | 3/3 | Complete | 2026-01-25 |
 | 19 | v2.1 | 4/4 | Complete | 2026-01-25 |
 | 20 | v2.1 | 9/9 | Complete | 2026-01-25 |
-| 21 | v2.1 | 0/1 | Pending | — |
+| 21 | v2.1 | 0/1 | Ready | — |
 | 22 | v2.1 | 0/2 | Pending | — |
 
 **Total:** 82 plans completed across 22 phases (v1.0 + v2.0 + v2.1)
@@ -230,3 +232,4 @@ Phases execute in numeric order: 1 -> 2 -> ... -> 22
 *Phase 20 planned: 2026-01-25*
 *Phase 20 complete: 2026-01-25*
 *Gap closure phases 21-22 added: 2026-01-25 (from audit)*
+*Phase 21 planned: 2026-01-25*
