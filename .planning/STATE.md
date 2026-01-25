@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-23)
 ## Current Position
 
 Phase: 14 of 14 (Validation + Workflow + PR)
-Plan: 7 of 10 in current phase
+Plan: 9 of 10 in current phase
 Status: In progress
-Last activity: 2026-01-25 -- Completed 14-07-PLAN.md
+Last activity: 2026-01-25 -- Completed 14-09-PLAN.md
 
-Progress: [##########################] 99% (v1.0 complete, v2.0 phases 8-13 complete, phase 14: 7/10 plans)
+Progress: [###########################] 99% (v1.0 complete, v2.0 phases 8-13 complete, phase 14: 9/10 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 51 (20 v1.0 + 31 v2.0)
+- Total plans completed: 52 (20 v1.0 + 32 v2.0)
 - Average duration: ~30 min (v1.0 estimate)
-- Total execution time: ~11h 33m
+- Total execution time: ~11h 36m
 
 **By Phase (v2.0):**
 
@@ -33,7 +33,7 @@ Progress: [##########################] 99% (v1.0 complete, v2.0 phases 8-13 comp
 | 11-draft-system | 5/5 | 16m | 3m |
 | 12-frontend-graph-visualization | 6/6 | 15m | 2m |
 | 13-entity-detail-pages | 9/9 | 36m | 4m |
-| 14-validation-workflow-pr | 7/10 | 15m | 2m |
+| 14-validation-workflow-pr | 9/10 | 18m | 2m |
 
 **Recent Trend:**
 - v1.0 completed in 2 days
@@ -74,6 +74,7 @@ Progress: [##########################] 99% (v1.0 complete, v2.0 phases 8-13 comp
 - v2.0 phase 14 plan 5: 4 minutes (PR submission endpoint)
 - v2.0 phase 14 plan 6: 1 minute (v2 API hooks for draft validation)
 - v2.0 phase 14 plan 7: 3 minutes (draft UI components v2)
+- v2.0 phase 14 plan 9: 3 minutes (PR submission wizard)
 
 *Metrics updated after each plan completion*
 
@@ -186,6 +187,10 @@ Recent decisions affecting current work:
 - [14-07]: Collapsible validation report in banner for space efficiency
 - [14-07]: Floating action bar provides sticky access to validation and PR submission
 - [14-07]: ValidationSummaryV2 uses entity_key (not entity_id) matching v2 model
+- [14-09]: OAuth redirect flow (not popup) for GitHub authorization during PR submission
+- [14-09]: Auto-generate PR title from change count: 'Schema update: N changes'
+- [14-09]: Detect pr_url param on mount to show success state after OAuth callback
+- [14-09]: Three-step wizard: review → edit details → confirm/submit
 
 ### Pending Todos
 
@@ -198,5 +203,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed plan 14-07 (Draft UI Components v2)
+Stopped at: Completed plan 14-09 (PR Submission Wizard)
 Resume file: None
