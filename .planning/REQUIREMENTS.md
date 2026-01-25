@@ -36,9 +36,9 @@ Requirements for bug fixes and UX improvements. Each maps to roadmap phases.
 
 ### Change Propagation
 
-- [ ] **PROP-01**: Sidebar highlights directly edited entities with strong visual indicator
-- [ ] **PROP-02**: Sidebar highlights transitively affected entities with subtle visual indicator
-- [ ] **PROP-03**: System calculates full dependency chain for edited entities
+- [x] **PROP-01**: Sidebar highlights directly edited entities with strong visual indicator
+- [x] **PROP-02**: Sidebar highlights transitively affected entities with subtle visual indicator
+- [x] **PROP-03**: System calculates full dependency chain for edited entities
 
 ### Entity Management
 
@@ -96,9 +96,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EDIT-02 | 18 | Pending |
 | EDIT-03 | 18 | Pending |
 | EDIT-04 | 18 | Pending |
-| PROP-01 | 19 | Pending |
-| PROP-02 | 19 | Pending |
-| PROP-03 | 19 | Pending |
+| PROP-01 | 19 | Complete |
+| PROP-02 | 19 | Complete |
+| PROP-03 | 19 | Complete |
 | MGMT-01 | 20 | Pending |
 | MGMT-02 | 20 | Pending |
 | MGMT-03 | 20 | Pending |
@@ -115,4 +115,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-24*
-*Last updated: 2026-01-24 after Phase 17 completion*
+*Last updated: 2026-01-25 after Phase 19 completion*
