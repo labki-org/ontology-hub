@@ -9,12 +9,29 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-01-24 — Milestone v2.1 started
+Phase: 16 - Core Bug Fixes
+Plan: — (awaiting plan creation)
+Status: Phase roadmapped, ready for planning
+Last activity: 2026-01-24 — v2.1 roadmap created
 
-Progress: [                            ] 0% (v2.1 starting)
+Progress: [                              ] 0% (Phase 16 of 20)
+
+**Phase 16 Goal:** Users can reliably view all entity types and use draft workflow actions.
+
+**Phase 16 Requirements:**
+- ENTITY-01: User can view subobject details without "Failed to load" error
+- ENTITY-02: User can view template details without "Failed to load" error
+- ENTITY-03: User can view module details without "Failed to load" error
+- ENTITY-04: User can view bundle details without "Failed to load" error
+- DRAFT-01: User can click Validate button in draft mode
+- DRAFT-02: User can click Submit PR button in draft mode
+- DRAFT-03: Auto-validation triggers when user makes changes to draft
+
+**Phase 16 Success Criteria:**
+1. User can click on subobject/template/module/bundle and see details without error
+2. User can click Validate button and see validation results
+3. User can click Submit PR button and navigate to PR workflow
+4. User sees validation results update automatically after making draft changes
 
 ## Performance Metrics
 
@@ -29,7 +46,8 @@ Progress: [                            ] 0% (v2.1 starting)
 |-----------|--------|-------|----------|
 | v1.0 MVP | 1-7 | 20 | 2 days |
 | v2.0 Platform Rebuild | 8-15 | 41 | 2 days |
-| **Total** | 15 | 61 | 4 days |
+| v2.1 Bug Fixes & UX | 16-20 | TBD | In progress |
+| **Total** | 20 | 61+ | 4+ days |
 
 ## Accumulated Context
 
@@ -55,5 +73,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-24
-Stopped at: Starting v2.1 milestone
+Stopped at: v2.1 roadmap created, ready for Phase 16 planning
 Resume file: None
+Next action: `/gsd:plan-phase 16`

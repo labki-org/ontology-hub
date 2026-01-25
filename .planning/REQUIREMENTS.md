@@ -81,38 +81,38 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ENTITY-01 | TBD | Pending |
-| ENTITY-02 | TBD | Pending |
-| ENTITY-03 | TBD | Pending |
-| ENTITY-04 | TBD | Pending |
-| DRAFT-01 | TBD | Pending |
-| DRAFT-02 | TBD | Pending |
-| DRAFT-03 | TBD | Pending |
-| GRAPH-01 | TBD | Pending |
-| GRAPH-02 | TBD | Pending |
-| GRAPH-03 | TBD | Pending |
-| GRAPH-04 | TBD | Pending |
-| EDIT-01 | TBD | Pending |
-| EDIT-02 | TBD | Pending |
-| EDIT-03 | TBD | Pending |
-| EDIT-04 | TBD | Pending |
-| PROP-01 | TBD | Pending |
-| PROP-02 | TBD | Pending |
-| PROP-03 | TBD | Pending |
-| MGMT-01 | TBD | Pending |
-| MGMT-02 | TBD | Pending |
-| MGMT-03 | TBD | Pending |
-| MGMT-04 | TBD | Pending |
-| MGMT-05 | TBD | Pending |
-| MGMT-06 | TBD | Pending |
-| MGMT-07 | TBD | Pending |
-| MGMT-08 | TBD | Pending |
+| ENTITY-01 | 16 | Pending |
+| ENTITY-02 | 16 | Pending |
+| ENTITY-03 | 16 | Pending |
+| ENTITY-04 | 16 | Pending |
+| DRAFT-01 | 16 | Pending |
+| DRAFT-02 | 16 | Pending |
+| DRAFT-03 | 16 | Pending |
+| GRAPH-01 | 17 | Pending |
+| GRAPH-02 | 17 | Pending |
+| GRAPH-03 | 17 | Pending |
+| GRAPH-04 | 17 | Pending |
+| EDIT-01 | 18 | Pending |
+| EDIT-02 | 18 | Pending |
+| EDIT-03 | 18 | Pending |
+| EDIT-04 | 18 | Pending |
+| PROP-01 | 19 | Pending |
+| PROP-02 | 19 | Pending |
+| PROP-03 | 19 | Pending |
+| MGMT-01 | 20 | Pending |
+| MGMT-02 | 20 | Pending |
+| MGMT-03 | 20 | Pending |
+| MGMT-04 | 20 | Pending |
+| MGMT-05 | 20 | Pending |
+| MGMT-06 | 20 | Pending |
+| MGMT-07 | 20 | Pending |
+| MGMT-08 | 20 | Pending |
 
 **Coverage:**
-- v2.1 requirements: 22 total
-- Mapped to phases: 0
-- Unmapped: 22 ⚠️
+- v2.1 requirements: 26 total
+- Mapped to phases: 26
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-01-24*
-*Last updated: 2026-01-24 after initial definition*
+*Last updated: 2026-01-24 after roadmap creation*
