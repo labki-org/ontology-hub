@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { addDraftChange } from '@/api/drafts'
 import type { DraftChangeCreate } from '@/api/types'
 import { useDraftStoreV2 } from '@/stores/draftStoreV2'
+import { useGraphStore } from '@/stores/graphStore'
 
 interface UseAutoSaveOptions {
   draftToken: string
@@ -34,6 +35,12 @@ export function useAutoSave({
       useDraftStoreV2.getState().clearValidation()
       // Also invalidate draft changes list to show updated change count
       queryClient.invalidateQueries({ queryKey: ['v2', 'draft-changes'] })
+
+      // Track this entity as edited for change propagation visualization
+      // Uses current graph data if available (empty if graph not loaded)
+      const { nodes, edges } = useGraphStore.getState()
+      useDraftStoreV2.getState().markEntityEdited(entityKey, nodes, edges)
+
       onSuccess?.()
     },
     onError: (error: Error) => {

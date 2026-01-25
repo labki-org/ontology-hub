@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { enableMapSet } from 'immer'
+import type { GraphNode, GraphEdge } from '@/api/types'
 
 // Enable Map and Set support in immer (required for Zustand immer middleware)
 enableMapSet()
@@ -11,6 +12,10 @@ interface GraphState {
   selectedEntityType: string
   expandedNodes: Set<string>
   hoveredNodeId: string | null
+
+  // Current graph data (populated by GraphCanvas when graph loads)
+  nodes: GraphNode[]
+  edges: GraphEdge[]
 
   // View settings
   depth: number
@@ -23,6 +28,7 @@ interface GraphState {
   setSelectedEntity: (key: string | null, entityType?: string) => void
   toggleNodeExpanded: (key: string) => void
   setHoveredNode: (key: string | null) => void
+  setGraphData: (nodes: GraphNode[], edges: GraphEdge[]) => void
   setDepth: (depth: number) => void
   toggleEntityType: (type: 'property' | 'subobject' | 'template') => void
   setEdgeTypeFilter: (types: string[]) => void
@@ -34,6 +40,8 @@ const initialState = {
   selectedEntityType: 'category',
   expandedNodes: new Set<string>(),
   hoveredNodeId: null as string | null,
+  nodes: [] as GraphNode[],
+  edges: [] as GraphEdge[],
   depth: 2,
   showProperties: false,
   showSubobjects: false,
@@ -65,6 +73,13 @@ export const useGraphStore = create<GraphState>()(
     setHoveredNode: (key) => {
       set((state) => {
         state.hoveredNodeId = key
+      })
+    },
+
+    setGraphData: (nodes, edges) => {
+      set((state) => {
+        state.nodes = nodes
+        state.edges = edges
       })
     },
 
@@ -103,6 +118,8 @@ export const useGraphStore = create<GraphState>()(
         state.selectedEntityType = 'category'
         state.expandedNodes = new Set<string>()
         state.hoveredNodeId = null
+        state.nodes = []
+        state.edges = []
         state.depth = 2
         state.showProperties = false
         state.showSubobjects = false

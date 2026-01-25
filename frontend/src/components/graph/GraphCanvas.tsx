@@ -47,6 +47,7 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
   const depth = useGraphStore((s) => s.depth)
   const edgeTypeFilter = useGraphStore((s) => s.edgeTypeFilter)
   const setHoveredNode = useGraphStore((s) => s.setHoveredNode)
+  const setGraphData = useGraphStore((s) => s.setGraphData)
 
   // Hover handlers for node highlighting
   const onNodeMouseEnter = useCallback((_event: React.MouseEvent, node: Node) => {
@@ -220,6 +221,13 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
   useEffect(() => {
     hasFitViewRef.current = false
   }, [entityKey])
+
+  // Sync graph data to store for change propagation tracking
+  useEffect(() => {
+    if (displayData) {
+      setGraphData(displayData.nodes, displayData.edges)
+    }
+  }, [displayData, setGraphData])
 
   // Only show loading skeleton on initial load, not when switching entities
   if (isLoading && !prevDataRef.current) {
