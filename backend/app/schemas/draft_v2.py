@@ -92,3 +92,20 @@ class DraftStatusUpdate(BaseModel):
         default=None,
         description="Optional user notes to attach to draft",
     )
+
+
+class DraftSubmitRequest(BaseModel):
+    """Request body for submitting a draft as PR."""
+
+    github_token: str = Field(..., description="GitHub OAuth access token")
+    pr_title: Optional[str] = Field(None, description="Optional custom PR title")
+    user_comment: Optional[str] = Field(
+        None, description="Optional comment to include in PR body"
+    )
+
+
+class DraftSubmitResponse(BaseModel):
+    """Response from successful PR submission."""
+
+    pr_url: str = Field(..., description="URL of the created pull request")
+    draft_status: str = Field(..., description="New draft status (submitted)")
