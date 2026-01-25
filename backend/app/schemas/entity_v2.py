@@ -112,6 +112,51 @@ class PropertyDetailResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
 
+class SubobjectDetailResponse(BaseModel):
+    """Detailed subobject response."""
+
+    entity_key: str
+    label: str
+    description: Optional[str] = None
+    properties: list[str] = Field(
+        default_factory=list, description="Property entity keys for this subobject"
+    )
+    change_status: Optional[ChangeStatus] = Field(
+        default=None,
+        validation_alias="_change_status",
+        description="Draft change status",
+    )
+    deleted: bool = Field(
+        default=False, validation_alias="_deleted", description="Deleted in draft"
+    )
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class TemplateDetailResponse(BaseModel):
+    """Detailed template response."""
+
+    entity_key: str
+    label: str
+    description: Optional[str] = None
+    wikitext: Optional[str] = Field(
+        default=None, description="Template wikitext content"
+    )
+    property_key: Optional[str] = Field(
+        default=None, description="Associated property entity key"
+    )
+    change_status: Optional[ChangeStatus] = Field(
+        default=None,
+        validation_alias="_change_status",
+        description="Draft change status",
+    )
+    deleted: bool = Field(
+        default=False, validation_alias="_deleted", description="Deleted in draft"
+    )
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
 class ModuleDetailResponse(BaseModel):
     """Detailed module response with entities and closure.
 
