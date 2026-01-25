@@ -31,6 +31,9 @@ from app.schemas.draft_v2 import (
     DraftResponse,
     DraftStatusUpdate,
 )
+from app.schemas.validation_v2 import DraftValidationReportV2, ValidationResultV2
+from app.services.draft_workflow import transition_to_validated
+from app.services.validation.validator_v2 import validate_draft_v2
 
 # Default expiration: 7 days (from v1.0 pattern)
 DEFAULT_EXPIRATION_DAYS = 7
@@ -284,3 +287,73 @@ async def update_draft_status(
 
     change_count = await get_change_count(draft.id, session)
     return draft_to_response(draft, change_count)
+
+
+@router.post("/{token}/validate", response_model=DraftValidationReportV2)
+@limiter.limit(RATE_LIMITS["draft_read"])
+async def validate_draft(
+    request: Request,
+    token: str,
+    session: SessionDep,
+) -> DraftValidationReportV2:
+    """Validate draft and transition to VALIDATED status if no errors.
+
+    Runs all validation checks:
+    - Reference existence (parents, properties, modules exist)
+    - Circular inheritance detection
+    - Breaking change detection
+    - JSON Schema validation against _schema.json definitions
+    - Semver classification
+
+    If validation passes (no errors), transitions draft status to VALIDATED.
+    Warnings and info messages do NOT prevent validation from passing.
+
+    If draft has rebase_status="conflict", validation will include a warning
+    about potential conflicts that should be reviewed.
+
+    Rate limited to 100/minute per IP.
+
+    Args:
+        request: HTTP request (required for rate limiting)
+        token: Capability token from URL
+        session: Database session
+
+    Returns:
+        DraftValidationReportV2 with validation results and semver suggestions
+
+    Raises:
+        HTTPException: 404 for invalid or expired tokens
+        HTTPException: 400 if draft is in terminal status (SUBMITTED/MERGED/REJECTED)
+    """
+    draft = await get_draft_by_token(token, session)
+
+    # Check draft is in validatable status
+    if draft.status in (DraftStatus.SUBMITTED, DraftStatus.MERGED, DraftStatus.REJECTED):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot validate draft in '{draft.status.value}' status. "
+            "Draft has already been submitted.",
+        )
+
+    # Run validation
+    report = await validate_draft_v2(draft.id, session)
+
+    # Add warning if rebase status indicates potential conflicts
+    if draft.rebase_status == "conflict":
+        report.warnings.append(
+            ValidationResultV2(
+                entity_type="category",  # Generic
+                entity_key="*",
+                field_path=None,
+                code="REBASE_CONFLICT",
+                message="Draft may have conflicts with recent canonical changes. Review before submitting.",
+                severity="warning",
+            )
+        )
+
+    # If no errors, transition to VALIDATED
+    if report.is_valid:
+        await transition_to_validated(draft.id, session)
+        await session.commit()
+
+    return report
