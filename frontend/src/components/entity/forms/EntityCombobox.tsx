@@ -109,7 +109,7 @@ export function EntityCombobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[300px] p-0" align="start">
-        <Command className="rounded-lg border shadow-md">
+        <Command className="rounded-lg border shadow-md" shouldFilter={false}>
           <div className="flex items-center border-b px-3">
             <Command.Input
               placeholder={`Search ${entityType}...`}
