@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 ## Current Position
 
 Phase: 19 - Change Propagation
-Plan: 1 of 4
+Plan: 3 of 4
 Status: In progress
-Last activity: 2026-01-25 - Completed 19-01-PLAN.md (change tracking foundation)
+Last activity: 2026-01-25 - Completed 19-03-PLAN.md (graph node highlighting)
 
-Progress: [#######                       ] 20% (Phase 19 in progress, 1/4 plans)
+Progress: [######################        ] 75% (Phase 19 in progress, 3/4 plans)
 
 **Phase 19 Goal:** Users can see the impact of their draft changes across the dependency graph.
 
@@ -22,16 +22,16 @@ Progress: [#######                       ] 20% (Phase 19 in progress, 1/4 plans)
 - PROP-01: Track directly edited entities [DONE - 19-01]
 - PROP-02: Compute transitive dependencies [DONE - 19-01]
 - PROP-03: Wire change tracking into auto-save [DONE - 19-01]
-- PROP-04: Sidebar highlighting [PENDING - 19-02]
-- PROP-05: Graph node highlighting [PENDING - 19-03]
+- PROP-04: Sidebar highlighting [DONE - 19-02]
+- PROP-05: Graph node highlighting [DONE - 19-03]
 - PROP-06: Inheritance chain display [PENDING - 19-04]
 
 **Phase 19 Success Criteria:**
 1. Change tracking state in draftStoreV2 [DONE]
 2. BFS-based transitive dependency computation [DONE]
 3. Auto-tracking on save [DONE]
-4. Sidebar visual indicators [PENDING]
-5. Graph node visual indicators [PENDING]
+4. Sidebar visual indicators [DONE]
+5. Graph node visual indicators [DONE]
 6. Inheritance chain in detail modal [PENDING]
 
 ## Performance Metrics
@@ -89,6 +89,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed 19-01-PLAN.md (change tracking foundation)
+Stopped at: Completed 19-03-PLAN.md (graph node highlighting)
 Resume file: None
-Next action: `/gsd:execute-plan 19-02` or continue phase 19 execution
+Next action: `/gsd:execute-plan 19-04` (inheritance chain display)
