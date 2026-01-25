@@ -12,11 +12,13 @@ Security requirements:
 - Invalid/expired tokens return 404 (no information leakage)
 """
 
+import logging
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, HTTPException, Request
 from sqlmodel import func, select
 
+from app.config import settings
 from app.database import SessionDep
 from app.dependencies.capability import (
     build_capability_url,
@@ -30,10 +32,21 @@ from app.schemas.draft_v2 import (
     DraftCreateResponse,
     DraftResponse,
     DraftStatusUpdate,
+    DraftSubmitRequest,
+    DraftSubmitResponse,
 )
 from app.schemas.validation_v2 import DraftValidationReportV2, ValidationResultV2
-from app.services.draft_workflow import transition_to_validated
+from app.services.draft_workflow import transition_to_submitted, transition_to_validated
+from app.services.github import GitHubClient
+from app.services.pr_builder_v2 import (
+    build_files_from_draft_v2,
+    generate_branch_name,
+    generate_commit_message_v2,
+    generate_pr_body_v2,
+)
 from app.services.validation.validator_v2 import validate_draft_v2
+
+logger = logging.getLogger(__name__)
 
 # Default expiration: 7 days (from v1.0 pattern)
 DEFAULT_EXPIRATION_DAYS = 7
@@ -357,3 +370,100 @@ async def validate_draft(
         await session.commit()
 
     return report
+
+
+@router.post("/{token}/submit", response_model=DraftSubmitResponse)
+@limiter.limit(RATE_LIMITS["draft_create"])
+async def submit_draft(
+    request: Request,
+    token: str,
+    submit_req: DraftSubmitRequest,
+    session: SessionDep,
+) -> DraftSubmitResponse:
+    """Submit a validated draft as a GitHub pull request.
+
+    Creates a new branch, commits the draft changes, and opens a PR against
+    the canonical repository. The draft must be in VALIDATED status.
+
+    Re-validates the draft before submitting to ensure changes are still valid
+    (canonical may have changed since last validation).
+
+    On success, transitions draft to SUBMITTED status and stores the pr_url.
+
+    Rate limited to 20/hour per IP (same as draft creation).
+
+    Args:
+        request: HTTP request (required for rate limiting)
+        token: Capability token from URL
+        submit_req: Submit request with github_token, pr_title, user_comment
+        session: Database session
+
+    Returns:
+        DraftSubmitResponse with pr_url and new draft status
+
+    Raises:
+        HTTPException: 404 for invalid or expired tokens
+        HTTPException: 400 if draft is not in VALIDATED status
+        HTTPException: 400 if validation fails on re-check
+        HTTPException: 400 if draft has no changes to submit
+        HTTPException: 500 if GitHub PR creation fails
+    """
+    draft = await get_draft_by_token(token, session)
+
+    if draft.status != DraftStatus.VALIDATED:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Draft must be validated before submitting. "
+            f"Current status: {draft.status.value}.",
+        )
+
+    # Re-validate
+    validation = await validate_draft_v2(draft.id, session)
+    if not validation.is_valid:
+        raise HTTPException(
+            status_code=400,
+            detail="Draft validation failed on re-check. "
+            f"Errors: {[e.message for e in validation.errors]}",
+        )
+
+    # Load changes
+    changes_query = select(DraftChange).where(DraftChange.draft_id == draft.id)
+    changes_result = await session.execute(changes_query)
+    changes = list(changes_result.scalars().all())
+
+    if not changes:
+        raise HTTPException(status_code=400, detail="Draft has no changes to submit.")
+
+    files = await build_files_from_draft_v2(draft.id, session)
+    if not files:
+        raise HTTPException(status_code=400, detail="No files to commit.")
+
+    branch_name = generate_branch_name(str(draft.id))
+    commit_message = generate_commit_message_v2(changes)
+    pr_title = submit_req.pr_title or f"Schema update: {draft.title or str(draft.id)[:8]}"
+    pr_body = generate_pr_body_v2(
+        changes=changes,
+        validation=validation,
+        draft_title=draft.title,
+        user_comment=submit_req.user_comment,
+    )
+
+    try:
+        pr_url = await GitHubClient(None).create_pr_with_token(
+            token=submit_req.github_token,
+            owner=settings.GITHUB_REPO_OWNER,
+            repo=settings.GITHUB_REPO_NAME,
+            branch_name=branch_name,
+            files=files,
+            commit_message=commit_message,
+            pr_title=pr_title,
+            pr_body=pr_body,
+        )
+    except Exception as e:
+        logger.error(f"Failed to create PR: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create GitHub PR: {str(e)}")
+
+    await transition_to_submitted(draft.id, pr_url, session)
+    await session.commit()
+
+    return DraftSubmitResponse(pr_url=pr_url, draft_status=DraftStatus.SUBMITTED.value)
