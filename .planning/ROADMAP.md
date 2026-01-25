@@ -66,9 +66,9 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 17-01-PLAN.md — Extend graph query API to return property/subobject/template nodes
-- [ ] 17-02-PLAN.md — Add SVG shape differentiation and hover highlighting to GraphNode
-- [ ] 17-03-PLAN.md — Implement smooth Catmull-Rom hull curves with module labels
+- [x] 17-01-PLAN.md — Extend graph query API to return property/subobject/template nodes
+- [x] 17-02-PLAN.md — Add SVG shape differentiation and hover highlighting to GraphNode
+- [x] 17-03-PLAN.md — Implement smooth Catmull-Rom hull curves with module labels
 
 **Success Criteria:**
 1. User sees properties as distinct colored nodes in graph view (not just categories)
@@ -135,13 +135,13 @@ Phases execute in numeric order: 1 -> 2 -> ... -> 20
 | 1-7 | v1.0 | 20/20 | Complete | 2026-01-23 |
 | 8-15 | v2.0 | 41/41 | Complete | 2026-01-25 |
 | 16 | v2.1 | 2/2 | Complete | 2026-01-25 |
-| 17 | v2.1 | 0/3 | Planned | — |
+| 17 | v2.1 | 3/3 | Complete | 2026-01-24 |
 | 18 | v2.1 | 0/? | Pending | — |
 | 19 | v2.1 | 0/? | Pending | — |
 | 20 | v2.1 | 0/? | Pending | — |
 
-**Total:** 63 plans completed across 16 phases (v1.0 + v2.0 + Phase 16)
-**v2.1:** 5 phases, 26 requirements, 2 plans executed (Phase 16)
+**Total:** 66 plans completed across 17 phases (v1.0 + v2.0 + Phases 16-17)
+**v2.1:** 5 phases, 26 requirements, 5 plans executed (Phases 16-17)
 
 ---
 *Roadmap created: 2026-01-23*
@@ -150,3 +150,4 @@ Phases execute in numeric order: 1 -> 2 -> ... -> 20
 *Phase 16 planned: 2026-01-24*
 *Phase 16 complete: 2026-01-25*
 *Phase 17 planned: 2026-01-24*
+*Phase 17 complete: 2026-01-24*

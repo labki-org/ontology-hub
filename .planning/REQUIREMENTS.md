@@ -22,10 +22,10 @@ Requirements for bug fixes and UX improvements. Each maps to roadmap phases.
 
 ### Graph View
 
-- [ ] **GRAPH-01**: Properties render as distinct node type in graph view
-- [ ] **GRAPH-02**: Subobjects render as distinct node type in graph view
-- [ ] **GRAPH-03**: Templates render as distinct node type in graph view
-- [ ] **GRAPH-04**: Module hull boundaries render smoothly (not jagged)
+- [x] **GRAPH-01**: Properties render as distinct node type in graph view
+- [x] **GRAPH-02**: Subobjects render as distinct node type in graph view
+- [x] **GRAPH-03**: Templates render as distinct node type in graph view
+- [x] **GRAPH-04**: Module hull boundaries render smoothly (not jagged)
 
 ### Inline Editing
 
@@ -88,10 +88,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DRAFT-01 | 16 | Complete |
 | DRAFT-02 | 16 | Complete |
 | DRAFT-03 | 16 | Complete |
-| GRAPH-01 | 17 | Pending |
-| GRAPH-02 | 17 | Pending |
-| GRAPH-03 | 17 | Pending |
-| GRAPH-04 | 17 | Pending |
+| GRAPH-01 | 17 | Complete |
+| GRAPH-02 | 17 | Complete |
+| GRAPH-03 | 17 | Complete |
+| GRAPH-04 | 17 | Complete |
 | EDIT-01 | 18 | Pending |
 | EDIT-02 | 18 | Pending |
 | EDIT-03 | 18 | Pending |
@@ -115,4 +115,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-24*
-*Last updated: 2026-01-25 after Phase 16 completion*
+*Last updated: 2026-01-24 after Phase 17 completion*
