@@ -58,12 +58,12 @@ Requirements for the platform rebuild. Each maps to roadmap phases.
 
 ### Validation Engine
 
-- [ ] **VAL-01**: JSON Schema validation against _schema.json files from canonical repo
-- [ ] **VAL-02**: Reference resolution checks (all parents, properties, modules exist)
-- [ ] **VAL-03**: Circular inheritance detection with cycle path reporting
-- [ ] **VAL-04**: Breaking change detection (deletions affecting other entities)
-- [ ] **VAL-05**: Module/bundle version increment suggestions (semver)
-- [ ] **VAL-06**: Validation returns structured messages with entity_key, field_path, severity, code
+- [x] **VAL-01**: JSON Schema validation against _schema.json files from canonical repo
+- [x] **VAL-02**: Reference resolution checks (all parents, properties, modules exist)
+- [x] **VAL-03**: Circular inheritance detection with cycle path reporting
+- [x] **VAL-04**: Breaking change detection (deletions affecting other entities)
+- [x] **VAL-05**: Module/bundle version increment suggestions (semver)
+- [x] **VAL-06**: Validation returns structured messages with entity_key, field_path, severity, code
 
 ### Frontend Browsing
 
@@ -86,66 +86,66 @@ Requirements for the platform rebuild. Each maps to roadmap phases.
 
 ### Category Detail
 
-- [ ] **CAT-01**: Header with name, label, description
-- [ ] **CAT-02**: Parents list with add/remove in edit mode
-- [ ] **CAT-03**: Direct properties section
-- [ ] **CAT-04**: Inherited properties section grouped by parent with provenance
-- [ ] **CAT-05**: Module/bundle membership display
-- [ ] **CAT-06**: Edit icons appear in draft mode for adding/removing properties
+- [x] **CAT-01**: Header with name, label, description
+- [x] **CAT-02**: Parents list with add/remove in edit mode
+- [x] **CAT-03**: Direct properties section
+- [x] **CAT-04**: Inherited properties section grouped by parent with provenance
+- [x] **CAT-05**: Module/bundle membership display
+- [x] **CAT-06**: Edit icons appear in draft mode for adding/removing properties
 
 ### Property Detail
 
-- [ ] **PRP-01**: Header with name, label, description, datatype, cardinality
-- [ ] **PRP-02**: Where-used list showing categories using this property
-- [ ] **PRP-03**: Module/bundle membership display
-- [ ] **PRP-04**: Edit icons for modifying property attributes in draft mode
+- [x] **PRP-01**: Header with name, label, description, datatype, cardinality
+- [x] **PRP-02**: Where-used list showing categories using this property
+- [x] **PRP-03**: Module/bundle membership display
+- [x] **PRP-04**: Edit icons for modifying property attributes in draft mode
 
 ### Subobject Detail
 
-- [ ] **SUB-01**: Header with name, label, description
-- [ ] **SUB-02**: Required/optional properties lists
-- [ ] **SUB-03**: Where-used list showing categories/properties using this subobject
-- [ ] **SUB-04**: Edit icons in draft mode
+- [x] **SUB-01**: Header with name, label, description
+- [x] **SUB-02**: Required/optional properties lists
+- [x] **SUB-03**: Where-used list showing categories/properties using this subobject
+- [x] **SUB-04**: Edit icons in draft mode
 
 ### Module Detail
 
-- [ ] **MOD-01**: Header with name, label, description
-- [ ] **MOD-02**: Direct members list (categories, properties, subobjects, templates)
-- [ ] **MOD-03**: Computed closure view showing auto-included dependencies
-- [ ] **MOD-04**: Dependencies list (other modules this one depends on)
-- [ ] **MOD-05**: Edit icons for adding/removing members in draft mode
-- [ ] **MOD-06**: Suggested version increment display
+- [x] **MOD-01**: Header with name, label, description
+- [x] **MOD-02**: Direct members list (categories, properties, subobjects, templates)
+- [x] **MOD-03**: Computed closure view showing auto-included dependencies
+- [x] **MOD-04**: Dependencies list (other modules this one depends on)
+- [x] **MOD-05**: Edit icons for adding/removing members in draft mode
+- [x] **MOD-06**: Suggested version increment display
 
 ### Bundle Detail
 
-- [ ] **BND-01**: Header with name, label, description
-- [ ] **BND-02**: Modules list
-- [ ] **BND-03**: Computed closure view (all entities via modules)
-- [ ] **BND-04**: Edit icons for adding/removing modules in draft mode
-- [ ] **BND-05**: Suggested version increment display
+- [x] **BND-01**: Header with name, label, description
+- [x] **BND-02**: Modules list
+- [x] **BND-03**: Computed closure view (all entities via modules)
+- [x] **BND-04**: Edit icons for adding/removing modules in draft mode
+- [x] **BND-05**: Suggested version increment display
 
 ### Template Detail
 
-- [ ] **TPL-01**: Header with name, label, description
-- [ ] **TPL-02**: Wikitext content display (read-only view)
-- [ ] **TPL-03**: Wikitext editor in draft mode (simple text area)
-- [ ] **TPL-04**: Module membership display
+- [x] **TPL-01**: Header with name, label, description
+- [x] **TPL-02**: Wikitext content display (read-only view)
+- [x] **TPL-03**: Wikitext editor in draft mode (simple text area)
+- [x] **TPL-04**: Module membership display
 
 ### Draft Workflow UI
 
-- [ ] **DWF-01**: Draft banner shows title, status, validate button, submit PR button
-- [ ] **DWF-02**: Validate button triggers validation and shows inline results
-- [ ] **DWF-03**: Change highlighting with green/amber/red badges
-- [ ] **DWF-04**: Diff view showing per-entity changes grouped by type
-- [ ] **DWF-05**: Submit PR disabled until validation passes (no errors)
+- [x] **DWF-01**: Draft banner shows title, status, validate button, submit PR button
+- [x] **DWF-02**: Validate button triggers validation and shows inline results
+- [x] **DWF-03**: Change highlighting with green/amber/red badges
+- [x] **DWF-04**: Diff view showing per-entity changes grouped by type
+- [x] **DWF-05**: Submit PR disabled until validation passes (no errors)
 
 ### PR Submission
 
-- [ ] **PR-01**: GitHub OAuth flow at PR submission time (existing v1.0 pattern)
-- [ ] **PR-02**: Generate file changes from effective JSON
-- [ ] **PR-03**: Create branch and commit with all draft changes
-- [ ] **PR-04**: Open PR with structured summary (categorized changes, validation results)
-- [ ] **PR-05**: Include suggested semver increments for modules/bundles in PR body
+- [x] **PR-01**: GitHub OAuth flow at PR submission time (existing v1.0 pattern)
+- [x] **PR-02**: Generate file changes from effective JSON
+- [x] **PR-03**: Create branch and commit with all draft changes
+- [x] **PR-04**: Open PR with structured summary (categorized changes, validation results)
+- [x] **PR-05**: Include suggested semver increments for modules/bundles in PR body
 
 ## Future Requirements
 
@@ -231,51 +231,51 @@ Which phases cover which requirements. Updated during roadmap creation.
 | GV-05 | Phase 12 | Complete |
 | GV-06 | Phase 12 | Complete |
 | GV-07 | Phase 12 | Complete |
-| CAT-01 | Phase 13 | Pending |
-| CAT-02 | Phase 13 | Pending |
-| CAT-03 | Phase 13 | Pending |
-| CAT-04 | Phase 13 | Pending |
-| CAT-05 | Phase 13 | Pending |
-| CAT-06 | Phase 13 | Pending |
-| PRP-01 | Phase 13 | Pending |
-| PRP-02 | Phase 13 | Pending |
-| PRP-03 | Phase 13 | Pending |
-| PRP-04 | Phase 13 | Pending |
-| SUB-01 | Phase 13 | Pending |
-| SUB-02 | Phase 13 | Pending |
-| SUB-03 | Phase 13 | Pending |
-| SUB-04 | Phase 13 | Pending |
-| MOD-01 | Phase 13 | Pending |
-| MOD-02 | Phase 13 | Pending |
-| MOD-03 | Phase 13 | Pending |
-| MOD-04 | Phase 13 | Pending |
-| MOD-05 | Phase 13 | Pending |
-| MOD-06 | Phase 13 | Pending |
-| BND-01 | Phase 13 | Pending |
-| BND-02 | Phase 13 | Pending |
-| BND-03 | Phase 13 | Pending |
-| BND-04 | Phase 13 | Pending |
-| BND-05 | Phase 13 | Pending |
-| TPL-01 | Phase 13 | Pending |
-| TPL-02 | Phase 13 | Pending |
-| TPL-03 | Phase 13 | Pending |
-| TPL-04 | Phase 13 | Pending |
-| VAL-01 | Phase 14 | Pending |
-| VAL-02 | Phase 14 | Pending |
-| VAL-03 | Phase 14 | Pending |
-| VAL-04 | Phase 14 | Pending |
-| VAL-05 | Phase 14 | Pending |
-| VAL-06 | Phase 14 | Pending |
-| DWF-01 | Phase 14 | Pending |
-| DWF-02 | Phase 14 | Pending |
-| DWF-03 | Phase 14 | Pending |
-| DWF-04 | Phase 14 | Pending |
-| DWF-05 | Phase 14 | Pending |
-| PR-01 | Phase 14 | Pending |
-| PR-02 | Phase 14 | Pending |
-| PR-03 | Phase 14 | Pending |
-| PR-04 | Phase 14 | Pending |
-| PR-05 | Phase 14 | Pending |
+| CAT-01 | Phase 13 | Complete |
+| CAT-02 | Phase 13 | Complete |
+| CAT-03 | Phase 13 | Complete |
+| CAT-04 | Phase 13 | Complete |
+| CAT-05 | Phase 13 | Complete |
+| CAT-06 | Phase 13 | Complete |
+| PRP-01 | Phase 13 | Complete |
+| PRP-02 | Phase 13 | Complete |
+| PRP-03 | Phase 13 | Complete |
+| PRP-04 | Phase 13 | Complete |
+| SUB-01 | Phase 13 | Complete |
+| SUB-02 | Phase 13 | Complete |
+| SUB-03 | Phase 13 | Complete |
+| SUB-04 | Phase 13 | Complete |
+| MOD-01 | Phase 13 | Complete |
+| MOD-02 | Phase 13 | Complete |
+| MOD-03 | Phase 13 | Complete |
+| MOD-04 | Phase 13 | Complete |
+| MOD-05 | Phase 13 | Complete |
+| MOD-06 | Phase 13 | Complete |
+| BND-01 | Phase 13 | Complete |
+| BND-02 | Phase 13 | Complete |
+| BND-03 | Phase 13 | Complete |
+| BND-04 | Phase 13 | Complete |
+| BND-05 | Phase 13 | Complete |
+| TPL-01 | Phase 13 | Complete |
+| TPL-02 | Phase 13 | Complete |
+| TPL-03 | Phase 13 | Complete |
+| TPL-04 | Phase 13 | Complete |
+| VAL-01 | Phase 14 | Complete |
+| VAL-02 | Phase 14 | Complete |
+| VAL-03 | Phase 14 | Complete |
+| VAL-04 | Phase 14 | Complete |
+| VAL-05 | Phase 14 | Complete |
+| VAL-06 | Phase 14 | Complete |
+| DWF-01 | Phase 14 | Complete |
+| DWF-02 | Phase 14 | Complete |
+| DWF-03 | Phase 14 | Complete |
+| DWF-04 | Phase 14 | Complete |
+| DWF-05 | Phase 14 | Complete |
+| PR-01 | Phase 14 | Complete |
+| PR-02 | Phase 14 | Complete |
+| PR-03 | Phase 14 | Complete |
+| PR-04 | Phase 14 | Complete |
+| PR-05 | Phase 14 | Complete |
 
 **Coverage:**
 - v2.0 requirements: 92 total
@@ -284,4 +284,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-23*
-*Last updated: 2026-01-24 (Phase 12 complete)*
+*Last updated: 2026-01-25 (All v2.0 requirements complete — 92/92)*

@@ -3,7 +3,7 @@
 ## Milestones
 
 - [x] **v1.0 MVP** - Phases 1-7 (shipped 2026-01-23)
-- [ ] **v2.0 Platform Rebuild** - Phases 8-14 (in progress)
+- [x] **v2.0 Platform Rebuild** - Phases 8-14 (shipped 2026-01-25)
 
 ## Phases
 
@@ -16,7 +16,7 @@ Phases 1-7 delivered the complete MVP: Docker infrastructure, GitHub indexing, R
 
 </details>
 
-### v2.0 Platform Rebuild (In Progress)
+### v2.0 Platform Rebuild (SHIPPED 2026-01-25)
 
 **Milestone Goal:** Full database/API/frontend rebuild with versioned canonical data, relationship tables, draft-as-deltas, and graph visualization.
 
@@ -30,7 +30,7 @@ Phases 1-7 delivered the complete MVP: Docker infrastructure, GitHub indexing, R
 - [x] **Phase 11: Draft System** - JSON Patch storage with effective view computation
 - [x] **Phase 12: Frontend + Graph Visualization** - Unified browse/draft UI with module hulls
 - [x] **Phase 13: Entity Detail Pages** - All entity types with edit mode
-- [ ] **Phase 14: Validation + Workflow + PR** - Final validation and PR submission
+- [x] **Phase 14: Validation + Workflow + PR** - Final validation and PR submission
 
 ## Phase Details
 
@@ -156,16 +156,16 @@ Plans:
   5. PR creation generates file changes, creates branch/commit, and opens PR with structured summary including semver suggestions
 **Plans:** 10 plans
 Plans:
-- [ ] 14-01-PLAN.md — Validation service v2 (adapt validators for DraftChange model)
-- [ ] 14-02-PLAN.md — Auto-revert + status management (draft workflow transitions)
-- [ ] 14-03-PLAN.md — Validate endpoint (POST /drafts/{token}/validate)
-- [ ] 14-04-PLAN.md — PR builder v2 (file generation from DraftChange records)
-- [ ] 14-05-PLAN.md — Submit endpoint (POST /drafts/{token}/submit with OAuth)
-- [ ] 14-06-PLAN.md — Frontend API hooks + workflow state (draftApiV2, draftStoreV2)
-- [ ] 14-07-PLAN.md — DraftBannerV2 + FloatingActionBar + ValidationSummaryV2
-- [ ] 14-08-PLAN.md — DraftDiffViewerV2 (per-entity change viewer)
-- [ ] 14-09-PLAN.md — PR wizard (multi-step submission dialog)
-- [ ] 14-10-PLAN.md — Integration (BrowsePage wiring + DraftSelector update)
+- [x] 14-01-PLAN.md — Validation service v2 (adapt validators for DraftChange model)
+- [x] 14-02-PLAN.md — Auto-revert + status management (draft workflow transitions)
+- [x] 14-03-PLAN.md — Validate endpoint (POST /drafts/{token}/validate)
+- [x] 14-04-PLAN.md — PR builder v2 (file generation from DraftChange records)
+- [x] 14-05-PLAN.md — Submit endpoint (POST /drafts/{token}/submit with OAuth)
+- [x] 14-06-PLAN.md — Frontend API hooks + workflow state (draftApiV2, draftStoreV2)
+- [x] 14-07-PLAN.md — DraftBannerV2 + FloatingActionBar + ValidationSummaryV2
+- [x] 14-08-PLAN.md — DraftDiffViewerV2 (per-entity change viewer)
+- [x] 14-09-PLAN.md — PR wizard (multi-step submission dialog)
+- [x] 14-10-PLAN.md — Integration (BrowsePage wiring + DraftSelector update)
 
 ## Progress
 
@@ -181,9 +181,9 @@ Phases execute in numeric order: 8 -> 8.1 -> 8.2 -> 9 -> ...
 | 11. Draft System | v2.0 | 5/5 | Complete | 2026-01-24 |
 | 12. Frontend + Graph | v2.0 | 6/6 | Complete | 2026-01-24 |
 | 13. Entity Detail Pages | v2.0 | 9/9 | Complete | 2026-01-24 |
-| 14. Validation + Workflow + PR | v2.0 | 0/10 | Planned | - |
+| 14. Validation + Workflow + PR | v2.0 | 10/10 | Complete | 2026-01-25 |
 
 ---
 *Roadmap created: 2026-01-23*
 *v2.0 phases: 8-14 (7 phases, 92 requirements)*
-*Last updated: 2026-01-24 (Phase 14 planned)*
+*Last updated: 2026-01-25 (Phase 14 complete — v2.0 milestone shipped)*
