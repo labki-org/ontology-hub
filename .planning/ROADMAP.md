@@ -38,6 +38,12 @@ Phases 8-15 delivered the full platform rebuild: Versioned database schema with 
 
 **Requirements:** ENTITY-01, ENTITY-02, ENTITY-03, ENTITY-04, DRAFT-01, DRAFT-02, DRAFT-03
 
+**Plans:** 2 plans
+
+Plans:
+- [ ] 16-01-PLAN.md — Add missing backend endpoints for subobject/template detail
+- [ ] 16-02-PLAN.md — Wire auto-validation clearing and verify draft workflow
+
 **Success Criteria:**
 1. User can click on subobject in sidebar and see its details without error
 2. User can click on template in sidebar and see its details without error
@@ -121,16 +127,17 @@ Phases execute in numeric order: 1 -> 2 -> ... -> 20
 |-------|-----------|----------------|--------|-----------|
 | 1-7 | v1.0 | 20/20 | Complete | 2026-01-23 |
 | 8-15 | v2.0 | 41/41 | Complete | 2026-01-25 |
-| 16 | v2.1 | 0/? | Pending | — |
+| 16 | v2.1 | 0/2 | Planned | — |
 | 17 | v2.1 | 0/? | Pending | — |
 | 18 | v2.1 | 0/? | Pending | — |
 | 19 | v2.1 | 0/? | Pending | — |
 | 20 | v2.1 | 0/? | Pending | — |
 
 **Total:** 61 plans completed across 15 phases (v1.0 + v2.0)
-**v2.1:** 5 phases, 26 requirements, 0 plans (roadmap just created)
+**v2.1:** 5 phases, 26 requirements, 2 plans created (Phase 16)
 
 ---
 *Roadmap created: 2026-01-23*
 *v2.0 shipped: 2026-01-25 (archived to milestones/v2.0-ROADMAP.md)*
 *v2.1 roadmap added: 2026-01-24*
+*Phase 16 planned: 2026-01-24*
