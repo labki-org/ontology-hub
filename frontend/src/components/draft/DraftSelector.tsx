@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ChevronDown, GitBranch, LogOut } from 'lucide-react'
+import { ChevronDown, GitBranch, LogOut, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { useDraftV2 } from '@/api/draftApiV2'
+import { useDraftV2, useCreateDraft } from '@/api/draftApiV2'
 
 /**
  * Dropdown to enter/switch drafts or exit draft mode.
@@ -17,10 +17,13 @@ export function DraftSelector() {
   const draftToken = searchParams.get('draft_token')
 
   // Fetch v2 draft data if token is present
-  const { data: draftV2 } = useDraftV2(draftToken || undefined)
+  const { data: draftV2, error: draftError } = useDraftV2(draftToken || undefined)
+
+  const createDraft = useCreateDraft()
 
   const [isOpen, setIsOpen] = useState(false)
   const [tokenInput, setTokenInput] = useState('')
+  const [newDraftTitle, setNewDraftTitle] = useState('')
 
   const handleEnterDraft = (e: React.FormEvent) => {
     e.preventDefault()
@@ -35,6 +38,21 @@ export function DraftSelector() {
   const handleExitDraft = () => {
     navigate('/browse', { replace: true })
     setIsOpen(false)
+  }
+
+  const handleCreateDraft = () => {
+    createDraft.mutate(
+      { title: newDraftTitle.trim() || undefined },
+      {
+        onSuccess: (data) => {
+          const token = data.capability_url.split('#')[1]
+          navigate(`/browse?draft_token=${encodeURIComponent(token)}`)
+          setIsOpen(false)
+          setNewDraftTitle('')
+          createDraft.reset()
+        },
+      }
+    )
   }
 
   // Status badge for v2 drafts
@@ -111,6 +129,33 @@ export function DraftSelector() {
                 </div>
               )}
 
+              <div className="pb-3 border-b">
+                <div className="text-sm text-muted-foreground mb-2">Create new draft</div>
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={newDraftTitle}
+                    onChange={(e) => setNewDraftTitle(e.target.value)}
+                    placeholder="Optional title..."
+                    className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                  <Button
+                    size="sm"
+                    className="w-full gap-2"
+                    onClick={handleCreateDraft}
+                    disabled={createDraft.isPending}
+                  >
+                    <Plus className="h-4 w-4" />
+                    {createDraft.isPending ? 'Creating...' : 'Create Draft'}
+                  </Button>
+                  {createDraft.isError && (
+                    <p className="text-xs text-destructive">
+                      {(createDraft.error as Error).message || 'Failed to create draft'}
+                    </p>
+                  )}
+                </div>
+              </div>
+
               <div>
                 <div className="text-sm text-muted-foreground mb-2">Enter draft mode</div>
                 <form onSubmit={handleEnterDraft} className="space-y-2">
@@ -124,6 +169,11 @@ export function DraftSelector() {
                   <Button type="submit" size="sm" className="w-full" disabled={!tokenInput.trim()}>
                     Enter Draft
                   </Button>
+                  {draftToken && draftError && (
+                    <p className="text-xs text-destructive">
+                      Invalid or expired draft token
+                    </p>
+                  )}
                 </form>
               </div>
             </div>

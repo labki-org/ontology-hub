@@ -70,7 +70,21 @@ export interface SubmitResponse {
   draft_status: string
 }
 
+export interface DraftCreateResponse {
+  capability_url: string
+  draft: DraftV2
+  expires_at: string
+}
+
 // Fetch functions
+
+async function createDraft(params: { title?: string }): Promise<DraftCreateResponse> {
+  return apiFetch('/drafts', {
+    v2: true,
+    method: 'POST',
+    body: JSON.stringify({ source: 'hub_ui', title: params.title }),
+  })
+}
 
 async function fetchDraftV2(token: string): Promise<DraftV2> {
   return apiFetch(`/drafts/${token}`, { v2: true })
@@ -138,6 +152,17 @@ export function useSubmitDraft(token: string | undefined) {
     onSuccess: () => {
       // Invalidate draft query to refresh status
       queryClient.invalidateQueries({ queryKey: ['v2', 'draft', token] })
+    },
+  })
+}
+
+export function useCreateDraft() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (params: { title?: string }) => createDraft(params),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['v2', 'draft'] })
     },
   })
 }
