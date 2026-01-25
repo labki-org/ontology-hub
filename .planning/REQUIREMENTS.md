@@ -29,10 +29,10 @@ Requirements for bug fixes and UX improvements. Each maps to roadmap phases.
 
 ### Inline Editing
 
-- [ ] **EDIT-01**: Edit icon appears on hover for editable fields in draft mode (detail modal)
-- [ ] **EDIT-02**: Delete icon appears on hover for deletable fields in draft mode (detail modal)
-- [ ] **EDIT-03**: Edit/delete icons appear in expanded entity view in draft mode
-- [ ] **EDIT-04**: User can edit field inline by clicking edit icon
+- [x] **EDIT-01**: Edit icon appears on hover for editable fields in draft mode (detail modal)
+- [x] **EDIT-02**: Delete icon appears on hover for deletable fields in draft mode (detail modal)
+- [x] **EDIT-03**: Edit/delete icons appear in expanded entity view in draft mode
+- [x] **EDIT-04**: User can edit field inline by clicking edit icon
 
 ### Change Propagation
 
@@ -92,10 +92,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | GRAPH-02 | 17 | Complete |
 | GRAPH-03 | 17 | Complete |
 | GRAPH-04 | 17 | Complete |
-| EDIT-01 | 18 | Pending |
-| EDIT-02 | 18 | Pending |
-| EDIT-03 | 18 | Pending |
-| EDIT-04 | 18 | Pending |
+| EDIT-01 | 18 | Complete |
+| EDIT-02 | 18 | Complete |
+| EDIT-03 | 18 | Complete |
+| EDIT-04 | 18 | Complete |
 | PROP-01 | 19 | Complete |
 | PROP-02 | 19 | Complete |
 | PROP-03 | 19 | Complete |
@@ -115,4 +115,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-24*
-*Last updated: 2026-01-25 after Phase 19 completion*
+*Last updated: 2026-01-25 after Phase 18 completion*

@@ -89,9 +89,9 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 18-01-PLAN.md — Create InlineEditField and DeletedItemBadge components
-- [ ] 18-02-PLAN.md — Integrate hover-reveal editing into detail modals
-- [ ] 18-03-PLAN.md — Add editing to EntityDetailPanel (expanded sidebar view)
+- [x] 18-01-PLAN.md — Create InlineEditField and DeletedItemBadge components
+- [x] 18-02-PLAN.md — Integrate hover-reveal editing into detail modals
+- [x] 18-03-PLAN.md — Add editing to EntityDetailPanel (expanded sidebar view)
 
 **Success Criteria:**
 1. User sees pencil icon appear when hovering over editable field in detail modal (draft mode)
@@ -151,12 +151,12 @@ Phases execute in numeric order: 1 -> 2 -> ... -> 20
 | 8-15 | v2.0 | 41/41 | Complete | 2026-01-25 |
 | 16 | v2.1 | 2/2 | Complete | 2026-01-25 |
 | 17 | v2.1 | 3/3 | Complete | 2026-01-24 |
-| 18 | v2.1 | 0/3 | Planned | — |
+| 18 | v2.1 | 3/3 | Complete | 2026-01-25 |
 | 19 | v2.1 | 4/4 | Complete | 2026-01-25 |
 | 20 | v2.1 | 0/? | Pending | — |
 
-**Total:** 70 plans completed across 19 phases (v1.0 + v2.0 + Phases 16-17 + Phase 19)
-**v2.1:** 5 phases, 26 requirements, 9 plans executed (Phases 16-17, 19)
+**Total:** 73 plans completed across 19 phases (v1.0 + v2.0 + Phases 16-19)
+**v2.1:** 5 phases, 26 requirements, 12 plans executed (Phases 16-19)
 
 ---
 *Roadmap created: 2026-01-23*
@@ -169,3 +169,4 @@ Phases execute in numeric order: 1 -> 2 -> ... -> 20
 *Phase 19 planned: 2026-01-25*
 *Phase 19 complete: 2026-01-25*
 *Phase 18 planned: 2026-01-25*
+*Phase 18 complete: 2026-01-25*
