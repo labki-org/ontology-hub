@@ -9,32 +9,25 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 
 ## Current Position
 
-Phase: 18 - Inline Editing UX
-Plan: 3 of 3 complete
-Status: Phase 18 complete
-Last activity: 2026-01-25 - Completed 18-03-PLAN.md (EntityDetailPanel inline editing)
+Phase: 20 - Entity Management
+Plan: 1 of N in progress
+Status: Plan 01 complete
+Last activity: 2026-01-25 - Completed 20-01-PLAN.md (Form Foundation)
 
-Progress: [######------------------------] 20% (Phase 18 complete)
+Progress: [######------------------------] 22% (20-01 complete)
 
-**Phase 18 Goal:** Users can edit entities in-place with intuitive hover controls in draft mode.
+**Phase 20 Goal:** Create and delete entities within drafts with modal forms and validation.
 
-**Phase 18 Requirements:**
-- INLINE-01: Hover-reveal edit/delete icons [DONE - 18-01]
-- INLINE-02: Edit mode with explicit save/cancel [DONE - 18-01]
-- INLINE-03: Soft delete visual treatment [DONE - 18-01]
-- INLINE-04: Integration with entity detail views [DONE - 18-02, 18-03]
-
-**Phase 18 Success Criteria:**
-1. InlineEditField component with group-hover pattern [DONE]
-2. DeletedItemBadge component for soft delete [DONE]
-3. Keyboard shortcuts (Escape/Enter) [DONE]
-4. Unit tests for InlineEditField [DONE]
-5. Integration with CategoryDetail and other views [DONE - EntityHeader, EntityDetailPanel]
+**Phase 20 Plan 01 Completed:**
+- cmdk library installed for future combobox functionality
+- FormField component with label, required indicator, error display
+- Zod schemas documented for all 6 entity types
+- useCreateEntityChange mutation hook added
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 73 (20 v1.0 + 41 v2.0 + 12 v2.1)
+- Total plans completed: 74 (20 v1.0 + 41 v2.0 + 13 v2.1)
 - v1.0: 2 days
 - v2.0: 2 days
 - v2.1: In progress
@@ -45,8 +38,8 @@ Progress: [######------------------------] 20% (Phase 18 complete)
 |-----------|--------|-------|----------|
 | v1.0 MVP | 1-7 | 20 | 2 days |
 | v2.0 Platform Rebuild | 8-15 | 41 | 2 days |
-| v2.1 Bug Fixes & UX | 16-20 | 12 | In progress |
-| **Total** | 20 | 73 | 4+ days |
+| v2.1 Bug Fixes & UX | 16-20 | 13 | In progress |
+| **Total** | 20 | 74 | 4+ days |
 
 ## Accumulated Context
 
@@ -82,6 +75,9 @@ Key v2.1 decisions:
 - usePanelEditState pattern for local edit state with auto-save in entity views
 - Keep EditableField for multiline description, use InlineEditField for single-line label
 - Soft-deleted parents stay in position with DeletedItemBadge until save
+- Use Ref<any> in FormField for broad element type compatibility (20-01)
+- Zod superRefine for module at-least-one validation (20-01)
+- Invalidate all entity type caches on entity creation (20-01)
 
 ### Pending Todos
 
@@ -94,6 +90,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed 18-03-PLAN.md (EntityDetailPanel inline editing)
+Stopped at: Completed 20-01-PLAN.md (Form Foundation)
 Resume file: None
-Next action: Phase 18 verified, proceed to Phase 20 planning
+Next action: Continue with Phase 20 plan 02
