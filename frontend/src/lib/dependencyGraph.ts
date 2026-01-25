@@ -14,7 +14,7 @@ import type { GraphNode, GraphEdge } from '@/api/types'
  */
 export function computeAffectedEntities(
   editedEntityKey: string,
-  allNodes: GraphNode[],
+  _allNodes: GraphNode[],
   allEdges: GraphEdge[]
 ): Set<string> {
   const affected = new Set<string>()

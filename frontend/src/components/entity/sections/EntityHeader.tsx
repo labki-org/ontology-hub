@@ -35,7 +35,7 @@ export function EntityHeader({
   originalDescription,
   onLabelChange,
   onDescriptionChange,
-  onRevertLabel,
+  onRevertLabel: _onRevertLabel,
   onRevertDescription,
 }: EntityHeaderProps) {
   const statusBadge = changeStatus && changeStatus !== 'unchanged' && (

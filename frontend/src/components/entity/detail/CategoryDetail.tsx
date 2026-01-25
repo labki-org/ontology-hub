@@ -155,13 +155,6 @@ export function CategoryDetail({
     }
   }, [newParent, editedParents, draftId, saveChange])
 
-  const handleRevertLabel = useCallback(() => {
-    setEditedLabel(originalValues.label || '')
-    if (draftId) {
-      saveChange([{ op: 'replace', path: '/label', value: originalValues.label }])
-    }
-  }, [originalValues.label, draftId, saveChange])
-
   const handleRevertDescription = useCallback(() => {
     setEditedDescription(originalValues.description || '')
     if (draftId) {
@@ -223,7 +216,6 @@ export function CategoryDetail({
         originalDescription={originalValues.description}
         onLabelChange={handleLabelChange}
         onDescriptionChange={handleDescriptionChange}
-        onRevertLabel={handleRevertLabel}
         onRevertDescription={handleRevertDescription}
       />
 
