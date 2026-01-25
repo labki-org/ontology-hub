@@ -215,3 +215,82 @@ export function useCreateEntityChange(token: string | undefined) {
     },
   })
 }
+
+// Entity deletion types and hooks
+
+export interface DeleteEntityParams {
+  entityType: 'category' | 'property' | 'subobject' | 'template' | 'module' | 'bundle'
+  entityKey: string
+}
+
+async function deleteEntityChange(
+  token: string,
+  params: DeleteEntityParams
+): Promise<DraftChangeV2> {
+  return apiFetch(`/drafts/${token}/changes`, {
+    v2: true,
+    method: 'POST',
+    body: JSON.stringify({
+      change_type: 'DELETE',
+      entity_type: params.entityType,
+      entity_key: params.entityKey,
+    }),
+  })
+}
+
+/**
+ * Mutation hook for deleting entities within a draft.
+ * Creates a DELETE change that will be applied when the draft is submitted.
+ *
+ * @param token - Draft capability token
+ * @returns React Query mutation with deleteEntityChange
+ */
+export function useDeleteEntityChange(token: string | undefined) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (params: DeleteEntityParams) => deleteEntityChange(token!, params),
+    onSuccess: () => {
+      // Invalidate draft changes and entity lists to refresh sidebar
+      queryClient.invalidateQueries({ queryKey: ['v2', 'draft-changes', token] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'categories'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'properties'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'subobjects'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'templates'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'modules'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'bundles'] })
+    },
+  })
+}
+
+async function removeChange(token: string, changeId: string): Promise<void> {
+  return apiFetch(`/drafts/${token}/changes/${changeId}`, {
+    v2: true,
+    method: 'DELETE',
+  })
+}
+
+/**
+ * Mutation hook for undoing a delete operation (removing the DELETE change).
+ * Removes a draft change record, effectively restoring the entity.
+ *
+ * @param token - Draft capability token
+ * @returns React Query mutation with removeChange
+ */
+export function useUndoDeleteChange(token: string | undefined) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (changeId: string) => removeChange(token!, changeId),
+    onSuccess: () => {
+      // Invalidate draft changes and entity lists to refresh sidebar
+      queryClient.invalidateQueries({ queryKey: ['v2', 'draft-changes', token] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'categories'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'properties'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'subobjects'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'templates'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'modules'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'bundles'] })
+    },
+  })
+}
