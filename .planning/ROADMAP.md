@@ -132,6 +132,19 @@ Plans:
 
 **Requirements:** MGMT-01, MGMT-02, MGMT-03, MGMT-04, MGMT-05, MGMT-06, MGMT-07, MGMT-08
 
+**Plans:** 9 plans
+
+Plans:
+- [ ] 20-01-PLAN.md — Create form infrastructure (FormField, Zod schemas, API mutation)
+- [ ] 20-02-PLAN.md — Create simple entity forms (Category, Property, Subobject)
+- [ ] 20-03-PLAN.md — Create complex entity forms (Template, Module, Bundle)
+- [ ] 20-04-PLAN.md — Integrate "+ New" buttons into sidebar with create modal
+- [ ] 20-05-PLAN.md — Create EntityCombobox for relationship management
+- [ ] 20-06-PLAN.md — Implement entity deletion with dependency checking
+- [ ] 20-07-PLAN.md — Implement cascading create flow for nested entities
+- [ ] 20-08-PLAN.md — Integrate relationship editing into entity detail views
+- [ ] 20-09-PLAN.md — Human verification of complete entity management flow
+
 **Success Criteria:**
 1. User sees "+ New Category" button in sidebar Categories section (draft mode only)
 2. User can create new property/subobject/template/module/bundle via respective "+ New" buttons
@@ -153,10 +166,10 @@ Phases execute in numeric order: 1 -> 2 -> ... -> 20
 | 17 | v2.1 | 3/3 | Complete | 2026-01-24 |
 | 18 | v2.1 | 3/3 | Complete | 2026-01-25 |
 | 19 | v2.1 | 4/4 | Complete | 2026-01-25 |
-| 20 | v2.1 | 0/? | Pending | — |
+| 20 | v2.1 | 0/9 | Planned | — |
 
 **Total:** 73 plans completed across 19 phases (v1.0 + v2.0 + Phases 16-19)
-**v2.1:** 5 phases, 26 requirements, 12 plans executed (Phases 16-19)
+**v2.1:** 5 phases, 26 requirements, 12 plans executed (Phases 16-19), 9 plans planned (Phase 20)
 
 ---
 *Roadmap created: 2026-01-23*
@@ -170,3 +183,4 @@ Phases execute in numeric order: 1 -> 2 -> ... -> 20
 *Phase 19 complete: 2026-01-25*
 *Phase 18 planned: 2026-01-25*
 *Phase 18 complete: 2026-01-25*
+*Phase 20 planned: 2026-01-25*
