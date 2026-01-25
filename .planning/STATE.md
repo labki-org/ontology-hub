@@ -25,6 +25,12 @@ Progress: [#########---------------------] 30% (20-05 complete)
 - ModuleForm with entity type comboboxes (categories, properties, subobjects, templates)
 - BundleForm with modules combobox
 
+**Phase 20 Plan 03 Summary Created (retroactive):**
+- TemplateForm with wikitext textarea (monospace font)
+- ModuleForm with version field and relaxed moduleCreateSchema
+- BundleForm with version field and relaxed bundleCreateSchema
+- Dual-schema pattern: relaxed for creation, full validation for editing
+
 ## Performance Metrics
 
 **Velocity:**
@@ -85,6 +91,8 @@ Key v2.1 decisions:
 - cmdk Command primitive with Radix Popover for autocomplete UI (20-05)
 - onCreateNew callback for cascading create flow (20-05)
 - getLabel prop on RelationshipChips for custom label resolution (20-05)
+- Relaxed schemas for creation (moduleCreateSchema, bundleCreateSchema) vs full validation for editing (20-03)
+- Wikitext field uses font-mono and min-h-[150px] for template syntax visibility (20-03)
 
 ### Pending Todos
 
@@ -97,6 +105,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed 20-05-PLAN.md (Entity Combobox and Relationship Chips)
+Stopped at: Created 20-03-SUMMARY.md (retroactive documentation)
 Resume file: None
-Next action: Continue with Phase 20 plan 06 or next in wave
+Next action: Continue with Phase 20 plan 04 or 06
