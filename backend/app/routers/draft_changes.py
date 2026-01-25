@@ -6,7 +6,8 @@ Provides CRUD operations for managing changes within a draft:
 - DELETE /api/v2/drafts/{token}/changes/{change_id} - Remove a change from a draft
 
 All endpoints require a valid capability token and rate limiting.
-Changes can only be added/removed when draft status is DRAFT.
+Changes can only be added/removed when draft status is DRAFT or VALIDATED.
+Adding/removing changes from VALIDATED drafts auto-reverts status to DRAFT.
 """
 
 from datetime import datetime
@@ -36,6 +37,7 @@ from app.schemas.draft_change import (
     DraftChangeResponse,
     DraftChangesListResponse,
 )
+from app.services.draft_workflow import auto_revert_if_validated
 
 
 router = APIRouter(tags=["draft-changes"])
@@ -163,7 +165,7 @@ async def add_draft_change(
     """Add a change to a draft.
 
     Validates that:
-    - Draft is in DRAFT status (not yet validated/submitted)
+    - Draft is in DRAFT or VALIDATED status (auto-reverts VALIDATED to DRAFT)
     - For UPDATE/DELETE: entity exists in canonical
     - For CREATE: entity does NOT exist in canonical
 
@@ -186,12 +188,15 @@ async def add_draft_change(
     """
     draft = await validate_v2_capability_token(token, session)
 
-    # Check draft status - can only add changes to DRAFT status
-    if draft.status != DraftStatus.DRAFT:
+    # Check draft status - can only add changes to DRAFT or VALIDATED status
+    # If VALIDATED, auto-revert to DRAFT (per CONTEXT.md workflow)
+    if draft.status == DraftStatus.VALIDATED:
+        await auto_revert_if_validated(draft, session)
+    elif draft.status != DraftStatus.DRAFT:
         raise HTTPException(
             status_code=400,
             detail=f"Cannot add changes to draft in '{draft.status.value}' status. "
-            "Changes can only be added when status is 'draft'.",
+            "Changes can only be added when status is 'draft' or 'validated'.",
         )
 
     # Verify entity existence based on change type
@@ -249,7 +254,7 @@ async def remove_draft_change(
     """Remove a change from a draft.
 
     Validates that:
-    - Draft is in DRAFT status
+    - Draft is in DRAFT or VALIDATED status (auto-reverts VALIDATED to DRAFT)
     - Change belongs to this draft
 
     Rate limited to 100/minute per IP.
@@ -267,12 +272,15 @@ async def remove_draft_change(
     """
     draft = await validate_v2_capability_token(token, session)
 
-    # Check draft status
-    if draft.status != DraftStatus.DRAFT:
+    # Check draft status - can only remove changes from DRAFT or VALIDATED status
+    # If VALIDATED, auto-revert to DRAFT (per CONTEXT.md workflow)
+    if draft.status == DraftStatus.VALIDATED:
+        await auto_revert_if_validated(draft, session)
+    elif draft.status != DraftStatus.DRAFT:
         raise HTTPException(
             status_code=400,
             detail=f"Cannot remove changes from draft in '{draft.status.value}' status. "
-            "Changes can only be removed when status is 'draft'.",
+            "Changes can only be removed when status is 'draft' or 'validated'.",
         )
 
     # Find the change
