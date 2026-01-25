@@ -146,7 +146,14 @@ export function PropertyForm({
           control={form.control}
           render={({ field, fieldState }) => (
             <>
-              <Select onValueChange={field.onChange} value={field.value}>
+              <Select
+                onValueChange={(value) => {
+                  field.onChange(value)
+                  // Trigger validation since mode='onBlur' doesn't catch Select changes
+                  form.trigger('datatype')
+                }}
+                value={field.value}
+              >
                 <SelectTrigger
                   id="datatype"
                   className="w-full"
@@ -192,7 +199,14 @@ export function PropertyForm({
           control={form.control}
           render={({ field, fieldState }) => (
             <>
-              <Select onValueChange={field.onChange} value={field.value}>
+              <Select
+                onValueChange={(value) => {
+                  field.onChange(value)
+                  // Trigger validation since mode='onBlur' doesn't catch Select changes
+                  form.trigger('cardinality')
+                }}
+                value={field.value}
+              >
                 <SelectTrigger
                   id="cardinality"
                   className="w-full"
