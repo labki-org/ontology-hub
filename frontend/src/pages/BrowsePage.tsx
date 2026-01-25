@@ -152,13 +152,6 @@ export function BrowsePage() {
     )
   }
 
-  // DEBUG: Trace draft data flow
-  console.log('[BrowsePage] draftToken:', draftToken)
-  console.log('[BrowsePage] draftV2.data:', draftV2.data)
-  console.log('[BrowsePage] draftV2.status:', draftV2.data?.status)
-  console.log('[BrowsePage] draftV2.isLoading:', draftV2.isLoading)
-  console.log('[BrowsePage] draftV2.error:', draftV2.error)
-
   return (
     <ReactFlowProvider>
       <div className="h-full w-full relative flex flex-col">

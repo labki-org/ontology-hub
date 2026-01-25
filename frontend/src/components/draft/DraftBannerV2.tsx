@@ -29,12 +29,6 @@ export function DraftBannerV2({
 }: DraftBannerV2Props) {
   const [isReportOpen, setIsReportOpen] = useState(false)
 
-  // DEBUG: Trace received props
-  console.log('[DraftBannerV2] draft:', draft)
-  console.log('[DraftBannerV2] draft.status:', draft?.status)
-  console.log('[DraftBannerV2] isDraft:', draft?.status === 'DRAFT')
-  console.log('[DraftBannerV2] isValidated:', draft?.status === 'VALIDATED')
-
   // Status badge variant based on draft status
   const getStatusBadge = (status: string) => {
     switch (status) {

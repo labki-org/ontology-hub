@@ -22,11 +22,6 @@ export function FloatingActionBar({
   onSubmitPR,
   isValidating = false,
 }: FloatingActionBarProps) {
-  // DEBUG: Trace received props
-  console.log('[FloatingActionBar] draft:', draft)
-  console.log('[FloatingActionBar] draft.status:', draft?.status)
-  console.log('[FloatingActionBar] isDraft:', draft?.status === 'DRAFT')
-
   // Status badge variant based on draft status
   const getStatusBadge = (status: string) => {
     switch (status) {
