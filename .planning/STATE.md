@@ -10,24 +10,25 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 ## Current Position
 
 Phase: 20 - Entity Management
-Plan: 1 of N in progress
-Status: Plan 01 complete
-Last activity: 2026-01-25 - Completed 20-01-PLAN.md (Form Foundation)
+Plan: 2 of N complete
+Status: Plan 02 complete
+Last activity: 2026-01-25 - Completed 20-02-PLAN.md (Simple Entity Forms)
 
-Progress: [######------------------------] 22% (20-01 complete)
+Progress: [#######-----------------------] 23% (20-02 complete)
 
 **Phase 20 Goal:** Create and delete entities within drafts with modal forms and validation.
 
-**Phase 20 Plan 01 Completed:**
-- cmdk library installed for future combobox functionality
-- FormField component with label, required indicator, error display
-- Zod schemas documented for all 6 entity types
-- useCreateEntityChange mutation hook added
+**Phase 20 Plan 02 Completed:**
+- CreateEntityModal wrapper with required fields legend
+- CategoryForm with ID, Label, Description validation (onBlur)
+- SubobjectForm following same pattern
+- PropertyForm with Datatype (9 options) and Cardinality selects
+- All forms disable Create button until valid
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 74 (20 v1.0 + 41 v2.0 + 13 v2.1)
+- Total plans completed: 75 (20 v1.0 + 41 v2.0 + 14 v2.1)
 - v1.0: 2 days
 - v2.0: 2 days
 - v2.1: In progress
@@ -38,8 +39,8 @@ Progress: [######------------------------] 22% (20-01 complete)
 |-----------|--------|-------|----------|
 | v1.0 MVP | 1-7 | 20 | 2 days |
 | v2.0 Platform Rebuild | 8-15 | 41 | 2 days |
-| v2.1 Bug Fixes & UX | 16-20 | 13 | In progress |
-| **Total** | 20 | 74 | 4+ days |
+| v2.1 Bug Fixes & UX | 16-20 | 14 | In progress |
+| **Total** | 20 | 75 | 4+ days |
 
 ## Accumulated Context
 
@@ -78,6 +79,9 @@ Key v2.1 decisions:
 - Use Ref<any> in FormField for broad element type compatibility (20-01)
 - Zod superRefine for module at-least-one validation (20-01)
 - Invalidate all entity type caches on entity creation (20-01)
+- Validate on blur (mode: 'onBlur') for entity forms (20-02)
+- Controller wrapper for Select components with RHF (20-02)
+- Parents/properties relationship fields deferred to Plan 05 (20-02)
 
 ### Pending Todos
 
@@ -90,6 +94,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed 20-01-PLAN.md (Form Foundation)
+Stopped at: Completed 20-02-PLAN.md (Simple Entity Forms)
 Resume file: None
-Next action: Continue with Phase 20 plan 02
+Next action: Continue with Phase 20 plan 03 (Template/Module/Bundle forms)
