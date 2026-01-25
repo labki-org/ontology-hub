@@ -1,5 +1,32 @@
 # Project Milestones: Ontology Hub
 
+## v2.0 Platform Rebuild (Shipped: 2026-01-25)
+
+**Delivered:** Full database/API/frontend rebuild with versioned canonical data, relationship tables, draft-as-deltas with auto-rebase, and graph visualization with module hull overlays.
+
+**Phases completed:** 8-15 (41 plans total)
+
+**Key accomplishments:**
+- Versioned database schema with normalized relationship tables and materialized inheritance views
+- Webhook-triggered ingest pipeline populating canonical tables from GitHub repo
+- Draft-as-deltas system with JSON Patch storage, auto-rebase, and MediaWiki import
+- Graph query layer with recursive CTEs, draft overlay, and module-scoped endpoints
+- Unified browse/draft frontend with force-directed graph visualization and module hull overlays
+- Complete entity detail pages (6 entity types) with view/edit modes and auto-save
+- Validation engine v2 + PR submission workflow with GitHub OAuth integration
+
+**Stats:**
+- 223 files created/modified
+- ~30,400 lines of code (15,654 Python + 14,779 TypeScript)
+- 8 phases, 41 plans, 92 requirements
+- 2 days from start to ship
+
+**Git range:** `docs(08): research phase domain` → `fix: resolve 404 and 500 errors on v2 draft creation endpoint`
+
+**What's next:** Production testing, user feedback integration, performance optimization
+
+---
+
 ## v1.0 MVP (Shipped: 2026-01-23)
 
 **Delivered:** Complete platform for wiki admins to browse SemanticSchemas ontology and submit schema changes as GitHub PRs with validation feedback.

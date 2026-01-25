@@ -8,19 +8,26 @@ A public platform for browsing, validating, and proposing changes to a shared La
 
 Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes, with zero platform accounts and strong validation feedback.
 
-## Current Milestone: v2.0 (Platform Rebuild)
+## Current State: v2.0 Shipped
 
-**Goal:** Full database/API/frontend rebuild with canonical data, relationship tables, draft-as-deltas, and graph visualization.
+**Shipped:** 2026-01-25
+**Codebase:** ~30,400 LOC (15,654 Python + 14,779 TypeScript)
 
-**Target features:**
-- Latest-only canonical storage (Ontology Hub retains only current version; labki-schemas repo is the version archive)
-- Webhook-triggered ingest from labki-schemas on push
-- Precomputed relationship tables (inheritance, property membership, where-used)
-- Draft model storing deltas (JSON Patch for updates, full replacement for creates)
-- Auto-rebase for in-progress drafts when new canonical is ingested
-- Graph-based navigation with module grouping hulls
-- Template entity support (new entity type)
-- Unified browse/draft UI with same underlying query logic
+**v2.0 delivered:**
+- Versioned database schema with normalized relationship tables and materialized inheritance views
+- Webhook-triggered ingest pipeline populating canonical tables from GitHub repo
+- Draft-as-deltas system with JSON Patch storage, auto-rebase, and MediaWiki import
+- Graph query layer with recursive CTEs, draft overlay, and module-scoped endpoints
+- Unified browse/draft frontend with force-directed graph visualization and module hull overlays
+- Complete entity detail pages (6 entity types) with view/edit modes and auto-save
+- Validation engine v2 + PR submission workflow with GitHub OAuth integration
+
+## Next Milestone Goals
+
+To be defined in `/gsd:new-milestone`. Candidates:
+- Performance optimization for large ontologies
+- Production deployment and monitoring
+- User feedback integration
 
 ## v1.0 Summary
 
@@ -33,6 +40,7 @@ Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes,
 
 ### Validated
 
+**v1.0 (MVP):**
 - ✓ Public browsing of entities (categories, properties, subobjects) with search and inheritance graphs — v1.0
 - ✓ Module and profile browsing with dependency/overlap information — v1.0
 - ✓ Version browsing with diff views between releases — v1.0
@@ -46,9 +54,23 @@ Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes,
 - ✓ Module/profile creation and editing within drafts — v1.0
 - ✓ Validation engine: consistency checks, breaking change detection, semver suggestions — v1.0
 
+**v2.0 (Platform Rebuild):**
+- ✓ Versioned database schema with normalized relationship tables — v2.0
+- ✓ Materialized inheritance views (category_property_effective) — v2.0
+- ✓ Webhook-triggered ingest pipeline from labki-schemas — v2.0
+- ✓ Draft-as-deltas with JSON Patch storage — v2.0
+- ✓ Auto-rebase for drafts when canonical updates — v2.0
+- ✓ Graph query layer with recursive CTEs and draft overlay — v2.0
+- ✓ Force-directed graph visualization with module hull overlays — v2.0
+- ✓ Complete entity detail pages for all 6 types with edit mode — v2.0
+- ✓ Template entity support (new entity type) — v2.0
+- ✓ Unified browse/draft UI with same query logic — v2.0
+- ✓ Validation engine v2 with JSON Schema validation — v2.0
+- ✓ PR submission workflow with multi-step wizard — v2.0
+
 ### Active
 
-(Defined in REQUIREMENTS.md for v2.0)
+(None — run `/gsd:new-milestone` to define next milestone)
 
 ### Out of Scope
 
@@ -116,16 +138,16 @@ Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes,
 | Git Data API for PR creation | Atomic multi-file commits with user's OAuth token | ✓ Good |
 | Breaking changes as warnings | Valid changes that are impactful, not errors to block on | ✓ Good |
 | SessionMiddleware for OAuth | Required for session-based state during OAuth flow | ✓ Good |
-| Path-derived entity keys | Maps cleanly to repo file paths, survives refactors | — Pending |
-| Hybrid patch format | JSON Patch for updates (granular), full replacement for creates (simpler) | — Pending |
-| Materialized inheritance tables | Precompute category_property_effective at ingest for fast reads; localized re-materialization during drafts | — Pending |
-| Multi-hull module overlays | Show multiple module boundaries simultaneously in graph view | — Pending |
-| Full template support | Templates as first-class entities: browse, edit, draft like others | — Pending |
-| Full rebuild approach | Replace v1.0 implementation completely, reuse working code where appropriate | — Pending |
-| Latest-only in Ontology Hub | Only retain current version in database; repo is the version archive | — Pending |
-| Webhook-triggered ingest | Repo push triggers ingest via webhook; no manual refresh needed | — Pending |
-| Draft auto-rebase | When new canonical is ingested, in-progress drafts rebase automatically | — Pending |
+| Path-derived entity keys | Maps cleanly to repo file paths, survives refactors | ✓ Good |
+| Hybrid patch format | JSON Patch for updates (granular), full replacement for creates (simpler) | ✓ Good |
+| Materialized inheritance tables | Precompute category_property_effective at ingest for fast reads; localized re-materialization during drafts | ✓ Good |
+| Multi-hull module overlays | Show multiple module boundaries simultaneously in graph view | ✓ Good |
+| Full template support | Templates as first-class entities: browse, edit, draft like others | ✓ Good |
+| Full rebuild approach | Replace v1.0 implementation completely, reuse working code where appropriate | ✓ Good |
+| Latest-only in Ontology Hub | Only retain current version in database; repo is the version archive | ✓ Good |
+| Webhook-triggered ingest | Repo push triggers ingest via webhook; no manual refresh needed | ✓ Good |
+| Draft auto-rebase | When new canonical is ingested, in-progress drafts rebase automatically | ✓ Good |
 | GitHub Actions version bumping | Actions auto-generate tarballs and bump semver (major/minor/patch) on PR merge | — Pending |
 
 ---
-*Last updated: 2026-01-23 (simplified versioning model)*
+*Last updated: 2026-01-25 after v2.0 milestone*
