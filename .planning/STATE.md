@@ -10,25 +10,25 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 ## Current Position
 
 Phase: 20 - Entity Management
-Plan: 2 of N complete
-Status: Plan 02 complete
-Last activity: 2026-01-25 - Completed 20-02-PLAN.md (Simple Entity Forms)
+Plan: 5 of N complete
+Status: Plan 05 complete
+Last activity: 2026-01-25 - Completed 20-05-PLAN.md (Entity Combobox and Relationship Chips)
 
-Progress: [#######-----------------------] 23% (20-02 complete)
+Progress: [#########---------------------] 30% (20-05 complete)
 
 **Phase 20 Goal:** Create and delete entities within drafts with modal forms and validation.
 
-**Phase 20 Plan 02 Completed:**
-- CreateEntityModal wrapper with required fields legend
-- CategoryForm with ID, Label, Description validation (onBlur)
-- SubobjectForm following same pattern
-- PropertyForm with Datatype (9 options) and Cardinality selects
-- All forms disable Create button until valid
+**Phase 20 Plan 05 Completed:**
+- EntityCombobox with cmdk for type-ahead search and create-if-not-exists
+- RelationshipChips for displaying removable relationship badges
+- CategoryForm with parent categories combobox
+- ModuleForm with entity type comboboxes (categories, properties, subobjects, templates)
+- BundleForm with modules combobox
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 75 (20 v1.0 + 41 v2.0 + 14 v2.1)
+- Total plans completed: 76 (20 v1.0 + 41 v2.0 + 15 v2.1)
 - v1.0: 2 days
 - v2.0: 2 days
 - v2.1: In progress
@@ -39,8 +39,8 @@ Progress: [#######-----------------------] 23% (20-02 complete)
 |-----------|--------|-------|----------|
 | v1.0 MVP | 1-7 | 20 | 2 days |
 | v2.0 Platform Rebuild | 8-15 | 41 | 2 days |
-| v2.1 Bug Fixes & UX | 16-20 | 14 | In progress |
-| **Total** | 20 | 75 | 4+ days |
+| v2.1 Bug Fixes & UX | 16-20 | 15 | In progress |
+| **Total** | 20 | 76 | 4+ days |
 
 ## Accumulated Context
 
@@ -82,6 +82,9 @@ Key v2.1 decisions:
 - Validate on blur (mode: 'onBlur') for entity forms (20-02)
 - Controller wrapper for Select components with RHF (20-02)
 - Parents/properties relationship fields deferred to Plan 05 (20-02)
+- cmdk Command primitive with Radix Popover for autocomplete UI (20-05)
+- onCreateNew callback for cascading create flow (20-05)
+- getLabel prop on RelationshipChips for custom label resolution (20-05)
 
 ### Pending Todos
 
@@ -94,6 +97,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed 20-02-PLAN.md (Simple Entity Forms)
+Stopped at: Completed 20-05-PLAN.md (Entity Combobox and Relationship Chips)
 Resume file: None
-Next action: Continue with Phase 20 plan 03 (Template/Module/Bundle forms)
+Next action: Continue with Phase 20 plan 06 or next in wave
