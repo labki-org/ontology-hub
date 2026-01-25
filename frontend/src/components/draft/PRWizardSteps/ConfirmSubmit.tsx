@@ -25,7 +25,7 @@ export function ConfirmSubmit({
 
     // Redirect to GitHub OAuth login endpoint
     // Backend will handle PR creation in the OAuth callback
-    window.location.href = `/api/oauth/github/login?${params.toString()}`
+    window.location.href = `/api/v1/oauth/github/login?${params.toString()}`
   }
 
   return (
