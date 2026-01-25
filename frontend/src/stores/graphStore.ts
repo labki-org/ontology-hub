@@ -10,6 +10,7 @@ interface GraphState {
   selectedEntityKey: string | null
   selectedEntityType: string
   expandedNodes: Set<string>
+  hoveredNodeId: string | null
 
   // View settings
   depth: number
@@ -21,6 +22,7 @@ interface GraphState {
   // Actions
   setSelectedEntity: (key: string | null, entityType?: string) => void
   toggleNodeExpanded: (key: string) => void
+  setHoveredNode: (key: string | null) => void
   setDepth: (depth: number) => void
   toggleEntityType: (type: 'property' | 'subobject' | 'template') => void
   setEdgeTypeFilter: (types: string[]) => void
@@ -31,6 +33,7 @@ const initialState = {
   selectedEntityKey: null,
   selectedEntityType: 'category',
   expandedNodes: new Set<string>(),
+  hoveredNodeId: null as string | null,
   depth: 2,
   showProperties: false,
   showSubobjects: false,
@@ -56,6 +59,12 @@ export const useGraphStore = create<GraphState>()(
         } else {
           state.expandedNodes.add(key)
         }
+      })
+    },
+
+    setHoveredNode: (key) => {
+      set((state) => {
+        state.hoveredNodeId = key
       })
     },
 
@@ -93,6 +102,7 @@ export const useGraphStore = create<GraphState>()(
         state.selectedEntityKey = null
         state.selectedEntityType = 'category'
         state.expandedNodes = new Set<string>()
+        state.hoveredNodeId = null
         state.depth = 2
         state.showProperties = false
         state.showSubobjects = false
