@@ -3,9 +3,9 @@ import { apiFetch } from './client'
 
 // Types matching backend schemas/draft_v2.py and schemas/validation.py
 
-export type DraftStatus = 'DRAFT' | 'VALIDATED' | 'SUBMITTED' | 'MERGED' | 'REJECTED'
+export type DraftStatus = 'draft' | 'validated' | 'submitted' | 'merged' | 'rejected'
 export type DraftSource = 'hub_ui' | 'mediawiki_push'
-export type ChangeType = 'CREATE' | 'UPDATE' | 'DELETE'
+export type ChangeType = 'create' | 'update' | 'delete'
 
 export interface DraftV2 {
   id: string
