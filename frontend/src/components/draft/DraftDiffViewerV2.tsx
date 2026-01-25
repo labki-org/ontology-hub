@@ -78,7 +78,6 @@ function ChangeCard({
 }) {
   const [isExpanded, setIsExpanded] = useState(false)
   const config = changeTypeConfig[change.change_type]
-  const Icon = config.icon
 
   const handleEntityClick = () => {
     if (onEntityClick) {

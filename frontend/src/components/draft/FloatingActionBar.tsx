@@ -2,7 +2,6 @@ import { CheckCircle, GitPullRequest, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
 import type { DraftV2 } from '@/api/draftApiV2'
 
 interface FloatingActionBarProps {
@@ -71,7 +70,7 @@ export function FloatingActionBar({
           {/* Status badge */}
           {getStatusBadge(draft.status)}
 
-          <Separator orientation="vertical" className="h-6" />
+          <div className="h-6 w-px bg-border" />
 
           {/* Validate button */}
           <Button

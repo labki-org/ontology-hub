@@ -5,8 +5,13 @@ import { X } from 'lucide-react'
 import { GraphCanvas } from '@/components/graph/GraphCanvas'
 import { EntityDetailPanel } from '@/components/entity/EntityDetailPanel'
 import { EntityDetailModal } from '@/components/entity/EntityDetailModal'
+import { DraftBannerV2 } from '@/components/draft/DraftBannerV2'
+import { FloatingActionBar } from '@/components/draft/FloatingActionBar'
+import { PRWizard } from '@/components/draft/PRWizard'
 import { useGraphStore } from '@/stores/graphStore'
+import { useDraftStoreV2 } from '@/stores/draftStoreV2'
 import { useCategory, useProperty, useSubobject, useModule, useBundle, useTemplate } from '@/api/entitiesV2'
+import { useDraftV2, useDraftChanges, useValidateDraft } from '@/api/draftApiV2'
 import { Button } from '@/components/ui/button'
 
 /**
@@ -30,12 +35,28 @@ export function BrowsePage() {
   const selectedEntityType = useGraphStore((s) => s.selectedEntityType)
   const setSelectedEntity = useGraphStore((s) => s.setSelectedEntity)
 
+  // V2 draft store
+  const {
+    validationReport,
+    isValidating,
+    setValidationReport,
+    setIsValidating,
+    prWizardOpen,
+    setPrWizardOpen,
+  } = useDraftStoreV2()
+
   // Track if we've done initial sync from URL
   const initialSyncDone = useRef(false)
 
   // Extract URL parameters
   const draftId = searchParams.get('draft_id') || undefined
+  const draftToken = searchParams.get('draft_token') || undefined
   const entityFromUrl = searchParams.get('entity')
+
+  // V2 draft data and validation
+  const draftV2 = useDraftV2(draftToken)
+  const draftChanges = useDraftChanges(draftToken)
+  const validateDraftMutation = useValidateDraft(draftToken)
 
   // Detail panel is open when an entity is selected
   const isDetailOpen = !!selectedEntityKey
@@ -98,48 +119,114 @@ export function BrowsePage() {
     setSelectedEntity(null, 'category')
   }
 
+  // V2 Draft workflow handlers
+  const handleValidate = async () => {
+    if (!draftToken) return
+
+    try {
+      setIsValidating(true)
+      const report = await validateDraftMutation.mutateAsync()
+      setValidationReport(report)
+    } catch (error) {
+      console.error('Validation failed:', error)
+      setValidationReport(null)
+    } finally {
+      setIsValidating(false)
+    }
+  }
+
+  const handleSubmitPR = () => {
+    setPrWizardOpen(true)
+  }
+
+  const handleExitDraft = () => {
+    // Clear draft_token from URL to exit draft mode
+    setSearchParams(
+      (prev) => {
+        prev.delete('draft_token')
+        return prev
+      },
+      { replace: true }
+    )
+  }
+
   return (
     <ReactFlowProvider>
-      <div className="h-full w-full relative">
-        {/* Full-screen graph - shifts left when detail panel is open */}
-        <GraphCanvas
-          entityKey={selectedEntityKey ?? undefined}
-          draftId={draftId}
-          detailPanelOpen={isDetailOpen}
-        />
-
-        {/* Slide-in detail panel overlay */}
-        <div
-          className={`
-            absolute top-0 right-0 h-full w-[520px] max-w-[90vw]
-            bg-background border-l shadow-xl
-            transform transition-transform duration-300 ease-in-out
-            ${isDetailOpen ? 'translate-x-0' : 'translate-x-full'}
-          `}
-        >
-          {/* Close button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-2 right-2 z-10"
-            onClick={handleCloseDetail}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-
-          {/* Detail content */}
-          <EntityDetailPanel
-            entityKey={selectedEntityKey}
-            entityType={selectedEntityType}
-            draftId={draftId}
-            data={entityQuery.data}
-            isLoading={entityQuery.isLoading}
-            error={entityQuery.error}
+      <div className="h-full w-full relative flex flex-col">
+        {/* V2 Draft Banner - only shown when draftV2 exists */}
+        {draftV2.data && (
+          <DraftBannerV2
+            draft={draftV2.data}
+            onValidate={handleValidate}
+            onSubmitPR={handleSubmitPR}
+            onExit={handleExitDraft}
+            isValidating={isValidating}
+            validationReport={validationReport}
           />
+        )}
+
+        {/* Full-screen graph - shifts left when detail panel is open */}
+        <div className="flex-1 relative">
+          <GraphCanvas
+            entityKey={selectedEntityKey ?? undefined}
+            draftId={draftId}
+            detailPanelOpen={isDetailOpen}
+          />
+
+          {/* Slide-in detail panel overlay */}
+          <div
+            className={`
+              absolute top-0 right-0 h-full w-[520px] max-w-[90vw]
+              bg-background border-l shadow-xl
+              transform transition-transform duration-300 ease-in-out
+              ${isDetailOpen ? 'translate-x-0' : 'translate-x-full'}
+            `}
+          >
+            {/* Close button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 z-10"
+              onClick={handleCloseDetail}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+
+            {/* Detail content */}
+            <EntityDetailPanel
+              entityKey={selectedEntityKey}
+              entityType={selectedEntityType}
+              draftId={draftId}
+              data={entityQuery.data}
+              isLoading={entityQuery.isLoading}
+              error={entityQuery.error}
+            />
+          </div>
+
+          {/* Entity detail modal - renders when opened via double-click or button */}
+          <EntityDetailModal draftId={draftId} />
         </div>
 
-        {/* Entity detail modal - renders when opened via double-click or button */}
-        <EntityDetailModal draftId={draftId} />
+        {/* V2 Floating Action Bar - only shown when draftV2 exists */}
+        {draftV2.data && (
+          <FloatingActionBar
+            draft={draftV2.data}
+            onValidate={handleValidate}
+            onSubmitPR={handleSubmitPR}
+            isValidating={isValidating}
+          />
+        )}
+
+        {/* V2 PR Wizard Modal */}
+        {draftToken && draftV2.data && draftChanges.data && validationReport && (
+          <PRWizard
+            open={prWizardOpen}
+            onOpenChange={setPrWizardOpen}
+            draftToken={draftToken}
+            changes={draftChanges.data.changes}
+            validationReport={validationReport}
+          />
+        )}
       </div>
     </ReactFlowProvider>
   )
