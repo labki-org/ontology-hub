@@ -183,7 +183,7 @@ async function createEntityChange(
     v2: true,
     method: 'POST',
     body: JSON.stringify({
-      change_type: 'CREATE',
+      change_type: 'create',
       entity_type: params.entityType,
       entity_key: params.entityKey,
       replacement_json: params.data,
@@ -231,7 +231,7 @@ async function deleteEntityChange(
     v2: true,
     method: 'POST',
     body: JSON.stringify({
-      change_type: 'DELETE',
+      change_type: 'delete',
       entity_type: params.entityType,
       entity_key: params.entityKey,
     }),
