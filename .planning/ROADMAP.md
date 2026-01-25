@@ -3,7 +3,7 @@
 ## Milestones
 
 - [x] **v1.0 MVP** - Phases 1-7 (shipped 2026-01-23)
-- [x] **v2.0 Platform Rebuild** - Phases 8-14 (shipped 2026-01-25)
+- [ ] **v2.0 Platform Rebuild** - Phases 8-15 (gap closure in progress)
 
 ## Phases
 
@@ -16,7 +16,7 @@ Phases 1-7 delivered the complete MVP: Docker infrastructure, GitHub indexing, R
 
 </details>
 
-### v2.0 Platform Rebuild (SHIPPED 2026-01-25)
+### v2.0 Platform Rebuild
 
 **Milestone Goal:** Full database/API/frontend rebuild with versioned canonical data, relationship tables, draft-as-deltas, and graph visualization.
 
@@ -31,6 +31,7 @@ Phases 1-7 delivered the complete MVP: Docker infrastructure, GitHub indexing, R
 - [x] **Phase 12: Frontend + Graph Visualization** - Unified browse/draft UI with module hulls
 - [x] **Phase 13: Entity Detail Pages** - All entity types with edit mode
 - [x] **Phase 14: Validation + Workflow + PR** - Final validation and PR submission
+- [ ] **Phase 15: V2 Frontend Wiring Fixes** - Gap closure: draft overlay, v1/v2 conflicts, OAuth URL
 
 ## Phase Details
 
@@ -167,6 +168,21 @@ Plans:
 - [x] 14-09-PLAN.md — PR wizard (multi-step submission dialog)
 - [x] 14-10-PLAN.md — Integration (BrowsePage wiring + DraftSelector update)
 
+### Phase 15: V2 Frontend Wiring Fixes
+**Goal**: Fix 3 integration gaps from milestone audit: draft overlay propagation, v1/v2 component conflicts, and OAuth redirect URL
+**Depends on**: Phase 14
+**Requirements**: (Gap closure — no new requirements; fixes FE-03, FE-06, GV-04, PR-01 E2E flows)
+**Gap Closure**: Closes all 3 integration gaps and 2 broken flows from v2.0-MILESTONE-AUDIT.md
+**Success Criteria** (what must be TRUE):
+  1. BrowsePage derives draft_id from fetched draft when using draft_token URL param — entity/graph queries receive correct draft context
+  2. MainLayoutV2 does not render duplicate/conflicting v1 draft banner — only v2 draft components used in v2 flow
+  3. ConfirmSubmit.tsx OAuth redirect uses correct /api/v1/oauth/github/login path
+  4. Draft Editing E2E flow works: enter token → see change badges → see draft overlay in entities and graph
+  5. PR Submission E2E flow works: validate → submit → OAuth redirect succeeds
+**Plans:** TBD (pending /gsd:plan-phase 15)
+Plans:
+- [ ] 15-01-PLAN.md — TBD
+
 ## Progress
 
 **Execution Order:**
@@ -182,8 +198,9 @@ Phases execute in numeric order: 8 -> 8.1 -> 8.2 -> 9 -> ...
 | 12. Frontend + Graph | v2.0 | 6/6 | Complete | 2026-01-24 |
 | 13. Entity Detail Pages | v2.0 | 9/9 | Complete | 2026-01-24 |
 | 14. Validation + Workflow + PR | v2.0 | 10/10 | Complete | 2026-01-25 |
+| 15. V2 Frontend Wiring Fixes | v2.0 | 0/? | Pending | — |
 
 ---
 *Roadmap created: 2026-01-23*
-*v2.0 phases: 8-14 (7 phases, 92 requirements)*
-*Last updated: 2026-01-25 (Phase 14 complete — v2.0 milestone shipped)*
+*v2.0 phases: 8-15 (8 phases, 92 requirements + 3 gap closures)*
+*Last updated: 2026-01-25 (Phase 15 added for audit gap closure)*

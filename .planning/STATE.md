@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-01-23)
 
 **Core value:** Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes, with zero platform accounts and strong validation feedback.
-**Current focus:** Phase 14 - Validation + Workflow + PR
+**Current focus:** Phase 15 - V2 Frontend Wiring Fixes (audit gap closure)
 
 ## Current Position
 
-Phase: 14 of 14 (Validation + Workflow + PR)
-Plan: 10 of 10 in current phase
-Status: Phase complete
-Last activity: 2026-01-25 -- Completed 14-10-PLAN.md
+Phase: 15 of 15 (V2 Frontend Wiring Fixes)
+Plan: 0 of ? in current phase
+Status: Phase created, needs planning
+Last activity: 2026-01-25 -- Phase 15 created from milestone audit gaps
 
-Progress: [############################] 100% (v1.0 complete, v2.0 phases 8-13 complete, phase 14: 10/10 plans - ALL PHASES COMPLETE)
+Progress: [###########################-] 97% (v1.0 complete, v2.0 phases 8-14 complete, phase 15: gap closure pending)
 
 ## Performance Metrics
 
@@ -209,5 +209,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed plan 14-10 (BrowsePage v2 Integration) - PHASE 14 COMPLETE - ALL v2.0 PHASES COMPLETE
+Stopped at: Created Phase 15 (V2 Frontend Wiring Fixes) from milestone audit gaps - needs planning
 Resume file: None
