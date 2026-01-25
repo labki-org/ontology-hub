@@ -78,6 +78,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed Phase 16 (all plans)
+Stopped at: Phase 16 complete and verified (7/7 must-haves)
 Resume file: None
-Next action: Start Phase 17 planning
+Next action: `/gsd:discuss-phase 17` or `/gsd:plan-phase 17`

@@ -81,13 +81,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ENTITY-01 | 16 | Pending |
-| ENTITY-02 | 16 | Pending |
-| ENTITY-03 | 16 | Pending |
-| ENTITY-04 | 16 | Pending |
-| DRAFT-01 | 16 | Pending |
-| DRAFT-02 | 16 | Pending |
-| DRAFT-03 | 16 | Pending |
+| ENTITY-01 | 16 | Complete |
+| ENTITY-02 | 16 | Complete |
+| ENTITY-03 | 16 | Complete |
+| ENTITY-04 | 16 | Complete |
+| DRAFT-01 | 16 | Complete |
+| DRAFT-02 | 16 | Complete |
+| DRAFT-03 | 16 | Complete |
 | GRAPH-01 | 17 | Pending |
 | GRAPH-02 | 17 | Pending |
 | GRAPH-03 | 17 | Pending |
@@ -115,4 +115,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-24*
-*Last updated: 2026-01-24 after roadmap creation*
+*Last updated: 2026-01-25 after Phase 16 completion*
