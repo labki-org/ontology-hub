@@ -22,12 +22,20 @@ Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes,
 - Complete entity detail pages (6 entity types) with view/edit modes and auto-save
 - Validation engine v2 + PR submission workflow with GitHub OAuth integration
 
-## Next Milestone Goals
+## Current Milestone: v2.1 Bug Fixes & UX Improvements
 
-To be defined in `/gsd:new-milestone`. Candidates:
-- Performance optimization for large ontologies
-- Production deployment and monitoring
-- User feedback integration
+**Goal:** Fix entity detail loading bugs, restore draft workflow functionality, and improve editing UX with inline controls and change propagation visibility.
+
+**Target features:**
+- Fix entity detail loading for subobjects, templates, modules, bundles
+- Fix Validate and Submit PR buttons not clickable in draft mode
+- Fix auto-validation not triggering on draft changes
+- Fix graph view not rendering properties, subobjects, templates (toggles exist but nodes don't appear)
+- Improve module hull rendering (currently rough/jagged)
+- Inline editing with on-hover edit/delete icons in draft mode
+- Change propagation highlighting in sidebar (direct edits strong, transitive effects subtle)
+- Add/remove entities via "+ New [Type]" button in each sidebar section
+- Add dependencies UI for existing entities
 
 ## v1.0 Summary
 
@@ -70,7 +78,17 @@ To be defined in `/gsd:new-milestone`. Candidates:
 
 ### Active
 
-(None — run `/gsd:new-milestone` to define next milestone)
+**v2.1 Bug Fixes & UX:**
+- [ ] Entity detail pages work for all 6 types (fix subobjects, templates, modules, bundles)
+- [ ] Validate and Submit PR buttons clickable in draft mode
+- [ ] Auto-validation triggers on draft changes
+- [ ] Graph view renders properties, subobjects, templates as distinct node types
+- [ ] Smooth module hull rendering in graph view
+- [ ] Inline editing with on-hover edit/delete icons in draft mode (detail modal and expanded view)
+- [ ] Change propagation highlighting in sidebar (two-tier: direct vs transitive)
+- [ ] Add new entities via "+ New [Type]" button in each sidebar section
+- [ ] Delete entities in draft mode
+- [ ] Add dependencies to existing entities
 
 ### Out of Scope
 
@@ -150,4 +168,4 @@ To be defined in `/gsd:new-milestone`. Candidates:
 | GitHub Actions version bumping | Actions auto-generate tarballs and bump semver (major/minor/patch) on PR merge | — Pending |
 
 ---
-*Last updated: 2026-01-25 after v2.0 milestone*
+*Last updated: 2026-01-24 after starting v2.1 milestone*

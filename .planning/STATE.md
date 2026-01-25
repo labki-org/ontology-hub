@@ -2,19 +2,19 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-01-25)
+See: .planning/PROJECT.md (updated 2026-01-24)
 
 **Core value:** Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes, with zero platform accounts and strong validation feedback.
-**Current focus:** Planning next milestone
+**Current focus:** v2.1 Bug Fixes & UX Improvements
 
 ## Current Position
 
-Phase: Ready for next milestone
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-01-25 — v2.0 milestone complete
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-01-24 — Milestone v2.1 started
 
-Progress: [############################] 100% (v1.0 + v2.0 complete)
+Progress: [                            ] 0% (v2.1 starting)
 
 ## Performance Metrics
 
@@ -54,6 +54,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-25
-Stopped at: v2.0 milestone complete
+Last session: 2026-01-24
+Stopped at: Starting v2.1 milestone
 Resume file: None
