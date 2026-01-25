@@ -13,7 +13,7 @@ from sqlalchemy import text
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.models.v2 import Category, CategoryParent, Module, ModuleEntity, Property, Subobject
+from app.models.v2 import Category, CategoryParent, Module, ModuleEntity, Property, Subobject, Template
 from app.schemas.graph import GraphEdge, GraphNode, GraphResponse
 from app.services.draft_overlay import DraftOverlayService
 
@@ -383,6 +383,11 @@ class GraphQueryService:
         )
         nodes.extend(subobject_nodes)
         edges.extend(subobject_edges)
+
+        # Add template nodes belonging to this module
+        # Templates don't have direct relationships to categories - they're standalone
+        template_nodes = await self._get_module_template_nodes(module.id, module_key)
+        nodes.extend(template_nodes)
 
         # Check for cycles within module graph
         has_cycles = await self._check_cycles_in_subgraph(entity_keys)
@@ -836,3 +841,68 @@ class GraphQueryService:
         # Subobjects in module graph don't have edges to categories
         # They're standalone module members
         return nodes, []
+
+    async def _get_module_template_nodes(
+        self,
+        module_id: uuid.UUID,
+        module_key: str,
+    ) -> list[GraphNode]:
+        """Get template nodes belonging to a module.
+
+        Templates don't have direct relationships to categories - they're
+        standalone module members. Only included in module graphs.
+
+        Args:
+            module_id: Module database ID
+            module_key: Module entity key
+
+        Returns:
+            List of template nodes (no edges)
+        """
+        # Get template entity_keys in this module
+        membership_query = select(ModuleEntity.entity_key).where(
+            ModuleEntity.module_id == module_id,
+            ModuleEntity.entity_type == "template",
+        )
+        result = await self.session.execute(membership_query)
+        template_keys = [row[0] for row in result.fetchall()]
+
+        if not template_keys:
+            return []
+
+        # Get template data
+        templates_query = select(Template).where(
+            Template.entity_key.in_(template_keys)
+        )
+        result = await self.session.execute(templates_query)
+        templates = result.scalars().all()
+
+        # Batch load module membership for templates
+        template_module_membership = await self._get_module_membership(
+            template_keys, "template"
+        )
+
+        # Build template nodes with draft overlay
+        nodes: list[GraphNode] = []
+        for template in templates:
+            # Apply draft overlay to get effective data with change_status
+            effective = await self.draft_overlay.apply_overlay(
+                template, "template", template.entity_key
+            )
+
+            change_status = None
+            if effective:
+                change_status = effective.get("_change_status")
+
+            nodes.append(
+                GraphNode(
+                    id=template.entity_key,
+                    label=template.label,
+                    entity_type="template",
+                    depth=None,
+                    modules=template_module_membership.get(template.entity_key, [module_key]),
+                    change_status=change_status,
+                )
+            )
+
+        return nodes
