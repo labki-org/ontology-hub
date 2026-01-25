@@ -179,9 +179,9 @@ Plans:
   3. ConfirmSubmit.tsx OAuth redirect uses correct /api/v1/oauth/github/login path
   4. Draft Editing E2E flow works: enter token → see change badges → see draft overlay in entities and graph
   5. PR Submission E2E flow works: validate → submit → OAuth redirect succeeds
-**Plans:** TBD (pending /gsd:plan-phase 15)
+**Plans:** 1 plans
 Plans:
-- [ ] 15-01-PLAN.md — TBD
+- [ ] 15-01-PLAN.md — Fix draft_id derivation, remove v1 draft components from layout, fix OAuth URL
 
 ## Progress
 
@@ -198,9 +198,9 @@ Phases execute in numeric order: 8 -> 8.1 -> 8.2 -> 9 -> ...
 | 12. Frontend + Graph | v2.0 | 6/6 | Complete | 2026-01-24 |
 | 13. Entity Detail Pages | v2.0 | 9/9 | Complete | 2026-01-24 |
 | 14. Validation + Workflow + PR | v2.0 | 10/10 | Complete | 2026-01-25 |
-| 15. V2 Frontend Wiring Fixes | v2.0 | 0/? | Pending | — |
+| 15. V2 Frontend Wiring Fixes | v2.0 | 0/1 | Pending | — |
 
 ---
 *Roadmap created: 2026-01-23*
 *v2.0 phases: 8-15 (8 phases, 92 requirements + 3 gap closures)*
-*Last updated: 2026-01-25 (Phase 15 added for audit gap closure)*
+*Last updated: 2026-01-25 (Phase 15 planned: 1 plan, 1 wave)*
