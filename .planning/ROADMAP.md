@@ -3,7 +3,7 @@
 ## Milestones
 
 - [x] **v1.0 MVP** - Phases 1-7 (shipped 2026-01-23)
-- [ ] **v2.0 Platform Rebuild** - Phases 8-15 (gap closure in progress)
+- [x] **v2.0 Platform Rebuild** - Phases 8-15 (shipped 2026-01-25)
 
 ## Phases
 
@@ -31,7 +31,7 @@ Phases 1-7 delivered the complete MVP: Docker infrastructure, GitHub indexing, R
 - [x] **Phase 12: Frontend + Graph Visualization** - Unified browse/draft UI with module hulls
 - [x] **Phase 13: Entity Detail Pages** - All entity types with edit mode
 - [x] **Phase 14: Validation + Workflow + PR** - Final validation and PR submission
-- [ ] **Phase 15: V2 Frontend Wiring Fixes** - Gap closure: draft overlay, v1/v2 conflicts, OAuth URL
+- [x] **Phase 15: V2 Frontend Wiring Fixes** - Gap closure: draft overlay, v1/v2 conflicts, OAuth URL
 
 ## Phase Details
 
@@ -181,7 +181,7 @@ Plans:
   5. PR Submission E2E flow works: validate → submit → OAuth redirect succeeds
 **Plans:** 1 plans
 Plans:
-- [ ] 15-01-PLAN.md — Fix draft_id derivation, remove v1 draft components from layout, fix OAuth URL
+- [x] 15-01-PLAN.md — Fix draft_id derivation, remove v1 draft components from layout, fix OAuth URL
 
 ## Progress
 
@@ -198,9 +198,9 @@ Phases execute in numeric order: 8 -> 8.1 -> 8.2 -> 9 -> ...
 | 12. Frontend + Graph | v2.0 | 6/6 | Complete | 2026-01-24 |
 | 13. Entity Detail Pages | v2.0 | 9/9 | Complete | 2026-01-24 |
 | 14. Validation + Workflow + PR | v2.0 | 10/10 | Complete | 2026-01-25 |
-| 15. V2 Frontend Wiring Fixes | v2.0 | 0/1 | Pending | — |
+| 15. V2 Frontend Wiring Fixes | v2.0 | 1/1 | Complete | 2026-01-25 |
 
 ---
 *Roadmap created: 2026-01-23*
 *v2.0 phases: 8-15 (8 phases, 92 requirements + 3 gap closures)*
-*Last updated: 2026-01-25 (Phase 15 planned: 1 plan, 1 wave)*
+*Last updated: 2026-01-25 (Phase 15 complete — all v2.0 phases shipped)*
