@@ -1,63 +1,83 @@
 import { z } from 'zod'
 
-// Shared ID validation: lowercase letters, numbers, and hyphens only
-const idSchema = z
+/**
+ * Shared ID validation pattern for all entity types.
+ * IDs must be kebab-case: lowercase letters, numbers, and hyphens only.
+ */
+const idValidation = z
   .string()
   .min(1, 'ID is required')
-  .regex(/^[a-z0-9-]+$/, 'ID must be lowercase letters, numbers, and hyphens only')
+  .regex(
+    /^[a-z0-9-]+$/,
+    'ID must be lowercase letters, numbers, and hyphens only'
+  )
 
-// Shared required string validation
-const requiredString = (fieldName: string) =>
-  z.string().min(1, `${fieldName} is required`)
-
-// Category schema - basic entity with optional parent relationships
+/**
+ * Category entity schema.
+ * Required: id, label, description
+ * Optional: parents (relationship to other categories)
+ */
 export const categorySchema = z.object({
-  id: idSchema,
-  label: requiredString('Label'),
-  description: requiredString('Description'),
+  id: idValidation,
+  label: z.string().min(1, 'Label is required'),
+  description: z.string().min(1, 'Description is required'),
   parents: z.array(z.string()).optional(),
 })
 
 export type CategoryFormData = z.infer<typeof categorySchema>
 
-// Property schema - includes datatype and cardinality
+/**
+ * Property entity schema.
+ * Required: id, label, description, datatype, cardinality
+ */
 export const propertySchema = z.object({
-  id: idSchema,
-  label: requiredString('Label'),
-  description: requiredString('Description'),
-  datatype: requiredString('Datatype'),
-  cardinality: requiredString('Cardinality'),
+  id: idValidation,
+  label: z.string().min(1, 'Label is required'),
+  description: z.string().min(1, 'Description is required'),
+  datatype: z.string().min(1, 'Datatype is required'),
+  cardinality: z.string().min(1, 'Cardinality is required'),
 })
 
 export type PropertyFormData = z.infer<typeof propertySchema>
 
-// Subobject schema - basic entity with optional property relationships
+/**
+ * Subobject entity schema.
+ * Required: id, label, description
+ * Optional: properties (relationship to properties)
+ */
 export const subobjectSchema = z.object({
-  id: idSchema,
-  label: requiredString('Label'),
-  description: requiredString('Description'),
+  id: idValidation,
+  label: z.string().min(1, 'Label is required'),
+  description: z.string().min(1, 'Description is required'),
   properties: z.array(z.string()).optional(),
 })
 
 export type SubobjectFormData = z.infer<typeof subobjectSchema>
 
-// Template schema - includes wikitext
+/**
+ * Template entity schema.
+ * Required: id, label, description, wikitext
+ */
 export const templateSchema = z.object({
-  id: idSchema,
-  label: requiredString('Label'),
-  description: requiredString('Description'),
-  wikitext: requiredString('Wikitext'),
+  id: idValidation,
+  label: z.string().min(1, 'Label is required'),
+  description: z.string().min(1, 'Description is required'),
+  wikitext: z.string().min(1, 'Wikitext is required'),
 })
 
 export type TemplateFormData = z.infer<typeof templateSchema>
 
-// Module schema - requires at least one of categories/properties/subobjects/templates
+/**
+ * Module entity schema.
+ * Required: id, version, label, description
+ * Requires at least one of: categories, properties, subobjects, templates
+ */
 export const moduleSchema = z
   .object({
-    id: idSchema,
-    version: requiredString('Version'),
-    label: requiredString('Label'),
-    description: requiredString('Description'),
+    id: idValidation,
+    version: z.string().min(1, 'Version is required'),
+    label: z.string().min(1, 'Label is required'),
+    description: z.string().min(1, 'Description is required'),
     categories: z.array(z.string()).optional(),
     properties: z.array(z.string()).optional(),
     subobjects: z.array(z.string()).optional(),
@@ -72,20 +92,24 @@ export const moduleSchema = z
     if (!hasCategories && !hasProperties && !hasSubobjects && !hasTemplates) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'At least one category, property, subobject, or template is required',
-        path: ['categories'],
+        message:
+          'Module must include at least one of: categories, properties, subobjects, or templates',
+        path: ['categories'], // Show error on first relationship field
       })
     }
   })
 
 export type ModuleFormData = z.infer<typeof moduleSchema>
 
-// Bundle schema - requires at least one module
+/**
+ * Bundle entity schema.
+ * Required: id, version, label, description, modules (at least one)
+ */
 export const bundleSchema = z.object({
-  id: idSchema,
-  version: requiredString('Version'),
-  label: requiredString('Label'),
-  description: requiredString('Description'),
+  id: idValidation,
+  version: z.string().min(1, 'Version is required'),
+  label: z.string().min(1, 'Label is required'),
+  description: z.string().min(1, 'Description is required'),
   modules: z.array(z.string()).min(1, 'At least one module is required'),
 })
 
