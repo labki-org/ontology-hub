@@ -1,5 +1,7 @@
 import { Badge } from '@/components/ui/badge'
 import { EditableField } from '../form/EditableField'
+import { InlineEditField } from '../form/InlineEditField'
+import { VisualChangeMarker } from '../form/VisualChangeMarker'
 
 type ChangeStatus = 'added' | 'modified' | 'deleted' | 'unchanged'
 
@@ -61,6 +63,10 @@ export function EntityHeader({
     </Badge>
   )
 
+  // Determine if label has been modified from original
+  const isLabelModified = originalLabel !== undefined && label !== originalLabel
+  const labelChangeStatus = isLabelModified ? 'modified' : 'unchanged'
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
@@ -71,17 +77,22 @@ export function EntityHeader({
         {statusBadge}
       </div>
 
-      <EditableField
-        value={label}
+      {/* Label field - uses InlineEditField for hover-reveal editing */}
+      <VisualChangeMarker
+        status={labelChangeStatus}
         originalValue={originalLabel}
-        onChange={onLabelChange || (() => {})}
-        onRevert={onRevertLabel}
-        isEditing={isEditing && !!onLabelChange}
-        label="Label"
-        placeholder="Enter label..."
         className="text-2xl font-bold"
-      />
+      >
+        <InlineEditField
+          value={label}
+          onSave={onLabelChange || (() => {})}
+          isEditable={isEditing && !!onLabelChange}
+          label="Label"
+          placeholder="Enter label..."
+        />
+      </VisualChangeMarker>
 
+      {/* Description field - keeps EditableField for multiline support */}
       <EditableField
         value={description || ''}
         originalValue={originalDescription}
