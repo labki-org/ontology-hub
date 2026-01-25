@@ -6,13 +6,14 @@ module membership for hull rendering (GRP-03) and applies draft overlay
 for change status badges (GRP-04).
 """
 
+import uuid
 from typing import Optional
 
 from sqlalchemy import text
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.models.v2 import Category, CategoryParent, Module, ModuleEntity
+from app.models.v2 import Category, CategoryParent, Module, ModuleEntity, Property
 from app.schemas.graph import GraphEdge, GraphNode, GraphResponse
 from app.services.draft_overlay import DraftOverlayService
 
@@ -220,6 +221,13 @@ class GraphQueryService:
                             )
                         )
 
+        # Add property nodes and edges for categories in the neighborhood
+        property_nodes, property_edges = await self._get_property_nodes_and_edges(
+            entity_keys
+        )
+        nodes.extend(property_nodes)
+        edges.extend(property_edges)
+
         # Check for cycles by looking for duplicate nodes in original CTE
         # (if any path contained a cycle, the CTE would have been truncated)
         cycle_check_query = text("""
@@ -355,6 +363,13 @@ class GraphQueryService:
                             )
                         )
 
+        # Add property nodes belonging to this module
+        property_nodes, property_edges = await self._get_module_property_nodes(
+            module.id, module_key
+        )
+        nodes.extend(property_nodes)
+        edges.extend(property_edges)
+
         # Check for cycles within module graph
         has_cycles = await self._check_cycles_in_subgraph(entity_keys)
 
@@ -477,3 +492,159 @@ class GraphQueryService:
         )
         row = result.fetchone()
         return bool(row and row.has_cycles)
+
+    async def _get_property_nodes_and_edges(
+        self,
+        category_keys: list[str],
+    ) -> tuple[list[GraphNode], list[GraphEdge]]:
+        """Get property nodes and edges for categories in the graph.
+
+        Queries the category_property relationship table to find all properties
+        directly assigned to the specified categories, then creates nodes and
+        edges for visualization.
+
+        Args:
+            category_keys: List of category entity keys to get properties for
+
+        Returns:
+            Tuple of (property nodes, property edges)
+        """
+        if not category_keys:
+            return [], []
+
+        # Get properties for categories via category_property relationship
+        property_query = text("""
+            SELECT DISTINCT p.entity_key, p.label, c.entity_key as category_key
+            FROM properties p
+            JOIN category_property cp ON cp.property_id = p.id
+            JOIN categories c ON c.id = cp.category_id
+            WHERE c.entity_key = ANY(:category_keys)
+        """)
+
+        result = await self.session.execute(
+            property_query, {"category_keys": category_keys}
+        )
+        rows = result.fetchall()
+
+        if not rows:
+            return [], []
+
+        # Collect unique property keys for module membership lookup
+        property_keys = list({row.entity_key for row in rows})
+
+        # Batch load module membership for properties
+        property_module_membership = await self._get_module_membership(
+            property_keys, "property"
+        )
+
+        # Build property nodes with draft overlay
+        nodes: list[GraphNode] = []
+        seen_properties: set[str] = set()
+
+        for row in rows:
+            if row.entity_key in seen_properties:
+                continue
+            seen_properties.add(row.entity_key)
+
+            # Get canonical property for overlay
+            prop_query = select(Property).where(Property.entity_key == row.entity_key)
+            prop_result = await self.session.execute(prop_query)
+            prop = prop_result.scalar_one_or_none()
+
+            # Apply draft overlay to get effective data with change_status
+            effective = await self.draft_overlay.apply_overlay(
+                prop, "property", row.entity_key
+            )
+
+            change_status = None
+            if effective:
+                change_status = effective.get("_change_status")
+
+            nodes.append(
+                GraphNode(
+                    id=row.entity_key,
+                    label=row.label,
+                    entity_type="property",
+                    depth=None,  # Properties don't have depth in neighborhood
+                    modules=property_module_membership.get(row.entity_key, []),
+                    change_status=change_status,
+                )
+            )
+
+        # Build edges: category -> property with edge_type="property"
+        edges: list[GraphEdge] = []
+        for row in rows:
+            edges.append(
+                GraphEdge(
+                    source=row.category_key,
+                    target=row.entity_key,
+                    edge_type="property",
+                )
+            )
+
+        return nodes, edges
+
+    async def _get_module_property_nodes(
+        self,
+        module_id: uuid.UUID,
+        module_key: str,
+    ) -> tuple[list[GraphNode], list[GraphEdge]]:
+        """Get property nodes belonging to a module.
+
+        Properties in module graphs don't have edges to categories - they're
+        included as standalone module members for visualization.
+
+        Args:
+            module_id: Module database ID
+            module_key: Module entity key
+
+        Returns:
+            Tuple of (property nodes, empty edges list)
+        """
+        # Get property entity_keys in this module
+        membership_query = select(ModuleEntity.entity_key).where(
+            ModuleEntity.module_id == module_id,
+            ModuleEntity.entity_type == "property",
+        )
+        result = await self.session.execute(membership_query)
+        property_keys = [row[0] for row in result.fetchall()]
+
+        if not property_keys:
+            return [], []
+
+        # Get property data
+        properties_query = select(Property).where(Property.entity_key.in_(property_keys))
+        result = await self.session.execute(properties_query)
+        properties = result.scalars().all()
+
+        # Batch load module membership for properties
+        property_module_membership = await self._get_module_membership(
+            property_keys, "property"
+        )
+
+        # Build property nodes with draft overlay
+        nodes: list[GraphNode] = []
+        for prop in properties:
+            # Apply draft overlay to get effective data with change_status
+            effective = await self.draft_overlay.apply_overlay(
+                prop, "property", prop.entity_key
+            )
+
+            change_status = None
+            if effective:
+                change_status = effective.get("_change_status")
+
+            nodes.append(
+                GraphNode(
+                    id=prop.entity_key,
+                    label=prop.label,
+                    entity_type="property",
+                    depth=None,
+                    modules=property_module_membership.get(prop.entity_key, [module_key]),
+                    change_status=change_status,
+                )
+            )
+
+        # Properties in module graph don't have edges to categories
+        # They're standalone module members
+        return nodes, []
