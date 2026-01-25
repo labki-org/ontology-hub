@@ -9,35 +9,32 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 
 ## Current Position
 
-Phase: 19 - Change Propagation
-Plan: 4 of 4
-Status: Phase complete
-Last activity: 2026-01-25 - Completed 19-04-PLAN.md (inheritance chain display)
+Phase: 18 - Inline Editing UX
+Plan: 1 of 1 (planned so far)
+Status: Plan 01 complete
+Last activity: 2026-01-25 - Completed 18-01-PLAN.md (core inline editing components)
 
-Progress: [##############################] 100% (Phase 19 complete, 4/4 plans)
+Progress: [#####-------------------------] 17% (Phase 18 in progress, 1/1 plans complete)
 
-**Phase 19 Goal:** Users can see the impact of their draft changes across the dependency graph.
+**Phase 18 Goal:** Users can edit entities in-place with intuitive hover controls in draft mode.
 
-**Phase 19 Requirements:**
-- PROP-01: Track directly edited entities [DONE - 19-01]
-- PROP-02: Compute transitive dependencies [DONE - 19-01]
-- PROP-03: Wire change tracking into auto-save [DONE - 19-01]
-- PROP-04: Sidebar highlighting [DONE - 19-02]
-- PROP-05: Graph node highlighting [DONE - 19-03]
-- PROP-06: Inheritance chain display [DONE - 19-04]
+**Phase 18 Requirements:**
+- INLINE-01: Hover-reveal edit/delete icons [DONE - 18-01]
+- INLINE-02: Edit mode with explicit save/cancel [DONE - 18-01]
+- INLINE-03: Soft delete visual treatment [DONE - 18-01]
+- INLINE-04: Integration with entity detail views [PENDING]
 
-**Phase 19 Success Criteria:**
-1. Change tracking state in draftStoreV2 [DONE]
-2. BFS-based transitive dependency computation [DONE]
-3. Auto-tracking on save [DONE]
-4. Sidebar visual indicators [DONE]
-5. Graph node visual indicators [DONE]
-6. Inheritance chain in detail modal [DONE]
+**Phase 18 Success Criteria:**
+1. InlineEditField component with group-hover pattern [DONE]
+2. DeletedItemBadge component for soft delete [DONE]
+3. Keyboard shortcuts (Escape/Enter) [DONE]
+4. Unit tests for InlineEditField [DONE]
+5. Integration with CategoryDetail and other views [PENDING]
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 70 (20 v1.0 + 41 v2.0 + 9 v2.1)
+- Total plans completed: 71 (20 v1.0 + 41 v2.0 + 10 v2.1)
 - v1.0: 2 days
 - v2.0: 2 days
 - v2.1: In progress
@@ -48,8 +45,8 @@ Progress: [##############################] 100% (Phase 19 complete, 4/4 plans)
 |-----------|--------|-------|----------|
 | v1.0 MVP | 1-7 | 20 | 2 days |
 | v2.0 Platform Rebuild | 8-15 | 41 | 2 days |
-| v2.1 Bug Fixes & UX | 16-20 | 9 | In progress |
-| **Total** | 20 | 70 | 4+ days |
+| v2.1 Bug Fixes & UX | 16-20 | 10 | In progress |
+| **Total** | 20 | 71 | 4+ days |
 
 ## Accumulated Context
 
@@ -79,6 +76,8 @@ Key v2.1 decisions:
 - Direct edits excluded from transitive set (direct wins)
 - Keep Parent Categories (editable) and Inheritance Chain (read-only) sections separate for MVP
 - Blue highlighting consistent across sidebar, graph, and detail modal
+- Click-away discards changes silently (explicit save required) for inline editing
+- Set up vitest with jsdom for React component testing
 
 ### Pending Todos
 
@@ -91,6 +90,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed 19-04-PLAN.md (inheritance chain display) - Phase 19 complete
+Stopped at: Completed 18-01-PLAN.md (core inline editing components)
 Resume file: None
-Next action: Phase 20 or new feature planning
+Next action: Continue Phase 18 integration or Phase 20 planning
