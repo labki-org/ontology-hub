@@ -1,0 +1,143 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { apiFetch } from './client'
+
+// Types matching backend schemas/draft_v2.py and schemas/validation.py
+
+export type DraftStatus = 'DRAFT' | 'VALIDATED' | 'SUBMITTED' | 'MERGED' | 'REJECTED'
+export type DraftSource = 'hub_ui' | 'mediawiki_push'
+export type ChangeType = 'CREATE' | 'UPDATE' | 'DELETE'
+
+export interface DraftV2 {
+  id: string
+  status: DraftStatus
+  source: DraftSource
+  title: string | null
+  description: string | null
+  user_comment: string | null
+  base_commit_sha: string
+  rebase_status: string | null
+  rebase_commit_sha: string | null
+  created_at: string
+  modified_at: string
+  expires_at: string
+  change_count: number
+}
+
+export interface DraftChangeV2 {
+  id: string
+  change_type: ChangeType
+  entity_type: string
+  entity_key: string
+  patch?: Array<{ op: string; path: string; value?: unknown }>
+  replacement_json?: Record<string, unknown>
+  created_at: string
+}
+
+export interface DraftChangesListResponse {
+  changes: DraftChangeV2[]
+  total: number
+}
+
+export interface ValidationResultV2 {
+  entity_type: string
+  entity_key: string  // Changed from entity_id to match v2 model
+  field: string | null
+  code: string
+  message: string
+  severity: 'error' | 'warning' | 'info'
+  suggested_semver: 'major' | 'minor' | 'patch' | null
+  old_value: string | null
+  new_value: string | null
+}
+
+export interface ValidationReportV2 {
+  is_valid: boolean
+  errors: ValidationResultV2[]
+  warnings: ValidationResultV2[]
+  info: ValidationResultV2[]
+  suggested_semver: 'major' | 'minor' | 'patch'
+  semver_reasons: string[]
+}
+
+export interface SubmitRequest {
+  github_token: string
+  pr_title?: string
+  user_comment?: string
+}
+
+export interface SubmitResponse {
+  pr_url: string
+  draft_status: string
+}
+
+// Fetch functions
+
+async function fetchDraftV2(token: string): Promise<DraftV2> {
+  return apiFetch(`/drafts/${token}`, { v2: true })
+}
+
+async function fetchDraftChanges(token: string): Promise<DraftChangesListResponse> {
+  return apiFetch(`/drafts/${token}/changes`, { v2: true })
+}
+
+async function validateDraft(token: string): Promise<ValidationReportV2> {
+  return apiFetch(`/drafts/${token}/validate`, {
+    v2: true,
+    method: 'POST',
+  })
+}
+
+async function submitDraft(
+  token: string,
+  params: SubmitRequest
+): Promise<SubmitResponse> {
+  return apiFetch(`/drafts/${token}/submit`, {
+    v2: true,
+    method: 'POST',
+    body: JSON.stringify(params),
+  })
+}
+
+// Query hooks
+
+export function useDraftV2(token: string | undefined) {
+  return useQuery({
+    queryKey: ['v2', 'draft', token],
+    queryFn: () => fetchDraftV2(token!),
+    enabled: !!token,
+  })
+}
+
+export function useDraftChanges(token: string | undefined) {
+  return useQuery({
+    queryKey: ['v2', 'draft-changes', token],
+    queryFn: () => fetchDraftChanges(token!),
+    enabled: !!token,
+  })
+}
+
+// Mutation hooks
+
+export function useValidateDraft(token: string | undefined) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: () => validateDraft(token!),
+    onSuccess: () => {
+      // Invalidate draft query to refresh status
+      queryClient.invalidateQueries({ queryKey: ['v2', 'draft', token] })
+    },
+  })
+}
+
+export function useSubmitDraft(token: string | undefined) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (params: SubmitRequest) => submitDraft(token!, params),
+    onSuccess: () => {
+      // Invalidate draft query to refresh status
+      queryClient.invalidateQueries({ queryKey: ['v2', 'draft', token] })
+    },
+  })
+}
