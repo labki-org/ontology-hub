@@ -47,6 +47,8 @@ from app.schemas.entity_v2 import (
     ModuleDetailResponse,
     PropertyDetailResponse,
     PropertyProvenance,
+    SubobjectDetailResponse,
+    TemplateDetailResponse,
 )
 from app.services.draft_overlay import DraftContextDep
 
@@ -444,6 +446,40 @@ async def list_subobjects(
     )
 
 
+@router.get("/subobjects/{entity_key}", response_model=SubobjectDetailResponse)
+@limiter.limit(RATE_LIMITS["entity_read"])
+async def get_subobject(
+    request: Request,
+    entity_key: str,
+    session: SessionDep,
+    draft_ctx: DraftContextDep,
+) -> SubobjectDetailResponse:
+    """Get subobject detail.
+
+    Returns subobject with full details and draft change status.
+
+    Rate limited to 200/minute per IP.
+    """
+    # Get canonical subobject
+    query = select(Subobject).where(Subobject.entity_key == entity_key)
+    result = await session.execute(query)
+    subobj = result.scalar_one_or_none()
+
+    effective = await draft_ctx.apply_overlay(subobj, "subobject", entity_key)
+
+    if not effective:
+        raise HTTPException(status_code=404, detail="Subobject not found")
+
+    return SubobjectDetailResponse(
+        entity_key=effective.get("entity_key", entity_key),
+        label=effective.get("label", ""),
+        description=effective.get("description"),
+        properties=effective.get("properties", []),
+        change_status=effective.get("_change_status"),
+        deleted=effective.get("_deleted", False),
+    )
+
+
 # -----------------------------------------------------------------------------
 # Template endpoints
 # -----------------------------------------------------------------------------
@@ -495,6 +531,41 @@ async def list_templates(
         items=items,
         next_cursor=next_cursor,
         has_next=has_next,
+    )
+
+
+@router.get("/templates/{entity_key}", response_model=TemplateDetailResponse)
+@limiter.limit(RATE_LIMITS["entity_read"])
+async def get_template(
+    request: Request,
+    entity_key: str,
+    session: SessionDep,
+    draft_ctx: DraftContextDep,
+) -> TemplateDetailResponse:
+    """Get template detail.
+
+    Returns template with full details and draft change status.
+
+    Rate limited to 200/minute per IP.
+    """
+    # Get canonical template
+    query = select(Template).where(Template.entity_key == entity_key)
+    result = await session.execute(query)
+    tmpl = result.scalar_one_or_none()
+
+    effective = await draft_ctx.apply_overlay(tmpl, "template", entity_key)
+
+    if not effective:
+        raise HTTPException(status_code=404, detail="Template not found")
+
+    return TemplateDetailResponse(
+        entity_key=effective.get("entity_key", entity_key),
+        label=effective.get("label", ""),
+        description=effective.get("description"),
+        wikitext=effective.get("wikitext"),
+        property_key=effective.get("property_key"),
+        change_status=effective.get("_change_status"),
+        deleted=effective.get("_deleted", False),
     )
 
 
