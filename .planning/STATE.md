@@ -10,25 +10,20 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 ## Current Position
 
 Phase: 20 - Entity Management
-Plan: 6 of N complete (01, 02, 03, 04, 05 complete)
-Status: Plan 04 complete
-Last activity: 2026-01-25 - Completed 20-04-PLAN.md (Sidebar + New Buttons)
+Plan: 8 of N complete (01, 02, 03, 04, 05, 08 complete)
+Status: Plan 08 complete
+Last activity: 2026-01-25 - Completed 20-08-PLAN.md (Detail View Relationship Editing)
 
-Progress: [##########--------------------] 33% (20-04 complete)
+Progress: [############------------------] 40% (20-08 complete)
 
 **Phase 20 Goal:** Create and delete entities within drafts with modal forms and validation.
 
-**Phase 20 Plan 04 Completed:**
-- Create modal state in draftStoreV2 (createModalOpen, createModalEntityType)
-- "+ New" buttons in sidebar EntitySection headers (draft mode only)
-- CreateEntityModal integration with dynamic form switching
-- Entity creation flow: click + New -> fill form -> submit -> entity in sidebar + graph
-
-**Phase 20 Plan 05 Previously Completed:**
-- EntityCombobox with cmdk for type-ahead search and create-if-not-exists
-- RelationshipChips for displaying removable relationship badges
-- ModuleForm with entity type comboboxes
-- BundleForm with modules combobox
+**Phase 20 Plan 08 Completed:**
+- CategoryDetail with EntityCombobox for parent editing
+- ModuleDetail with relationship editing for all 4 entity types
+- BundleDetail with module editing via combobox
+- Relationship changes auto-save in draft mode
+- Create-if-not-exists opens create modal for cascading creation
 
 ## Performance Metrics
 
@@ -95,6 +90,9 @@ Key v2.1 decisions:
 - + New button placed outside CollapsibleTrigger to avoid toggle on click (20-04)
 - Modal title generated dynamically from entity type (20-04)
 - New entity selected in graph after successful creation (20-04)
+- Replace Input/EditableList with EntityCombobox for type-ahead search in detail views (20-08)
+- Use RelationshipChips for consistent display across all detail views (20-08)
+- Connect onCreateNew to openCreateModal for cascading entity creation (20-08)
 
 ### Pending Todos
 
@@ -107,6 +105,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed 20-04-PLAN.md (Sidebar + New Buttons)
+Stopped at: Completed 20-08-PLAN.md (Detail View Relationship Editing)
 Resume file: None
-Next action: Continue with Phase 20 plan 06 (Delete Entity functionality)
+Next action: Continue with Phase 20 remaining plans (06 Delete, 07 Validation, 09 Integration)
