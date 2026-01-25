@@ -82,12 +82,12 @@ export function CategoryForm({
         label="ID"
         required
         control={form.control}
-        description="Unique identifier for the category (lowercase, numbers, hyphens)"
+        description="Page title format: starts uppercase, underscores between words"
         render={(field) => (
           <Input
             {...field}
             id="id"
-            placeholder="category-name"
+            placeholder="My_category"
             autoComplete="off"
           />
         )}

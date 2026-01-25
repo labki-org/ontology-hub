@@ -61,12 +61,12 @@ export function TemplateForm({
         label="ID"
         required
         control={form.control}
-        description="Unique identifier for the template (lowercase, numbers, hyphens)"
+        description="Page title format: starts uppercase, underscores between words"
         render={(field) => (
           <Input
             {...field}
             id="id"
-            placeholder="template-name"
+            placeholder="Infobox_template"
             autoComplete="off"
           />
         )}

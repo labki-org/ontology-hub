@@ -92,12 +92,12 @@ export function BundleForm({
         label="ID"
         required
         control={form.control}
-        description="Unique identifier for the bundle (lowercase, numbers, hyphens)"
+        description="Page title format: starts uppercase, underscores between words"
         render={(field) => (
           <Input
             {...field}
             id="id"
-            placeholder="bundle-name"
+            placeholder="Main_bundle"
             autoComplete="off"
           />
         )}

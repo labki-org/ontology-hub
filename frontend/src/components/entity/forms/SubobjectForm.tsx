@@ -61,12 +61,12 @@ export function SubobjectForm({
         label="ID"
         required
         control={form.control}
-        description="Unique identifier for the subobject (lowercase, numbers, hyphens)"
+        description="Page title format: starts uppercase, underscores between words"
         render={(field) => (
           <Input
             {...field}
             id="id"
-            placeholder="subobject-name"
+            placeholder="Address_info"
             autoComplete="off"
           />
         )}

@@ -119,12 +119,12 @@ export function ModuleForm({
         label="ID"
         required
         control={form.control}
-        description="Unique identifier for the module (lowercase, numbers, hyphens)"
+        description="Page title format: starts uppercase, underscores between words"
         render={(field) => (
           <Input
             {...field}
             id="id"
-            placeholder="module-name"
+            placeholder="Core_module"
             autoComplete="off"
           />
         )}

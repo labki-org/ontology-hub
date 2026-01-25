@@ -2,14 +2,16 @@ import { z } from 'zod'
 
 /**
  * Shared ID validation pattern for all entity types.
- * IDs must be kebab-case: lowercase letters, numbers, and hyphens only.
+ * IDs follow MediaWiki page title format: starts with uppercase letter,
+ * followed by lowercase letters, with underscores separating words.
+ * Examples: "Person", "Has_property", "Located_in_city"
  */
 const idValidation = z
   .string()
   .min(1, 'ID is required')
   .regex(
-    /^[a-z0-9-]+$/,
-    'ID must be lowercase letters, numbers, and hyphens only'
+    /^[A-Z][a-z]*(_[a-z]+)*$/,
+    'ID must start with uppercase letter, use underscores between words (e.g., Has_property)'
   )
 
 /**
