@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 ## Current Position
 
 Phase: 19 - Change Propagation
-Plan: 3 of 4
-Status: In progress
-Last activity: 2026-01-25 - Completed 19-03-PLAN.md (graph node highlighting)
+Plan: 4 of 4
+Status: Phase complete
+Last activity: 2026-01-25 - Completed 19-04-PLAN.md (inheritance chain display)
 
-Progress: [######################        ] 75% (Phase 19 in progress, 3/4 plans)
+Progress: [##############################] 100% (Phase 19 complete, 4/4 plans)
 
 **Phase 19 Goal:** Users can see the impact of their draft changes across the dependency graph.
 
@@ -24,7 +24,7 @@ Progress: [######################        ] 75% (Phase 19 in progress, 3/4 plans)
 - PROP-03: Wire change tracking into auto-save [DONE - 19-01]
 - PROP-04: Sidebar highlighting [DONE - 19-02]
 - PROP-05: Graph node highlighting [DONE - 19-03]
-- PROP-06: Inheritance chain display [PENDING - 19-04]
+- PROP-06: Inheritance chain display [DONE - 19-04]
 
 **Phase 19 Success Criteria:**
 1. Change tracking state in draftStoreV2 [DONE]
@@ -32,12 +32,12 @@ Progress: [######################        ] 75% (Phase 19 in progress, 3/4 plans)
 3. Auto-tracking on save [DONE]
 4. Sidebar visual indicators [DONE]
 5. Graph node visual indicators [DONE]
-6. Inheritance chain in detail modal [PENDING]
+6. Inheritance chain in detail modal [DONE]
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 67 (20 v1.0 + 41 v2.0 + 6 v2.1)
+- Total plans completed: 70 (20 v1.0 + 41 v2.0 + 9 v2.1)
 - v1.0: 2 days
 - v2.0: 2 days
 - v2.1: In progress
@@ -48,8 +48,8 @@ Progress: [######################        ] 75% (Phase 19 in progress, 3/4 plans)
 |-----------|--------|-------|----------|
 | v1.0 MVP | 1-7 | 20 | 2 days |
 | v2.0 Platform Rebuild | 8-15 | 41 | 2 days |
-| v2.1 Bug Fixes & UX | 16-20 | 6+ | In progress |
-| **Total** | 20 | 67+ | 4+ days |
+| v2.1 Bug Fixes & UX | 16-20 | 9 | In progress |
+| **Total** | 20 | 70 | 4+ days |
 
 ## Accumulated Context
 
@@ -77,6 +77,8 @@ Key v2.1 decisions:
 - Store graph nodes/edges in graphStore for cross-component access
 - Recompute all transitive effects on each edit (union of all direct edits)
 - Direct edits excluded from transitive set (direct wins)
+- Keep Parent Categories (editable) and Inheritance Chain (read-only) sections separate for MVP
+- Blue highlighting consistent across sidebar, graph, and detail modal
 
 ### Pending Todos
 
@@ -89,6 +91,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed 19-03-PLAN.md (graph node highlighting)
+Stopped at: Completed 19-04-PLAN.md (inheritance chain display) - Phase 19 complete
 Resume file: None
-Next action: `/gsd:execute-plan 19-04` (inheritance chain display)
+Next action: Phase 20 or new feature planning
