@@ -68,41 +68,67 @@ export const templateSchema = z.object({
 export type TemplateFormData = z.infer<typeof templateSchema>
 
 /**
- * Module entity schema.
+ * Module entity base schema (without relationship validation).
+ * Used for initial creation when entities will be added after.
+ */
+const moduleBaseSchema = z.object({
+  id: idValidation,
+  version: z.string().min(1, 'Version is required'),
+  label: z.string().min(1, 'Label is required'),
+  description: z.string().min(1, 'Description is required'),
+  categories: z.array(z.string()).optional(),
+  properties: z.array(z.string()).optional(),
+  subobjects: z.array(z.string()).optional(),
+  templates: z.array(z.string()).optional(),
+})
+
+/**
+ * Module creation schema (relaxed).
+ * Allows creating module without entities - they can be added after.
+ */
+export const moduleCreateSchema = moduleBaseSchema
+
+export type ModuleCreateFormData = z.infer<typeof moduleCreateSchema>
+
+/**
+ * Module entity schema (full validation).
  * Required: id, version, label, description
  * Requires at least one of: categories, properties, subobjects, templates
  */
-export const moduleSchema = z
-  .object({
-    id: idValidation,
-    version: z.string().min(1, 'Version is required'),
-    label: z.string().min(1, 'Label is required'),
-    description: z.string().min(1, 'Description is required'),
-    categories: z.array(z.string()).optional(),
-    properties: z.array(z.string()).optional(),
-    subobjects: z.array(z.string()).optional(),
-    templates: z.array(z.string()).optional(),
-  })
-  .superRefine((data, ctx) => {
-    const hasCategories = data.categories && data.categories.length > 0
-    const hasProperties = data.properties && data.properties.length > 0
-    const hasSubobjects = data.subobjects && data.subobjects.length > 0
-    const hasTemplates = data.templates && data.templates.length > 0
+export const moduleSchema = moduleBaseSchema.superRefine((data, ctx) => {
+  const hasCategories = data.categories && data.categories.length > 0
+  const hasProperties = data.properties && data.properties.length > 0
+  const hasSubobjects = data.subobjects && data.subobjects.length > 0
+  const hasTemplates = data.templates && data.templates.length > 0
 
-    if (!hasCategories && !hasProperties && !hasSubobjects && !hasTemplates) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message:
-          'Module must include at least one of: categories, properties, subobjects, or templates',
-        path: ['categories'], // Show error on first relationship field
-      })
-    }
-  })
+  if (!hasCategories && !hasProperties && !hasSubobjects && !hasTemplates) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message:
+        'Module must include at least one of: categories, properties, subobjects, or templates',
+      path: ['categories'], // Show error on first relationship field
+    })
+  }
+})
 
 export type ModuleFormData = z.infer<typeof moduleSchema>
 
 /**
- * Bundle entity schema.
+ * Bundle creation schema (relaxed).
+ * Allows creating bundle without modules - they can be added after.
+ */
+export const bundleCreateSchema = z.object({
+  id: idValidation,
+  version: z.string().min(1, 'Version is required'),
+  label: z.string().min(1, 'Label is required'),
+  description: z.string().min(1, 'Description is required'),
+  modules: z.array(z.string()).optional(),
+})
+
+export type BundleCreateFormData = z.infer<typeof bundleCreateSchema>
+
+/**
+ * Bundle entity schema (full validation).
  * Required: id, version, label, description, modules (at least one)
  */
 export const bundleSchema = z.object({
