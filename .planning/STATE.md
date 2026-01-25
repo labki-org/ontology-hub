@@ -10,20 +10,20 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 ## Current Position
 
 Phase: 20 - Entity Management
-Plan: 8 of N complete (01, 02, 03, 04, 05, 08 complete)
-Status: Plan 08 complete
-Last activity: 2026-01-25 - Completed 20-08-PLAN.md (Detail View Relationship Editing)
+Plan: 9 of N complete (01, 02, 03, 04, 05, 06, 08 complete)
+Status: Plan 06 complete
+Last activity: 2026-01-25 - Completed 20-06-PLAN.md (Delete Entity with Dependency Check)
 
-Progress: [############------------------] 40% (20-08 complete)
+Progress: [##############----------------] 46% (20-06 complete)
 
 **Phase 20 Goal:** Create and delete entities within drafts with modal forms and validation.
 
-**Phase 20 Plan 08 Completed:**
-- CategoryDetail with EntityCombobox for parent editing
-- ModuleDetail with relationship editing for all 4 entity types
-- BundleDetail with module editing via combobox
-- Relationship changes auto-save in draft mode
-- Create-if-not-exists opens create modal for cascading creation
+**Phase 20 Plan 06 Completed:**
+- dependencyChecker.ts for finding entities that depend on a given entity
+- useDeleteEntityChange and useUndoDeleteChange mutations in draftApiV2
+- DeleteConfirmation component showing blocked deletions with dependents list
+- SidebarV2 delete buttons with dependency checking and undo capability
+- Delete buttons visible on hover in draft mode only
 
 ## Performance Metrics
 
@@ -93,6 +93,9 @@ Key v2.1 decisions:
 - Replace Input/EditableList with EntityCombobox for type-ahead search in detail views (20-08)
 - Use RelationshipChips for consistent display across all detail views (20-08)
 - Connect onCreateNew to openCreateModal for cascading entity creation (20-08)
+- Graph edge direction: source depends on target for parent/uses relationships (20-06)
+- Delete button visible on hover in draft mode, not always visible (20-06)
+- Track delete changeId in store for reliable undo capability (20-06)
 
 ### Pending Todos
 
@@ -105,6 +108,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed 20-08-PLAN.md (Detail View Relationship Editing)
+Stopped at: Completed 20-06-PLAN.md (Delete Entity with Dependency Check)
 Resume file: None
-Next action: Continue with Phase 20 remaining plans (06 Delete, 07 Validation, 09 Integration)
+Next action: Continue with Phase 20 remaining plans (07 Validation, 09 Integration)
