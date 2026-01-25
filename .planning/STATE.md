@@ -9,34 +9,31 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 
 ## Current Position
 
-Phase: 16 - Core Bug Fixes
-Plan: 02 of 2
-Status: Phase complete
-Last activity: 2026-01-25 - Completed 16-02-PLAN.md (draft workflow and entity details)
+Phase: 17 - Graph View Fixes
+Plan: 01 of 2
+Status: In progress
+Last activity: 2026-01-25 - Completed 17-01-PLAN.md (extend graph API)
 
-Progress: [##                            ] 6% (Phase 16 complete, 2/2 plans)
+Progress: [###                           ] 9% (Phase 17 in progress, 1/2 plans)
 
-**Phase 16 Goal:** Users can reliably view all entity types and use draft workflow actions.
+**Phase 17 Goal:** Graph view displays all entity types with proper relationships.
 
-**Phase 16 Requirements:**
-- ENTITY-01: User can view subobject details without "Failed to load" error [DONE - 16-01]
-- ENTITY-02: User can view template details without "Failed to load" error [DONE - 16-01]
-- ENTITY-03: User can view module details without "Failed to load" error [VERIFIED - 16-02]
-- ENTITY-04: User can view bundle details without "Failed to load" error [VERIFIED - 16-02]
-- DRAFT-01: User can click Validate button in draft mode [VERIFIED - 16-02]
-- DRAFT-02: User can click Submit PR button in draft mode [VERIFIED - 16-02]
-- DRAFT-03: Auto-validation triggers when user makes changes to draft [DONE - 16-02]
+**Phase 17 Requirements:**
+- GRAPH-01: Graph displays property nodes connected to categories [DONE - 17-01]
+- GRAPH-02: Graph displays subobject nodes connected to categories [DONE - 17-01]
+- GRAPH-03: Graph displays template nodes in module view [DONE - 17-01]
+- GRAPH-04: Frontend renders new node types with distinct visual styling [TODO - 17-02]
 
-**Phase 16 Success Criteria:**
-1. User can click on subobject/template/module/bundle and see details without error [DONE]
-2. User can click Validate button and see validation results [DONE]
-3. User can click Submit PR button and navigate to PR workflow [DONE]
-4. User sees validation results update automatically after making draft changes [DONE]
+**Phase 17 Success Criteria:**
+1. Graph API returns nodes with entity_type in ["category", "property", "subobject", "template"] [DONE]
+2. Edges correctly represent relationships [DONE]
+3. Frontend renders all node types distinctly [TODO]
+4. Backend tests pass [DONE]
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 63 (20 v1.0 + 41 v2.0 + 2 v2.1)
+- Total plans completed: 64 (20 v1.0 + 41 v2.0 + 3 v2.1)
 - v1.0: 2 days
 - v2.0: 2 days
 - v2.1: In progress
@@ -47,8 +44,8 @@ Progress: [##                            ] 6% (Phase 16 complete, 2/2 plans)
 |-----------|--------|-------|----------|
 | v1.0 MVP | 1-7 | 20 | 2 days |
 | v2.0 Platform Rebuild | 8-15 | 41 | 2 days |
-| v2.1 Bug Fixes & UX | 16-20 | 2+ | In progress |
-| **Total** | 20 | 63+ | 4+ days |
+| v2.1 Bug Fixes & UX | 16-20 | 3+ | In progress |
+| **Total** | 20 | 64+ | 4+ days |
 
 ## Accumulated Context
 
@@ -66,6 +63,9 @@ Key v2.0 decisions:
 Key v2.1 decisions:
 - Follow existing endpoint patterns - PropertyDetailResponse pattern for SubobjectDetailResponse and TemplateDetailResponse
 - Use getState() for Zustand store access in mutation callbacks (not hook)
+- Properties linked via category_property table (normalized relationships)
+- Subobjects extracted from canonical_json arrays (denormalized in source)
+- Templates included only in module graphs (no direct category relationship)
 
 ### Pending Todos
 
@@ -78,6 +78,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Phase 16 complete and verified (7/7 must-haves)
+Stopped at: Completed 17-01-PLAN.md (backend graph API extended)
 Resume file: None
-Next action: `/gsd:discuss-phase 17` or `/gsd:plan-phase 17`
+Next action: `/gsd:execute-phase 17-02` (frontend graph visualization)
