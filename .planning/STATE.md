@@ -10,25 +10,25 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 ## Current Position
 
 Phase: 20 - Entity Management
-Plan: 9 of N complete (01, 02, 03, 04, 05, 06, 08 complete)
-Status: Plan 06 complete
-Last activity: 2026-01-25 - Completed 20-06-PLAN.md (Delete Entity with Dependency Check)
+Plan: 10 of N complete (01, 02, 03, 04, 05, 06, 07, 08 complete)
+Status: Plan 07 complete
+Last activity: 2026-01-25 - Completed 20-07-PLAN.md (Cascading Create Flow)
 
-Progress: [##############----------------] 46% (20-06 complete)
+Progress: [################--------------] 52% (20-07 complete)
 
 **Phase 20 Goal:** Create and delete entities within drafts with modal forms and validation.
 
-**Phase 20 Plan 06 Completed:**
-- dependencyChecker.ts for finding entities that depend on a given entity
-- useDeleteEntityChange and useUndoDeleteChange mutations in draftApiV2
-- DeleteConfirmation component showing blocked deletions with dependents list
-- SidebarV2 delete buttons with dependency checking and undo capability
-- Delete buttons visible on hover in draft mode only
+**Phase 20 Plan 07 Completed:**
+- NestedModalStack component for cascading entity creation
+- Nested modal state in draftStoreV2 (nestedCreateModal, onNestedEntityCreated)
+- initialData prop support for all entity forms
+- Wired CategoryForm, ModuleForm, BundleForm to use nested create
+- Single-level nesting enforced (nested forms don't allow further nesting)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 76 (20 v1.0 + 41 v2.0 + 15 v2.1)
+- Total plans completed: 77 (20 v1.0 + 41 v2.0 + 16 v2.1)
 - v1.0: 2 days
 - v2.0: 2 days
 - v2.1: In progress
@@ -39,8 +39,8 @@ Progress: [##############----------------] 46% (20-06 complete)
 |-----------|--------|-------|----------|
 | v1.0 MVP | 1-7 | 20 | 2 days |
 | v2.0 Platform Rebuild | 8-15 | 41 | 2 days |
-| v2.1 Bug Fixes & UX | 16-20 | 15 | In progress |
-| **Total** | 20 | 76 | 4+ days |
+| v2.1 Bug Fixes & UX | 16-20 | 16 | In progress |
+| **Total** | 20 | 77 | 4+ days |
 
 ## Accumulated Context
 
@@ -96,6 +96,9 @@ Key v2.1 decisions:
 - Graph edge direction: source depends on target for parent/uses relationships (20-06)
 - Delete button visible on hover in draft mode, not always visible (20-06)
 - Track delete changeId in store for reliable undo capability (20-06)
+- Form sets callback via setOnNestedEntityCreated before opening nested modal (20-07)
+- Single-level nesting - nested forms don't receive onCreateRelatedEntity (20-07)
+- All forms accept initialData prop for prefilling from nested create (20-07)
 
 ### Pending Todos
 
@@ -108,6 +111,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed 20-06-PLAN.md (Delete Entity with Dependency Check)
+Stopped at: Completed 20-07-PLAN.md (Cascading Create Flow)
 Resume file: None
-Next action: Continue with Phase 20 remaining plans (07 Validation, 09 Integration)
+Next action: Continue with Phase 20 remaining plan (09 Integration)
