@@ -13,6 +13,8 @@ interface TemplateFormProps {
   onCancel: () => void
   /** Whether the form is currently submitting */
   isSubmitting?: boolean
+  /** Optional initial data to prefill the form (e.g., from nested create) */
+  initialData?: Partial<TemplateFormData>
 }
 
 /**
@@ -37,15 +39,16 @@ export function TemplateForm({
   onSubmit,
   onCancel,
   isSubmitting = false,
+  initialData,
 }: TemplateFormProps) {
   const form = useForm<TemplateFormData>({
     resolver: zodResolver(templateSchema),
     mode: 'onBlur',
     defaultValues: {
-      id: '',
-      label: '',
-      description: '',
-      wikitext: '',
+      id: initialData?.id ?? '',
+      label: initialData?.label ?? '',
+      description: initialData?.description ?? '',
+      wikitext: initialData?.wikitext ?? '',
     },
   })
 

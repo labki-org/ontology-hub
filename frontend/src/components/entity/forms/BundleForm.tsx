@@ -21,6 +21,8 @@ interface BundleFormProps {
   isSubmitting?: boolean
   /** Optional draft ID for entity resolution */
   draftId?: string
+  /** Optional initial data to prefill the form (e.g., from nested create) */
+  initialData?: Partial<BundleCreateFormData>
 }
 
 /**
@@ -51,6 +53,7 @@ export function BundleForm({
   onCreateRelatedEntity,
   isSubmitting = false,
   draftId,
+  initialData,
 }: BundleFormProps) {
   // Fetch available modules for selection
   const { data: modulesData } = useModules(undefined, undefined, draftId)
@@ -63,11 +66,11 @@ export function BundleForm({
     resolver: zodResolver(bundleCreateSchema),
     mode: 'onBlur',
     defaultValues: {
-      id: '',
-      version: '',
-      label: '',
-      description: '',
-      modules: [],
+      id: initialData?.id ?? '',
+      version: initialData?.version ?? '',
+      label: initialData?.label ?? '',
+      description: initialData?.description ?? '',
+      modules: initialData?.modules ?? [],
     },
   })
 

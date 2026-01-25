@@ -39,6 +39,8 @@ interface PropertyFormProps {
   onCancel: () => void
   /** Whether the form is currently submitting */
   isSubmitting?: boolean
+  /** Optional initial data to prefill the form (e.g., from nested create) */
+  initialData?: Partial<PropertyFormData>
 }
 
 /**
@@ -64,16 +66,17 @@ export function PropertyForm({
   onSubmit,
   onCancel,
   isSubmitting = false,
+  initialData,
 }: PropertyFormProps) {
   const form = useForm<PropertyFormData>({
     resolver: zodResolver(propertySchema),
     mode: 'onBlur',
     defaultValues: {
-      id: '',
-      label: '',
-      description: '',
-      datatype: '',
-      cardinality: '',
+      id: initialData?.id ?? '',
+      label: initialData?.label ?? '',
+      description: initialData?.description ?? '',
+      datatype: initialData?.datatype ?? '',
+      cardinality: initialData?.cardinality ?? '',
     },
   })
 

@@ -13,6 +13,8 @@ interface SubobjectFormProps {
   onCancel: () => void
   /** Whether the form is currently submitting */
   isSubmitting?: boolean
+  /** Optional initial data to prefill the form (e.g., from nested create) */
+  initialData?: Partial<SubobjectFormData>
 }
 
 /**
@@ -37,15 +39,16 @@ export function SubobjectForm({
   onSubmit,
   onCancel,
   isSubmitting = false,
+  initialData,
 }: SubobjectFormProps) {
   const form = useForm<SubobjectFormData>({
     resolver: zodResolver(subobjectSchema),
     mode: 'onBlur',
     defaultValues: {
-      id: '',
-      label: '',
-      description: '',
-      properties: [],
+      id: initialData?.id ?? '',
+      label: initialData?.label ?? '',
+      description: initialData?.description ?? '',
+      properties: initialData?.properties ?? [],
     },
   })
 

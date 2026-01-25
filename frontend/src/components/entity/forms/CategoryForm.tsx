@@ -21,6 +21,8 @@ interface CategoryFormProps {
   isSubmitting?: boolean
   /** Optional draft ID for entity resolution */
   draftId?: string
+  /** Optional initial data to prefill the form (e.g., from nested create) */
+  initialData?: Partial<CategoryFormData>
 }
 
 /**
@@ -49,6 +51,7 @@ export function CategoryForm({
   onCreateRelatedEntity,
   isSubmitting = false,
   draftId,
+  initialData,
 }: CategoryFormProps) {
   // Fetch available categories for parent selection
   const { data: categoriesData } = useCategories(undefined, undefined, draftId)
@@ -60,10 +63,10 @@ export function CategoryForm({
     resolver: zodResolver(categorySchema),
     mode: 'onBlur',
     defaultValues: {
-      id: '',
-      label: '',
-      description: '',
-      parents: [],
+      id: initialData?.id ?? '',
+      label: initialData?.label ?? '',
+      description: initialData?.description ?? '',
+      parents: initialData?.parents ?? [],
     },
   })
 

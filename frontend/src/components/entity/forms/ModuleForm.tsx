@@ -26,6 +26,8 @@ interface ModuleFormProps {
   isSubmitting?: boolean
   /** Optional draft ID for entity resolution */
   draftId?: string
+  /** Optional initial data to prefill the form (e.g., from nested create) */
+  initialData?: Partial<ModuleCreateFormData>
 }
 
 /**
@@ -56,6 +58,7 @@ export function ModuleForm({
   onCreateRelatedEntity,
   isSubmitting = false,
   draftId,
+  initialData,
 }: ModuleFormProps) {
   // Fetch available entities for relationship selection
   const { data: categoriesData } = useCategories(undefined, undefined, draftId)
@@ -93,14 +96,14 @@ export function ModuleForm({
     resolver: zodResolver(moduleCreateSchema),
     mode: 'onBlur',
     defaultValues: {
-      id: '',
-      version: '',
-      label: '',
-      description: '',
-      categories: [],
-      properties: [],
-      subobjects: [],
-      templates: [],
+      id: initialData?.id ?? '',
+      version: initialData?.version ?? '',
+      label: initialData?.label ?? '',
+      description: initialData?.description ?? '',
+      categories: initialData?.categories ?? [],
+      properties: initialData?.properties ?? [],
+      subobjects: initialData?.subobjects ?? [],
+      templates: initialData?.templates ?? [],
     },
   })
 
