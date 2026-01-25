@@ -44,9 +44,9 @@ export function useForceLayout(
   const d3NodesRef = useRef<D3Node[]>([])
 
   const {
-    chargeStrength = -400,
-    linkDistance = 80,
-    collisionRadius = 50,
+    chargeStrength = -500,   // Increased for spacious layout
+    linkDistance = 100,       // Increased from 80 for more spacing
+    collisionRadius = 55,     // Increased from 50 for larger category nodes (80px)
   } = options ?? {}
 
   useEffect(() => {
