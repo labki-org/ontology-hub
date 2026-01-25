@@ -199,36 +199,84 @@ async def add_draft_change(
             "Changes can only be added when status is 'draft' or 'validated'.",
         )
 
+    # Check if there's already a change for this entity in this draft
+    existing_query = (
+        select(DraftChange)
+        .where(DraftChange.draft_id == draft.id)
+        .where(DraftChange.entity_type == change_in.entity_type)
+        .where(DraftChange.entity_key == change_in.entity_key)
+    )
+    existing_result = await session.execute(existing_query)
+    existing_change = existing_result.scalar_one_or_none()
+
     # Verify entity existence based on change type
-    exists = await entity_exists(session, change_in.entity_type, change_in.entity_key)
+    # For UPDATE/DELETE: entity must exist in canonical OR as a CREATE in this draft
+    # For CREATE: entity must NOT exist in canonical (draft CREATEs are allowed to be overwritten)
+    exists_in_canonical = await entity_exists(session, change_in.entity_type, change_in.entity_key)
+    exists_in_draft = existing_change and existing_change.change_type == ChangeType.CREATE
 
     if change_in.change_type in (ChangeType.UPDATE, ChangeType.DELETE):
-        if not exists:
+        if not exists_in_canonical and not exists_in_draft:
             raise HTTPException(
                 status_code=400,
                 detail=f"Cannot {change_in.change_type.value} {change_in.entity_type} "
-                f"'{change_in.entity_key}': entity does not exist in canonical.",
+                f"'{change_in.entity_key}': entity does not exist in canonical or draft.",
             )
 
     elif change_in.change_type == ChangeType.CREATE:
-        if exists:
+        if exists_in_canonical:
             raise HTTPException(
                 status_code=400,
                 detail=f"Cannot create {change_in.entity_type} "
                 f"'{change_in.entity_key}': entity already exists in canonical.",
             )
 
-    # Create the change
-    change = DraftChange(
-        draft_id=draft.id,
-        change_type=change_in.change_type,
-        entity_type=change_in.entity_type,
-        entity_key=change_in.entity_key,
-        patch=change_in.patch,
-        replacement_json=change_in.replacement_json,
-    )
+    if existing_change and change_in.change_type == ChangeType.UPDATE:
+        if existing_change.change_type == ChangeType.CREATE:
+            # Updating a draft-created entity: apply patch to replacement_json
+            # Keep it as a CREATE change with the updated JSON
+            import jsonpatch
+            base_json = existing_change.replacement_json or {}
+            try:
+                patch = jsonpatch.JsonPatch(change_in.patch or [])
+                updated_json = patch.apply(base_json)
+                existing_change.replacement_json = updated_json
+            except jsonpatch.JsonPatchException as e:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Failed to apply patch to draft-created entity: {e}",
+                )
+            change = existing_change
+        else:
+            # Updating a canonical entity: merge patches
+            # New patches for the same path will effectively override old ones when applied
+            existing_patches = existing_change.patch or []
+            new_patches = change_in.patch or []
 
-    session.add(change)
+            # Merge patches - remove old patches for paths that have new values
+            new_paths = {p.get("path") for p in new_patches}
+            merged_patches = [p for p in existing_patches if p.get("path") not in new_paths]
+            merged_patches.extend(new_patches)
+
+            existing_change.patch = merged_patches
+            change = existing_change
+    elif existing_change:
+        # For CREATE/DELETE, replace the existing change entirely
+        existing_change.change_type = change_in.change_type
+        existing_change.patch = change_in.patch
+        existing_change.replacement_json = change_in.replacement_json
+        change = existing_change
+    else:
+        # Create new change
+        change = DraftChange(
+            draft_id=draft.id,
+            change_type=change_in.change_type,
+            entity_type=change_in.entity_type,
+            entity_key=change_in.entity_key,
+            patch=change_in.patch,
+            replacement_json=change_in.replacement_json,
+        )
+        session.add(change)
 
     # Update draft modified_at
     draft.modified_at = datetime.utcnow()
