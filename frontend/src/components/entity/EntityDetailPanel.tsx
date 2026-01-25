@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import {
   Card,
   CardHeader,
@@ -11,6 +12,8 @@ import { Button } from '@/components/ui/button'
 import { Maximize2 } from 'lucide-react'
 import { useGraphStore } from '@/stores/graphStore'
 import { useDetailStore } from '@/stores/detailStore'
+import { InlineEditField } from './form/InlineEditField'
+import { useAutoSave } from '@/hooks/useAutoSave'
 import type { CategoryDetailV2 } from '@/api/types'
 
 interface EntityDetailPanelProps {
@@ -21,6 +24,46 @@ interface EntityDetailPanelProps {
   data?: unknown
   isLoading?: boolean
   error?: Error | null
+}
+
+/**
+ * Hook to manage local edit state and auto-save for the detail panel.
+ * Only initializes auto-save when draftId is provided (draft mode).
+ */
+function usePanelEditState(
+  draftId: string | undefined,
+  entityType: string,
+  entityKey: string | null,
+  data: unknown
+) {
+  const [editedLabel, setEditedLabel] = useState('')
+  const [editedDescription, setEditedDescription] = useState('')
+
+  // Initialize auto-save only when we have a draft and entity
+  const autoSave = useAutoSave({
+    draftToken: draftId || '',
+    entityType,
+    entityKey: entityKey || '',
+    debounceMs: 500,
+  })
+
+  // Initialize/reset state when data changes
+  useEffect(() => {
+    if (data) {
+      const entityData = data as Record<string, unknown>
+      setEditedLabel((entityData.label as string) || '')
+      setEditedDescription((entityData.description as string) || '')
+    }
+  }, [data])
+
+  return {
+    editedLabel,
+    setEditedLabel,
+    editedDescription,
+    setEditedDescription,
+    saveChange: autoSave.saveChange,
+    isSaving: autoSave.isSaving,
+  }
 }
 
 /**
@@ -35,12 +78,26 @@ interface EntityDetailPanelProps {
 export function EntityDetailPanel({
   entityKey,
   entityType = 'category',
+  draftId,
   data,
   isLoading = false,
   error = null,
 }: EntityDetailPanelProps) {
   const setSelectedEntity = useGraphStore((s) => s.setSelectedEntity)
   const openDetail = useDetailStore((s) => s.openDetail)
+
+  // Local edit state with auto-save integration
+  const {
+    editedLabel,
+    setEditedLabel,
+    editedDescription,
+    setEditedDescription,
+    saveChange,
+    isSaving,
+  } = usePanelEditState(draftId, entityType, entityKey, data)
+
+  // Whether editing is allowed (only in draft mode)
+  const isEditable = !!draftId
 
   // Handle double-click to open full detail modal
   const handleDoubleClick = () => {
@@ -312,14 +369,45 @@ export function EntityDetailPanel({
     }
   }
 
+  // Handle label save
+  const handleLabelSave = (newLabel: string) => {
+    setEditedLabel(newLabel)
+    if (draftId) {
+      saveChange([{ op: 'replace', path: '/label', value: newLabel }])
+    }
+  }
+
+  // Handle description save
+  const handleDescriptionSave = (newDescription: string) => {
+    setEditedDescription(newDescription)
+    if (draftId) {
+      saveChange([{ op: 'replace', path: '/description', value: newDescription }])
+    }
+  }
+
   return (
     <div className="h-full overflow-auto p-6" onDoubleClick={handleDoubleClick}>
-      <Card>
+      <Card className="relative">
+        {/* Saving indicator */}
+        {isSaving && (
+          <div className="absolute top-2 right-2 text-xs text-muted-foreground z-10">
+            Saving...
+          </div>
+        )}
         <CardHeader>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <CardTitle className="text-2xl">{label}</CardTitle>
-              <Badge variant="outline" className="text-xs">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              {isEditable ? (
+                <InlineEditField
+                  value={editedLabel}
+                  onSave={handleLabelSave}
+                  isEditable={true}
+                  className="text-2xl font-semibold"
+                />
+              ) : (
+                <CardTitle className="text-2xl">{label}</CardTitle>
+              )}
+              <Badge variant="outline" className="text-xs shrink-0">
                 {entityType}
               </Badge>
               {renderChangeStatusBadge()}
@@ -329,12 +417,21 @@ export function EntityDetailPanel({
               size="sm"
               onClick={handleOpenDetail}
               title="View Full Details"
+              className="shrink-0 ml-2"
             >
               <Maximize2 className="h-4 w-4" />
             </Button>
           </div>
-          {description && (
-            <CardDescription>{description}</CardDescription>
+          {isEditable ? (
+            <InlineEditField
+              value={editedDescription}
+              onSave={handleDescriptionSave}
+              isEditable={true}
+              placeholder="Add description..."
+              className="text-sm text-muted-foreground"
+            />
+          ) : (
+            description && <CardDescription>{description}</CardDescription>
           )}
         </CardHeader>
         {renderContent()}
