@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useRef } from 'react'
+import { useMemo, useEffect, useRef, useCallback } from 'react'
 import {
   ReactFlow,
   Background,
@@ -46,6 +46,16 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
   const selectedEntityType = useGraphStore((s) => s.selectedEntityType)
   const depth = useGraphStore((s) => s.depth)
   const edgeTypeFilter = useGraphStore((s) => s.edgeTypeFilter)
+  const setHoveredNode = useGraphStore((s) => s.setHoveredNode)
+
+  // Hover handlers for node highlighting
+  const onNodeMouseEnter = useCallback((_event: React.MouseEvent, node: Node) => {
+    setHoveredNode(node.id)
+  }, [setHoveredNode])
+
+  const onNodeMouseLeave = useCallback(() => {
+    setHoveredNode(null)
+  }, [setHoveredNode])
 
   // Use prop entityKey or fall back to selectedEntityKey from store
   const entityKey = propEntityKey ?? selectedEntityKey
@@ -286,6 +296,8 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
         nodes={nodes}
         edges={filteredEdges}
         nodeTypes={graphNodeTypes}
+        onNodeMouseEnter={onNodeMouseEnter}
+        onNodeMouseLeave={onNodeMouseLeave}
         minZoom={0.1}
         maxZoom={2}
         attributionPosition="bottom-left"

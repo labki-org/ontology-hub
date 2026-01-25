@@ -144,6 +144,7 @@ function getNodePath(entityType: string): string {
  */
 function GraphNodeComponent({ data }: { data: GraphNodeData }) {
   const setSelectedEntity = useGraphStore((s) => s.setSelectedEntity)
+  const hoveredNodeId = useGraphStore((s) => s.hoveredNodeId)
 
   const handleClick = () => {
     setSelectedEntity(data.entity_key, data.entity_type)
@@ -154,6 +155,13 @@ function GraphNodeComponent({ data }: { data: GraphNodeData }) {
   const fillColor = ENTITY_COLORS[entityType] ?? '#94a3b8'
   const borderColor = ENTITY_BORDER_COLORS[entityType] ?? '#64748b'
   const path = getNodePath(entityType)
+
+  // Calculate highlight state for hover dimming
+  const getOpacity = (): number => {
+    if (!hoveredNodeId) return 1
+    if (data.entity_key === hoveredNodeId) return 1
+    return 0.3
+  }
 
   // Get glow filter for change_status
   const getGlowStyle = (): React.CSSProperties => {
@@ -171,6 +179,7 @@ function GraphNodeComponent({ data }: { data: GraphNodeData }) {
     ? data.label.slice(0, maxLabelLength - 1) + '...'
     : data.label
 
+  const opacity = getOpacity()
   const glowStyle = getGlowStyle()
 
   // SVG dimensions need padding for handles and glow
@@ -179,7 +188,8 @@ function GraphNodeComponent({ data }: { data: GraphNodeData }) {
 
   return (
     <div
-      className="cursor-pointer"
+      className="cursor-pointer transition-opacity duration-200"
+      style={{ opacity }}
       onClick={handleClick}
     >
       {/* Target handle at top */}
