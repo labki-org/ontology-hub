@@ -23,9 +23,10 @@ export function ConfirmSubmit({
       user_comment: userComment,
     })
 
-    // Redirect to GitHub OAuth login endpoint
+    // Redirect to GitHub OAuth login endpoint (direct to backend, not through Vite proxy)
+    // This ensures the OAuth callback URL matches what's registered in GitHub OAuth app
     // Backend will handle PR creation in the OAuth callback
-    window.location.href = `/api/v1/oauth/github/login?${params.toString()}`
+    window.location.href = `http://localhost:8080/api/v1/oauth/github/login?${params.toString()}`
   }
 
   return (
