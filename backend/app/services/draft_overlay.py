@@ -215,6 +215,9 @@ class DraftOverlayService:
             if change.replacement_json:
                 entity = deepcopy(change.replacement_json)
                 entity["_change_status"] = "added"
+                # Normalize: use entity_key from change record (authoritative)
+                # Frontend may send 'id' but we need 'entity_key' for EntityWithStatus
+                entity["entity_key"] = change.entity_key
                 creates.append(entity)
 
         return creates
