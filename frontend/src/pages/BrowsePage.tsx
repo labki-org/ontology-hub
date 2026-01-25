@@ -49,7 +49,6 @@ export function BrowsePage() {
   const initialSyncDone = useRef(false)
 
   // Extract URL parameters
-  const draftId = searchParams.get('draft_id') || undefined
   const draftToken = searchParams.get('draft_token') || undefined
   const entityFromUrl = searchParams.get('entity')
 
@@ -57,6 +56,9 @@ export function BrowsePage() {
   const draftV2 = useDraftV2(draftToken)
   const draftChanges = useDraftChanges(draftToken)
   const validateDraftMutation = useValidateDraft(draftToken)
+
+  // Derive draftId from fetched draft (v2 workflow) or fall back to URL param (v1 workflow)
+  const draftId = draftV2.data?.id?.toString() || searchParams.get('draft_id') || undefined
 
   // Detail panel is open when an entity is selected
   const isDetailOpen = !!selectedEntityKey

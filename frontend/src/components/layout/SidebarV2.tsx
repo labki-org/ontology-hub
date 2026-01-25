@@ -19,6 +19,7 @@ import {
   useTemplates,
   useOntologyVersion,
 } from '@/api/entitiesV2'
+import { useDraftV2 } from '@/api/draftApiV2'
 import { useGraphStore } from '@/stores/graphStore'
 import type { EntityWithStatus } from '@/api/types'
 
@@ -109,7 +110,12 @@ function EntitySection({ title, icon: Icon, entities, isLoading, searchTerm, ent
 
 export function SidebarV2() {
   const [searchParams] = useSearchParams()
-  const draftId = searchParams.get('draft_id') || undefined
+  const draftToken = searchParams.get('draft_token') || undefined
+  const draftV2 = useDraftV2(draftToken)
+
+  // Derive draftId from fetched draft (v2 workflow) or fall back to URL param (v1 workflow)
+  const draftId = draftV2.data?.id?.toString() || searchParams.get('draft_id') || undefined
+
   const [searchTerm, setSearchTerm] = useState('')
   const debouncedSearchTerm = useDebounce(searchTerm, 150)
 
