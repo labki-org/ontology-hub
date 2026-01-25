@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-23)
 ## Current Position
 
 Phase: 14 of 14 (Validation + Workflow + PR)
-Plan: 1 of 10 in current phase
+Plan: 3 of 10 in current phase
 Status: In progress
-Last activity: 2026-01-24 -- Completed 14-01-PLAN.md
+Last activity: 2026-01-24 -- Completed 14-03-PLAN.md
 
-Progress: [##########################] 98% (v1.0 complete, v2.0 phases 8-13 complete, phase 14: 1/10 plans)
+Progress: [##########################] 98% (v1.0 complete, v2.0 phases 8-13 complete, phase 14: 3/10 plans)
 
 ## Performance Metrics
 
@@ -33,7 +33,7 @@ Progress: [##########################] 98% (v1.0 complete, v2.0 phases 8-13 comp
 | 11-draft-system | 5/5 | 16m | 3m |
 | 12-frontend-graph-visualization | 6/6 | 15m | 2m |
 | 13-entity-detail-pages | 9/9 | 36m | 4m |
-| 14-validation-workflow-pr | 1/10 | 4m | 4m |
+| 14-validation-workflow-pr | 3/10 | 6m | 2m |
 
 **Recent Trend:**
 - v1.0 completed in 2 days
@@ -68,6 +68,8 @@ Progress: [##########################] 98% (v1.0 complete, v2.0 phases 8-13 comp
 - v2.0 phase 13 plan 8: 4 minutes (browse integration with modal)
 - v2.0 phase 13 plan 9: 3 minutes (gap closure: ModuleDetail + BundleDetail edit mode)
 - v2.0 phase 14 plan 1: 4 minutes (v2 validation service)
+- v2.0 phase 14 plan 2: 1 minute (draft workflow transitions)
+- v2.0 phase 14 plan 3: 1 minute (validation endpoint)
 
 *Metrics updated after each plan completion*
 
@@ -168,6 +170,9 @@ Recent decisions affecting current work:
 - [14-01]: Effective entity reconstruction pattern: load canonical, apply CREATE/UPDATE/DELETE changes
 - [14-01]: Validation pipeline includes JSON Schema validation against _schema.json definitions
 - [14-01]: Datatype validation reuses ALLOWED_DATATYPES from v1 validation
+- [14-03]: Validation endpoint returns full report even when validation fails (transparency)
+- [14-03]: Terminal status drafts (SUBMITTED/MERGED/REJECTED) cannot be re-validated (400 error)
+- [14-03]: Rebase conflicts add warning to report without blocking validation
 
 ### Pending Todos
 
@@ -180,5 +185,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-24
-Stopped at: Completed plan 14-01 (v2 validation service)
+Stopped at: Completed plan 14-03 (validation endpoint)
 Resume file: None
