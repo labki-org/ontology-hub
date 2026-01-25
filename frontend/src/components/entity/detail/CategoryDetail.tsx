@@ -7,9 +7,12 @@ import { EntityHeader } from '../sections/EntityHeader'
 import { AccordionSection } from '../sections/AccordionSection'
 import { PropertiesSection } from '../sections/PropertiesSection'
 import { MembershipSection } from '../sections/MembershipSection'
-import { EditableList } from '../form/EditableList'
+import { DeletedItemBadge } from '../form/DeletedItemBadge'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Trash2, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface CategoryDetailProps {
@@ -56,6 +59,10 @@ export function CategoryDetail({
   const [editedLabel, setEditedLabel] = useState('')
   const [editedDescription, setEditedDescription] = useState('')
   const [editedParents, setEditedParents] = useState<string[]>([])
+  // Track soft-deleted parents (stay in position with "Deleted" badge until save)
+  const [deletedParents, setDeletedParents] = useState<Set<string>>(new Set())
+  // State for adding new parent
+  const [newParent, setNewParent] = useState('')
 
   // Auto-save hook
   const { saveChange, isSaving } = useAutoSave({
@@ -105,8 +112,28 @@ export function CategoryDetail({
     [draftId, saveChange]
   )
 
-  const handleAddParent = useCallback(
+  // Soft delete: mark parent as deleted (shows DeletedItemBadge with undo)
+  const handleDeleteParent = useCallback(
     (parent: string) => {
+      setDeletedParents((prev) => new Set([...prev, parent]))
+      // Save the change with parent removed from list
+      const newParents = editedParents.filter((p) => p !== parent)
+      if (draftId) {
+        saveChange([{ op: 'replace', path: '/parents', value: newParents }])
+      }
+    },
+    [editedParents, draftId, saveChange]
+  )
+
+  // Undo soft delete: restore parent to list
+  const handleUndoDeleteParent = useCallback(
+    (parent: string) => {
+      setDeletedParents((prev) => {
+        const next = new Set(prev)
+        next.delete(parent)
+        return next
+      })
+      // Re-add parent to the list
       const newParents = [...editedParents, parent]
       setEditedParents(newParents)
       if (draftId) {
@@ -116,16 +143,17 @@ export function CategoryDetail({
     [editedParents, draftId, saveChange]
   )
 
-  const handleRemoveParent = useCallback(
-    (parent: string) => {
-      const newParents = editedParents.filter((p) => p !== parent)
+  // Handler for adding new parent
+  const handleAddNewParent = useCallback(() => {
+    if (newParent.trim() && !editedParents.includes(newParent.trim())) {
+      const newParents = [...editedParents, newParent.trim()]
       setEditedParents(newParents)
+      setNewParent('')
       if (draftId) {
         saveChange([{ op: 'replace', path: '/parents', value: newParents }])
       }
-    },
-    [editedParents, draftId, saveChange]
-  )
+    }
+  }, [newParent, editedParents, draftId, saveChange])
 
   const handleRevertLabel = useCallback(() => {
     setEditedLabel(originalValues.label || '')
@@ -199,29 +227,83 @@ export function CategoryDetail({
         onRevertDescription={handleRevertDescription}
       />
 
-      {/* Parents section */}
+      {/* Parents section with hover-reveal delete icons and soft delete */}
       <AccordionSection
         id="parents"
         title="Parent Categories"
-        count={editedParents.length}
+        count={editedParents.length + deletedParents.size}
       >
-        <EditableList
-          items={editedParents}
-          onAdd={handleAddParent}
-          onRemove={handleRemoveParent}
-          isEditing={isEditing}
-          placeholder="Add parent category..."
-          emptyMessage="No parent categories (root category)"
-          renderItem={(parent) => (
-            <Badge
-              variant="secondary"
-              className="cursor-pointer hover:bg-secondary/80"
-              onClick={() => openDetail(parent, 'category')}
-            >
-              {parent}
-            </Badge>
+        <div className="space-y-2">
+          {/* Render active parents with hover-reveal delete icon */}
+          <div className="flex flex-wrap gap-2">
+            {editedParents.map((parent) => (
+              <div key={parent} className="group relative">
+                <Badge
+                  variant="secondary"
+                  className={cn(
+                    'cursor-pointer hover:bg-secondary/80 pr-8',
+                    isEditing && 'group-hover:pr-8'
+                  )}
+                  onClick={() => openDetail(parent, 'category')}
+                >
+                  {parent}
+                </Badge>
+                {/* Hover-reveal delete icon */}
+                {isEditing && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-1/2 -translate-y-1/2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDeleteParent(parent)
+                    }}
+                    aria-label={`Delete parent ${parent}`}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                )}
+              </div>
+            ))}
+
+            {/* Render soft-deleted parents with DeletedItemBadge */}
+            {Array.from(deletedParents).map((parent) => (
+              <DeletedItemBadge
+                key={`deleted-${parent}`}
+                label={parent}
+                onUndo={() => handleUndoDeleteParent(parent)}
+              />
+            ))}
+          </div>
+
+          {/* Empty state */}
+          {editedParents.length === 0 && deletedParents.size === 0 && !isEditing && (
+            <p className="text-sm text-muted-foreground italic">
+              No parent categories (root category)
+            </p>
           )}
-        />
+
+          {/* Add parent input in edit mode */}
+          {isEditing && (
+            <div className="flex gap-2">
+              <Input
+                value={newParent}
+                onChange={(e) => setNewParent(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleAddNewParent()
+                    e.preventDefault()
+                  }
+                }}
+                placeholder="Add parent category..."
+                className="max-w-xs"
+              />
+              <Button variant="outline" size="sm" onClick={handleAddNewParent}>
+                <Plus className="h-4 w-4 mr-1" /> Add
+              </Button>
+            </div>
+          )}
+        </div>
       </AccordionSection>
 
       {/* Inheritance Chain section - shows parents with edit status */}
