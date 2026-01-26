@@ -38,6 +38,7 @@ from app.schemas.draft_change import (
     DraftChangesListResponse,
 )
 from app.services.draft_workflow import auto_revert_if_validated
+from app.services.module_derived import compute_module_derived_entities
 
 router = APIRouter(tags=["draft-changes"])
 
@@ -99,6 +100,107 @@ async def entity_exists(session: AsyncSession, entity_type: str, entity_key: str
 
     result = await session.execute(select(model).where(model.entity_key == entity_key))
     return result.scalars().first() is not None
+
+
+async def auto_populate_module_derived(
+    session: AsyncSession,
+    draft: Draft,
+    change: DraftChange,
+) -> None:
+    """Auto-populate module derived entities after categories change.
+
+    When a module's categories are modified, this function computes and adds
+    the derived entities (properties, subobjects, templates) based on what
+    those categories require.
+
+    For UPDATE changes: merges derived entity patches into existing patch
+    For CREATE changes: updates replacement_json with derived entities
+
+    Args:
+        session: Async database session
+        draft: The draft being modified
+        change: The module change that was just committed
+    """
+    from copy import deepcopy
+
+    import jsonpatch
+
+    # Get effective categories from the change
+    categories: list[str] = []
+
+    if change.change_type == ChangeType.CREATE:
+        # New module: get categories from replacement_json
+        categories = (change.replacement_json or {}).get("categories", [])
+    elif change.change_type == ChangeType.UPDATE:
+        # Updated module: apply ONLY /categories patches to get effective categories
+        # (Full patch may fail if it includes /properties etc. that don't exist in canonical)
+        module_query = select(Module).where(Module.entity_key == change.entity_key)
+        result = await session.execute(module_query)
+        module = result.scalar_one_or_none()
+
+        if module:
+            canonical_json = deepcopy(module.canonical_json)
+            # Extract only /categories-related patches
+            categories_patches = [
+                op for op in (change.patch or [])
+                if op.get("path", "").startswith("/categories")
+            ]
+            if categories_patches:
+                try:
+                    patch = jsonpatch.JsonPatch(categories_patches)
+                    effective = patch.apply(canonical_json)
+                    categories = effective.get("categories", [])
+                except jsonpatch.JsonPatchException:
+                    categories = canonical_json.get("categories", [])
+            else:
+                categories = canonical_json.get("categories", [])
+        else:
+            # Module doesn't exist in canonical (shouldn't happen for UPDATE)
+            return
+
+    if not categories:
+        # No categories to derive from - set empty derived arrays
+        derived = {"properties": [], "subobjects": [], "templates": []}
+    else:
+        # Compute derived entities from categories
+        derived = await compute_module_derived_entities(
+            session, categories, draft_id=draft.id
+        )
+
+    # Update the change with derived entities
+    if change.change_type == ChangeType.CREATE:
+        # Update replacement_json directly
+        replacement = change.replacement_json or {}
+        replacement["properties"] = derived["properties"]
+        replacement["subobjects"] = derived["subobjects"]
+        replacement["templates"] = derived["templates"]
+        change.replacement_json = replacement
+    else:
+        # For UPDATE: add/merge patch operations for derived arrays
+        existing_patches = change.patch or []
+
+        # Remove any existing patches for derived paths
+        derived_paths = {"/properties", "/subobjects", "/templates"}
+        filtered_patches = [
+            p for p in existing_patches if p.get("path") not in derived_paths
+        ]
+
+        # Add new patches for derived entities
+        # IMPORTANT: Use "add" not "replace"! The "replace" op fails if the field
+        # doesn't exist in canonical_json (e.g., 'templates' may not exist).
+        # For object members, "add" creates if missing or replaces if exists.
+        # See CLAUDE.md for more details on this gotcha.
+        for path, values in [
+            ("/properties", derived["properties"]),
+            ("/subobjects", derived["subobjects"]),
+            ("/templates", derived["templates"]),
+        ]:
+            filtered_patches.append({"op": "add", "path": path, "value": values})
+
+        change.patch = filtered_patches
+
+    await session.commit()
+    await session.refresh(change)
 
 
 @router.get("/drafts/{token}/changes", response_model=DraftChangesListResponse)
@@ -300,6 +402,24 @@ async def add_draft_change(
 
     await session.commit()
     await session.refresh(change)
+
+    # Auto-populate derived entities for module changes
+    if change_in.entity_type == "module" and change_in.change_type in (
+        ChangeType.CREATE,
+        ChangeType.UPDATE,
+    ):
+        # For CREATE: always compute derived entities
+        # For UPDATE: check if categories were modified (add, remove, or replace)
+        should_populate = change_in.change_type == ChangeType.CREATE
+        if change_in.change_type == ChangeType.UPDATE:
+            # Check for any patch operation affecting /categories or /categories/*
+            should_populate = any(
+                op.get("path", "").startswith("/categories")
+                for op in (change_in.patch or [])
+            )
+
+        if should_populate:
+            await auto_populate_module_derived(session, draft, change)
 
     return DraftChangeResponse.model_validate(change)
 
