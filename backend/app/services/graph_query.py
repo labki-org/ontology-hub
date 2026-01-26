@@ -141,6 +141,31 @@ class GraphQueryService:
         )
         rows = result.fetchall()
 
+        # Handle isolated draft-created entities (GRAPH-05)
+        # If CTE returned no rows but entity exists in draft creates, it's an isolated node
+        if not rows:
+            draft_creates = await self.draft_overlay.get_draft_creates("category")
+            draft_match = next(
+                (c for c in draft_creates if c.get("entity_key") == entity_key),
+                None,
+            )
+            if draft_match:
+                # Return isolated draft node as single-node graph
+                return GraphResponse(
+                    nodes=[
+                        GraphNode(
+                            id=entity_key,
+                            label=draft_match.get("label", entity_key),
+                            entity_type=entity_type,
+                            depth=0,
+                            modules=[],
+                            change_status="added",
+                        )
+                    ],
+                    edges=[],
+                    has_cycles=False,
+                )
+
         # Collect entity keys for batch operations
         entity_keys = [row.entity_key for row in rows]
 
