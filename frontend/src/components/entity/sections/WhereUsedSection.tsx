@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge'
-import { useDetailStore } from '@/stores/detailStore'
+import { useGraphStore } from '@/stores/graphStore'
 import { AccordionSection } from './AccordionSection'
 
 interface WhereUsedItem {
@@ -22,7 +22,7 @@ export function WhereUsedSection({
   items,
   title = 'Used By',
 }: WhereUsedSectionProps) {
-  const openDetail = useDetailStore((s) => s.openDetail)
+  const setSelectedEntity = useGraphStore((s) => s.setSelectedEntity)
 
   if (items.length === 0) {
     return (
@@ -64,7 +64,7 @@ export function WhereUsedSection({
                   key={item.entityKey}
                   variant="secondary"
                   className="cursor-pointer hover:bg-secondary/80"
-                  onClick={() => openDetail(item.entityKey, item.entityType)}
+                  onClick={() => setSelectedEntity(item.entityKey, item.entityType)}
                 >
                   {item.label || item.entityKey}
                 </Badge>

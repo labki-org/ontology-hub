@@ -4,13 +4,11 @@ import { ReactFlowProvider } from '@xyflow/react'
 import { X } from 'lucide-react'
 import { GraphCanvas } from '@/components/graph/GraphCanvas'
 import { EntityDetailPanel } from '@/components/entity/EntityDetailPanel'
-import { EntityDetailModal } from '@/components/entity/EntityDetailModal'
 import { DraftBannerV2 } from '@/components/draft/DraftBannerV2'
 import { FloatingActionBar } from '@/components/draft/FloatingActionBar'
 import { PRWizard } from '@/components/draft/PRWizard'
 import { useGraphStore } from '@/stores/graphStore'
 import { useDraftStoreV2 } from '@/stores/draftStoreV2'
-import { useCategory, useProperty, useSubobject, useModule, useBundle, useTemplate } from '@/api/entitiesV2'
 import { useDraftV2, useDraftChanges, useValidateDraft } from '@/api/draftApiV2'
 import { Button } from '@/components/ui/button'
 
@@ -62,28 +60,6 @@ export function BrowsePage() {
 
   // Detail panel is open when an entity is selected
   const isDetailOpen = !!selectedEntityKey
-
-  // Fetch entity data based on type
-  const entityKey = selectedEntityKey || ''
-  const categoryQuery = useCategory(selectedEntityType === 'category' ? entityKey : '', draftId)
-  const propertyQuery = useProperty(selectedEntityType === 'property' ? entityKey : '', draftId)
-  const subobjectQuery = useSubobject(selectedEntityType === 'subobject' ? entityKey : '', draftId)
-  const moduleQuery = useModule(selectedEntityType === 'module' ? entityKey : '', draftId)
-  const bundleQuery = useBundle(selectedEntityType === 'bundle' ? entityKey : '', draftId)
-  const templateQuery = useTemplate(selectedEntityType === 'template' ? entityKey : '', draftId)
-
-  // Select the right query based on entity type
-  const entityQuery = (() => {
-    switch (selectedEntityType) {
-      case 'category': return categoryQuery
-      case 'property': return propertyQuery
-      case 'subobject': return subobjectQuery
-      case 'module': return moduleQuery
-      case 'bundle': return bundleQuery
-      case 'template': return templateQuery
-      default: return categoryQuery
-    }
-  })()
 
   // Sync URL entity param to graphStore ONLY on initial mount
   useEffect(() => {
@@ -192,7 +168,7 @@ export function BrowsePage() {
           {/* Slide-in detail panel overlay */}
           <div
             className={`
-              absolute top-0 right-0 h-full w-[520px] max-w-[90vw]
+              absolute top-0 right-0 h-full w-[640px] max-w-[90vw]
               bg-background border-l shadow-xl
               transform transition-transform duration-300 ease-in-out
               ${isDetailOpen ? 'translate-x-0' : 'translate-x-full'}
@@ -208,19 +184,14 @@ export function BrowsePage() {
               <X className="h-4 w-4" />
             </Button>
 
-            {/* Detail content */}
+            {/* Detail content - components fetch their own data */}
             <EntityDetailPanel
               entityKey={selectedEntityKey}
               entityType={selectedEntityType}
               draftId={draftId}
-              data={entityQuery.data}
-              isLoading={entityQuery.isLoading}
-              error={entityQuery.error}
+              draftToken={draftToken}
             />
           </div>
-
-          {/* Entity detail modal - renders when opened via double-click or button */}
-          <EntityDetailModal draftId={draftId} draftToken={draftToken} />
         </div>
 
         {/* V2 Floating Action Bar - only shown when draftV2 exists */}

@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { useBundle, useModules } from '@/api/entitiesV2'
 import type { BundleDetailV2 } from '@/api/types'
 import { useAutoSave } from '@/hooks/useAutoSave'
-import { useDetailStore } from '@/stores/detailStore'
+import { useGraphStore } from '@/stores/graphStore'
 import { useDraftStoreV2 } from '@/stores/draftStoreV2'
 import { AccordionSection } from '@/components/entity/sections/AccordionSection'
 import { EntityHeader } from '../sections/EntityHeader'
@@ -29,8 +29,7 @@ export function BundleDetail({ entityKey, draftId, draftToken, isEditing }: Bund
   const { data: bundle, isLoading, error } = useBundle(entityKey, draftId)
   const { data: modulesData } = useModules(undefined, undefined, draftId)
 
-  const openDetail = useDetailStore((s) => s.openDetail)
-  const pushBreadcrumb = useDetailStore((s) => s.pushBreadcrumb)
+  const setSelectedEntity = useGraphStore((s) => s.setSelectedEntity)
   const openNestedCreateModal = useDraftStoreV2((s) => s.openNestedCreateModal)
   const setOnNestedEntityCreated = useDraftStoreV2((s) => s.setOnNestedEntityCreated)
 
@@ -41,10 +40,11 @@ export function BundleDetail({ entityKey, draftId, draftToken, isEditing }: Bund
   }))
 
   // Track original values for change detection
-  const [originalValues, setOriginalValues] = useState<{ label?: string }>({})
+  const [originalValues, setOriginalValues] = useState<{ label?: string; description?: string }>({})
 
   // Local editable state
   const [editedLabel, setEditedLabel] = useState('')
+  const [editedDescription, setEditedDescription] = useState('')
   const [editedModules, setEditedModules] = useState<string[]>([])
 
   // Track which entity we've initialized original values for (prevent reset on refetch)
@@ -70,16 +70,17 @@ export function BundleDetail({ entityKey, draftId, draftToken, isEditing }: Bund
       // (not on refetch after auto-save)
       if (isNewEntity) {
         setEditedLabel(bundleDetail.label)
+        setEditedDescription(bundleDetail.description || '')
         setEditedModules(bundleDetail.modules || [])
-        setOriginalValues({ label: bundleDetail.label })
+        setOriginalValues({
+          label: bundleDetail.label,
+          description: bundleDetail.description || '',
+        })
 
         initializedEntityRef.current = entityKey
       }
-
-      // Always update breadcrumbs
-      pushBreadcrumb(entityKey, 'bundle', bundleDetail.label)
     }
-  }, [bundleDetail, entityKey, pushBreadcrumb])
+  }, [bundleDetail, entityKey])
 
   // Change handlers with auto-save
   const handleLabelChange = useCallback(
@@ -89,7 +90,17 @@ export function BundleDetail({ entityKey, draftId, draftToken, isEditing }: Bund
         saveChange([{ op: 'add', path: '/label', value }])
       }
     },
-    [draftId, saveChange]
+    [draftToken, saveChange]
+  )
+
+  const handleDescriptionChange = useCallback(
+    (value: string) => {
+      setEditedDescription(value)
+      if (draftToken) {
+        saveChange([{ op: 'add', path: '/description', value }])
+      }
+    },
+    [draftToken, saveChange]
   )
 
   const handleAddModule = useCallback(
@@ -173,12 +184,14 @@ export function BundleDetail({ entityKey, draftId, draftToken, isEditing }: Bund
       <EntityHeader
         entityKey={entityKey}
         label={editedLabel}
-        description={null}
+        description={editedDescription}
         entityType="bundle"
         changeStatus={changeStatus}
         isEditing={isEditing}
         originalLabel={originalValues.label}
+        originalDescription={originalValues.description}
         onLabelChange={handleLabelChange}
+        onDescriptionChange={handleDescriptionChange}
       />
 
       {/* Version badge */}
@@ -273,7 +286,7 @@ export function BundleDetail({ entityKey, draftId, draftToken, isEditing }: Bund
                         <Badge
                           variant="outline"
                           className="cursor-pointer hover:bg-secondary/80"
-                          onClick={() => openDetail(moduleKey, 'module')}
+                          onClick={() => setSelectedEntity(moduleKey, 'module')}
                         >
                           {moduleKey}
                         </Badge>
@@ -295,7 +308,7 @@ export function BundleDetail({ entityKey, draftId, draftToken, isEditing }: Bund
                         <Badge
                           variant="outline"
                           className="cursor-pointer hover:bg-secondary/80"
-                          onClick={() => openDetail(moduleKey, 'module')}
+                          onClick={() => setSelectedEntity(moduleKey, 'module')}
                         >
                           {moduleKey}
                         </Badge>

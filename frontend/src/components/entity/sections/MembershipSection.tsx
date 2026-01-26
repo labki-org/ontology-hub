@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge'
-import { useDetailStore } from '@/stores/detailStore'
+import { useGraphStore } from '@/stores/graphStore'
 import { AccordionSection } from './AccordionSection'
 
 interface MembershipSectionProps {
@@ -12,7 +12,7 @@ interface MembershipSectionProps {
  * Clicking a module/bundle navigates to its detail view.
  */
 export function MembershipSection({ modules = [], bundles = [] }: MembershipSectionProps) {
-  const openDetail = useDetailStore((s) => s.openDetail)
+  const setSelectedEntity = useGraphStore((s) => s.setSelectedEntity)
 
   const hasContent = modules.length > 0 || bundles.length > 0
 
@@ -43,7 +43,7 @@ export function MembershipSection({ modules = [], bundles = [] }: MembershipSect
                   key={moduleKey}
                   variant="secondary"
                   className="cursor-pointer hover:bg-secondary/80"
-                  onClick={() => openDetail(moduleKey, 'module')}
+                  onClick={() => setSelectedEntity(moduleKey, 'module')}
                 >
                   {moduleKey}
                 </Badge>
@@ -61,7 +61,7 @@ export function MembershipSection({ modules = [], bundles = [] }: MembershipSect
                   key={bundleKey}
                   variant="outline"
                   className="cursor-pointer hover:bg-muted"
-                  onClick={() => openDetail(bundleKey, 'bundle')}
+                  onClick={() => setSelectedEntity(bundleKey, 'bundle')}
                 >
                   {bundleKey}
                 </Badge>

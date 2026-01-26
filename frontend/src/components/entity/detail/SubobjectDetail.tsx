@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useSubobject, useProperties } from '@/api/entitiesV2'
 import { useAutoSave } from '@/hooks/useAutoSave'
-import { useDetailStore } from '@/stores/detailStore'
 import { useDraftStoreV2 } from '@/stores/draftStoreV2'
 import { EntityHeader } from '../sections/EntityHeader'
 import { AccordionSection } from '../sections/AccordionSection'
@@ -35,7 +34,6 @@ export function SubobjectDetail({
   isEditing,
 }: SubobjectDetailProps) {
   const { data, isLoading, error } = useSubobject(entityKey, draftId)
-  const pushBreadcrumb = useDetailStore((s) => s.pushBreadcrumb)
   const openNestedCreateModal = useDraftStoreV2((s) => s.openNestedCreateModal)
   const setOnNestedEntityCreated = useDraftStoreV2((s) => s.setOnNestedEntityCreated)
 
@@ -108,11 +106,8 @@ export function SubobjectDetail({
 
         initializedEntityRef.current = entityKey
       }
-
-      // Always update breadcrumbs
-      pushBreadcrumb(entityKey, 'subobject', subobject.label)
     }
-  }, [subobject, entityKey, pushBreadcrumb])
+  }, [subobject, entityKey])
 
   // Change handlers
   const handleLabelChange = useCallback(

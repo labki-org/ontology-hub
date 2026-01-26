@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { useDetailStore } from '@/stores/detailStore'
+import { useGraphStore } from '@/stores/graphStore'
 import { AccordionSection } from './AccordionSection'
 import {
   Collapsible,
@@ -25,7 +25,7 @@ export function PropertiesSection({
   isEditing,
   onRemoveProperty,
 }: PropertiesSectionProps) {
-  const openDetail = useDetailStore((s) => s.openDetail)
+  const setSelectedEntity = useGraphStore((s) => s.setSelectedEntity)
 
   // Separate direct and inherited
   const directProperties = properties.filter((p) => p.is_direct)
@@ -49,7 +49,7 @@ export function PropertiesSection({
     >
       <div className="flex items-center gap-2">
         <button
-          onClick={() => openDetail(prop.entity_key, 'property')}
+          onClick={() => setSelectedEntity(prop.entity_key, 'property')}
           className="font-medium text-sm text-primary hover:underline"
         >
           {prop.label}
@@ -118,7 +118,7 @@ export function PropertiesSection({
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
-                          openDetail(sourceCategory, 'category')
+                          setSelectedEntity(sourceCategory, 'category')
                         }}
                         className="text-primary hover:underline font-medium"
                       >

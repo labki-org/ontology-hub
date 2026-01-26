@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useTemplate } from '@/api/entitiesV2'
 import { useAutoSave } from '@/hooks/useAutoSave'
-import { useDetailStore } from '@/stores/detailStore'
 import { EntityHeader } from '../sections/EntityHeader'
 import { AccordionSection } from '../sections/AccordionSection'
 import { MembershipSection } from '../sections/MembershipSection'
@@ -34,7 +33,6 @@ export function TemplateDetail({
   isEditing,
 }: TemplateDetailProps) {
   const { data, isLoading, error } = useTemplate(entityKey, draftId)
-  const pushBreadcrumb = useDetailStore((s) => s.pushBreadcrumb)
 
   // Cast to TemplateDetailV2
   const template = data as TemplateDetailV2 | undefined
@@ -82,11 +80,8 @@ export function TemplateDetail({
 
         initializedEntityRef.current = entityKey
       }
-
-      // Always update breadcrumbs
-      pushBreadcrumb(entityKey, 'template', template.label)
     }
-  }, [template, entityKey, pushBreadcrumb])
+  }, [template, entityKey])
 
   // Change handlers - use 'add' instead of 'replace' for robustness
   // (add works whether field exists or not in canonical_json)

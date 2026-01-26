@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useCategory, useCategories, useProperties, useSubobjects } from '@/api/entitiesV2'
 import { useAutoSave } from '@/hooks/useAutoSave'
-import { useDetailStore } from '@/stores/detailStore'
+import { useGraphStore } from '@/stores/graphStore'
 import { useDraftStoreV2 } from '@/stores/draftStoreV2'
 import { EntityHeader } from '../sections/EntityHeader'
 import { AccordionSection } from '../sections/AccordionSection'
@@ -38,8 +38,7 @@ export function CategoryDetail({
 }: CategoryDetailProps) {
   const { data: rawCategory, isLoading, error } = useCategory(entityKey, draftId)
   const { data: categoriesData } = useCategories(undefined, undefined, draftId)
-  const openDetail = useDetailStore((s) => s.openDetail)
-  const pushBreadcrumb = useDetailStore((s) => s.pushBreadcrumb)
+  const setSelectedEntity = useGraphStore((s) => s.setSelectedEntity)
   const openNestedCreateModal = useDraftStoreV2((s) => s.openNestedCreateModal)
   const setOnNestedEntityCreated = useDraftStoreV2((s) => s.setOnNestedEntityCreated)
 
@@ -168,11 +167,8 @@ export function CategoryDetail({
 
         initializedEntityRef.current = entityKey
       }
-
-      // Always update breadcrumbs
-      pushBreadcrumb(entityKey, 'category', category.label)
     }
-  }, [category, entityKey, pushBreadcrumb])
+  }, [category, entityKey])
 
   // Change handlers with auto-save - use 'add' for robustness
   // (add works whether field exists or not in canonical_json)
@@ -551,7 +547,7 @@ export function CategoryDetail({
               return (
                 <button
                   key={parentKey}
-                  onClick={() => openDetail(parentKey, 'category')}
+                  onClick={() => setSelectedEntity(parentKey, 'category')}
                   className={cn(
                     'w-full text-left px-2 py-1.5 text-sm rounded flex items-center gap-2',
                     'hover:bg-sidebar-accent transition-colors',
@@ -711,7 +707,7 @@ export function CategoryDetail({
                   .map((prop) => (
                     <button
                       key={prop.entity_key}
-                      onClick={() => openDetail(prop.entity_key, 'property')}
+                      onClick={() => setSelectedEntity(prop.entity_key, 'property')}
                       className="w-full text-left px-2 py-1.5 text-sm rounded flex items-center gap-2 hover:bg-sidebar-accent transition-colors"
                     >
                       <span className="flex-1 truncate">{prop.label}</span>
