@@ -179,7 +179,12 @@ async def get_category(
         raise HTTPException(status_code=404, detail="Category not found")
 
     # Get parent category keys
-    if category:
+    # First check if draft overlay has modified parents (effective JSON takes priority)
+    if "parents" in effective and effective.get("_change_status") in ("modified", "added"):
+        # Draft has modified parents - use effective JSON
+        parents = effective.get("parents", [])
+    elif category:
+        # No draft parent changes - use canonical relationship table
         parent_query = (
             select(Category.entity_key)
             .join(CategoryParent, CategoryParent.parent_id == Category.id)
@@ -707,7 +712,8 @@ async def get_module(
         entity_result = await session.execute(entity_query)
 
         for row in entity_result.fetchall():
-            entity_type = row[0].value  # Convert enum to string
+            # entity_type is stored as string in DB, may be returned as string or enum
+            entity_type = row[0].value if hasattr(row[0], "value") else row[0]
             ent_key = row[1]
 
             if entity_type not in entities:
@@ -815,7 +821,7 @@ async def compute_bundle_closure(
             -- Base: categories in direct modules
             SELECT me.entity_key as category_key, m.entity_key as source_module_key
             FROM module_entity me
-            JOIN modules m ON m.id = me.module_id
+            JOIN modules_v2 m ON m.id = me.module_id
             WHERE m.entity_key = ANY(:module_keys)
               AND me.entity_type = 'category'
         ),
@@ -848,7 +854,7 @@ async def compute_bundle_closure(
         FROM all_ancestors aa
         JOIN categories c ON c.entity_key = aa.category_key
         JOIN module_entity me ON me.entity_key = aa.category_key AND me.entity_type = 'category'
-        JOIN modules m ON m.id = me.module_id
+        JOIN modules_v2 m ON m.id = me.module_id
         WHERE m.entity_key != ALL(:module_keys)
     """)
     result = await session.execute(query, {"module_keys": direct_module_keys})
