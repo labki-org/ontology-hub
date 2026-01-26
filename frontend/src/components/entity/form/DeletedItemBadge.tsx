@@ -1,5 +1,4 @@
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Undo2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -41,15 +40,19 @@ export function DeletedItemBadge({
       <Badge variant="secondary" className="text-xs">
         Deleted
       </Badge>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onClick={onUndo}
-        className="h-6 w-6 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+      <button
+        type="button"
+        onClick={(e) => {
+          console.log('Undo button clicked for:', label)
+          e.stopPropagation()
+          e.preventDefault()
+          onUndo()
+        }}
+        className="h-6 w-6 flex items-center justify-center rounded text-blue-600 hover:text-blue-800 hover:bg-blue-100 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900/30"
         aria-label="Undo deletion"
       >
         <Undo2 className="h-4 w-4" />
-      </Button>
+      </button>
     </div>
   )
 }

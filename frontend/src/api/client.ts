@@ -37,5 +37,16 @@ export async function apiFetch<T>(
     throw new ApiError(response.status, errorText || `HTTP ${response.status}`)
   }
 
-  return response.json()
+  // Handle empty responses (e.g., 204 No Content from DELETE)
+  const contentLength = response.headers.get('content-length')
+  if (response.status === 204 || contentLength === '0') {
+    return undefined as T
+  }
+
+  const text = await response.text()
+  if (!text) {
+    return undefined as T
+  }
+
+  return JSON.parse(text)
 }

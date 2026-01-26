@@ -25,14 +25,17 @@ import { BundleDetail } from './detail/BundleDetail'
 import { TemplateDetail } from './detail/TemplateDetail'
 
 interface EntityDetailModalProps {
+  /** Draft UUID for query params (fetching effective views) */
   draftId?: string
+  /** Draft capability token for mutations (creating/updating changes) */
+  draftToken?: string
 }
 
 /**
  * Full detail view modal overlay.
  * Per CONTEXT.md: modal overlay hides graph behind, global edit toggle at top.
  */
-export function EntityDetailModal({ draftId }: EntityDetailModalProps) {
+export function EntityDetailModal({ draftId, draftToken }: EntityDetailModalProps) {
   const {
     isOpen,
     isEditing,
@@ -54,6 +57,7 @@ export function EntityDetailModal({ draftId }: EntityDetailModalProps) {
     const props = {
       entityKey,
       draftId,
+      draftToken,
       isEditing: canEdit && isEditing,
     }
 

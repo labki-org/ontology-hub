@@ -358,25 +358,36 @@ export function SidebarV2() {
 
   // Handle undo delete
   const handleUndoDelete = async (entityKey: string) => {
+    console.log('handleUndoDelete called for:', entityKey)
+    console.log('deletedEntityChanges:', deletedEntityChanges)
+    console.log('draftChangesData:', draftChangesData)
+
     // Find the changeId for this entity
     const changeId = deletedEntityChanges.get(entityKey)
+    console.log('changeId from map:', changeId)
+
     if (!changeId) {
       // Try to find from draft changes
       const change = draftChangesData?.changes.find(
-        (c) => c.entity_key === entityKey && c.change_type === 'DELETE'
+        (c) => c.entity_key === entityKey && c.change_type === 'delete'
       )
+      console.log('change from draftChangesData:', change)
       if (change) {
         try {
+          console.log('Calling undoDelete with change.id:', change.id)
           await undoDelete.mutateAsync(change.id)
           untrackDeletedEntity(entityKey)
         } catch (error) {
           console.error('Failed to undo delete:', error)
         }
+      } else {
+        console.log('No change found for entity, cannot undo')
       }
       return
     }
 
     try {
+      console.log('Calling undoDelete with changeId:', changeId)
       await undoDelete.mutateAsync(changeId)
       untrackDeletedEntity(entityKey)
     } catch (error) {

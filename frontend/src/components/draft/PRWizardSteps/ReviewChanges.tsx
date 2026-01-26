@@ -14,9 +14,9 @@ export function ReviewChanges({
   onNext,
 }: ReviewChangesProps) {
   // Calculate change counts by type
-  const createCount = changes.filter((c) => c.change_type === 'CREATE').length
-  const updateCount = changes.filter((c) => c.change_type === 'UPDATE').length
-  const deleteCount = changes.filter((c) => c.change_type === 'DELETE').length
+  const createCount = changes.filter((c) => c.change_type === 'create').length
+  const updateCount = changes.filter((c) => c.change_type === 'update').length
+  const deleteCount = changes.filter((c) => c.change_type === 'delete').length
 
   // Determine validation status badge
   const validationBadge = validationReport.is_valid ? (

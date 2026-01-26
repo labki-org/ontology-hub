@@ -1,5 +1,13 @@
 import { useState } from 'react'
-import { Command } from 'cmdk'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from '@/components/ui/command'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
 import { Plus, Check, ChevronsUpDown } from 'lucide-react'
@@ -109,17 +117,14 @@ export function EntityCombobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[300px] p-0" align="start">
-        <Command className="rounded-lg border shadow-md" shouldFilter={false}>
-          <div className="flex items-center border-b px-3">
-            <Command.Input
-              placeholder={`Search ${entityType}...`}
-              value={inputValue}
-              onValueChange={setInputValue}
-              className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
-            />
-          </div>
-          <Command.List className="max-h-[200px] overflow-y-auto p-1">
-            <Command.Empty className="py-6 text-center text-sm text-muted-foreground">
+        <Command shouldFilter={false}>
+          <CommandInput
+            placeholder={`Search ${entityType}...`}
+            value={inputValue}
+            onValueChange={setInputValue}
+          />
+          <CommandList>
+            <CommandEmpty>
               {showCreateOption ? (
                 <button
                   className="flex items-center gap-2 w-full px-2 py-1.5 text-sm hover:bg-accent rounded-sm text-left"
@@ -131,14 +136,13 @@ export function EntityCombobox({
               ) : (
                 'No results found.'
               )}
-            </Command.Empty>
-            <Command.Group>
+            </CommandEmpty>
+            <CommandGroup>
               {filteredEntities.map((entity) => (
-                <Command.Item
+                <CommandItem
                   key={entity.key}
                   value={entity.key}
                   onSelect={() => handleSelect(entity.key)}
-                  className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
                 >
                   <Check
                     className={cn(
@@ -152,23 +156,22 @@ export function EntityCombobox({
                   <span className="ml-2 text-muted-foreground text-xs">
                     ({entity.key})
                   </span>
-                </Command.Item>
+                </CommandItem>
               ))}
-            </Command.Group>
+            </CommandGroup>
             {showCreateOption && filteredEntities.length > 0 && (
-              <Command.Group>
-                <Command.Separator className="-mx-1 my-1 h-px bg-border" />
-                <Command.Item
+              <CommandGroup>
+                <CommandSeparator />
+                <CommandItem
                   value={`create-${inputValue}`}
                   onSelect={handleCreate}
-                  className="flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground"
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Create &quot;{inputValue}&quot;
-                </Command.Item>
-              </Command.Group>
+                </CommandItem>
+              </CommandGroup>
             )}
-          </Command.List>
+          </CommandList>
         </Command>
       </PopoverContent>
     </Popover>
