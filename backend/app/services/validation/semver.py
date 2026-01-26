@@ -17,6 +17,11 @@ MAJOR_CODES = {
     "CARDINALITY_RESTRICTED",
     "PROPERTY_REMOVED",
     "ENTITY_REMOVED",
+    # Module/bundle/template breaking changes
+    "CATEGORY_REMOVED",  # Module lost a category
+    "DEPENDENCY_REMOVED",  # Module lost a dependency
+    "MODULE_REMOVED",  # Bundle lost a module
+    "WIKITEXT_CHANGED",  # Template wikitext modified
 }
 
 # Codes that indicate minor (addition) changes
@@ -24,6 +29,10 @@ MINOR_CODES = {
     "ENTITY_ADDED",
     "PROPERTY_ADDED",
     "CARDINALITY_RELAXED",
+    # Module/bundle additions
+    "CATEGORY_ADDED",  # Module gained a category
+    "DEPENDENCY_ADDED",  # Module gained a dependency
+    "MODULE_ADDED",  # Bundle gained a module
 }
 
 # Codes that indicate patch (metadata) changes
