@@ -12,10 +12,8 @@ Provides read-only access to indexed schema entities:
 All endpoints filter out soft-deleted entities (deleted_at is not None).
 """
 
-from typing import Optional
-
 from fastapi import APIRouter, HTTPException, Query, Request
-from sqlalchemy import cast, func, or_, String
+from sqlalchemy import String, cast, func, or_
 from sqlmodel import select
 
 from app.database import SessionDep
@@ -56,10 +54,7 @@ async def get_entity_overview(
     result = await session.execute(query)
     rows = result.all()
 
-    types = [
-        EntityTypeSummary(entity_type=row.entity_type.value, count=row.count)
-        for row in rows
-    ]
+    types = [EntityTypeSummary(entity_type=row.entity_type.value, count=row.count) for row in rows]
     total = sum(t.count for t in types)
 
     return EntityOverviewResponse(types=types, total=total)
@@ -71,9 +66,7 @@ async def search_entities(
     request: Request,
     session: SessionDep,
     q: str = Query(..., min_length=2, max_length=100, description="Search query"),
-    entity_type: Optional[EntityType] = Query(
-        None, description="Filter by entity type"
-    ),
+    entity_type: EntityType | None = Query(None, description="Filter by entity type"),
     limit: int = Query(20, ge=1, le=100, description="Max results to return"),
 ) -> EntityListResponse:
     """Search entities by query string.
@@ -149,7 +142,7 @@ async def get_category_inheritance(
     try:
         return await get_inheritance_chain(session, entity_id)
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e
 
 
 @router.get("/{entity_type}", response_model=EntityListResponse)
@@ -158,7 +151,7 @@ async def list_entities_by_type(
     request: Request,
     entity_type: EntityType,
     session: SessionDep,
-    cursor: Optional[str] = Query(
+    cursor: str | None = Query(
         None, description="Last entity_id from previous page for pagination"
     ),
     limit: int = Query(20, ge=1, le=100, description="Max items per page"),

@@ -6,8 +6,8 @@ and compute field-level diffs between versions.
 
 from typing import Any
 
-from app.services.github import GitHubClient, ENTITY_DIRECTORIES
 from app.config import settings
+from app.services.github import ENTITY_DIRECTORIES, GitHubClient
 
 
 async def get_entities_at_version(
@@ -75,26 +75,32 @@ def compute_entity_diff(
         new = new_entities.get(key)
 
         if old is None and new is not None:
-            added.append({
-                "key": key,
-                "entity_type": entity_type,
-                "entity_id": entity_id,
-                "new": new,
-            })
+            added.append(
+                {
+                    "key": key,
+                    "entity_type": entity_type,
+                    "entity_id": entity_id,
+                    "new": new,
+                }
+            )
         elif old is not None and new is None:
-            deleted.append({
-                "key": key,
-                "entity_type": entity_type,
-                "entity_id": entity_id,
-                "old": old,
-            })
+            deleted.append(
+                {
+                    "key": key,
+                    "entity_type": entity_type,
+                    "entity_id": entity_id,
+                    "old": old,
+                }
+            )
         elif old != new:
-            modified.append({
-                "key": key,
-                "entity_type": entity_type,
-                "entity_id": entity_id,
-                "old": old,
-                "new": new,
-            })
+            modified.append(
+                {
+                    "key": key,
+                    "entity_type": entity_type,
+                    "entity_id": entity_id,
+                    "old": old,
+                    "new": new,
+                }
+            )
 
     return {"added": added, "modified": modified, "deleted": deleted}

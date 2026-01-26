@@ -100,9 +100,7 @@ async def get_draft_by_token(token: str, session: SessionDep) -> Draft:
 async def get_change_count(draft_id, session: SessionDep) -> int:
     """Get the number of changes in a draft."""
     statement = (
-        select(func.count())
-        .select_from(DraftChange)
-        .where(DraftChange.draft_id == draft_id)
+        select(func.count()).select_from(DraftChange).where(DraftChange.draft_id == draft_id)
     )
     result = await session.execute(statement)
     return result.scalar_one()
@@ -156,11 +154,7 @@ async def create_draft(
         HTTPException: 503 if no ontology version exists
     """
     # Get current OntologyVersion for base_commit_sha
-    version_stmt = (
-        select(OntologyVersion)
-        .order_by(OntologyVersion.created_at.desc())
-        .limit(1)
-    )
+    version_stmt = select(OntologyVersion).order_by(OntologyVersion.created_at.desc()).limit(1)
     version_result = await session.execute(version_stmt)
     current_version = version_result.scalar_one_or_none()
 
@@ -461,7 +455,7 @@ async def submit_draft(
         )
     except Exception as e:
         logger.error(f"Failed to create PR: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to create GitHub PR: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create GitHub PR: {str(e)}") from e
 
     await transition_to_submitted(draft.id, pr_url, session)
     await session.commit()

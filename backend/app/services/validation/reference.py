@@ -9,9 +9,7 @@ from app.models.module import Module
 from app.schemas.validation import ValidationResult
 
 
-async def get_canonical_entity_ids(
-    session: AsyncSession, entity_type: EntityType
-) -> set[str]:
+async def get_canonical_entity_ids(session: AsyncSession, entity_type: EntityType) -> set[str]:
     """Get all entity IDs of given type from canonical database.
 
     Args:

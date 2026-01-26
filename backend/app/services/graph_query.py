@@ -7,13 +7,19 @@ for change status badges (GRP-04).
 """
 
 import uuid
-from typing import Optional
 
 from sqlalchemy import text
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.models.v2 import Category, CategoryParent, Module, ModuleEntity, Property, Subobject, Template
+from app.models.v2 import (
+    Category,
+    Module,
+    ModuleEntity,
+    Property,
+    Subobject,
+    Template,
+)
 from app.schemas.graph import GraphEdge, GraphNode, GraphResponse
 from app.services.draft_overlay import DraftOverlayService
 
@@ -30,9 +36,7 @@ class GraphQueryService:
         graph = await service.get_neighborhood_graph("Person", depth=2)
     """
 
-    def __init__(
-        self, session: AsyncSession, draft_overlay: DraftOverlayService
-    ) -> None:
+    def __init__(self, session: AsyncSession, draft_overlay: DraftOverlayService) -> None:
         """Initialize graph query service.
 
         Args:
@@ -220,9 +224,7 @@ class GraphQueryService:
             category = cat_result.scalar_one_or_none()
 
             # Apply draft overlay to get effective data with change_status
-            effective = await self.draft_overlay.apply_overlay(
-                category, "category", row.entity_key
-            )
+            effective = await self.draft_overlay.apply_overlay(category, "category", row.entity_key)
 
             change_status = None
             if effective:
@@ -273,16 +275,12 @@ class GraphQueryService:
                         )
 
         # Add property nodes and edges for categories in the neighborhood
-        property_nodes, property_edges = await self._get_property_nodes_and_edges(
-            entity_keys
-        )
+        property_nodes, property_edges = await self._get_property_nodes_and_edges(entity_keys)
         nodes.extend(property_nodes)
         edges.extend(property_edges)
 
         # Add subobject nodes and edges for categories in the neighborhood
-        subobject_nodes, subobject_edges = await self._get_subobject_nodes_and_edges(
-            entity_keys
-        )
+        subobject_nodes, subobject_edges = await self._get_subobject_nodes_and_edges(entity_keys)
         nodes.extend(subobject_nodes)
         edges.extend(subobject_edges)
 
@@ -516,8 +514,9 @@ class GraphQueryService:
             canonical = cat.canonical_json or {}
             optional = canonical.get("optional_subobjects", [])
             required = canonical.get("required_subobjects", [])
-            all_subobjs = (optional if isinstance(optional, list) else []) + \
-                         (required if isinstance(required, list) else [])
+            all_subobjs = (optional if isinstance(optional, list) else []) + (
+                required if isinstance(required, list) else []
+            )
             if entity_key in all_subobjs:
                 referencing_categories.append(cat)
 
@@ -611,7 +610,7 @@ class GraphQueryService:
     async def _get_template_neighborhood(
         self,
         entity_key: str,
-        depth: int,
+        _depth: int,
     ) -> GraphResponse:
         """Get neighborhood graph for a template.
 
@@ -737,7 +736,7 @@ class GraphQueryService:
     async def _get_module_neighborhood(
         self,
         entity_key: str,
-        depth: int,
+        _depth: int,
     ) -> GraphResponse:
         """Get neighborhood graph for a module.
 
@@ -816,9 +815,7 @@ class GraphQueryService:
                 # Add parent edges for draft categories
                 parents = draft_cat.get("parents", [])
                 for parent_key in parents:
-                    edges.append(
-                        GraphEdge(source=draft_key, target=parent_key, edge_type="parent")
-                    )
+                    edges.append(GraphEdge(source=draft_key, target=parent_key, edge_type="parent"))
 
         # Get all properties
         properties_query = select(Property)
@@ -831,7 +828,9 @@ class GraphQueryService:
             prop_module_membership = await self._get_module_membership(property_keys, "property")
 
             for prop in properties:
-                effective = await self.draft_overlay.apply_overlay(prop, "property", prop.entity_key)
+                effective = await self.draft_overlay.apply_overlay(
+                    prop, "property", prop.entity_key
+                )
                 change_status = effective.get("_change_status") if effective else None
 
                 nodes.append(
@@ -855,7 +854,9 @@ class GraphQueryService:
             result = await self.session.execute(property_edge_query)
             for row in result.fetchall():
                 edges.append(
-                    GraphEdge(source=row.category_key, target=row.property_key, edge_type="property")
+                    GraphEdge(
+                        source=row.category_key, target=row.property_key, edge_type="property"
+                    )
                 )
 
         # Get all subobjects
@@ -866,10 +867,14 @@ class GraphQueryService:
         subobject_keys = [s.entity_key for s in subobjects]
 
         if subobject_keys:
-            subobj_module_membership = await self._get_module_membership(subobject_keys, "subobject")
+            subobj_module_membership = await self._get_module_membership(
+                subobject_keys, "subobject"
+            )
 
             for subobj in subobjects:
-                effective = await self.draft_overlay.apply_overlay(subobj, "subobject", subobj.entity_key)
+                effective = await self.draft_overlay.apply_overlay(
+                    subobj, "subobject", subobj.entity_key
+                )
                 change_status = effective.get("_change_status") if effective else None
 
                 nodes.append(
@@ -888,8 +893,9 @@ class GraphQueryService:
             canonical = cat.canonical_json or {}
             optional = canonical.get("optional_subobjects", [])
             required = canonical.get("required_subobjects", [])
-            all_subobjs = (optional if isinstance(optional, list) else []) + \
-                         (required if isinstance(required, list) else [])
+            all_subobjs = (optional if isinstance(optional, list) else []) + (
+                required if isinstance(required, list) else []
+            )
             for subobj_key in all_subobjs:
                 if subobj_key in subobject_keys:
                     edges.append(
@@ -906,7 +912,11 @@ class GraphQueryService:
         result = await self.session.execute(subobject_property_edge_query)
         for row in result.fetchall():
             edges.append(
-                GraphEdge(source=row.subobject_key, target=row.property_key, edge_type="subobject_property")
+                GraphEdge(
+                    source=row.subobject_key,
+                    target=row.property_key,
+                    edge_type="subobject_property",
+                )
             )
 
         # Get all templates
@@ -917,10 +927,14 @@ class GraphQueryService:
         template_keys = [t.entity_key for t in templates]
 
         if template_keys:
-            template_module_membership = await self._get_module_membership(template_keys, "template")
+            template_module_membership = await self._get_module_membership(
+                template_keys, "template"
+            )
 
             for template in templates:
-                effective = await self.draft_overlay.apply_overlay(template, "template", template.entity_key)
+                effective = await self.draft_overlay.apply_overlay(
+                    template, "template", template.entity_key
+                )
                 change_status = effective.get("_change_status") if effective else None
 
                 nodes.append(
@@ -1141,9 +1155,7 @@ class GraphQueryService:
               AND p.entity_key = ANY(:entity_keys)
         """)
 
-        result = await self.session.execute(
-            edge_query, {"entity_keys": entity_keys}
-        )
+        result = await self.session.execute(edge_query, {"entity_keys": entity_keys})
         rows = result.fetchall()
 
         return [
@@ -1184,9 +1196,7 @@ class GraphQueryService:
             SELECT EXISTS(SELECT 1 FROM ancestors WHERE has_cycle) as has_cycles
         """)
 
-        result = await self.session.execute(
-            cycle_query, {"entity_keys": entity_keys}
-        )
+        result = await self.session.execute(cycle_query, {"entity_keys": entity_keys})
         row = result.fetchone()
         return bool(row and row.has_cycles)
 
@@ -1218,9 +1228,7 @@ class GraphQueryService:
             WHERE c.entity_key = ANY(:category_keys)
         """)
 
-        result = await self.session.execute(
-            property_query, {"category_keys": category_keys}
-        )
+        result = await self.session.execute(property_query, {"category_keys": category_keys})
         rows = result.fetchall()
 
         if not rows:
@@ -1230,9 +1238,7 @@ class GraphQueryService:
         property_keys = list({row.entity_key for row in rows})
 
         # Batch load module membership for properties
-        property_module_membership = await self._get_module_membership(
-            property_keys, "property"
-        )
+        property_module_membership = await self._get_module_membership(property_keys, "property")
 
         # Build property nodes with draft overlay
         nodes: list[GraphNode] = []
@@ -1249,9 +1255,7 @@ class GraphQueryService:
             prop = prop_result.scalar_one_or_none()
 
             # Apply draft overlay to get effective data with change_status
-            effective = await self.draft_overlay.apply_overlay(
-                prop, "property", row.entity_key
-            )
+            effective = await self.draft_overlay.apply_overlay(prop, "property", row.entity_key)
 
             change_status = None
             if effective:
@@ -1315,17 +1319,13 @@ class GraphQueryService:
         properties = result.scalars().all()
 
         # Batch load module membership for properties
-        property_module_membership = await self._get_module_membership(
-            property_keys, "property"
-        )
+        property_module_membership = await self._get_module_membership(property_keys, "property")
 
         # Build property nodes with draft overlay
         nodes: list[GraphNode] = []
         for prop in properties:
             # Apply draft overlay to get effective data with change_status
-            effective = await self.draft_overlay.apply_overlay(
-                prop, "property", prop.entity_key
-            )
+            effective = await self.draft_overlay.apply_overlay(prop, "property", prop.entity_key)
 
             change_status = None
             if effective:
@@ -1366,9 +1366,7 @@ class GraphQueryService:
             return [], []
 
         # Get categories with their canonical_json to extract subobject references
-        categories_query = select(Category).where(
-            Category.entity_key.in_(category_keys)
-        )
+        categories_query = select(Category).where(Category.entity_key.in_(category_keys))
         result = await self.session.execute(categories_query)
         categories = result.scalars().all()
 
@@ -1539,16 +1537,12 @@ class GraphQueryService:
             return [], []
 
         # Get subobject data
-        subobjects_query = select(Subobject).where(
-            Subobject.entity_key.in_(subobject_keys)
-        )
+        subobjects_query = select(Subobject).where(Subobject.entity_key.in_(subobject_keys))
         result = await self.session.execute(subobjects_query)
         subobjects = result.scalars().all()
 
         # Batch load module membership for subobjects
-        subobject_module_membership = await self._get_module_membership(
-            subobject_keys, "subobject"
-        )
+        subobject_module_membership = await self._get_module_membership(subobject_keys, "subobject")
 
         # Build subobject nodes with draft overlay
         nodes: list[GraphNode] = []
@@ -1662,16 +1656,12 @@ class GraphQueryService:
             return []
 
         # Get template data
-        templates_query = select(Template).where(
-            Template.entity_key.in_(template_keys)
-        )
+        templates_query = select(Template).where(Template.entity_key.in_(template_keys))
         result = await self.session.execute(templates_query)
         templates = result.scalars().all()
 
         # Batch load module membership for templates
-        template_module_membership = await self._get_module_membership(
-            template_keys, "template"
-        )
+        template_module_membership = await self._get_module_membership(template_keys, "template")
 
         # Build template nodes with draft overlay
         nodes: list[GraphNode] = []

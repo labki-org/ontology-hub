@@ -6,7 +6,7 @@ Tests version listing and diff computation:
 - GitHub client not configured handling
 """
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 from httpx import AsyncClient
@@ -17,9 +17,7 @@ pytestmark = pytest.mark.asyncio
 class TestVersionsList:
     """Tests for GET /api/v1/versions."""
 
-    async def test_list_releases_returns_503_without_github_client(
-        self, client: AsyncClient
-    ):
+    async def test_list_releases_returns_503_without_github_client(self, client: AsyncClient):
         """GET returns 503 when GitHub client not configured."""
         response = await client.get("/api/v1/versions/")
         assert response.status_code == 503

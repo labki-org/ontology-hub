@@ -34,9 +34,7 @@ class IndexerService:
         self._github = github_client
         self._session = session
 
-    def parse_entity_file(
-        self, content: dict[str, Any], entity_type: EntityType
-    ) -> dict[str, Any]:
+    def parse_entity_file(self, content: dict[str, Any], entity_type: EntityType) -> dict[str, Any]:
         """Extract entity data from JSON file content.
 
         Args:
@@ -53,7 +51,7 @@ class IndexerService:
         label = content.get("label", content.get("name", entity_id))
 
         # Description can be in description or comment
-        description = content.get("description", content.get("comment", None))
+        description = content.get("description", content.get("comment"))
 
         return {
             "entity_id": entity_id,
@@ -63,9 +61,7 @@ class IndexerService:
             "schema_definition": content,  # Store full definition
         }
 
-    async def upsert_entity(
-        self, entity_data: dict[str, Any], commit_sha: str
-    ) -> None:
+    async def upsert_entity(self, entity_data: dict[str, Any], commit_sha: str) -> None:
         """Upsert entity with atomic insert-or-update semantics.
 
         Uses PostgreSQL ON CONFLICT DO UPDATE on (entity_id, entity_type).
@@ -111,7 +107,7 @@ class IndexerService:
         """
         module_id = content.get("id", content.get("@id", ""))
         label = content.get("label", content.get("name", module_id))
-        description = content.get("description", content.get("comment", None))
+        description = content.get("description", content.get("comment"))
         category_ids = content.get("categories", content.get("categoryIds", []))
         dependencies = content.get("dependencies", content.get("requires", []))
 
@@ -123,9 +119,7 @@ class IndexerService:
             "dependencies": dependencies,
         }
 
-    async def upsert_module(
-        self, content: dict[str, Any], commit_sha: str
-    ) -> None:
+    async def upsert_module(self, content: dict[str, Any], commit_sha: str) -> None:
         """Parse and upsert a module file.
 
         Args:
@@ -170,7 +164,7 @@ class IndexerService:
         """
         profile_id = content.get("id", content.get("@id", ""))
         label = content.get("label", content.get("name", profile_id))
-        description = content.get("description", content.get("comment", None))
+        description = content.get("description", content.get("comment"))
         module_ids = content.get("modules", content.get("moduleIds", []))
 
         return {
@@ -180,9 +174,7 @@ class IndexerService:
             "module_ids": module_ids,
         }
 
-    async def upsert_profile(
-        self, content: dict[str, Any], commit_sha: str
-    ) -> None:
+    async def upsert_profile(self, content: dict[str, Any], commit_sha: str) -> None:
         """Parse and upsert a profile file.
 
         Args:
@@ -271,9 +263,7 @@ async def sync_repository(
 
             try:
                 # Fetch file content
-                content = await github_client.get_file_content(
-                    owner, repo, path, ref=commit_sha
-                )
+                content = await github_client.get_file_content(owner, repo, path, ref=commit_sha)
                 stats["files_processed"] += 1
 
                 # Process based on directory type

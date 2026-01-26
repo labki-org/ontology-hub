@@ -56,9 +56,7 @@ def _parse_retry_after(detail: str) -> int:
         return 60  # Default to 1 minute
 
 
-async def rate_limit_exceeded_handler(
-    request: Request, exc: RateLimitExceeded
-) -> Response:
+async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> Response:
     """Handle rate limit exceeded errors with proper 429 response.
 
     Returns JSON response with:

@@ -17,16 +17,13 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.models.entity import Entity, EntityType
 from app.models.module import Module
 
-
 pytestmark = pytest.mark.asyncio
 
 
 class TestEntityRetrieval:
     """Tests for GET /api/v1/entities/{type}/{id}."""
 
-    async def test_get_entity_returns_entity(
-        self, client: AsyncClient, test_session: AsyncSession
-    ):
+    async def test_get_entity_returns_entity(self, client: AsyncClient, test_session: AsyncSession):
         """GET with valid type and ID returns entity."""
         # Create entity in database
         entity = Entity(
@@ -207,21 +204,27 @@ class TestEntityTypeFiltering:
     ):
         """GET /entities/{type} only returns that type."""
         # Create entities of different types
-        test_session.add(Entity(
-            entity_id="Cat1",
-            entity_type=EntityType.CATEGORY,
-            label="Category 1",
-        ))
-        test_session.add(Entity(
-            entity_id="Prop1",
-            entity_type=EntityType.PROPERTY,
-            label="Property 1",
-        ))
-        test_session.add(Entity(
-            entity_id="Sub1",
-            entity_type=EntityType.SUBOBJECT,
-            label="Subobject 1",
-        ))
+        test_session.add(
+            Entity(
+                entity_id="Cat1",
+                entity_type=EntityType.CATEGORY,
+                label="Category 1",
+            )
+        )
+        test_session.add(
+            Entity(
+                entity_id="Prop1",
+                entity_type=EntityType.PROPERTY,
+                label="Property 1",
+            )
+        )
+        test_session.add(
+            Entity(
+                entity_id="Sub1",
+                entity_type=EntityType.SUBOBJECT,
+                label="Subobject 1",
+            )
+        )
         await test_session.commit()
 
         # Get categories
@@ -268,18 +271,22 @@ class TestSoftDeleteFiltering:
     ):
         """GET list excludes soft-deleted entities."""
         # Create active entity
-        test_session.add(Entity(
-            entity_id="ActiveEntity",
-            entity_type=EntityType.CATEGORY,
-            label="Active",
-        ))
+        test_session.add(
+            Entity(
+                entity_id="ActiveEntity",
+                entity_type=EntityType.CATEGORY,
+                label="Active",
+            )
+        )
         # Create soft-deleted entity
-        test_session.add(Entity(
-            entity_id="DeletedEntity",
-            entity_type=EntityType.CATEGORY,
-            label="Deleted",
-            deleted_at=datetime.utcnow(),
-        ))
+        test_session.add(
+            Entity(
+                entity_id="DeletedEntity",
+                entity_type=EntityType.CATEGORY,
+                label="Deleted",
+                deleted_at=datetime.utcnow(),
+            )
+        )
         await test_session.commit()
 
         response = await client.get("/api/v1/entities/category")
@@ -297,17 +304,21 @@ class TestEntityOverview:
         """GET /entities returns count per type."""
         # Create entities of each type
         for i in range(3):
-            test_session.add(Entity(
-                entity_id=f"Cat{i}",
-                entity_type=EntityType.CATEGORY,
-                label=f"Cat {i}",
-            ))
+            test_session.add(
+                Entity(
+                    entity_id=f"Cat{i}",
+                    entity_type=EntityType.CATEGORY,
+                    label=f"Cat {i}",
+                )
+            )
         for i in range(5):
-            test_session.add(Entity(
-                entity_id=f"Prop{i}",
-                entity_type=EntityType.PROPERTY,
-                label=f"Prop {i}",
-            ))
+            test_session.add(
+                Entity(
+                    entity_id=f"Prop{i}",
+                    entity_type=EntityType.PROPERTY,
+                    label=f"Prop {i}",
+                )
+            )
         await test_session.commit()
 
         response = await client.get("/api/v1/entities/")
@@ -326,17 +337,21 @@ class TestEntityOverview:
         self, client: AsyncClient, test_session: AsyncSession
     ):
         """GET /entities excludes soft-deleted from counts."""
-        test_session.add(Entity(
-            entity_id="Active",
-            entity_type=EntityType.CATEGORY,
-            label="Active",
-        ))
-        test_session.add(Entity(
-            entity_id="Deleted",
-            entity_type=EntityType.CATEGORY,
-            label="Deleted",
-            deleted_at=datetime.utcnow(),
-        ))
+        test_session.add(
+            Entity(
+                entity_id="Active",
+                entity_type=EntityType.CATEGORY,
+                label="Active",
+            )
+        )
+        test_session.add(
+            Entity(
+                entity_id="Deleted",
+                entity_type=EntityType.CATEGORY,
+                label="Deleted",
+                deleted_at=datetime.utcnow(),
+            )
+        )
         await test_session.commit()
 
         response = await client.get("/api/v1/entities/")
@@ -356,9 +371,7 @@ class TestEntityOverview:
 class TestEntitySearch:
     """Tests for GET /api/v1/entities/search."""
 
-    async def test_search_by_label(
-        self, client: AsyncClient, test_session: AsyncSession
-    ):
+    async def test_search_by_label(self, client: AsyncClient, test_session: AsyncSession):
         """Search by label finds matching entity."""
         entity = Entity(
             entity_id="Person",
@@ -379,9 +392,7 @@ class TestEntitySearch:
         assert data["next_cursor"] is None
         assert data["has_next"] is False
 
-    async def test_search_by_entity_id(
-        self, client: AsyncClient, test_session: AsyncSession
-    ):
+    async def test_search_by_entity_id(self, client: AsyncClient, test_session: AsyncSession):
         """Search by entity_id finds matching entity."""
         entity = Entity(
             entity_id="has_name",
@@ -399,9 +410,7 @@ class TestEntitySearch:
         assert len(data["items"]) == 1
         assert data["items"][0]["entity_id"] == "has_name"
 
-    async def test_search_by_description(
-        self, client: AsyncClient, test_session: AsyncSession
-    ):
+    async def test_search_by_description(self, client: AsyncClient, test_session: AsyncSession):
         """Search by description finds matching entity."""
         entity = Entity(
             entity_id="Birthday",
@@ -419,25 +428,29 @@ class TestEntitySearch:
         assert len(data["items"]) == 1
         assert data["items"][0]["entity_id"] == "Birthday"
 
-    async def test_search_partial_match(
-        self, client: AsyncClient, test_session: AsyncSession
-    ):
+    async def test_search_partial_match(self, client: AsyncClient, test_session: AsyncSession):
         """Search with partial term finds multiple matches."""
-        test_session.add(Entity(
-            entity_id="date_of_birth",
-            entity_type=EntityType.PROPERTY,
-            label="Date of Birth",
-        ))
-        test_session.add(Entity(
-            entity_id="date_created",
-            entity_type=EntityType.PROPERTY,
-            label="Date Created",
-        ))
-        test_session.add(Entity(
-            entity_id="name",
-            entity_type=EntityType.PROPERTY,
-            label="Name",
-        ))
+        test_session.add(
+            Entity(
+                entity_id="date_of_birth",
+                entity_type=EntityType.PROPERTY,
+                label="Date of Birth",
+            )
+        )
+        test_session.add(
+            Entity(
+                entity_id="date_created",
+                entity_type=EntityType.PROPERTY,
+                label="Date Created",
+            )
+        )
+        test_session.add(
+            Entity(
+                entity_id="name",
+                entity_type=EntityType.PROPERTY,
+                label="Name",
+            )
+        )
         await test_session.commit()
 
         response = await client.get("/api/v1/entities/search?q=date")
@@ -448,9 +461,7 @@ class TestEntitySearch:
         entity_ids = {item["entity_id"] for item in data["items"]}
         assert entity_ids == {"date_of_birth", "date_created"}
 
-    async def test_search_case_insensitive(
-        self, client: AsyncClient, test_session: AsyncSession
-    ):
+    async def test_search_case_insensitive(self, client: AsyncClient, test_session: AsyncSession):
         """Search is case-insensitive."""
         entity = Entity(
             entity_id="Person",
@@ -470,20 +481,22 @@ class TestEntitySearch:
         assert response.status_code == 200
         assert len(response.json()["items"]) == 1
 
-    async def test_search_filter_by_type(
-        self, client: AsyncClient, test_session: AsyncSession
-    ):
+    async def test_search_filter_by_type(self, client: AsyncClient, test_session: AsyncSession):
         """Search with entity_type filter returns only matching type."""
-        test_session.add(Entity(
-            entity_id="Person",
-            entity_type=EntityType.CATEGORY,
-            label="Person",
-        ))
-        test_session.add(Entity(
-            entity_id="has_person",
-            entity_type=EntityType.PROPERTY,
-            label="Has Person",
-        ))
+        test_session.add(
+            Entity(
+                entity_id="Person",
+                entity_type=EntityType.CATEGORY,
+                label="Person",
+            )
+        )
+        test_session.add(
+            Entity(
+                entity_id="has_person",
+                entity_type=EntityType.PROPERTY,
+                label="Has Person",
+            )
+        )
         await test_session.commit()
 
         # Search without filter - both match
@@ -491,9 +504,7 @@ class TestEntitySearch:
         assert len(response.json()["items"]) == 2
 
         # Search with type filter - only category
-        response = await client.get(
-            "/api/v1/entities/search?q=person&entity_type=category"
-        )
+        response = await client.get("/api/v1/entities/search?q=person&entity_type=category")
         assert response.status_code == 200
         data = response.json()
         assert len(data["items"]) == 1
@@ -520,23 +531,25 @@ class TestEntitySearch:
         assert data["has_next"] is False
         assert data["next_cursor"] is None
 
-    async def test_search_excludes_deleted(
-        self, client: AsyncClient, test_session: AsyncSession
-    ):
+    async def test_search_excludes_deleted(self, client: AsyncClient, test_session: AsyncSession):
         """Search excludes soft-deleted entities."""
         # Active entity
-        test_session.add(Entity(
-            entity_id="ActivePerson",
-            entity_type=EntityType.CATEGORY,
-            label="Active Person",
-        ))
+        test_session.add(
+            Entity(
+                entity_id="ActivePerson",
+                entity_type=EntityType.CATEGORY,
+                label="Active Person",
+            )
+        )
         # Soft-deleted entity
-        test_session.add(Entity(
-            entity_id="DeletedPerson",
-            entity_type=EntityType.CATEGORY,
-            label="Deleted Person",
-            deleted_at=datetime.utcnow(),
-        ))
+        test_session.add(
+            Entity(
+                entity_id="DeletedPerson",
+                entity_type=EntityType.CATEGORY,
+                label="Deleted Person",
+                deleted_at=datetime.utcnow(),
+            )
+        )
         await test_session.commit()
 
         response = await client.get("/api/v1/entities/search?q=person")
@@ -546,16 +559,16 @@ class TestEntitySearch:
         assert len(data["items"]) == 1
         assert data["items"][0]["entity_id"] == "ActivePerson"
 
-    async def test_search_respects_limit(
-        self, client: AsyncClient, test_session: AsyncSession
-    ):
+    async def test_search_respects_limit(self, client: AsyncClient, test_session: AsyncSession):
         """Search respects limit parameter."""
         for i in range(10):
-            test_session.add(Entity(
-                entity_id=f"test_{i}",
-                entity_type=EntityType.PROPERTY,
-                label=f"Test {i}",
-            ))
+            test_session.add(
+                Entity(
+                    entity_id=f"test_{i}",
+                    entity_type=EntityType.PROPERTY,
+                    label=f"Test {i}",
+                )
+            )
         await test_session.commit()
 
         response = await client.get("/api/v1/entities/search?q=test&limit=5")
@@ -564,25 +577,29 @@ class TestEntitySearch:
         data = response.json()
         assert len(data["items"]) == 5
 
-    async def test_search_ordered_by_label(
-        self, client: AsyncClient, test_session: AsyncSession
-    ):
+    async def test_search_ordered_by_label(self, client: AsyncClient, test_session: AsyncSession):
         """Search results are ordered by label."""
-        test_session.add(Entity(
-            entity_id="zebra_test",
-            entity_type=EntityType.PROPERTY,
-            label="Zebra Test",
-        ))
-        test_session.add(Entity(
-            entity_id="apple_test",
-            entity_type=EntityType.PROPERTY,
-            label="Apple Test",
-        ))
-        test_session.add(Entity(
-            entity_id="mango_test",
-            entity_type=EntityType.PROPERTY,
-            label="Mango Test",
-        ))
+        test_session.add(
+            Entity(
+                entity_id="zebra_test",
+                entity_type=EntityType.PROPERTY,
+                label="Zebra Test",
+            )
+        )
+        test_session.add(
+            Entity(
+                entity_id="apple_test",
+                entity_type=EntityType.PROPERTY,
+                label="Apple Test",
+            )
+        )
+        test_session.add(
+            Entity(
+                entity_id="mango_test",
+                entity_type=EntityType.PROPERTY,
+                label="Mango Test",
+            )
+        )
         await test_session.commit()
 
         response = await client.get("/api/v1/entities/search?q=test")
@@ -620,9 +637,7 @@ class TestInheritance:
         assert data["edges"] == []
         assert data["has_circular"] is False
 
-    async def test_inheritance_with_parent(
-        self, client: AsyncClient, test_session: AsyncSession
-    ):
+    async def test_inheritance_with_parent(self, client: AsyncClient, test_session: AsyncSession):
         """Category with parent returns both nodes and edge."""
         # Create parent
         parent = Entity(
@@ -663,31 +678,35 @@ class TestInheritance:
         assert edge["target"] == "LivingThing"
         assert data["has_circular"] is False
 
-    async def test_inheritance_chain(
-        self, client: AsyncClient, test_session: AsyncSession
-    ):
+    async def test_inheritance_chain(self, client: AsyncClient, test_session: AsyncSession):
         """Multi-level inheritance (grandparent) returns full chain."""
         # Create grandparent
-        test_session.add(Entity(
-            entity_id="Thing",
-            entity_type=EntityType.CATEGORY,
-            label="Thing",
-            schema_definition={},
-        ))
+        test_session.add(
+            Entity(
+                entity_id="Thing",
+                entity_type=EntityType.CATEGORY,
+                label="Thing",
+                schema_definition={},
+            )
+        )
         # Create parent with parent reference
-        test_session.add(Entity(
-            entity_id="LivingThing",
-            entity_type=EntityType.CATEGORY,
-            label="Living Thing",
-            schema_definition={"parent": "Thing"},
-        ))
+        test_session.add(
+            Entity(
+                entity_id="LivingThing",
+                entity_type=EntityType.CATEGORY,
+                label="Living Thing",
+                schema_definition={"parent": "Thing"},
+            )
+        )
         # Create child with parent reference
-        test_session.add(Entity(
-            entity_id="Person",
-            entity_type=EntityType.CATEGORY,
-            label="Person",
-            schema_definition={"parent": "LivingThing"},
-        ))
+        test_session.add(
+            Entity(
+                entity_id="Person",
+                entity_type=EntityType.CATEGORY,
+                label="Person",
+                schema_definition={"parent": "LivingThing"},
+            )
+        )
         await test_session.commit()
 
         response = await client.get("/api/v1/entities/category/Person/inheritance")
@@ -708,19 +727,23 @@ class TestInheritance:
     ):
         """Inheritance includes direct children of target category."""
         # Create parent
-        test_session.add(Entity(
-            entity_id="Person",
-            entity_type=EntityType.CATEGORY,
-            label="Person",
-            schema_definition={},
-        ))
+        test_session.add(
+            Entity(
+                entity_id="Person",
+                entity_type=EntityType.CATEGORY,
+                label="Person",
+                schema_definition={},
+            )
+        )
         # Create child
-        test_session.add(Entity(
-            entity_id="Employee",
-            entity_type=EntityType.CATEGORY,
-            label="Employee",
-            schema_definition={"parent": "Person"},
-        ))
+        test_session.add(
+            Entity(
+                entity_id="Employee",
+                entity_type=EntityType.CATEGORY,
+                label="Employee",
+                schema_definition={"parent": "Person"},
+            )
+        )
         await test_session.commit()
 
         response = await client.get("/api/v1/entities/category/Person/inheritance")
@@ -747,20 +770,24 @@ class TestInheritance:
     ):
         """Inheritance excludes soft-deleted parent."""
         # Create parent (soft-deleted)
-        test_session.add(Entity(
-            entity_id="DeletedParent",
-            entity_type=EntityType.CATEGORY,
-            label="Deleted Parent",
-            schema_definition={},
-            deleted_at=datetime.utcnow(),
-        ))
+        test_session.add(
+            Entity(
+                entity_id="DeletedParent",
+                entity_type=EntityType.CATEGORY,
+                label="Deleted Parent",
+                schema_definition={},
+                deleted_at=datetime.utcnow(),
+            )
+        )
         # Create child with reference to deleted parent
-        test_session.add(Entity(
-            entity_id="Person",
-            entity_type=EntityType.CATEGORY,
-            label="Person",
-            schema_definition={"parent": "DeletedParent"},
-        ))
+        test_session.add(
+            Entity(
+                entity_id="Person",
+                entity_type=EntityType.CATEGORY,
+                label="Person",
+                schema_definition={"parent": "DeletedParent"},
+            )
+        )
         await test_session.commit()
 
         response = await client.get("/api/v1/entities/category/Person/inheritance")
@@ -777,36 +804,42 @@ class TestInheritance:
 class TestUsedBy:
     """Tests for GET /api/v1/entities/{type}/{id}/used-by."""
 
-    async def test_used_by_property(
-        self, client: AsyncClient, test_session: AsyncSession
-    ):
+    async def test_used_by_property(self, client: AsyncClient, test_session: AsyncSession):
         """Property used by multiple categories returns those categories."""
         # Create property
-        test_session.add(Entity(
-            entity_id="has_name",
-            entity_type=EntityType.PROPERTY,
-            label="Has Name",
-        ))
+        test_session.add(
+            Entity(
+                entity_id="has_name",
+                entity_type=EntityType.PROPERTY,
+                label="Has Name",
+            )
+        )
         # Create categories that use the property
-        test_session.add(Entity(
-            entity_id="Person",
-            entity_type=EntityType.CATEGORY,
-            label="Person",
-            schema_definition={"properties": ["has_name", "has_age"]},
-        ))
-        test_session.add(Entity(
-            entity_id="Organization",
-            entity_type=EntityType.CATEGORY,
-            label="Organization",
-            schema_definition={"properties": ["has_name"]},
-        ))
+        test_session.add(
+            Entity(
+                entity_id="Person",
+                entity_type=EntityType.CATEGORY,
+                label="Person",
+                schema_definition={"properties": ["has_name", "has_age"]},
+            )
+        )
+        test_session.add(
+            Entity(
+                entity_id="Organization",
+                entity_type=EntityType.CATEGORY,
+                label="Organization",
+                schema_definition={"properties": ["has_name"]},
+            )
+        )
         # Category that doesn't use the property
-        test_session.add(Entity(
-            entity_id="Event",
-            entity_type=EntityType.CATEGORY,
-            label="Event",
-            schema_definition={"properties": ["has_date"]},
-        ))
+        test_session.add(
+            Entity(
+                entity_id="Event",
+                entity_type=EntityType.CATEGORY,
+                label="Event",
+                schema_definition={"properties": ["has_date"]},
+            )
+        )
         await test_session.commit()
 
         response = await client.get("/api/v1/entities/property/has_name/used-by")
@@ -817,29 +850,33 @@ class TestUsedBy:
         entity_ids = {item["entity_id"] for item in data}
         assert entity_ids == {"Person", "Organization"}
 
-    async def test_used_by_subobject(
-        self, client: AsyncClient, test_session: AsyncSession
-    ):
+    async def test_used_by_subobject(self, client: AsyncClient, test_session: AsyncSession):
         """Subobject used by categories returns those categories."""
         # Create subobject
-        test_session.add(Entity(
-            entity_id="Address",
-            entity_type=EntityType.SUBOBJECT,
-            label="Address",
-        ))
+        test_session.add(
+            Entity(
+                entity_id="Address",
+                entity_type=EntityType.SUBOBJECT,
+                label="Address",
+            )
+        )
         # Create categories that use the subobject
-        test_session.add(Entity(
-            entity_id="Person",
-            entity_type=EntityType.CATEGORY,
-            label="Person",
-            schema_definition={"subobjects": ["Address"]},
-        ))
-        test_session.add(Entity(
-            entity_id="Organization",
-            entity_type=EntityType.CATEGORY,
-            label="Organization",
-            schema_definition={"subobjects": ["Address", "Contact"]},
-        ))
+        test_session.add(
+            Entity(
+                entity_id="Person",
+                entity_type=EntityType.CATEGORY,
+                label="Person",
+                schema_definition={"subobjects": ["Address"]},
+            )
+        )
+        test_session.add(
+            Entity(
+                entity_id="Organization",
+                entity_type=EntityType.CATEGORY,
+                label="Organization",
+                schema_definition={"subobjects": ["Address", "Contact"]},
+            )
+        )
         await test_session.commit()
 
         response = await client.get("/api/v1/entities/subobject/Address/used-by")
@@ -861,16 +898,16 @@ class TestUsedBy:
         response = await client.get("/api/v1/entities/property/nonexistent/used-by")
         assert response.status_code == 404
 
-    async def test_used_by_empty_results(
-        self, client: AsyncClient, test_session: AsyncSession
-    ):
+    async def test_used_by_empty_results(self, client: AsyncClient, test_session: AsyncSession):
         """Property not used by any category returns empty list."""
         # Create property that's not used
-        test_session.add(Entity(
-            entity_id="unused_prop",
-            entity_type=EntityType.PROPERTY,
-            label="Unused Property",
-        ))
+        test_session.add(
+            Entity(
+                entity_id="unused_prop",
+                entity_type=EntityType.PROPERTY,
+                label="Unused Property",
+            )
+        )
         await test_session.commit()
 
         response = await client.get("/api/v1/entities/property/unused_prop/used-by")
@@ -884,26 +921,32 @@ class TestUsedBy:
     ):
         """Used-by excludes soft-deleted categories."""
         # Create property
-        test_session.add(Entity(
-            entity_id="has_name",
-            entity_type=EntityType.PROPERTY,
-            label="Has Name",
-        ))
+        test_session.add(
+            Entity(
+                entity_id="has_name",
+                entity_type=EntityType.PROPERTY,
+                label="Has Name",
+            )
+        )
         # Create active category
-        test_session.add(Entity(
-            entity_id="Person",
-            entity_type=EntityType.CATEGORY,
-            label="Person",
-            schema_definition={"properties": ["has_name"]},
-        ))
+        test_session.add(
+            Entity(
+                entity_id="Person",
+                entity_type=EntityType.CATEGORY,
+                label="Person",
+                schema_definition={"properties": ["has_name"]},
+            )
+        )
         # Create soft-deleted category
-        test_session.add(Entity(
-            entity_id="DeletedCat",
-            entity_type=EntityType.CATEGORY,
-            label="Deleted Category",
-            schema_definition={"properties": ["has_name"]},
-            deleted_at=datetime.utcnow(),
-        ))
+        test_session.add(
+            Entity(
+                entity_id="DeletedCat",
+                entity_type=EntityType.CATEGORY,
+                label="Deleted Category",
+                schema_definition={"properties": ["has_name"]},
+                deleted_at=datetime.utcnow(),
+            )
+        )
         await test_session.commit()
 
         response = await client.get("/api/v1/entities/property/has_name/used-by")
@@ -922,23 +965,29 @@ class TestEntityModules:
     ):
         """Category returns modules containing it."""
         # Create category
-        test_session.add(Entity(
-            entity_id="Person",
-            entity_type=EntityType.CATEGORY,
-            label="Person",
-        ))
+        test_session.add(
+            Entity(
+                entity_id="Person",
+                entity_type=EntityType.CATEGORY,
+                label="Person",
+            )
+        )
         # Create module that contains the category
-        test_session.add(Module(
-            module_id="core",
-            label="Core Module",
-            category_ids=["Person", "Organization"],
-        ))
+        test_session.add(
+            Module(
+                module_id="core",
+                label="Core Module",
+                category_ids=["Person", "Organization"],
+            )
+        )
         # Create module that doesn't contain the category
-        test_session.add(Module(
-            module_id="other",
-            label="Other Module",
-            category_ids=["Event"],
-        ))
+        test_session.add(
+            Module(
+                module_id="other",
+                label="Other Module",
+                category_ids=["Event"],
+            )
+        )
         await test_session.commit()
 
         response = await client.get("/api/v1/entities/category/Person/modules")
@@ -954,24 +1003,30 @@ class TestEntityModules:
     ):
         """Property returns modules via category membership."""
         # Create property
-        test_session.add(Entity(
-            entity_id="has_name",
-            entity_type=EntityType.PROPERTY,
-            label="Has Name",
-        ))
+        test_session.add(
+            Entity(
+                entity_id="has_name",
+                entity_type=EntityType.PROPERTY,
+                label="Has Name",
+            )
+        )
         # Create category that uses the property
-        test_session.add(Entity(
-            entity_id="Person",
-            entity_type=EntityType.CATEGORY,
-            label="Person",
-            schema_definition={"properties": ["has_name"]},
-        ))
+        test_session.add(
+            Entity(
+                entity_id="Person",
+                entity_type=EntityType.CATEGORY,
+                label="Person",
+                schema_definition={"properties": ["has_name"]},
+            )
+        )
         # Create module containing the category
-        test_session.add(Module(
-            module_id="core",
-            label="Core Module",
-            category_ids=["Person"],
-        ))
+        test_session.add(
+            Module(
+                module_id="core",
+                label="Core Module",
+                category_ids=["Person"],
+            )
+        )
         await test_session.commit()
 
         response = await client.get("/api/v1/entities/property/has_name/modules")
@@ -986,24 +1041,30 @@ class TestEntityModules:
     ):
         """Subobject returns modules via category membership."""
         # Create subobject
-        test_session.add(Entity(
-            entity_id="Address",
-            entity_type=EntityType.SUBOBJECT,
-            label="Address",
-        ))
+        test_session.add(
+            Entity(
+                entity_id="Address",
+                entity_type=EntityType.SUBOBJECT,
+                label="Address",
+            )
+        )
         # Create category that uses the subobject
-        test_session.add(Entity(
-            entity_id="Person",
-            entity_type=EntityType.CATEGORY,
-            label="Person",
-            schema_definition={"subobjects": ["Address"]},
-        ))
+        test_session.add(
+            Entity(
+                entity_id="Person",
+                entity_type=EntityType.CATEGORY,
+                label="Person",
+                schema_definition={"subobjects": ["Address"]},
+            )
+        )
         # Create module containing the category
-        test_session.add(Module(
-            module_id="core",
-            label="Core Module",
-            category_ids=["Person"],
-        ))
+        test_session.add(
+            Module(
+                module_id="core",
+                label="Core Module",
+                category_ids=["Person"],
+            )
+        )
         await test_session.commit()
 
         response = await client.get("/api/v1/entities/subobject/Address/modules")
@@ -1019,22 +1080,24 @@ class TestEntityModules:
         assert response.status_code == 404
         assert response.json()["detail"] == "Entity not found"
 
-    async def test_get_entity_modules_empty(
-        self, client: AsyncClient, test_session: AsyncSession
-    ):
+    async def test_get_entity_modules_empty(self, client: AsyncClient, test_session: AsyncSession):
         """Returns empty list when entity in no modules."""
         # Create category not in any module
-        test_session.add(Entity(
-            entity_id="Orphan",
-            entity_type=EntityType.CATEGORY,
-            label="Orphan Category",
-        ))
+        test_session.add(
+            Entity(
+                entity_id="Orphan",
+                entity_type=EntityType.CATEGORY,
+                label="Orphan Category",
+            )
+        )
         # Create a module that doesn't include this category
-        test_session.add(Module(
-            module_id="other",
-            label="Other Module",
-            category_ids=["Person"],
-        ))
+        test_session.add(
+            Module(
+                module_id="other",
+                label="Other Module",
+                category_ids=["Person"],
+            )
+        )
         await test_session.commit()
 
         response = await client.get("/api/v1/entities/category/Orphan/modules")
@@ -1048,24 +1111,30 @@ class TestEntityModules:
     ):
         """Excludes soft-deleted modules."""
         # Create category
-        test_session.add(Entity(
-            entity_id="Person",
-            entity_type=EntityType.CATEGORY,
-            label="Person",
-        ))
+        test_session.add(
+            Entity(
+                entity_id="Person",
+                entity_type=EntityType.CATEGORY,
+                label="Person",
+            )
+        )
         # Create active module
-        test_session.add(Module(
-            module_id="active",
-            label="Active Module",
-            category_ids=["Person"],
-        ))
+        test_session.add(
+            Module(
+                module_id="active",
+                label="Active Module",
+                category_ids=["Person"],
+            )
+        )
         # Create soft-deleted module
-        test_session.add(Module(
-            module_id="deleted",
-            label="Deleted Module",
-            category_ids=["Person"],
-            deleted_at=datetime.utcnow(),
-        ))
+        test_session.add(
+            Module(
+                module_id="deleted",
+                label="Deleted Module",
+                category_ids=["Person"],
+                deleted_at=datetime.utcnow(),
+            )
+        )
         await test_session.commit()
 
         response = await client.get("/api/v1/entities/category/Person/modules")

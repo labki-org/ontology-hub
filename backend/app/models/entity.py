@@ -3,10 +3,10 @@
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Optional
 
 import sqlalchemy as sa
-from sqlalchemy import JSON, Column, Enum as SAEnum
+from sqlalchemy import JSON, Column
+from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, SQLModel
 
 
@@ -23,10 +23,12 @@ class EntityBase(SQLModel):
 
     entity_id: str = Field(index=True)  # Schema-defined ID (e.g., "Person", "hasName")
     entity_type: EntityType = Field(
-        sa_column=Column(SAEnum(EntityType, name="entitytype", values_callable=lambda e: [x.value for x in e]))
+        sa_column=Column(
+            SAEnum(EntityType, name="entitytype", values_callable=lambda e: [x.value for x in e])
+        )
     )
     label: str
-    description: Optional[str] = None
+    description: str | None = None
     schema_definition: dict = Field(default_factory=dict, sa_column=Column(JSON))
 
 
@@ -39,10 +41,10 @@ class Entity(EntityBase, table=True):
     )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    commit_sha: Optional[str] = None  # For versioning from GitHub
+    commit_sha: str | None = None  # For versioning from GitHub
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
-    deleted_at: Optional[datetime] = None  # Soft delete
+    deleted_at: datetime | None = None  # Soft delete
 
 
 class EntityCreate(EntityBase):
@@ -54,17 +56,17 @@ class EntityCreate(EntityBase):
 class EntityUpdate(SQLModel):
     """Schema for updating an Entity (all fields optional)."""
 
-    entity_id: Optional[str] = None
-    entity_type: Optional[EntityType] = None
-    label: Optional[str] = None
-    description: Optional[str] = None
-    schema_definition: Optional[dict] = None
+    entity_id: str | None = None
+    entity_type: EntityType | None = None
+    label: str | None = None
+    description: str | None = None
+    schema_definition: dict | None = None
 
 
 class EntityPublic(EntityBase):
     """Public schema for Entity responses."""
 
     id: uuid.UUID
-    commit_sha: Optional[str] = None
+    commit_sha: str | None = None
     created_at: datetime
     updated_at: datetime

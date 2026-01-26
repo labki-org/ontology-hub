@@ -26,9 +26,7 @@ class Module(ModuleBase, table=True):
     """
 
     __tablename__ = "modules_v2"
-    __table_args__ = (
-        sa.UniqueConstraint("entity_key", name="uq_modules_v2_entity_key"),
-    )
+    __table_args__ = (sa.UniqueConstraint("entity_key", name="uq_modules_v2_entity_key"),)
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)

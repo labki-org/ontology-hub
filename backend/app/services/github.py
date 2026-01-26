@@ -51,9 +51,7 @@ class GitHubClient:
         stop=stop_after_attempt(5),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
-    async def _request(
-        self, method: str, url: str, **kwargs: Any
-    ) -> dict[str, Any]:
+    async def _request(self, method: str, url: str, **kwargs: Any) -> dict[str, Any]:
         """Make a request to GitHub API with rate limit handling.
 
         Args:
@@ -104,8 +102,7 @@ class GitHubClient:
 
         if data.get("truncated"):
             logger.warning(
-                "Repository tree truncated at %d entries. "
-                "Some files may be missing.",
+                "Repository tree truncated at %d entries. Some files may be missing.",
                 len(data.get("tree", [])),
             )
 
@@ -141,9 +138,7 @@ class GitHubClient:
 
         return json.loads(content_str)
 
-    async def get_latest_commit_sha(
-        self, owner: str, repo: str, branch: str = "main"
-    ) -> str:
+    async def get_latest_commit_sha(self, owner: str, repo: str, branch: str = "main") -> str:
         """Get the SHA of the latest commit on a branch.
 
         Args:
@@ -158,9 +153,7 @@ class GitHubClient:
         data = await self._request("GET", url)
         return data["sha"]
 
-    async def get_releases(
-        self, owner: str, repo: str, per_page: int = 30
-    ) -> list[dict[str, Any]]:
+    async def get_releases(self, owner: str, repo: str, per_page: int = 30) -> list[dict[str, Any]]:
         """Fetch releases from GitHub repository.
 
         Args:
@@ -174,9 +167,7 @@ class GitHubClient:
         url = f"/repos/{owner}/{repo}/releases"
         return await self._request("GET", url, params={"per_page": per_page})
 
-    async def get_file_at_ref(
-        self, owner: str, repo: str, path: str, ref: str
-    ) -> dict[str, Any]:
+    async def get_file_at_ref(self, owner: str, repo: str, path: str, ref: str) -> dict[str, Any]:
         """Fetch and decode a JSON file at a specific git ref (tag/sha).
 
         Same as get_file_content but with explicit ref parameter.
@@ -194,9 +185,7 @@ class GitHubClient:
 
     # Git Data API methods for PR creation
 
-    async def get_branch_sha(
-        self, owner: str, repo: str, branch: str = "main"
-    ) -> str:
+    async def get_branch_sha(self, owner: str, repo: str, branch: str = "main") -> str:
         """Get the SHA of a branch reference.
 
         Args:
@@ -211,9 +200,7 @@ class GitHubClient:
         data = await self._request("GET", url)
         return data["object"]["sha"]
 
-    async def get_commit_tree_sha(
-        self, owner: str, repo: str, commit_sha: str
-    ) -> str:
+    async def get_commit_tree_sha(self, owner: str, repo: str, commit_sha: str) -> str:
         """Get the tree SHA from a commit.
 
         Args:
@@ -228,9 +215,7 @@ class GitHubClient:
         data = await self._request("GET", url)
         return data["tree"]["sha"]
 
-    async def create_tree(
-        self, owner: str, repo: str, files: list[dict], base_tree: str
-    ) -> str:
+    async def create_tree(self, owner: str, repo: str, files: list[dict], base_tree: str) -> str:
         """Create a new git tree with files.
 
         Args:
@@ -267,9 +252,7 @@ class GitHubClient:
                 )
 
         url = f"/repos/{owner}/{repo}/git/trees"
-        data = await self._request(
-            "POST", url, json={"tree": tree_items, "base_tree": base_tree}
-        )
+        data = await self._request("POST", url, json={"tree": tree_items, "base_tree": base_tree})
         return data["sha"]
 
     async def create_commit(
@@ -390,14 +373,10 @@ class GitHubClient:
             base_sha = await temp_client.get_branch_sha(owner, repo, base_branch)
 
             # 2. Get tree SHA from base commit
-            base_tree_sha = await temp_client.get_commit_tree_sha(
-                owner, repo, base_sha
-            )
+            base_tree_sha = await temp_client.get_commit_tree_sha(owner, repo, base_sha)
 
             # 3. Create new tree with files
-            new_tree_sha = await temp_client.create_tree(
-                owner, repo, files, base_tree_sha
-            )
+            new_tree_sha = await temp_client.create_tree(owner, repo, files, base_tree_sha)
 
             # 4. Create commit
             new_commit_sha = await temp_client.create_commit(

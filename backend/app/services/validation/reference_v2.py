@@ -77,7 +77,7 @@ async def check_references_v2(
     all_properties = canonical_properties | effective_properties
     all_subobjects = canonical_subobjects | effective_subobjects
     all_modules = canonical_modules | effective_modules
-    all_bundles = canonical_bundles | effective_bundles
+    _ = canonical_bundles | effective_bundles  # Reserved for future bundle reference validation
     all_templates = canonical_templates | effective_templates
 
     # Check category references
@@ -137,13 +137,16 @@ async def check_references_v2(
 
             # Check entity exists based on type
             entity_exists = False
-            if entity_type == "category" and ref_key in all_categories:
-                entity_exists = True
-            elif entity_type == "property" and ref_key in all_properties:
-                entity_exists = True
-            elif entity_type == "subobject" and ref_key in all_subobjects:
-                entity_exists = True
-            elif entity_type == "template" and ref_key in all_templates:
+            if (
+                entity_type == "category"
+                and ref_key in all_categories
+                or entity_type == "property"
+                and ref_key in all_properties
+                or entity_type == "subobject"
+                and ref_key in all_subobjects
+                or entity_type == "template"
+                and ref_key in all_templates
+            ):
                 entity_exists = True
 
             if not entity_exists:

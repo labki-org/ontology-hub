@@ -5,10 +5,9 @@ both canonical data and draft overlay contexts. All entities in
 draft context include change_status metadata.
 """
 
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
-
 
 # Change status type for draft overlay
 ChangeStatus = Literal["added", "modified", "deleted", "unchanged"]
@@ -22,7 +21,7 @@ class EntityWithStatus(BaseModel):
 
     entity_key: str
     label: str
-    change_status: Optional[ChangeStatus] = Field(
+    change_status: ChangeStatus | None = Field(
         default=None,
         validation_alias="_change_status",
         description="Draft change status (added/modified/deleted/unchanged)",
@@ -44,16 +43,10 @@ class PropertyProvenance(BaseModel):
 
     entity_key: str
     label: str
-    is_direct: bool = Field(
-        description="True if property is directly assigned to this category"
-    )
-    is_inherited: bool = Field(
-        description="True if property is inherited from parent category"
-    )
+    is_direct: bool = Field(description="True if property is directly assigned to this category")
+    is_inherited: bool = Field(description="True if property is inherited from parent category")
     is_required: bool = Field(description="True if property is required")
-    source_category: str = Field(
-        description="Entity key of category that defines this property"
-    )
+    source_category: str = Field(description="Entity key of category that defines this property")
     inheritance_depth: int = Field(
         description="0 for direct, >0 for inherited (depth in hierarchy)"
     )
@@ -78,10 +71,8 @@ class CategoryDetailResponse(BaseModel):
 
     entity_key: str
     label: str
-    description: Optional[str] = None
-    parents: list[str] = Field(
-        default_factory=list, description="Entity keys of parent categories"
-    )
+    description: str | None = None
+    parents: list[str] = Field(default_factory=list, description="Entity keys of parent categories")
     properties: list[PropertyProvenance] = Field(
         default_factory=list,
         description="Properties with provenance (direct + inherited)",
@@ -90,7 +81,7 @@ class CategoryDetailResponse(BaseModel):
         default_factory=list,
         description="Subobjects assigned to this category (required + optional)",
     )
-    change_status: Optional[ChangeStatus] = Field(
+    change_status: ChangeStatus | None = Field(
         default=None,
         validation_alias="_change_status",
         description="Draft change status",
@@ -98,7 +89,7 @@ class CategoryDetailResponse(BaseModel):
     deleted: bool = Field(
         default=False, validation_alias="_deleted", description="Deleted in draft"
     )
-    patch_error: Optional[str] = Field(
+    patch_error: str | None = Field(
         default=None,
         validation_alias="_patch_error",
         description="Error if JSON Patch failed to apply",
@@ -112,24 +103,24 @@ class PropertyDetailResponse(BaseModel):
 
     entity_key: str
     label: str
-    description: Optional[str] = None
+    description: str | None = None
     datatype: str = Field(description="Property data type")
     cardinality: str = Field(description="Property cardinality (single/multiple)")
     # Validation constraints
-    allowed_values: Optional[list[str]] = Field(
+    allowed_values: list[str] | None = Field(
         default=None, description="Enumeration of permitted values"
     )
-    allowed_pattern: Optional[str] = Field(
+    allowed_pattern: str | None = Field(
         default=None, description="Regex pattern for validating values"
     )
-    allowed_value_list: Optional[str] = Field(
+    allowed_value_list: str | None = Field(
         default=None, description="Reference to a wiki page containing allowed values"
     )
     # Display configuration
-    display_units: Optional[list[str]] = Field(
+    display_units: list[str] | None = Field(
         default=None, description="Units or formats for display"
     )
-    display_precision: Optional[int] = Field(
+    display_precision: int | None = Field(
         default=None, description="Number of decimal places for numeric display"
     )
     # Constraints and relationships
@@ -137,10 +128,10 @@ class PropertyDetailResponse(BaseModel):
         default=False,
         description="If true, each value can only be assigned once across all pages",
     )
-    has_display_template: Optional[str] = Field(
+    has_display_template: str | None = Field(
         default=None, description="Template entity key for custom rendering"
     )
-    change_status: Optional[ChangeStatus] = Field(
+    change_status: ChangeStatus | None = Field(
         default=None,
         validation_alias="_change_status",
         description="Draft change status",
@@ -165,14 +156,14 @@ class SubobjectDetailResponse(BaseModel):
 
     entity_key: str
     label: str
-    description: Optional[str] = None
+    description: str | None = None
     required_properties: list[SubobjectPropertyInfo] = Field(
         default_factory=list, description="Required property assignments"
     )
     optional_properties: list[SubobjectPropertyInfo] = Field(
         default_factory=list, description="Optional property assignments"
     )
-    change_status: Optional[ChangeStatus] = Field(
+    change_status: ChangeStatus | None = Field(
         default=None,
         validation_alias="_change_status",
         description="Draft change status",
@@ -189,14 +180,10 @@ class TemplateDetailResponse(BaseModel):
 
     entity_key: str
     label: str
-    description: Optional[str] = None
-    wikitext: Optional[str] = Field(
-        default=None, description="Template wikitext content"
-    )
-    property_key: Optional[str] = Field(
-        default=None, description="Associated property entity key"
-    )
-    change_status: Optional[ChangeStatus] = Field(
+    description: str | None = None
+    wikitext: str | None = Field(default=None, description="Template wikitext content")
+    property_key: str | None = Field(default=None, description="Associated property entity key")
+    change_status: ChangeStatus | None = Field(
         default=None,
         validation_alias="_change_status",
         description="Draft change status",
@@ -217,8 +204,8 @@ class ModuleDetailResponse(BaseModel):
 
     entity_key: str
     label: str
-    version: Optional[str] = None
-    description: Optional[str] = None
+    version: str | None = None
+    description: str | None = None
     entities: dict[str, list[str]] = Field(
         default_factory=dict,
         description="Entities by type: {category: [...], property: [...], ...}",
@@ -231,7 +218,7 @@ class ModuleDetailResponse(BaseModel):
         default_factory=list,
         description="Computed transitive category dependencies (entity keys)",
     )
-    change_status: Optional[ChangeStatus] = Field(
+    change_status: ChangeStatus | None = Field(
         default=None,
         validation_alias="_change_status",
         description="Draft change status",
@@ -251,7 +238,7 @@ class BundleDetailResponse(BaseModel):
 
     entity_key: str
     label: str
-    version: Optional[str] = None
+    version: str | None = None
     modules: list[str] = Field(
         default_factory=list, description="Module entity keys in this bundle"
     )
@@ -259,7 +246,7 @@ class BundleDetailResponse(BaseModel):
         default_factory=list,
         description="Computed transitive module closure (all modules including dependencies)",
     )
-    change_status: Optional[ChangeStatus] = Field(
+    change_status: ChangeStatus | None = Field(
         default=None,
         validation_alias="_change_status",
         description="Draft change status",
@@ -279,7 +266,7 @@ class EntityListResponse(BaseModel):
     """
 
     items: list[EntityWithStatus]
-    next_cursor: Optional[str] = Field(
+    next_cursor: str | None = Field(
         default=None,
         description="Entity key to use for fetching next page (None if no more)",
     )

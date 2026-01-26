@@ -7,7 +7,7 @@ computation ensures frontend never performs draft merging.
 
 import uuid
 from copy import deepcopy
-from typing import Annotated, Optional
+from typing import Annotated
 
 import jsonpatch
 from fastapi import Depends, Query
@@ -34,9 +34,7 @@ class DraftOverlayService:
         effective = await draft_ctx.apply_overlay(canonical, "category", "Person")
     """
 
-    def __init__(
-        self, session: AsyncSession, draft_id: Optional[uuid.UUID] = None
-    ) -> None:
+    def __init__(self, session: AsyncSession, draft_id: uuid.UUID | None = None) -> None:
         """Initialize draft overlay service.
 
         Args:
@@ -46,7 +44,7 @@ class DraftOverlayService:
         """
         self.session = session
         self.draft_id = draft_id
-        self._draft_changes: Optional[dict[str, DraftChange]] = None
+        self._draft_changes: dict[str, DraftChange] | None = None
 
     async def _load_draft_changes(self) -> dict[str, DraftChange]:
         """Load all changes for this draft, keyed by '{entity_type}:{entity_key}'.
@@ -75,10 +73,10 @@ class DraftOverlayService:
 
     async def apply_overlay(
         self,
-        canonical: Optional[object],
+        canonical: object | None,
         entity_type: str,
         entity_key: str,
-    ) -> Optional[dict]:
+    ) -> dict | None:
         """Apply draft changes to canonical entity, return effective JSON with change_status.
 
         This is the main method for computing effective views. It handles all
@@ -239,15 +237,13 @@ class DraftOverlayService:
         change_key = f"{entity_type}:{entity_key}"
         draft_change = changes.get(change_key)
 
-        if draft_change and draft_change.change_type == ChangeType.DELETE:
-            return True
-        return False
+        return bool(draft_change and draft_change.change_type == ChangeType.DELETE)
 
     async def get_draft_aware_inherited_properties(
         self,
         session: AsyncSession,
         category_entity_key: str,
-        canonical_category_id: Optional[uuid.UUID],
+        canonical_category_id: uuid.UUID | None,
     ) -> list[dict]:
         """Compute inherited properties with draft parent changes applied.
 
@@ -297,9 +293,7 @@ class DraftOverlayService:
 
         # Check if patch modifies parents
         patch_ops = draft_change.patch or []
-        modifies_parents = any(
-            op.get("path", "").startswith("/parents") for op in patch_ops
-        )
+        modifies_parents = any(op.get("path", "").startswith("/parents") for op in patch_ops)
 
         if not modifies_parents:
             return []
@@ -358,10 +352,7 @@ class DraftOverlayService:
                 if parent_change and parent_change.change_type == ChangeType.UPDATE:
                     # Apply patch to get effective grandparents
                     parent_patch = parent_change.patch or []
-                    if any(
-                        op.get("path", "").startswith("/parents")
-                        for op in parent_patch
-                    ):
+                    if any(op.get("path", "").startswith("/parents") for op in parent_patch):
                         # Get canonical grandparents
                         gp_query = text("""
                             SELECT c2.entity_key
@@ -370,16 +361,12 @@ class DraftOverlayService:
                             JOIN categories c2 ON c2.id = cp.parent_id
                             WHERE c.entity_key = :entity_key
                         """)
-                        gp_result = await session.execute(
-                            gp_query, {"entity_key": parent_key}
-                        )
+                        gp_result = await session.execute(gp_query, {"entity_key": parent_key})
                         canonical_grandparents = [row[0] for row in gp_result.fetchall()]
 
                         try:
                             gp_patch = jsonpatch.JsonPatch(parent_patch)
-                            gp_effective = gp_patch.apply(
-                                {"parents": canonical_grandparents}
-                            )
+                            gp_effective = gp_patch.apply({"parents": canonical_grandparents})
                             grandparent_keys = gp_effective.get("parents", [])
                         except jsonpatch.JsonPatchException:
                             grandparent_keys = canonical_grandparents
@@ -392,9 +379,7 @@ class DraftOverlayService:
                             JOIN categories c2 ON c2.id = cp.parent_id
                             WHERE c.entity_key = :entity_key
                         """)
-                        gp_result = await session.execute(
-                            gp_query, {"entity_key": parent_key}
-                        )
+                        gp_result = await session.execute(gp_query, {"entity_key": parent_key})
                         grandparent_keys = [row[0] for row in gp_result.fetchall()]
                 else:
                     # No draft change for this parent - use canonical
@@ -405,9 +390,7 @@ class DraftOverlayService:
                         JOIN categories c2 ON c2.id = cp.parent_id
                         WHERE c.entity_key = :entity_key
                     """)
-                    gp_result = await session.execute(
-                        gp_query, {"entity_key": parent_key}
-                    )
+                    gp_result = await session.execute(gp_query, {"entity_key": parent_key})
                     grandparent_keys = [row[0] for row in gp_result.fetchall()]
 
                 if grandparent_keys:
@@ -431,15 +414,17 @@ class DraftOverlayService:
                 direct_props_query, {"category_id": canonical_category_id}
             )
             for row in direct_result.fetchall():
-                properties.append({
-                    "entity_key": row[0],
-                    "label": row[1],
-                    "is_direct": True,
-                    "is_inherited": False,
-                    "is_required": row[2],
-                    "source_category": category_entity_key,
-                    "inheritance_depth": 0,
-                })
+                properties.append(
+                    {
+                        "entity_key": row[0],
+                        "label": row[1],
+                        "is_direct": True,
+                        "is_inherited": False,
+                        "is_required": row[2],
+                        "source_category": category_entity_key,
+                        "inheritance_depth": 0,
+                    }
+                )
 
         # Get properties from each ancestor
         for ancestor_key, depth in ancestors.items():
@@ -455,23 +440,26 @@ class DraftOverlayService:
                 ancestor_props_query, {"entity_key": ancestor_key}
             )
             for row in ancestor_result.fetchall():
-                properties.append({
-                    "entity_key": row[0],
-                    "label": row[1],
-                    "is_direct": False,
-                    "is_inherited": True,
-                    "is_required": row[2],
-                    "source_category": ancestor_key,
-                    "inheritance_depth": depth,
-                })
+                properties.append(
+                    {
+                        "entity_key": row[0],
+                        "label": row[1],
+                        "is_direct": False,
+                        "is_inherited": True,
+                        "is_required": row[2],
+                        "source_category": ancestor_key,
+                        "inheritance_depth": depth,
+                    }
+                )
 
         # Deduplicate properties - keep the one with min depth
         seen_props: dict[str, dict] = {}
         for prop in properties:
             prop_key = prop["entity_key"]
-            if prop_key not in seen_props:
-                seen_props[prop_key] = prop
-            elif prop["inheritance_depth"] < seen_props[prop_key]["inheritance_depth"]:
+            if (
+                prop_key not in seen_props
+                or prop["inheritance_depth"] < seen_props[prop_key]["inheritance_depth"]
+            ):
                 seen_props[prop_key] = prop
 
         # Return sorted by depth, then label
@@ -482,9 +470,7 @@ class DraftOverlayService:
 
 async def get_draft_context(
     session: SessionDep,
-    draft_id: Optional[uuid.UUID] = Query(
-        None, description="Draft UUID for effective view"
-    ),
+    draft_id: uuid.UUID | None = Query(None, description="Draft UUID for effective view"),
 ) -> DraftOverlayService:
     """FastAPI dependency for draft overlay context.
 

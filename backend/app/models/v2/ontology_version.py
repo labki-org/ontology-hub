@@ -3,7 +3,8 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import JSON, Column, Enum as SAEnum
+from sqlalchemy import JSON, Column
+from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, SQLModel
 
 from app.models.v2.enums import IngestStatus
@@ -15,17 +16,17 @@ class OntologyVersionBase(SQLModel):
     commit_sha: str = Field(index=True)  # Git commit SHA from labki-schemas
     ingest_status: IngestStatus = Field(
         default=IngestStatus.PENDING,
-        sa_column=Column(SAEnum(IngestStatus, name="ingeststatus", values_callable=lambda e: [x.value for x in e])),
+        sa_column=Column(
+            SAEnum(
+                IngestStatus, name="ingeststatus", values_callable=lambda e: [x.value for x in e]
+            )
+        ),
     )
     entity_counts: dict | None = Field(
         default=None, sa_column=Column(JSON)
     )  # {"category": 10, "property": 20, ...}
-    warnings: list | None = Field(
-        default=None, sa_column=Column(JSON)
-    )  # Ingest warnings
-    errors: list | None = Field(
-        default=None, sa_column=Column(JSON)
-    )  # Ingest errors
+    warnings: list | None = Field(default=None, sa_column=Column(JSON))  # Ingest warnings
+    errors: list | None = Field(default=None, sa_column=Column(JSON))  # Ingest errors
     ingested_at: datetime | None = None
 
 

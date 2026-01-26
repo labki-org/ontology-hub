@@ -6,38 +6,10 @@ This module re-exports all v2.0 models for single import point:
 """
 
 # Enums
-from app.models.v2.enums import EntityType, IngestStatus
-from app.models.v2.draft import (
-    ChangeType,
-    DraftSource,
-    DraftStatus,
-)
-
-# Ontology version tracking
-from app.models.v2.ontology_version import (
-    OntologyVersion,
-    OntologyVersionBase,
-    OntologyVersionPublic,
-)
+from app.models.v2.bundle import Bundle, BundleBase, BundlePublic
 
 # Entity models
 from app.models.v2.category import Category, CategoryBase, CategoryPublic
-from app.models.v2.property import Property, PropertyBase, PropertyPublic
-from app.models.v2.subobject import Subobject, SubobjectBase, SubobjectPublic
-from app.models.v2.module import Module, ModuleBase, ModulePublic
-from app.models.v2.bundle import Bundle, BundleBase, BundlePublic
-from app.models.v2.template import Template, TemplateBase, TemplatePublic
-
-# Relationship tables
-from app.models.v2.relationships import (
-    BundleModule,
-    CategoryParent,
-    CategoryProperty,
-    CategorySubobject,
-    ModuleDependency,
-    ModuleEntity,
-    SubobjectProperty,
-)
 
 # Materialized view
 from app.models.v2.category_property_effective import (
@@ -51,11 +23,37 @@ from app.models.v2.category_property_effective import (
 
 # Draft models
 from app.models.v2.draft import (
+    ChangeType,
     Draft,
     DraftChange,
     DraftChangePublic,
     DraftPublic,
+    DraftSource,
+    DraftStatus,
 )
+from app.models.v2.enums import EntityType, IngestStatus
+from app.models.v2.module import Module, ModuleBase, ModulePublic
+
+# Ontology version tracking
+from app.models.v2.ontology_version import (
+    OntologyVersion,
+    OntologyVersionBase,
+    OntologyVersionPublic,
+)
+from app.models.v2.property import Property, PropertyBase, PropertyPublic
+
+# Relationship tables
+from app.models.v2.relationships import (
+    BundleModule,
+    CategoryParent,
+    CategoryProperty,
+    CategorySubobject,
+    ModuleDependency,
+    ModuleEntity,
+    SubobjectProperty,
+)
+from app.models.v2.subobject import Subobject, SubobjectBase, SubobjectPublic
+from app.models.v2.template import Template, TemplateBase, TemplatePublic
 
 __all__ = [
     # Enums

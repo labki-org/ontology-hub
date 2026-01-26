@@ -7,13 +7,19 @@ Implements W3C capability URL pattern:
 - URLs use fragment (#) to reduce referrer leakage
 """
 
+from __future__ import annotations
+
 import hashlib
 import secrets
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from fastapi import HTTPException
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
+
+if TYPE_CHECKING:
+    from app.models.draft import Draft
 
 
 def generate_capability_token() -> str:
@@ -64,7 +70,7 @@ def build_capability_url(token: str, base_url: str) -> str:
 async def validate_capability_token(
     token: str,
     session: AsyncSession,
-) -> "Draft":
+) -> Draft:
     """Validate a capability token and return the associated draft.
 
     Security requirements:

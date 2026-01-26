@@ -3,7 +3,7 @@
 Provides structured validation results with entity_key field for v2 draft model.
 """
 
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -13,15 +13,17 @@ class ValidationResultV2(BaseModel):
 
     entity_type: Literal["category", "property", "subobject", "module", "bundle", "template"]
     entity_key: str  # v2 uses entity_key (not entity_id)
-    field_path: Optional[str] = None  # JSON path like "/parents/0" or "label"
-    code: str  # Machine-readable: "MISSING_PARENT", "CIRCULAR_INHERITANCE", "SCHEMA_VIOLATION", etc.
+    field_path: str | None = None  # JSON path like "/parents/0" or "label"
+    code: (
+        str  # Machine-readable: "MISSING_PARENT", "CIRCULAR_INHERITANCE", "SCHEMA_VIOLATION", etc.
+    )
     message: str  # Human-readable explanation
     severity: Literal["error", "warning", "info"]
-    suggested_semver: Optional[Literal["major", "minor", "patch"]] = None
+    suggested_semver: Literal["major", "minor", "patch"] | None = None
 
     # For breaking changes, include old/new values
-    old_value: Optional[str] = None
-    new_value: Optional[str] = None
+    old_value: str | None = None
+    new_value: str | None = None
 
 
 class DraftValidationReportV2(BaseModel):

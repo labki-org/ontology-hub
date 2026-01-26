@@ -8,7 +8,6 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.models.v2 import Draft, DraftStatus
 
-
 # Valid status transitions (same as drafts_v2.py but centralized)
 VALID_TRANSITIONS: dict[DraftStatus, set[DraftStatus]] = {
     DraftStatus.DRAFT: {DraftStatus.VALIDATED},
@@ -29,9 +28,7 @@ async def get_draft_for_update(
     multiple requests try to modify draft status concurrently.
     """
     # Use SQLModel's with_for_update() method for row-level locking
-    result = await session.execute(
-        select(Draft).where(Draft.id == draft_id).with_for_update()
-    )
+    result = await session.execute(select(Draft).where(Draft.id == draft_id).with_for_update())
     return result.scalar_one_or_none()
 
 

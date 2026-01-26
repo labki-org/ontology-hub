@@ -5,14 +5,12 @@ validation using the jsonpatch library (RFC 6902 compliance).
 """
 
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 import jsonpatch
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 from app.models.v2 import ChangeType
-
 
 # Valid entity types for draft changes
 VALID_ENTITY_TYPES = frozenset(
@@ -34,14 +32,14 @@ class DraftChangeCreate(BaseModel):
     change_type: ChangeType
     entity_type: str
     entity_key: str
-    patch: Optional[list[dict]] = None
-    replacement_json: Optional[dict] = None
+    patch: list[dict] | None = None
+    replacement_json: dict | None = None
 
     model_config = ConfigDict(extra="forbid")
 
     @field_validator("patch")
     @classmethod
-    def validate_patch(cls, v: Optional[list[dict]]) -> Optional[list[dict]]:
+    def validate_patch(cls, v: list[dict] | None) -> list[dict] | None:
         """Validate JSON Patch format against RFC 6902.
 
         Args:
@@ -76,7 +74,7 @@ class DraftChangeCreate(BaseModel):
         try:
             jsonpatch.JsonPatch(v)
         except jsonpatch.InvalidJsonPatch as e:
-            raise ValueError(f"invalid JSON Patch: {e}")
+            raise ValueError(f"invalid JSON Patch: {e}") from e
 
         return v
 
@@ -124,8 +122,8 @@ class DraftChangeResponse(BaseModel):
     change_type: ChangeType
     entity_type: str
     entity_key: str
-    patch: Optional[list[dict]] = None
-    replacement_json: Optional[dict] = None
+    patch: list[dict] | None = None
+    replacement_json: dict | None = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

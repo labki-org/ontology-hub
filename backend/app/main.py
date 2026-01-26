@@ -10,10 +10,11 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import settings
-from app.database import engine, async_session_maker, get_session
+from app.database import async_session_maker, engine, get_session
 from app.dependencies.rate_limit import limiter, rate_limit_exceeded_handler
+
 # Import all models to register them with SQLModel.metadata before create_all
-from app.models import Entity, Module, Profile, Draft  # noqa: F401
+from app.models import Draft, Entity, Module, Profile  # noqa: F401
 from app.routers import (
     draft_changes_router,
     drafts_router,

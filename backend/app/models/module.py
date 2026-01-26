@@ -2,7 +2,6 @@
 
 import uuid
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import JSON, Column
 from sqlmodel import Field, SQLModel
@@ -13,7 +12,7 @@ class ModuleBase(SQLModel):
 
     module_id: str = Field(unique=True, index=True)
     label: str
-    description: Optional[str] = None
+    description: str | None = None
     category_ids: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     dependencies: list[str] = Field(default_factory=list, sa_column=Column(JSON))
 
@@ -24,10 +23,10 @@ class Module(ModuleBase, table=True):
     __tablename__ = "modules"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    commit_sha: Optional[str] = None  # For versioning from GitHub
+    commit_sha: str | None = None  # For versioning from GitHub
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
-    deleted_at: Optional[datetime] = None  # Soft delete
+    deleted_at: datetime | None = None  # Soft delete
 
 
 class ModuleCreate(ModuleBase):
@@ -39,18 +38,18 @@ class ModuleCreate(ModuleBase):
 class ModuleUpdate(SQLModel):
     """Schema for updating a Module (all fields optional)."""
 
-    module_id: Optional[str] = None
-    label: Optional[str] = None
-    description: Optional[str] = None
-    category_ids: Optional[list[str]] = None
-    dependencies: Optional[list[str]] = None
+    module_id: str | None = None
+    label: str | None = None
+    description: str | None = None
+    category_ids: list[str] | None = None
+    dependencies: list[str] | None = None
 
 
 class ModulePublic(ModuleBase):
     """Public schema for Module responses."""
 
     id: uuid.UUID
-    commit_sha: Optional[str] = None
+    commit_sha: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -60,7 +59,7 @@ class ProfileBase(SQLModel):
 
     profile_id: str = Field(unique=True, index=True)
     label: str
-    description: Optional[str] = None
+    description: str | None = None
     module_ids: list[str] = Field(default_factory=list, sa_column=Column(JSON))
 
 
@@ -70,10 +69,10 @@ class Profile(ProfileBase, table=True):
     __tablename__ = "profiles"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    commit_sha: Optional[str] = None  # For versioning from GitHub
+    commit_sha: str | None = None  # For versioning from GitHub
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
-    deleted_at: Optional[datetime] = None  # Soft delete
+    deleted_at: datetime | None = None  # Soft delete
 
 
 class ProfileCreate(ProfileBase):
@@ -85,16 +84,16 @@ class ProfileCreate(ProfileBase):
 class ProfileUpdate(SQLModel):
     """Schema for updating a Profile (all fields optional)."""
 
-    profile_id: Optional[str] = None
-    label: Optional[str] = None
-    description: Optional[str] = None
-    module_ids: Optional[list[str]] = None
+    profile_id: str | None = None
+    label: str | None = None
+    description: str | None = None
+    module_ids: list[str] | None = None
 
 
 class ProfilePublic(ProfileBase):
     """Public schema for Profile responses."""
 
     id: uuid.UUID
-    commit_sha: Optional[str] = None
+    commit_sha: str | None = None
     created_at: datetime
     updated_at: datetime

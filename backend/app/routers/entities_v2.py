@@ -16,9 +16,6 @@ computation. When draft_id is provided, entities include change_status
 metadata (added/modified/deleted/unchanged).
 """
 
-import uuid
-from typing import Optional
-
 from fastapi import APIRouter, HTTPException, Query, Request
 from sqlalchemy import text
 from sqlmodel import select
@@ -103,7 +100,7 @@ async def list_categories(
     request: Request,
     session: SessionDep,
     draft_ctx: DraftContextDep,
-    cursor: Optional[str] = Query(
+    cursor: str | None = Query(
         None, description="Last entity_key from previous page for pagination"
     ),
     limit: int = Query(20, ge=1, le=100, description="Max items per page"),
@@ -230,9 +227,7 @@ async def get_category(
             WHERE c.entity_key = :entity_key
             ORDER BY cpe.depth, p.label
         """)
-        props_result = await session.execute(
-            props_query, {"entity_key": entity_key}
-        )
+        props_result = await session.execute(props_query, {"entity_key": entity_key})
 
         for row in props_result.fetchall():
             properties.append(
@@ -268,9 +263,13 @@ async def get_category(
     else:
         # Draft-created category - extract from effective JSON if present
         for sub_key in effective.get("required_subobjects", []):
-            subobjects.append(SubobjectProvenance(entity_key=sub_key, label=sub_key, is_required=True))
+            subobjects.append(
+                SubobjectProvenance(entity_key=sub_key, label=sub_key, is_required=True)
+            )
         for sub_key in effective.get("optional_subobjects", []):
-            subobjects.append(SubobjectProvenance(entity_key=sub_key, label=sub_key, is_required=False))
+            subobjects.append(
+                SubobjectProvenance(entity_key=sub_key, label=sub_key, is_required=False)
+            )
 
     return CategoryDetailResponse(
         entity_key=effective.get("entity_key", entity_key),
@@ -296,7 +295,7 @@ async def list_properties(
     request: Request,
     session: SessionDep,
     draft_ctx: DraftContextDep,
-    cursor: Optional[str] = Query(
+    cursor: str | None = Query(
         None, description="Last entity_key from previous page for pagination"
     ),
     limit: int = Query(20, ge=1, le=100, description="Max items per page"),
@@ -449,7 +448,7 @@ async def list_subobjects(
     request: Request,
     session: SessionDep,
     draft_ctx: DraftContextDep,
-    cursor: Optional[str] = Query(
+    cursor: str | None = Query(
         None, description="Last entity_key from previous page for pagination"
     ),
     limit: int = Query(20, ge=1, le=100, description="Max items per page"),
@@ -580,15 +579,11 @@ async def get_subobject(
         # Draft-created subobject with no property fields
         for prop_key in effective.get("required_properties", []):
             required_properties.append(
-                SubobjectPropertyInfo(
-                    entity_key=prop_key, label=prop_key, is_required=True
-                )
+                SubobjectPropertyInfo(entity_key=prop_key, label=prop_key, is_required=True)
             )
         for prop_key in effective.get("optional_properties", []):
             optional_properties.append(
-                SubobjectPropertyInfo(
-                    entity_key=prop_key, label=prop_key, is_required=False
-                )
+                SubobjectPropertyInfo(entity_key=prop_key, label=prop_key, is_required=False)
             )
 
     return SubobjectDetailResponse(
@@ -613,7 +608,7 @@ async def list_templates(
     request: Request,
     session: SessionDep,
     draft_ctx: DraftContextDep,
-    cursor: Optional[str] = Query(
+    cursor: str | None = Query(
         None, description="Last entity_key from previous page for pagination"
     ),
     limit: int = Query(20, ge=1, le=100, description="Max items per page"),
@@ -702,7 +697,7 @@ async def list_modules(
     request: Request,
     session: SessionDep,
     draft_ctx: DraftContextDep,
-    cursor: Optional[str] = Query(
+    cursor: str | None = Query(
         None, description="Last entity_key from previous page for pagination"
     ),
     limit: int = Query(20, ge=1, le=100, description="Max items per page"),
@@ -840,7 +835,11 @@ async def get_module(
             entities["template"] = effective.get("templates", [])
 
         # Compute closure using draft-modified categories
-        closure = await compute_module_closure(session, direct_category_keys) if direct_category_keys else []
+        closure = (
+            await compute_module_closure(session, direct_category_keys)
+            if direct_category_keys
+            else []
+        )
 
         # Get module dependencies (may also be draft-modified)
         if "dependencies" in effective:
@@ -931,7 +930,7 @@ async def list_bundles(
     request: Request,
     session: SessionDep,
     draft_ctx: DraftContextDep,
-    cursor: Optional[str] = Query(
+    cursor: str | None = Query(
         None, description="Last entity_key from previous page for pagination"
     ),
     limit: int = Query(20, ge=1, le=100, description="Max items per page"),

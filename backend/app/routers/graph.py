@@ -41,7 +41,9 @@ async def get_full_ontology_graph(
 @router.get("/neighborhood", response_model=GraphResponse)
 async def get_neighborhood_graph(
     entity_key: str = Query(..., description="Starting entity key (e.g., 'Person')"),
-    entity_type: str = Query("category", description="Entity type (currently only 'category' supported)"),
+    entity_type: str = Query(
+        "category", description="Entity type (currently only 'category' supported)"
+    ),
     depth: int = Query(2, ge=1, le=5, description="Max traversal depth (1-5)"),
     draft_ctx: DraftContextDep = None,
 ) -> GraphResponse:
@@ -71,8 +73,8 @@ async def get_neighborhood_graph(
     except ValueError as e:
         error_msg = str(e)
         if "not found" in error_msg.lower():
-            raise HTTPException(status_code=404, detail=error_msg)
-        raise HTTPException(status_code=400, detail=error_msg)
+            raise HTTPException(status_code=404, detail=error_msg) from e
+        raise HTTPException(status_code=400, detail=error_msg) from e
 
 
 @router.get("/module/{module_key}", response_model=GraphResponse)
@@ -101,4 +103,4 @@ async def get_module_graph(
     try:
         return await service.get_module_graph(module_key)
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e

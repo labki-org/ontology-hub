@@ -4,13 +4,14 @@ Provides endpoints to list GitHub releases and compute field-level
 diffs between versions.
 """
 
-from fastapi import APIRouter, HTTPException, Query, Request
-from pydantic import BaseModel
 from typing import Any
 
-from app.dependencies.rate_limit import RATE_LIMITS, limiter
-from app.services.versions import get_entities_at_version, compute_entity_diff
+from fastapi import APIRouter, HTTPException, Query, Request
+from pydantic import BaseModel
+
 from app.config import settings
+from app.dependencies.rate_limit import RATE_LIMITS, limiter
+from app.services.versions import compute_entity_diff, get_entities_at_version
 
 router = APIRouter(prefix="/versions", tags=["versions"])
 

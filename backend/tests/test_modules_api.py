@@ -20,30 +20,31 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.models.entity import Entity, EntityType
 from app.models.module import Module, Profile
 
-
 pytestmark = pytest.mark.asyncio
 
 
 class TestModuleList:
     """Tests for GET /api/v1/modules."""
 
-    async def test_list_modules_returns_list(
-        self, client: AsyncClient, test_session: AsyncSession
-    ):
+    async def test_list_modules_returns_list(self, client: AsyncClient, test_session: AsyncSession):
         """GET returns list of modules ordered by label."""
         # Create modules
-        test_session.add(Module(
-            module_id="zebra-module",
-            label="Zebra Module",
-            description="Last alphabetically",
-            category_ids=["Cat1"],
-        ))
-        test_session.add(Module(
-            module_id="alpha-module",
-            label="Alpha Module",
-            description="First alphabetically",
-            category_ids=["Cat2", "Cat3"],
-        ))
+        test_session.add(
+            Module(
+                module_id="zebra-module",
+                label="Zebra Module",
+                description="Last alphabetically",
+                category_ids=["Cat1"],
+            )
+        )
+        test_session.add(
+            Module(
+                module_id="alpha-module",
+                label="Alpha Module",
+                description="First alphabetically",
+                category_ids=["Cat2", "Cat3"],
+            )
+        )
         await test_session.commit()
 
         response = await client.get("/api/v1/modules")
@@ -62,20 +63,22 @@ class TestModuleList:
         assert response.status_code == 200
         assert response.json() == []
 
-    async def test_list_modules_with_search(
-        self, client: AsyncClient, test_session: AsyncSession
-    ):
+    async def test_list_modules_with_search(self, client: AsyncClient, test_session: AsyncSession):
         """GET with search param filters by label."""
-        test_session.add(Module(
-            module_id="core",
-            label="Core Module",
-            category_ids=[],
-        ))
-        test_session.add(Module(
-            module_id="extended",
-            label="Extended Features",
-            category_ids=[],
-        ))
+        test_session.add(
+            Module(
+                module_id="core",
+                label="Core Module",
+                category_ids=[],
+            )
+        )
+        test_session.add(
+            Module(
+                module_id="extended",
+                label="Extended Features",
+                category_ids=[],
+            )
+        )
         await test_session.commit()
 
         # Search for "core"
@@ -90,11 +93,13 @@ class TestModuleList:
         self, client: AsyncClient, test_session: AsyncSession
     ):
         """Search is case-insensitive."""
-        test_session.add(Module(
-            module_id="core",
-            label="Core Module",
-            category_ids=[],
-        ))
+        test_session.add(
+            Module(
+                module_id="core",
+                label="Core Module",
+                category_ids=[],
+            )
+        )
         await test_session.commit()
 
         response = await client.get("/api/v1/modules?search=CORE")
@@ -110,17 +115,21 @@ class TestModuleList:
         self, client: AsyncClient, test_session: AsyncSession
     ):
         """GET excludes soft-deleted modules."""
-        test_session.add(Module(
-            module_id="active",
-            label="Active Module",
-            category_ids=[],
-        ))
-        test_session.add(Module(
-            module_id="deleted",
-            label="Deleted Module",
-            category_ids=[],
-            deleted_at=datetime.utcnow(),
-        ))
+        test_session.add(
+            Module(
+                module_id="active",
+                label="Active Module",
+                category_ids=[],
+            )
+        )
+        test_session.add(
+            Module(
+                module_id="deleted",
+                label="Deleted Module",
+                category_ids=[],
+                deleted_at=datetime.utcnow(),
+            )
+        )
         await test_session.commit()
 
         response = await client.get("/api/v1/modules")
@@ -134,9 +143,7 @@ class TestModuleList:
 class TestModuleGet:
     """Tests for GET /api/v1/modules/{module_id}."""
 
-    async def test_get_module_returns_module(
-        self, client: AsyncClient, test_session: AsyncSession
-    ):
+    async def test_get_module_returns_module(self, client: AsyncClient, test_session: AsyncSession):
         """GET with valid module_id returns module."""
         module = Module(
             module_id="core",
@@ -194,28 +201,36 @@ class TestModuleEntities:
     ):
         """GET returns entities grouped by type."""
         # Create entities
-        test_session.add(Entity(
-            entity_id="Person",
-            entity_type=EntityType.CATEGORY,
-            label="Person",
-            schema_definition={"properties": ["has_name"], "subobjects": ["Address"]},
-        ))
-        test_session.add(Entity(
-            entity_id="has_name",
-            entity_type=EntityType.PROPERTY,
-            label="Has Name",
-        ))
-        test_session.add(Entity(
-            entity_id="Address",
-            entity_type=EntityType.SUBOBJECT,
-            label="Address",
-        ))
+        test_session.add(
+            Entity(
+                entity_id="Person",
+                entity_type=EntityType.CATEGORY,
+                label="Person",
+                schema_definition={"properties": ["has_name"], "subobjects": ["Address"]},
+            )
+        )
+        test_session.add(
+            Entity(
+                entity_id="has_name",
+                entity_type=EntityType.PROPERTY,
+                label="Has Name",
+            )
+        )
+        test_session.add(
+            Entity(
+                entity_id="Address",
+                entity_type=EntityType.SUBOBJECT,
+                label="Address",
+            )
+        )
         # Create module
-        test_session.add(Module(
-            module_id="core",
-            label="Core Module",
-            category_ids=["Person"],
-        ))
+        test_session.add(
+            Module(
+                module_id="core",
+                label="Core Module",
+                category_ids=["Person"],
+            )
+        )
         await test_session.commit()
 
         response = await client.get("/api/v1/modules/core/entities")
@@ -240,39 +255,51 @@ class TestModuleEntities:
     ):
         """GET aggregates entities from multiple categories."""
         # Create entities
-        test_session.add(Entity(
-            entity_id="Person",
-            entity_type=EntityType.CATEGORY,
-            label="Person",
-            schema_definition={"properties": ["has_name", "has_age"]},
-        ))
-        test_session.add(Entity(
-            entity_id="Organization",
-            entity_type=EntityType.CATEGORY,
-            label="Organization",
-            schema_definition={"properties": ["has_name", "has_founded"]},
-        ))
-        test_session.add(Entity(
-            entity_id="has_name",
-            entity_type=EntityType.PROPERTY,
-            label="Has Name",
-        ))
-        test_session.add(Entity(
-            entity_id="has_age",
-            entity_type=EntityType.PROPERTY,
-            label="Has Age",
-        ))
-        test_session.add(Entity(
-            entity_id="has_founded",
-            entity_type=EntityType.PROPERTY,
-            label="Has Founded Date",
-        ))
+        test_session.add(
+            Entity(
+                entity_id="Person",
+                entity_type=EntityType.CATEGORY,
+                label="Person",
+                schema_definition={"properties": ["has_name", "has_age"]},
+            )
+        )
+        test_session.add(
+            Entity(
+                entity_id="Organization",
+                entity_type=EntityType.CATEGORY,
+                label="Organization",
+                schema_definition={"properties": ["has_name", "has_founded"]},
+            )
+        )
+        test_session.add(
+            Entity(
+                entity_id="has_name",
+                entity_type=EntityType.PROPERTY,
+                label="Has Name",
+            )
+        )
+        test_session.add(
+            Entity(
+                entity_id="has_age",
+                entity_type=EntityType.PROPERTY,
+                label="Has Age",
+            )
+        )
+        test_session.add(
+            Entity(
+                entity_id="has_founded",
+                entity_type=EntityType.PROPERTY,
+                label="Has Founded Date",
+            )
+        )
         # Create module with both categories
-        test_session.add(Module(
-            module_id="core",
-            label="Core Module",
-            category_ids=["Person", "Organization"],
-        ))
+        test_session.add(
+            Module(
+                module_id="core",
+                label="Core Module",
+                category_ids=["Person", "Organization"],
+            )
+        )
         await test_session.commit()
 
         response = await client.get("/api/v1/modules/core/entities")
@@ -288,15 +315,15 @@ class TestModuleEntities:
         assert response.status_code == 404
         assert response.json()["detail"] == "Module not found"
 
-    async def test_get_module_entities_empty(
-        self, client: AsyncClient, test_session: AsyncSession
-    ):
+    async def test_get_module_entities_empty(self, client: AsyncClient, test_session: AsyncSession):
         """GET returns empty lists for module with no categories."""
-        test_session.add(Module(
-            module_id="empty",
-            label="Empty Module",
-            category_ids=[],
-        ))
+        test_session.add(
+            Module(
+                module_id="empty",
+                label="Empty Module",
+                category_ids=[],
+            )
+        )
         await test_session.commit()
 
         response = await client.get("/api/v1/modules/empty/entities")
@@ -312,26 +339,32 @@ class TestModuleEntities:
     ):
         """GET excludes soft-deleted entities."""
         # Create active category
-        test_session.add(Entity(
-            entity_id="Person",
-            entity_type=EntityType.CATEGORY,
-            label="Person",
-            schema_definition={},
-        ))
+        test_session.add(
+            Entity(
+                entity_id="Person",
+                entity_type=EntityType.CATEGORY,
+                label="Person",
+                schema_definition={},
+            )
+        )
         # Create soft-deleted category
-        test_session.add(Entity(
-            entity_id="DeletedCat",
-            entity_type=EntityType.CATEGORY,
-            label="Deleted Category",
-            schema_definition={},
-            deleted_at=datetime.utcnow(),
-        ))
+        test_session.add(
+            Entity(
+                entity_id="DeletedCat",
+                entity_type=EntityType.CATEGORY,
+                label="Deleted Category",
+                schema_definition={},
+                deleted_at=datetime.utcnow(),
+            )
+        )
         # Create module with both
-        test_session.add(Module(
-            module_id="mixed",
-            label="Mixed Module",
-            category_ids=["Person", "DeletedCat"],
-        ))
+        test_session.add(
+            Module(
+                module_id="mixed",
+                label="Mixed Module",
+                category_ids=["Person", "DeletedCat"],
+            )
+        )
         await test_session.commit()
 
         response = await client.get("/api/v1/modules/mixed/entities")
@@ -350,21 +383,27 @@ class TestModuleOverlaps:
     ):
         """GET returns dict mapping entity_id to list of other module_ids."""
         # Create modules with shared category
-        test_session.add(Module(
-            module_id="core",
-            label="Core Module",
-            category_ids=["Person", "Organization"],
-        ))
-        test_session.add(Module(
-            module_id="extended",
-            label="Extended Module",
-            category_ids=["Person", "Event"],  # Person is shared
-        ))
-        test_session.add(Module(
-            module_id="research",
-            label="Research Module",
-            category_ids=["Person", "Experiment"],  # Person is shared
-        ))
+        test_session.add(
+            Module(
+                module_id="core",
+                label="Core Module",
+                category_ids=["Person", "Organization"],
+            )
+        )
+        test_session.add(
+            Module(
+                module_id="extended",
+                label="Extended Module",
+                category_ids=["Person", "Event"],  # Person is shared
+            )
+        )
+        test_session.add(
+            Module(
+                module_id="research",
+                label="Research Module",
+                category_ids=["Person", "Experiment"],  # Person is shared
+            )
+        )
         await test_session.commit()
 
         response = await client.get("/api/v1/modules/core/overlaps")
@@ -377,36 +416,38 @@ class TestModuleOverlaps:
         # Organization is unique to core
         assert "Organization" not in data
 
-    async def test_overlaps_with_no_overlaps(
-        self, client: AsyncClient, test_session: AsyncSession
-    ):
+    async def test_overlaps_with_no_overlaps(self, client: AsyncClient, test_session: AsyncSession):
         """GET returns empty dict when module has no overlapping entities."""
         # Create modules with no shared categories
-        test_session.add(Module(
-            module_id="unique",
-            label="Unique Module",
-            category_ids=["UniqueCat1", "UniqueCat2"],
-        ))
-        test_session.add(Module(
-            module_id="other",
-            label="Other Module",
-            category_ids=["OtherCat1", "OtherCat2"],
-        ))
+        test_session.add(
+            Module(
+                module_id="unique",
+                label="Unique Module",
+                category_ids=["UniqueCat1", "UniqueCat2"],
+            )
+        )
+        test_session.add(
+            Module(
+                module_id="other",
+                label="Other Module",
+                category_ids=["OtherCat1", "OtherCat2"],
+            )
+        )
         await test_session.commit()
 
         response = await client.get("/api/v1/modules/unique/overlaps")
         assert response.status_code == 200
         assert response.json() == {}
 
-    async def test_overlaps_empty_module(
-        self, client: AsyncClient, test_session: AsyncSession
-    ):
+    async def test_overlaps_empty_module(self, client: AsyncClient, test_session: AsyncSession):
         """GET returns empty dict for module with no categories."""
-        test_session.add(Module(
-            module_id="empty",
-            label="Empty Module",
-            category_ids=[],
-        ))
+        test_session.add(
+            Module(
+                module_id="empty",
+                label="Empty Module",
+                category_ids=[],
+            )
+        )
         await test_session.commit()
 
         response = await client.get("/api/v1/modules/empty/overlaps")
@@ -424,17 +465,21 @@ class TestModuleOverlaps:
     ):
         """GET excludes soft-deleted modules from overlap results."""
         # Create modules
-        test_session.add(Module(
-            module_id="active",
-            label="Active Module",
-            category_ids=["SharedCat"],
-        ))
-        test_session.add(Module(
-            module_id="deleted",
-            label="Deleted Module",
-            category_ids=["SharedCat"],
-            deleted_at=datetime.utcnow(),
-        ))
+        test_session.add(
+            Module(
+                module_id="active",
+                label="Active Module",
+                category_ids=["SharedCat"],
+            )
+        )
+        test_session.add(
+            Module(
+                module_id="deleted",
+                label="Deleted Module",
+                category_ids=["SharedCat"],
+                deleted_at=datetime.utcnow(),
+            )
+        )
         await test_session.commit()
 
         response = await client.get("/api/v1/modules/active/overlaps")
@@ -450,16 +495,20 @@ class TestProfileList:
         self, client: AsyncClient, test_session: AsyncSession
     ):
         """GET returns list of profiles ordered by label."""
-        test_session.add(Profile(
-            profile_id="zebra-profile",
-            label="Zebra Profile",
-            module_ids=["mod1"],
-        ))
-        test_session.add(Profile(
-            profile_id="alpha-profile",
-            label="Alpha Profile",
-            module_ids=["mod2", "mod3"],
-        ))
+        test_session.add(
+            Profile(
+                profile_id="zebra-profile",
+                label="Zebra Profile",
+                module_ids=["mod1"],
+            )
+        )
+        test_session.add(
+            Profile(
+                profile_id="alpha-profile",
+                label="Alpha Profile",
+                module_ids=["mod2", "mod3"],
+            )
+        )
         await test_session.commit()
 
         response = await client.get("/api/v1/profiles")
@@ -477,20 +526,22 @@ class TestProfileList:
         assert response.status_code == 200
         assert response.json() == []
 
-    async def test_list_profiles_with_search(
-        self, client: AsyncClient, test_session: AsyncSession
-    ):
+    async def test_list_profiles_with_search(self, client: AsyncClient, test_session: AsyncSession):
         """GET with search param filters by label."""
-        test_session.add(Profile(
-            profile_id="standard",
-            label="Standard Profile",
-            module_ids=[],
-        ))
-        test_session.add(Profile(
-            profile_id="extended",
-            label="Extended Profile",
-            module_ids=[],
-        ))
+        test_session.add(
+            Profile(
+                profile_id="standard",
+                label="Standard Profile",
+                module_ids=[],
+            )
+        )
+        test_session.add(
+            Profile(
+                profile_id="extended",
+                label="Extended Profile",
+                module_ids=[],
+            )
+        )
         await test_session.commit()
 
         response = await client.get("/api/v1/profiles?search=standard")
@@ -504,17 +555,21 @@ class TestProfileList:
         self, client: AsyncClient, test_session: AsyncSession
     ):
         """GET excludes soft-deleted profiles."""
-        test_session.add(Profile(
-            profile_id="active",
-            label="Active Profile",
-            module_ids=[],
-        ))
-        test_session.add(Profile(
-            profile_id="deleted",
-            label="Deleted Profile",
-            module_ids=[],
-            deleted_at=datetime.utcnow(),
-        ))
+        test_session.add(
+            Profile(
+                profile_id="active",
+                label="Active Profile",
+                module_ids=[],
+            )
+        )
+        test_session.add(
+            Profile(
+                profile_id="deleted",
+                label="Deleted Profile",
+                module_ids=[],
+                deleted_at=datetime.utcnow(),
+            )
+        )
         await test_session.commit()
 
         response = await client.get("/api/v1/profiles")
@@ -586,22 +641,28 @@ class TestProfileModules:
     ):
         """GET returns modules in profile."""
         # Create modules
-        test_session.add(Module(
-            module_id="core",
-            label="Core Module",
-            category_ids=["Person"],
-        ))
-        test_session.add(Module(
-            module_id="extended",
-            label="Extended Module",
-            category_ids=["Event"],
-        ))
+        test_session.add(
+            Module(
+                module_id="core",
+                label="Core Module",
+                category_ids=["Person"],
+            )
+        )
+        test_session.add(
+            Module(
+                module_id="extended",
+                label="Extended Module",
+                category_ids=["Event"],
+            )
+        )
         # Create profile
-        test_session.add(Profile(
-            profile_id="standard",
-            label="Standard Profile",
-            module_ids=["core", "extended"],
-        ))
+        test_session.add(
+            Profile(
+                profile_id="standard",
+                label="Standard Profile",
+                module_ids=["core", "extended"],
+            )
+        )
         await test_session.commit()
 
         response = await client.get("/api/v1/profiles/standard/modules")
@@ -620,15 +681,15 @@ class TestProfileModules:
         assert response.status_code == 404
         assert response.json()["detail"] == "Profile not found"
 
-    async def test_get_profile_modules_empty(
-        self, client: AsyncClient, test_session: AsyncSession
-    ):
+    async def test_get_profile_modules_empty(self, client: AsyncClient, test_session: AsyncSession):
         """GET returns empty list for profile with no modules."""
-        test_session.add(Profile(
-            profile_id="empty",
-            label="Empty Profile",
-            module_ids=[],
-        ))
+        test_session.add(
+            Profile(
+                profile_id="empty",
+                label="Empty Profile",
+                module_ids=[],
+            )
+        )
         await test_session.commit()
 
         response = await client.get("/api/v1/profiles/empty/modules")
@@ -640,23 +701,29 @@ class TestProfileModules:
     ):
         """GET excludes soft-deleted modules."""
         # Create modules
-        test_session.add(Module(
-            module_id="active",
-            label="Active Module",
-            category_ids=[],
-        ))
-        test_session.add(Module(
-            module_id="deleted",
-            label="Deleted Module",
-            category_ids=[],
-            deleted_at=datetime.utcnow(),
-        ))
+        test_session.add(
+            Module(
+                module_id="active",
+                label="Active Module",
+                category_ids=[],
+            )
+        )
+        test_session.add(
+            Module(
+                module_id="deleted",
+                label="Deleted Module",
+                category_ids=[],
+                deleted_at=datetime.utcnow(),
+            )
+        )
         # Create profile referencing both
-        test_session.add(Profile(
-            profile_id="mixed",
-            label="Mixed Profile",
-            module_ids=["active", "deleted"],
-        ))
+        test_session.add(
+            Profile(
+                profile_id="mixed",
+                label="Mixed Profile",
+                module_ids=["active", "deleted"],
+            )
+        )
         await test_session.commit()
 
         response = await client.get("/api/v1/profiles/mixed/modules")

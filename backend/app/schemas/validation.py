@@ -3,7 +3,7 @@
 Provides structured validation results with entity context and semver suggestions.
 """
 
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -13,15 +13,15 @@ class ValidationResult(BaseModel):
 
     entity_type: Literal["category", "property", "subobject", "module", "profile"]
     entity_id: str
-    field: Optional[str] = None  # Specific field, if applicable
+    field: str | None = None  # Specific field, if applicable
     code: str  # Machine-readable: "MISSING_PARENT", "CIRCULAR_INHERITANCE", etc.
     message: str  # Human-readable explanation
     severity: Literal["error", "warning", "info"]
-    suggested_semver: Optional[Literal["major", "minor", "patch"]] = None
+    suggested_semver: Literal["major", "minor", "patch"] | None = None
 
     # For breaking changes, include old/new values
-    old_value: Optional[str] = None
-    new_value: Optional[str] = None
+    old_value: str | None = None
+    new_value: str | None = None
 
 
 class DraftValidationReport(BaseModel):

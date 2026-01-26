@@ -5,7 +5,6 @@ effective entities against canonical data.
 """
 
 from typing import Any
-from uuid import UUID
 
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -16,7 +15,7 @@ from app.schemas.validation_v2 import ValidationResultV2
 
 async def detect_breaking_changes_v2(
     effective_entities: dict[str, dict[str, dict]],
-    draft_changes: list[DraftChange],
+    _draft_changes: list[DraftChange],
     session: AsyncSession,
 ) -> list[ValidationResultV2]:
     """Detect breaking changes by comparing effective entities to canonical.
@@ -49,7 +48,7 @@ async def detect_breaking_changes_v2(
     # Build map of canonical entities
     canonical_categories = await _fetch_canonical_categories(session)
     canonical_properties = await _fetch_canonical_properties(session)
-    canonical_modules = await _fetch_canonical_modules(session)
+    _ = await _fetch_canonical_modules(session)  # Reserved for future module breaking change checks
 
     # Check property breaking changes
     for entity_key, prop_json in effective_entities.get("property", {}).items():
@@ -61,11 +60,7 @@ async def detect_breaking_changes_v2(
         if entity_key in canonical_properties:
             # Existing property - check for breaking changes
             canonical_prop = canonical_properties[entity_key]
-            results.extend(
-                _check_property_breaking_changes(
-                    entity_key, canonical_prop, prop_json
-                )
-            )
+            results.extend(_check_property_breaking_changes(entity_key, canonical_prop, prop_json))
             results.extend(
                 _check_metadata_changes("property", entity_key, canonical_prop, prop_json)
             )
@@ -92,14 +87,8 @@ async def detect_breaking_changes_v2(
         if entity_key in canonical_categories:
             # Existing category - check for breaking changes
             canonical_cat = canonical_categories[entity_key]
-            results.extend(
-                _check_category_breaking_changes(
-                    entity_key, canonical_cat, cat_json
-                )
-            )
-            results.extend(
-                _check_metadata_changes("category", entity_key, canonical_cat, cat_json)
-            )
+            results.extend(_check_category_breaking_changes(entity_key, canonical_cat, cat_json))
+            results.extend(_check_metadata_changes("category", entity_key, canonical_cat, cat_json))
         else:
             # New category added (minor change)
             if not cat_json.get("_deleted"):
@@ -150,10 +139,7 @@ async def _fetch_canonical_categories(session: AsyncSession) -> dict[str, dict]:
     result = await session.execute(query)
     categories = result.scalars().all()
 
-    return {
-        cat.entity_key: cat.canonical_json
-        for cat in categories
-    }
+    return {cat.entity_key: cat.canonical_json for cat in categories}
 
 
 async def _fetch_canonical_properties(session: AsyncSession) -> dict[str, dict]:
@@ -162,10 +148,7 @@ async def _fetch_canonical_properties(session: AsyncSession) -> dict[str, dict]:
     result = await session.execute(query)
     properties = result.scalars().all()
 
-    return {
-        prop.entity_key: prop.canonical_json
-        for prop in properties
-    }
+    return {prop.entity_key: prop.canonical_json for prop in properties}
 
 
 async def _fetch_canonical_modules(session: AsyncSession) -> dict[str, dict]:
@@ -174,10 +157,7 @@ async def _fetch_canonical_modules(session: AsyncSession) -> dict[str, dict]:
     result = await session.execute(query)
     modules = result.scalars().all()
 
-    return {
-        mod.entity_key: mod.canonical_json
-        for mod in modules
-    }
+    return {mod.entity_key: mod.canonical_json for mod in modules}
 
 
 async def _fetch_canonical_subobjects(session: AsyncSession) -> dict[str, dict]:
@@ -186,10 +166,7 @@ async def _fetch_canonical_subobjects(session: AsyncSession) -> dict[str, dict]:
     result = await session.execute(query)
     subobjects = result.scalars().all()
 
-    return {
-        sub.entity_key: sub.canonical_json
-        for sub in subobjects
-    }
+    return {sub.entity_key: sub.canonical_json for sub in subobjects}
 
 
 def _check_property_breaking_changes(

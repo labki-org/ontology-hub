@@ -3,7 +3,7 @@
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Any, Literal, Optional
+from typing import Literal, Optional
 
 from pydantic import ConfigDict, field_validator
 from sqlalchemy import JSON, Column
@@ -27,7 +27,7 @@ class EntityDefinition(SQLModel):
 
     entity_id: str
     label: str
-    description: Optional[str] = None
+    description: str | None = None
     schema_definition: dict = Field(default_factory=dict)
 
     model_config = ConfigDict(extra="forbid")
@@ -38,7 +38,7 @@ class ModuleDefinition(SQLModel):
 
     module_id: str
     label: str
-    description: Optional[str] = None
+    description: str | None = None
     category_ids: list[str] = Field(default_factory=list)
     dependencies: list[str] = Field(default_factory=list)
 
@@ -50,7 +50,7 @@ class ProfileDefinition(SQLModel):
 
     profile_id: str
     label: str
-    description: Optional[str] = None
+    description: str | None = None
     module_ids: list[str] = Field(default_factory=list)
 
     model_config = ConfigDict(extra="forbid")
@@ -139,8 +139,8 @@ class ChangeDetail(SQLModel):
     key: str
     entity_type: str
     entity_id: str
-    old: Optional[dict] = None
-    new: Optional[dict] = None
+    old: dict | None = None
+    new: dict | None = None
 
 
 class ChangesByType(SQLModel):
@@ -174,11 +174,11 @@ class DraftBase(SQLModel):
 
     status: DraftStatus = DraftStatus.PENDING
     payload: dict = Field(default_factory=dict, sa_column=Column(JSON))
-    source_wiki: Optional[str] = None
-    base_commit_sha: Optional[str] = None
-    diff_preview: Optional[dict] = Field(default=None, sa_column=Column(JSON))
-    validation_results: Optional[dict] = Field(default=None, sa_column=Column(JSON))
-    pr_url: Optional[str] = None
+    source_wiki: str | None = None
+    base_commit_sha: str | None = None
+    diff_preview: dict | None = Field(default=None, sa_column=Column(JSON))
+    validation_results: dict | None = Field(default=None, sa_column=Column(JSON))
+    pr_url: str | None = None
 
 
 class Draft(DraftBase, table=True):
@@ -209,9 +209,9 @@ class EntityUpdate(SQLModel):
     """Partial entity update."""
 
     entity_id: str
-    label: Optional[str] = None
-    description: Optional[str] = None
-    schema_definition: Optional[dict] = None
+    label: str | None = None
+    description: str | None = None
+    schema_definition: dict | None = None
 
 
 class EntitiesUpdate(SQLModel):
@@ -242,9 +242,9 @@ class DraftPatchPayload(SQLModel):
     All fields are optional for partial updates.
     """
 
-    entities: Optional[EntitiesUpdate] = None
-    modules: Optional[list[ModuleUpdate | ModuleDefinition]] = None
-    profiles: Optional[list[ProfileUpdate | ProfileDefinition]] = None
+    entities: EntitiesUpdate | None = None
+    modules: list[ModuleUpdate | ModuleDefinition] | None = None
+    profiles: list[ProfileUpdate | ProfileDefinition] | None = None
 
     model_config = ConfigDict(extra="forbid")
 
@@ -252,8 +252,8 @@ class DraftPatchPayload(SQLModel):
 class DraftUpdate(SQLModel):
     """Schema for updating a Draft (all fields optional)."""
 
-    status: Optional[DraftStatus] = None
-    payload: Optional[dict] = None
+    status: DraftStatus | None = None
+    payload: dict | None = None
 
 
 class DraftPublic(DraftBase):
@@ -279,7 +279,7 @@ class DraftCreateResponse(SQLModel):
 
     capability_url: str
     expires_at: datetime
-    diff_preview: Optional[DraftDiffResponse] = None
-    validation_results: Optional[dict] = None  # Full validation report
+    diff_preview: DraftDiffResponse | None = None
+    validation_results: dict | None = None  # Full validation report
     validation_warnings: list[ValidationError] = Field(default_factory=list)
     message: str = "Save this URL - it cannot be recovered. Use it to access your draft."

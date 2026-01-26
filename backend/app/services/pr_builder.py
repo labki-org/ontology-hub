@@ -313,7 +313,7 @@ def generate_commit_message(diff: DraftDiffResponse) -> str:
     summary = ", ".join(summary_parts) if summary_parts else "no changes"
 
     # Build commit message
-    message = f"feat(schema): update from wiki export\n\n"
+    message = "feat(schema): update from wiki export\n\n"
     message += f"Changes: {summary}\n"
 
     return message

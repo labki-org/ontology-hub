@@ -9,8 +9,16 @@ from sqlalchemy import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.models.v2 import (
-    Bundle, Category, Draft, DraftChange, DraftStatus,
-    ChangeType, Module, Property, Subobject, Template,
+    Bundle,
+    Category,
+    ChangeType,
+    Draft,
+    DraftChange,
+    DraftStatus,
+    Module,
+    Property,
+    Subobject,
+    Template,
 )
 
 logger = logging.getLogger(__name__)
@@ -36,11 +44,9 @@ async def load_canonical_entity(
     if not model:
         return None
 
-    result = await session.execute(
-        select(model).where(model.entity_key == entity_key)
-    )
+    result = await session.execute(select(model).where(model.entity_key == entity_key))
     entity = result.scalars().first()
-    if entity and hasattr(entity, 'canonical_json'):
+    if entity and hasattr(entity, "canonical_json"):
         return entity.canonical_json
     return None
 
@@ -94,7 +100,7 @@ async def auto_rebase_drafts(
     # Find drafts that need rebase
     drafts_query = select(Draft).where(
         Draft.base_commit_sha == old_commit_sha,
-        Draft.status.in_([DraftStatus.DRAFT, DraftStatus.VALIDATED])
+        Draft.status.in_([DraftStatus.DRAFT, DraftStatus.VALIDATED]),
     )
     result = await session.execute(drafts_query)
     drafts = result.scalars().all()
@@ -104,9 +110,7 @@ async def auto_rebase_drafts(
         conflict_reason = None
 
         # Load all changes for this draft
-        changes_query = select(DraftChange).where(
-            DraftChange.draft_id == draft.id
-        )
+        changes_query = select(DraftChange).where(DraftChange.draft_id == draft.id)
         changes_result = await session.execute(changes_query)
         changes = changes_result.scalars().all()
 

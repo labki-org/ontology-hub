@@ -9,9 +9,9 @@ Tests W3C capability URL security requirements:
 import hashlib
 
 from app.dependencies.capability import (
+    build_capability_url,
     generate_capability_token,
     hash_token,
-    build_capability_url,
 )
 
 

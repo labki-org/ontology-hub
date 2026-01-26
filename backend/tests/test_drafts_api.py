@@ -10,7 +10,6 @@ Tests capability URL security and rate limiting:
 import pytest
 from httpx import AsyncClient
 
-
 pytestmark = pytest.mark.asyncio
 
 
