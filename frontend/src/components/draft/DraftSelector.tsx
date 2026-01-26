@@ -29,14 +29,14 @@ export function DraftSelector() {
     e.preventDefault()
     if (tokenInput.trim()) {
       // Use draft_token for v2 workflow (new default)
-      navigate(`/browse?draft_token=${encodeURIComponent(tokenInput.trim())}`)
+      navigate(`/?draft_token=${encodeURIComponent(tokenInput.trim())}`)
       setIsOpen(false)
       setTokenInput('')
     }
   }
 
   const handleExitDraft = () => {
-    navigate('/browse', { replace: true })
+    navigate('/', { replace: true })
     setIsOpen(false)
   }
 
@@ -46,7 +46,7 @@ export function DraftSelector() {
       {
         onSuccess: (data) => {
           const token = data.capability_url.split('#')[1]
-          navigate(`/browse?draft_token=${encodeURIComponent(token)}`)
+          navigate(`/?draft_token=${encodeURIComponent(token)}`)
           setIsOpen(false)
           setNewDraftTitle('')
           createDraft.reset()
