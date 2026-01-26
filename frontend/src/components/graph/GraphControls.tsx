@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useGraphStore } from '@/stores/graphStore'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { RotateCw, Minus, Plus, ChevronDown, ChevronRight, Settings2 } from 'lucide-react'
+import { RotateCw, ChevronDown, ChevronRight, Settings2 } from 'lucide-react'
 import {
   Collapsible,
   CollapsibleContent,
@@ -20,14 +20,8 @@ interface GraphControlsProps {
  */
 export function GraphControls({ onResetLayout, isSimulating }: GraphControlsProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const depth = useGraphStore((s) => s.depth)
-  const setDepth = useGraphStore((s) => s.setDepth)
   const edgeTypeFilter = useGraphStore((s) => s.edgeTypeFilter)
   const setEdgeTypeFilter = useGraphStore((s) => s.setEdgeTypeFilter)
-
-  const handleDepthChange = (delta: number) => {
-    setDepth(depth + delta)
-  }
 
   const handleEdgeTypeToggle = (edgeType: string, checked: boolean) => {
     const newFilter = new Set(edgeTypeFilter)
@@ -46,9 +40,6 @@ export function GraphControls({ onResetLayout, isSimulating }: GraphControlsProp
           <button className="flex items-center gap-2 px-3 py-2 w-full hover:bg-muted/50 rounded-lg transition-colors">
             <Settings2 className="h-4 w-4" />
             <span className="text-sm font-medium">Graph Settings</span>
-            <span className="text-xs text-muted-foreground ml-1">
-              (Depth: {depth})
-            </span>
             {isOpen ? (
               <ChevronDown className="h-4 w-4 ml-auto" />
             ) : (
@@ -60,32 +51,6 @@ export function GraphControls({ onResetLayout, isSimulating }: GraphControlsProp
         <CollapsibleContent>
           <div className="px-3 pb-3 pt-1 border-t">
             <div className="flex flex-wrap items-center gap-4">
-              {/* Depth control */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-muted-foreground">Depth:</span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() => handleDepthChange(-1)}
-                  disabled={depth <= 1}
-                >
-                  <Minus className="h-3 w-3" />
-                </Button>
-                <span className="text-sm font-medium w-4 text-center">{depth}</span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() => handleDepthChange(1)}
-                  disabled={depth >= 3}
-                >
-                  <Plus className="h-3 w-3" />
-                </Button>
-              </div>
-
-              <div className="h-4 w-px bg-border" />
-
               {/* Edge type filters - inline */}
               <div className="flex items-center gap-3">
                 <span className="text-xs font-medium text-muted-foreground">Edges:</span>

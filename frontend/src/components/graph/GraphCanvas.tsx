@@ -11,7 +11,7 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 
-import { useNeighborhoodGraph } from '@/api/graph'
+import { useFullOntologyGraph } from '@/api/graph'
 import { useGraphStore } from '@/stores/graphStore'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
@@ -34,17 +34,17 @@ interface GraphCanvasProps {
  * Main graph canvas component with force-directed layout.
  *
  * Features:
- * - Fetches neighborhood graph via useNeighborhoodGraph
+ * - Fetches full ontology graph via useFullOntologyGraph
  * - Applies force-directed layout via useForceLayout
  * - Filters edges based on graphStore.edgeTypeFilter
- * - Overlays GraphControls for depth/filter adjustments
+ * - Centers on selected entity when selection changes
+ * - Overlays GraphControls for filter adjustments
  * - Shows change status indicators in draft mode
  * - Displays cycle warning badge
  */
 export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen = false }: GraphCanvasProps) {
   const selectedEntityKey = useGraphStore((s) => s.selectedEntityKey)
   const selectedEntityType = useGraphStore((s) => s.selectedEntityType)
-  const depth = useGraphStore((s) => s.depth)
   const edgeTypeFilter = useGraphStore((s) => s.edgeTypeFilter)
   const setHoveredNode = useGraphStore((s) => s.setHoveredNode)
   const setGraphData = useGraphStore((s) => s.setGraphData)
@@ -61,19 +61,14 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
   // Use prop entityKey or fall back to selectedEntityKey from store
   const entityKey = propEntityKey ?? selectedEntityKey
 
-  // Graph visualization only supports categories - skip fetch for other entity types
-  const isCategory = selectedEntityType === 'category'
+  // Graph visualization supports all entity types except bundles
+  const GRAPH_SUPPORTED_TYPES = new Set(['category', 'property', 'subobject', 'template', 'module'])
+  const isGraphSupported = GRAPH_SUPPORTED_TYPES.has(selectedEntityType)
 
-  // Fetch graph data (only for categories)
-  // Use keepPreviousData to avoid flash when switching entities
-  const { data, isLoading, error, isFetching } = useNeighborhoodGraph(
-    isCategory ? entityKey : null,
-    'category',
-    depth,
-    draftId
-  )
+  // Fetch the full ontology graph (once, not per entity)
+  const { data, isLoading, error, isFetching } = useFullOntologyGraph(draftId)
 
-  // Track previous data to keep showing graph while loading new entity
+  // Track previous data to keep showing graph while loading
   const prevDataRef = useRef(data)
   if (data && !isFetching) {
     prevDataRef.current = data
@@ -144,9 +139,9 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
     return Array.from(moduleSet)
   }, [nodes])
 
-  // Track if this is the first render for fitView
-  const hasFitViewRef = useRef(false)
-  const { fitView, setViewport } = useReactFlow()
+  // Track if layout has been initialized
+  const layoutInitializedRef = useRef(false)
+  const { setViewport } = useReactFlow()
   const viewport = useViewport()
 
   // Detail panel width for offset calculation (must match BrowsePage)
@@ -155,8 +150,39 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
   // Reference to the container for measuring dimensions
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // Helper to fit view with offset for detail panel - calculates in one step
-  const fitViewWithOffset = () => {
+  // Helper to center on a specific node
+  const centerOnNode = useCallback((nodeId: string, animate = true) => {
+    const targetNode = nodes.find(n => n.id === nodeId)
+    if (!targetNode) return
+
+    const container = containerRef.current
+    if (!container) return
+
+    const containerWidth = container.clientWidth
+    const containerHeight = container.clientHeight
+
+    // Available width (subtract panel width if open)
+    const availableWidth = detailPanelOpen ? containerWidth - DETAIL_PANEL_WIDTH : containerWidth
+
+    // Center of available area
+    const availableCenterX = detailPanelOpen ? availableWidth / 2 : containerWidth / 2
+    const availableCenterY = containerHeight / 2
+
+    // Node position (center of node)
+    const nodeX = targetNode.position.x + 86  // half of ~172px node width
+    const nodeY = targetNode.position.y + 18  // half of ~36px node height
+
+    // Keep current zoom level, just pan to center on node
+    const zoom = viewport.zoom || 0.5
+
+    const x = availableCenterX - nodeX * zoom
+    const y = availableCenterY - nodeY * zoom
+
+    setViewport({ x, y, zoom }, { duration: animate ? 300 : 0 })
+  }, [nodes, detailPanelOpen, viewport.zoom, setViewport])
+
+  // Helper to fit entire graph with offset for detail panel
+  const fitViewWithOffset = useCallback(() => {
     if (!nodes.length) return
 
     // Calculate the bounding box of all nodes
@@ -175,11 +201,7 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
 
     // Get container dimensions
     const container = containerRef.current
-    if (!container) {
-      // Fallback to simple fitView if no container ref
-      fitView({ padding: 0.8, duration: 300 })
-      return
-    }
+    if (!container) return
 
     const containerWidth = container.clientWidth
     const containerHeight = container.clientHeight
@@ -195,7 +217,6 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
     const zoom = Math.min(scaleX, scaleY, 1) // Cap at 1x zoom
 
     // Calculate viewport position to center the graph in the available area
-    // When panel is open, center in the left portion of the screen
     const availableCenterX = detailPanelOpen ? availableWidth / 2 : containerWidth / 2
     const availableCenterY = containerHeight / 2
 
@@ -203,24 +224,38 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
     const y = availableCenterY - graphCenterY * zoom
 
     setViewport({ x, y, zoom }, { duration: 300 })
-  }
+  }, [nodes, detailPanelOpen, setViewport])
 
-  // Fit view when nodes change (simulation is already complete)
+  // Initialize layout - fit entire graph, then center on selected entity if any
   useEffect(() => {
-    if (nodes.length > 0) {
-      // Small delay to ensure React has rendered the nodes
+    if (nodes.length > 0 && !layoutInitializedRef.current) {
       const timeout = setTimeout(() => {
-        fitViewWithOffset()
-        hasFitViewRef.current = true
+        if (entityKey && isGraphSupported) {
+          // If an entity is selected, center on it
+          centerOnNode(entityKey, false)
+        } else {
+          // Otherwise fit the entire graph
+          fitViewWithOffset()
+        }
+        layoutInitializedRef.current = true
       }, 50)
       return () => clearTimeout(timeout)
     }
-  }, [nodes, detailPanelOpen])
+  }, [nodes.length, entityKey, isGraphSupported, centerOnNode, fitViewWithOffset])
 
-  // Reset hasFitViewRef when entityKey changes (new graph)
+  // Center on selected entity when it changes (after initial layout)
   useEffect(() => {
-    hasFitViewRef.current = false
-  }, [entityKey])
+    if (layoutInitializedRef.current && entityKey && isGraphSupported && nodes.length > 0) {
+      centerOnNode(entityKey, true)
+    }
+  }, [entityKey, isGraphSupported, centerOnNode, nodes.length])
+
+  // Adjust for detail panel open/close
+  useEffect(() => {
+    if (layoutInitializedRef.current && entityKey && isGraphSupported && nodes.length > 0) {
+      centerOnNode(entityKey, true)
+    }
+  }, [detailPanelOpen])
 
   // Sync graph data to store for change propagation tracking
   useEffect(() => {
@@ -229,7 +264,7 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
     }
   }, [displayData, setGraphData])
 
-  // Only show loading skeleton on initial load, not when switching entities
+  // Only show loading skeleton on initial load
   if (isLoading && !prevDataRef.current) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -246,20 +281,12 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
     )
   }
 
-  if (!entityKey) {
-    return (
-      <div className="h-full flex items-center justify-center text-muted-foreground">
-        Select an entity to visualize
-      </div>
-    )
-  }
-
-  if (!isCategory) {
+  if (!isGraphSupported) {
     return (
       <div className="h-full flex items-center justify-center text-muted-foreground">
         <div className="text-center">
-          <p>Graph view is available for categories only</p>
-          <p className="text-sm mt-1">Select a category to see its inheritance graph</p>
+          <p>Graph view is not available for bundles</p>
+          <p className="text-sm mt-1">Select a category, property, subobject, template, or module</p>
         </div>
       </div>
     )
@@ -268,7 +295,7 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
   if (nodes.length === 0) {
     return (
       <div className="h-full flex items-center justify-center text-muted-foreground">
-        No graph data for this entity
+        No graph data available
       </div>
     )
   }
