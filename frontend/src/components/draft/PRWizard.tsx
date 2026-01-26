@@ -5,7 +5,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import type { DraftChangeV2, ValidationReportV2 } from '@/api/draftApiV2'
+import type { DraftChangeV2, ValidationReportV2 } from '@/api/drafts'
 import { ReviewChanges } from './PRWizardSteps/ReviewChanges'
 import { EditDetails } from './PRWizardSteps/EditDetails'
 import { ConfirmSubmit } from './PRWizardSteps/ConfirmSubmit'

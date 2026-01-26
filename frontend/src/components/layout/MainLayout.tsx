@@ -1,20 +1,20 @@
 import { Outlet, Link } from 'react-router-dom'
-import { SidebarV2 } from './SidebarV2'
+import { Sidebar } from './Sidebar'
 import { DraftSelector } from '@/components/draft/DraftSelector'
 
 /**
- * Main layout wrapper for v2 pages with updated component structure.
+ * Main layout wrapper with sidebar and content area.
  *
  * Layout:
- * - SidebarV2 on left
+ * - Sidebar on left
  * - Content area on right with:
  *   - Header with DraftSelector
  *   - Outlet for page content (pages handle their own draft UI)
  */
-export function MainLayoutV2() {
+export function MainLayout() {
   return (
     <div className="flex min-h-screen">
-      <SidebarV2 />
+      <Sidebar />
 
       <div className="flex-1 flex flex-col">
         {/* Header */}

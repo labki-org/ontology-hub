@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
-import { useDraftStoreV2 } from '@/stores/draftStoreV2'
-import { useCreateEntityChange } from '@/api/draftApiV2'
+import { useDraftStore } from '@/stores/draftStore'
+import { useCreateEntityChange } from '@/api/drafts'
 import { CreateEntityModal } from './CreateEntityModal'
 import { CategoryForm } from '../forms/CategoryForm'
 import { PropertyForm } from '../forms/PropertyForm'
@@ -28,10 +28,10 @@ interface NestedModalStackProps {
  * - Reuses CreateEntityModal for consistent styling
  */
 export function NestedModalStack({ draftToken }: NestedModalStackProps) {
-  const nestedCreateModal = useDraftStoreV2((s) => s.nestedCreateModal)
-  const closeNestedCreateModal = useDraftStoreV2((s) => s.closeNestedCreateModal)
-  const onNestedEntityCreated = useDraftStoreV2((s) => s.onNestedEntityCreated)
-  const setOnNestedEntityCreated = useDraftStoreV2((s) => s.setOnNestedEntityCreated)
+  const nestedCreateModal = useDraftStore((s) => s.nestedCreateModal)
+  const closeNestedCreateModal = useDraftStore((s) => s.closeNestedCreateModal)
+  const onNestedEntityCreated = useDraftStore((s) => s.onNestedEntityCreated)
+  const setOnNestedEntityCreated = useDraftStore((s) => s.setOnNestedEntityCreated)
 
   const createEntity = useCreateEntityChange(draftToken)
 

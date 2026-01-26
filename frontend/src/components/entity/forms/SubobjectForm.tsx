@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { useProperties } from '@/api/entitiesV2'
+import { useProperties } from '@/api/entities'
 
 interface SubobjectFormProps {
   /** Callback when form is submitted with valid data */

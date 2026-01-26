@@ -8,8 +8,7 @@ Uses SchemaVer-inspired rules adapted for SemanticSchemas:
 
 from typing import Literal
 
-from app.schemas.validation import ValidationResult
-from app.schemas.validation_v2 import ValidationResultV2
+from app.schemas.validation import ValidationResultV2
 
 # Codes that indicate major (breaking) changes
 MAJOR_CODES = {
@@ -60,7 +59,7 @@ def classify_change(code: str) -> Literal["major", "minor", "patch"]:
 
 
 def compute_semver_suggestion(
-    results: list[ValidationResult | ValidationResultV2],
+    results: list[ValidationResultV2],
 ) -> tuple[Literal["major", "minor", "patch"], list[str]]:
     """Compute aggregate semver suggestion from validation results.
 
@@ -70,7 +69,7 @@ def compute_semver_suggestion(
     - Otherwise -> patch
 
     Args:
-        results: List of ValidationResult or ValidationResultV2 objects
+        results: List of ValidationResultV2 objects
 
     Returns:
         Tuple of (suggested_semver, reasons_list)

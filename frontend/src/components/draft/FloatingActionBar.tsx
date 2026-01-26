@@ -2,7 +2,7 @@ import { CheckCircle, GitPullRequest, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
-import type { DraftV2 } from '@/api/draftApiV2'
+import type { DraftV2 } from '@/api/drafts'
 
 interface FloatingActionBarProps {
   draft: DraftV2

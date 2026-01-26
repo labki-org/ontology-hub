@@ -11,7 +11,7 @@ from jsonschema.exceptions import ValidationError as JsonSchemaValidationError
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.config import settings
-from app.schemas.validation_v2 import ValidationResultV2
+from app.schemas.validation import ValidationResultV2
 from app.services.github import GitHubClient
 
 logger = logging.getLogger(__name__)

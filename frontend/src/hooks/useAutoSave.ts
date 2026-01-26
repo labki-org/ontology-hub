@@ -1,8 +1,7 @@
 import { useCallback, useRef, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { addDraftChange } from '@/api/drafts'
-import type { DraftChangeCreate } from '@/api/types'
-import { useDraftStoreV2 } from '@/stores/draftStoreV2'
+import { addDraftChange, type DraftChangeCreate } from '@/api/drafts'
+import { useDraftStore } from '@/stores/draftStore'
 import { useGraphStore } from '@/stores/graphStore'
 
 interface UseAutoSaveOptions {
@@ -49,14 +48,14 @@ export function useAutoSave({
                          `${entityType}s`
       queryClient.invalidateQueries({ queryKey: ['v2', pluralType] })
       // Clear stale validation - draft has changed since last validation
-      useDraftStoreV2.getState().clearValidation()
+      useDraftStore.getState().clearValidation()
       // Also invalidate draft changes list to show updated change count
       queryClient.invalidateQueries({ queryKey: ['v2', 'draft-changes'] })
 
       // Track this entity as edited for change propagation visualization
       // Uses current graph data if available (empty if graph not loaded)
       const { nodes, edges } = useGraphStore.getState()
-      useDraftStoreV2.getState().markEntityEdited(entityKey, nodes, edges)
+      useDraftStore.getState().markEntityEdited(entityKey, nodes, edges)
 
       onSuccess?.()
     },

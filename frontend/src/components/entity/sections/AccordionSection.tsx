@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 
 interface AccordionSectionProps {
   id: string
-  title: string
+  title: React.ReactNode
   count?: number
   defaultOpen?: boolean
   children: React.ReactNode

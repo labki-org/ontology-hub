@@ -1,296 +1,275 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { enableMapSet } from 'immer'
+import type { ValidationReportV2 } from '@/api/drafts'
+import type { GraphNode, GraphEdge } from '@/api/types'
+import type { DependentEntity } from '@/lib/dependencyChecker'
+import { computeAffectedEntities } from '@/lib/dependencyGraph'
 
 // Enable Map and Set support in immer (required for Zustand immer middleware)
 enableMapSet()
-import type {
-  DraftPublic,
-  EntityDefinition,
-  VersionDiffResponse,
-  ModuleAssignmentState,
-  NewModule,
-  ProfileDefinition,
-  ModulePublic,
-} from '@/api/types'
 
-interface DraftState {
-  // Draft data
-  draft: DraftPublic | null
-  originalDiff: VersionDiffResponse | null
+/**
+ * Zustand store for v2 draft workflow state.
+ *
+ * This store holds ephemeral UI state for the draft validation and submission workflow.
+ * Draft data itself is managed by TanStack Query (useDraftV2, useDraftChanges).
+ *
+ * State includes:
+ * - Current draft token (for capability-based access)
+ * - Validation report from last validation run
+ * - Loading states for async operations
+ * - PR wizard modal state
+ * - Submitted PR URL for display
+ * - Change tracking for direct edits and transitive effects
+ */
+/** Entity types that can be created */
+export type CreateModalEntityType = 'category' | 'property' | 'subobject' | 'template' | 'module' | 'bundle'
 
-  // Editing state
-  // Map key format: "entityType:entityId" (e.g., "categories:Person")
-  editedEntities: Map<string, Partial<EntityDefinition>>
-  // Set key format: "entityType:entityId:field" (e.g., "categories:Person:label")
-  editingFields: Set<string>
+interface DraftStoreState {
+  // Draft context
+  draftToken: string | null
 
-  // Module assignment state
-  // Map key format: "entityId" -> assignments
-  moduleAssignments: Map<string, ModuleAssignmentState>
-  // Profile edits: profile_id -> module_ids
-  profileEdits: Map<string, string[]>
-  // Modules created as part of draft
-  newModules: NewModule[]
-  // Profiles created as part of draft
-  newProfiles: ProfileDefinition[]
+  // Validation state
+  validationReport: ValidationReportV2 | null
+  isValidating: boolean
 
-  hasUnsavedChanges: boolean
+  // Submission state
+  isSubmitting: boolean
+  submittedPrUrl: string | null
+
+  // UI state
+  prWizardOpen: boolean
+
+  // Create modal state
+  createModalOpen: boolean
+  createModalEntityType: CreateModalEntityType | null
+
+  // Nested create modal state (for cascading create flow)
+  nestedCreateModal: {
+    isOpen: boolean
+    entityType: CreateModalEntityType | null
+    prefilledId: string
+    parentContext: {
+      entityType: string
+      fieldName: string
+    } | null
+  }
+  // Callback for when nested entity is created
+  onNestedEntityCreated: ((entityKey: string) => void) | null
+
+  // Change tracking state
+  directlyEditedEntities: Set<string>
+  transitivelyAffectedEntities: Set<string>
+
+  // Deletion tracking state
+  // Maps entityKey -> changeId for undo capability
+  deletedEntityChanges: Map<string, string>
+  // Entity that cannot be deleted due to dependents
+  deleteBlockedEntity: { key: string; label: string; dependents: DependentEntity[] } | null
 
   // Actions
-  setDraft: (draft: DraftPublic, diff: VersionDiffResponse) => void
-  startEditingField: (fieldKey: string) => void
-  stopEditingField: (fieldKey: string) => void
-  updateEntityField: (
-    entityType: string,
-    entityId: string,
-    field: string,
-    value: unknown
-  ) => void
-  discardChanges: () => void
-  getEditedValue: (
-    entityType: string,
-    entityId: string,
-    field: string
-  ) => unknown | undefined
+  setDraftToken: (token: string | null) => void
+  setValidationReport: (report: ValidationReportV2 | null) => void
+  setIsValidating: (validating: boolean) => void
+  setIsSubmitting: (submitting: boolean) => void
+  setPrWizardOpen: (open: boolean) => void
+  setSubmittedPrUrl: (url: string | null) => void
+  clearValidation: () => void
+  markEntityEdited: (entityKey: string, allNodes: GraphNode[], allEdges: GraphEdge[]) => void
+  clearChangeTracking: () => void
+  openCreateModal: (entityType: CreateModalEntityType) => void
+  closeCreateModal: () => void
+  openNestedCreateModal: (params: {
+    entityType: CreateModalEntityType
+    prefilledId: string
+    parentContext: { entityType: string; fieldName: string }
+  }) => void
+  closeNestedCreateModal: () => void
+  setOnNestedEntityCreated: (callback: ((entityKey: string) => void) | null) => void
+  trackDeletedEntity: (entityKey: string, changeId: string) => void
+  untrackDeletedEntity: (entityKey: string) => void
+  setDeleteBlocked: (entity: { key: string; label: string; dependents: DependentEntity[] } | null) => void
   reset: () => void
-
-  // Module assignment actions
-  assignToModule: (entityId: string, moduleId: string) => void
-  removeFromModule: (entityId: string, moduleId: string, dependentChildren?: string[]) => void
-  bulkAssignToModule: (entityIds: string[], moduleId: string) => void
-  updateProfileModules: (profileId: string, moduleIds: string[]) => void
-  addNewModule: (module: NewModule) => void
-  addNewProfile: (profile: ProfileDefinition) => void
-  computeAutoIncludes: (modules: ModulePublic[]) => void
-  getEffectiveModules: (entityId: string, entityType: 'category' | 'property' | 'subobject', parentCategories?: string[]) => string[]
 }
 
 const initialState = {
-  draft: null,
-  originalDiff: null,
-  editedEntities: new Map<string, Partial<EntityDefinition>>(),
-  editingFields: new Set<string>(),
-  moduleAssignments: new Map<string, ModuleAssignmentState>(),
-  profileEdits: new Map<string, string[]>(),
-  newModules: [] as NewModule[],
-  newProfiles: [] as ProfileDefinition[],
-  hasUnsavedChanges: false,
+  draftToken: null,
+  validationReport: null,
+  isValidating: false,
+  isSubmitting: false,
+  prWizardOpen: false,
+  submittedPrUrl: null,
+  createModalOpen: false,
+  createModalEntityType: null as CreateModalEntityType | null,
+  nestedCreateModal: {
+    isOpen: false,
+    entityType: null as CreateModalEntityType | null,
+    prefilledId: '',
+    parentContext: null as { entityType: string; fieldName: string } | null,
+  },
+  onNestedEntityCreated: null as ((entityKey: string) => void) | null,
+  directlyEditedEntities: new Set<string>(),
+  transitivelyAffectedEntities: new Set<string>(),
+  deletedEntityChanges: new Map<string, string>(),
+  deleteBlockedEntity: null as { key: string; label: string; dependents: DependentEntity[] } | null,
 }
 
-export const useDraftStore = create<DraftState>()(
-  immer((set, get) => ({
+export const useDraftStore = create<DraftStoreState>()(
+  immer((set) => ({
     ...initialState,
 
-    setDraft: (draft, diff) => {
+    setDraftToken: (token) => {
       set((state) => {
-        state.draft = draft
-        state.originalDiff = diff
-        // Reset editing state when loading new draft
-        state.editedEntities = new Map()
-        state.editingFields = new Set()
-        state.hasUnsavedChanges = false
+        state.draftToken = token
       })
     },
 
-    startEditingField: (fieldKey) => {
+    setValidationReport: (report) => {
       set((state) => {
-        state.editingFields.add(fieldKey)
+        state.validationReport = report
       })
     },
 
-    stopEditingField: (fieldKey) => {
+    setIsValidating: (validating) => {
       set((state) => {
-        state.editingFields.delete(fieldKey)
+        state.isValidating = validating
       })
     },
 
-    updateEntityField: (entityType, entityId, field, value) => {
+    setIsSubmitting: (submitting) => {
       set((state) => {
-        const key = `${entityType}:${entityId}`
-        const existing = state.editedEntities.get(key) || {}
-
-        state.editedEntities.set(key, {
-          ...existing,
-          [field]: value,
-        })
-        state.hasUnsavedChanges = true
+        state.isSubmitting = submitting
       })
     },
 
-    discardChanges: () => {
+    setPrWizardOpen: (open) => {
       set((state) => {
-        state.editedEntities = new Map()
-        state.editingFields = new Set()
-        state.moduleAssignments = new Map()
-        state.profileEdits = new Map()
-        state.newModules = []
-        state.newProfiles = []
-        state.hasUnsavedChanges = false
+        state.prWizardOpen = open
       })
     },
 
-    getEditedValue: (entityType, entityId, field) => {
-      const key = `${entityType}:${entityId}`
-      const edited = get().editedEntities.get(key)
-      return edited?.[field as keyof EntityDefinition]
+    setSubmittedPrUrl: (url) => {
+      set((state) => {
+        state.submittedPrUrl = url
+      })
+    },
+
+    clearValidation: () => {
+      set((state) => {
+        state.validationReport = null
+        state.isValidating = false
+      })
+    },
+
+    markEntityEdited: (entityKey, allNodes, allEdges) => {
+      set((state) => {
+        // Add to directly edited set
+        state.directlyEditedEntities.add(entityKey)
+
+        // Compute transitive effects from all directly edited entities
+        const allAffected = new Set<string>()
+        for (const editedKey of state.directlyEditedEntities) {
+          const affected = computeAffectedEntities(editedKey, allNodes, allEdges)
+          for (const key of affected) {
+            allAffected.add(key)
+          }
+        }
+
+        // Remove direct edits from transitive set (direct wins)
+        for (const directKey of state.directlyEditedEntities) {
+          allAffected.delete(directKey)
+        }
+
+        state.transitivelyAffectedEntities = allAffected
+      })
+    },
+
+    clearChangeTracking: () => {
+      set((state) => {
+        state.directlyEditedEntities = new Set<string>()
+        state.transitivelyAffectedEntities = new Set<string>()
+      })
+    },
+
+    openCreateModal: (entityType) => {
+      set((state) => {
+        state.createModalOpen = true
+        state.createModalEntityType = entityType
+      })
+    },
+
+    closeCreateModal: () => {
+      set((state) => {
+        state.createModalOpen = false
+        state.createModalEntityType = null
+      })
+    },
+
+    openNestedCreateModal: (params) => {
+      set((state) => {
+        state.nestedCreateModal.isOpen = true
+        state.nestedCreateModal.entityType = params.entityType
+        state.nestedCreateModal.prefilledId = params.prefilledId
+        state.nestedCreateModal.parentContext = params.parentContext
+      })
+    },
+
+    closeNestedCreateModal: () => {
+      set((state) => {
+        state.nestedCreateModal.isOpen = false
+        state.nestedCreateModal.entityType = null
+        state.nestedCreateModal.prefilledId = ''
+        state.nestedCreateModal.parentContext = null
+      })
+    },
+
+    setOnNestedEntityCreated: (callback) => {
+      set((state) => {
+        state.onNestedEntityCreated = callback
+      })
+    },
+
+    trackDeletedEntity: (entityKey, changeId) => {
+      set((state) => {
+        state.deletedEntityChanges.set(entityKey, changeId)
+      })
+    },
+
+    untrackDeletedEntity: (entityKey) => {
+      set((state) => {
+        state.deletedEntityChanges.delete(entityKey)
+      })
+    },
+
+    setDeleteBlocked: (entity) => {
+      set((state) => {
+        state.deleteBlockedEntity = entity
+      })
     },
 
     reset: () => {
-      set(initialState)
-    },
-
-    // Module assignment actions
-
-    assignToModule: (entityId, moduleId) => {
       set((state) => {
-        const existing = state.moduleAssignments.get(entityId) || {
-          explicit: [],
-          autoIncluded: [],
+        state.draftToken = null
+        state.validationReport = null
+        state.isValidating = false
+        state.isSubmitting = false
+        state.prWizardOpen = false
+        state.submittedPrUrl = null
+        state.createModalOpen = false
+        state.createModalEntityType = null
+        state.nestedCreateModal = {
+          isOpen: false,
+          entityType: null,
+          prefilledId: '',
+          parentContext: null,
         }
-
-        // Only add if not already explicitly assigned
-        if (!existing.explicit.includes(moduleId)) {
-          existing.explicit = [...existing.explicit, moduleId]
-          // Remove from autoIncluded if it was there
-          existing.autoIncluded = existing.autoIncluded.filter((id: string) => id !== moduleId)
-          state.moduleAssignments.set(entityId, existing)
-          state.hasUnsavedChanges = true
-        }
+        state.onNestedEntityCreated = null
+        state.directlyEditedEntities = new Set<string>()
+        state.transitivelyAffectedEntities = new Set<string>()
+        state.deletedEntityChanges = new Map<string, string>()
+        state.deleteBlockedEntity = null
       })
-    },
-
-    removeFromModule: (entityId, moduleId, dependentChildren) => {
-      set((state) => {
-        const existing = state.moduleAssignments.get(entityId)
-        if (!existing) return
-
-        // If has children depending on it, convert to autoIncluded instead
-        if (dependentChildren && dependentChildren.length > 0) {
-          existing.explicit = existing.explicit.filter((id: string) => id !== moduleId)
-          if (!existing.autoIncluded.includes(moduleId)) {
-            existing.autoIncluded = [...existing.autoIncluded, moduleId]
-          }
-        } else {
-          // Remove completely
-          existing.explicit = existing.explicit.filter((id: string) => id !== moduleId)
-          existing.autoIncluded = existing.autoIncluded.filter((id: string) => id !== moduleId)
-        }
-
-        state.moduleAssignments.set(entityId, existing)
-        state.hasUnsavedChanges = true
-      })
-    },
-
-    bulkAssignToModule: (entityIds, moduleId) => {
-      set((state) => {
-        for (const entityId of entityIds) {
-          const existing = state.moduleAssignments.get(entityId) || {
-            explicit: [],
-            autoIncluded: [],
-          }
-
-          if (!existing.explicit.includes(moduleId)) {
-            existing.explicit = [...existing.explicit, moduleId]
-            existing.autoIncluded = existing.autoIncluded.filter((id: string) => id !== moduleId)
-            state.moduleAssignments.set(entityId, existing)
-          }
-        }
-        state.hasUnsavedChanges = true
-      })
-    },
-
-    updateProfileModules: (profileId, moduleIds) => {
-      set((state) => {
-        state.profileEdits.set(profileId, moduleIds)
-        state.hasUnsavedChanges = true
-      })
-    },
-
-    addNewModule: (module) => {
-      set((state) => {
-        // Check if module_id already exists
-        const exists = state.newModules.some((m: NewModule) => m.module_id === module.module_id)
-        if (!exists) {
-          state.newModules.push(module)
-          state.hasUnsavedChanges = true
-        }
-      })
-    },
-
-    addNewProfile: (profile) => {
-      set((state) => {
-        // Check if profile_id already exists
-        const exists = state.newProfiles.some((p: ProfileDefinition) => p.profile_id === profile.profile_id)
-        if (!exists) {
-          state.newProfiles.push(profile)
-          state.hasUnsavedChanges = true
-        }
-      })
-    },
-
-    computeAutoIncludes: (modules) => {
-      set((state) => {
-        // Build dependency map
-        const depMap = new Map<string, string[]>()
-        for (const mod of modules) {
-          depMap.set(mod.module_id, mod.dependencies)
-        }
-
-        // For each entity with assignments, compute auto-includes
-        for (const [entityId, assignments] of state.moduleAssignments) {
-          const allRequired = new Set<string>()
-
-          // For each explicitly assigned module, find all its dependencies
-          for (const moduleId of assignments.explicit) {
-            const deps = depMap.get(moduleId) || []
-            for (const dep of deps) {
-              if (!assignments.explicit.includes(dep)) {
-                allRequired.add(dep)
-              }
-            }
-          }
-
-          assignments.autoIncluded = Array.from(allRequired)
-          state.moduleAssignments.set(entityId, assignments)
-        }
-      })
-    },
-
-    getEffectiveModules: (entityId, entityType, parentCategories) => {
-      const state = get()
-
-      // For properties/subobjects, look up via parent categories
-      if (entityType !== 'category' && parentCategories) {
-        const inherited = new Set<string>()
-        for (const catId of parentCategories) {
-          const catAssignments = state.moduleAssignments.get(catId)
-          if (catAssignments) {
-            for (const modId of catAssignments.explicit) {
-              inherited.add(modId)
-            }
-            for (const modId of catAssignments.autoIncluded) {
-              inherited.add(modId)
-            }
-          }
-        }
-        return Array.from(inherited)
-      }
-
-      // For categories, return combined explicit + autoIncluded
-      const assignments = state.moduleAssignments.get(entityId)
-      if (!assignments) return []
-
-      return [...assignments.explicit, ...assignments.autoIncluded]
     },
   }))
 )
-
-// Helper to build field key
-export function buildFieldKey(
-  entityType: string,
-  entityId: string,
-  field: string
-): string {
-  return `${entityType}:${entityId}:${field}`
-}

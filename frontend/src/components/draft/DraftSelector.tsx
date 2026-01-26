@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ChevronDown, GitBranch, LogOut, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { useDraftV2, useCreateDraft } from '@/api/draftApiV2'
+import { useDraftV2, useCreateDraft } from '@/api/drafts'
 
 /**
  * Dropdown to enter/switch drafts or exit draft mode.

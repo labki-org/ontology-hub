@@ -1,6 +1,6 @@
 import { Handle, Position } from '@xyflow/react'
 import { useGraphStore } from '@/stores/graphStore'
-import { useDraftStoreV2 } from '@/stores/draftStoreV2'
+import { useDraftStore } from '@/stores/draftStore'
 
 type GraphNodeData = {
   label: string
@@ -149,8 +149,8 @@ function GraphNodeComponent({ data }: { data: GraphNodeData }) {
   const hoveredNodeId = useGraphStore((s) => s.hoveredNodeId)
 
   // Change propagation state
-  const directEdits = useDraftStoreV2((s) => s.directlyEditedEntities)
-  const transitiveAffects = useDraftStoreV2((s) => s.transitivelyAffectedEntities)
+  const directEdits = useDraftStore((s) => s.directlyEditedEntities)
+  const transitiveAffects = useDraftStore((s) => s.transitivelyAffectedEntities)
 
   // Get edges from store to determine connectivity to hovered node
   const edges = useGraphStore((s) => s.edges)

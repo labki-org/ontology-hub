@@ -1,31 +1,34 @@
 """Pydantic schemas for API request/response validation.
 
-Re-exports schemas from models for API use. Keeping schemas
-close to models ensures consistency.
+v2.0 schemas are organized by domain:
+- draft.py - Draft management schemas
+- draft_change.py - Draft change operations
+- entity.py - Entity response schemas
+- validation.py - Validation result schemas
+- graph.py - Graph visualization schemas
 """
 
-from app.models.draft import (
+# Re-export commonly used schemas
+from app.schemas.draft import (
     DraftCreate,
     DraftCreateResponse,
-    DraftPublic,
-    DraftStatus,
-    DraftUpdate,
-    DraftWithCapability,
+    DraftResponse,
+    DraftStatusUpdate,
+    DraftSubmitRequest,
+    DraftSubmitResponse,
 )
 from app.schemas.entity import (
     EntityListResponse,
-    EntityOverviewResponse,
-    EntityTypeSummary,
+    EntityWithStatus,
 )
 
 __all__ = [
     "DraftCreate",
     "DraftCreateResponse",
-    "DraftPublic",
-    "DraftStatus",
-    "DraftUpdate",
-    "DraftWithCapability",
+    "DraftResponse",
+    "DraftStatusUpdate",
+    "DraftSubmitRequest",
+    "DraftSubmitResponse",
     "EntityListResponse",
-    "EntityOverviewResponse",
-    "EntityTypeSummary",
+    "EntityWithStatus",
 ]

@@ -21,14 +21,14 @@ from app.dependencies.capability import hash_token
 from app.models.v2 import Bundle, Draft, DraftChange, DraftStatus, Module, ModuleEntity
 from app.services.draft_workflow import transition_to_submitted
 from app.services.github import GitHubClient
-from app.services.pr_builder_v2 import (
+from app.services.pr_builder import (
     build_files_from_draft_v2,
     generate_branch_name,
     generate_commit_message_v2,
     generate_pr_body_v2,
     generate_pr_title_with_version,
 )
-from app.services.validation.validator_v2 import validate_draft_v2
+from app.services.validation.validator import validate_draft_v2
 
 logger = logging.getLogger(__name__)
 

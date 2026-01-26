@@ -4,12 +4,12 @@ import { ReactFlowProvider } from '@xyflow/react'
 import { X } from 'lucide-react'
 import { GraphCanvas } from '@/components/graph/GraphCanvas'
 import { EntityDetailPanel } from '@/components/entity/EntityDetailPanel'
-import { DraftBannerV2 } from '@/components/draft/DraftBannerV2'
+import { DraftBanner } from '@/components/draft/DraftBanner'
 import { FloatingActionBar } from '@/components/draft/FloatingActionBar'
 import { PRWizard } from '@/components/draft/PRWizard'
 import { useGraphStore } from '@/stores/graphStore'
-import { useDraftStoreV2 } from '@/stores/draftStoreV2'
-import { useDraftV2, useDraftChanges, useValidateDraft } from '@/api/draftApiV2'
+import { useDraftStore } from '@/stores/draftStore'
+import { useDraftV2, useDraftChanges, useValidateDraft } from '@/api/drafts'
 import { Button } from '@/components/ui/button'
 
 /**
@@ -41,7 +41,7 @@ export function BrowsePage() {
     setIsValidating,
     prWizardOpen,
     setPrWizardOpen,
-  } = useDraftStoreV2()
+  } = useDraftStore()
 
   // Track if we've done initial sync from URL
   const initialSyncDone = useRef(false)
@@ -147,7 +147,7 @@ export function BrowsePage() {
       <div className="h-full w-full relative flex flex-col">
         {/* V2 Draft Banner - only shown when draftV2 exists */}
         {draftV2.data && (
-          <DraftBannerV2
+          <DraftBanner
             draft={draftV2.data}
             onValidate={handleValidate}
             onSubmitPR={handleSubmitPR}

@@ -1,96 +1,331 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from './client'
-import type {
-  DraftPublic,
-  DraftPayload,
-  DraftCreateResponse,
-  DraftPatchPayload,
-  VersionDiffResponse,
-  DraftChangeCreate,
-  DraftChangeResponse,
-} from './types'
+
+// Types matching backend schemas/draft_v2.py and schemas/validation.py
+
+export type DraftStatus = 'draft' | 'validated' | 'submitted' | 'merged' | 'rejected'
+export type DraftSource = 'hub_ui' | 'mediawiki_push'
+export type ChangeType = 'create' | 'update' | 'delete'
+
+export interface DraftV2 {
+  id: string
+  status: DraftStatus
+  source: DraftSource
+  title: string | null
+  description: string | null
+  user_comment: string | null
+  base_commit_sha: string
+  rebase_status: string | null
+  rebase_commit_sha: string | null
+  created_at: string
+  modified_at: string
+  expires_at: string
+  change_count: number
+}
+
+export interface DraftChangeV2 {
+  id: string
+  change_type: ChangeType
+  entity_type: string
+  entity_key: string
+  patch?: Array<{ op: string; path: string; value?: unknown }>
+  replacement_json?: Record<string, unknown>
+  created_at: string
+}
+
+export interface DraftChangeCreate {
+  change_type: ChangeType
+  entity_type: string
+  entity_key: string
+  patch?: Array<{ op: string; path: string; value?: unknown }>
+  replacement_json?: Record<string, unknown>
+}
+
+export interface DraftChangesListResponse {
+  changes: DraftChangeV2[]
+  total: number
+}
+
+export interface ValidationResultV2 {
+  entity_type: string
+  entity_key: string  // Changed from entity_id to match v2 model
+  field: string | null
+  code: string
+  message: string
+  severity: 'error' | 'warning' | 'info'
+  suggested_semver: 'major' | 'minor' | 'patch' | null
+  old_value: string | null
+  new_value: string | null
+}
+
+export interface ValidationReportV2 {
+  is_valid: boolean
+  errors: ValidationResultV2[]
+  warnings: ValidationResultV2[]
+  info: ValidationResultV2[]
+  suggested_semver: 'major' | 'minor' | 'patch'
+  semver_reasons: string[]
+}
+
+export interface SubmitRequest {
+  github_token: string
+  pr_title?: string
+  user_comment?: string
+}
+
+export interface SubmitResponse {
+  pr_url: string
+  draft_status: string
+}
+
+export interface DraftCreateResponse {
+  capability_url: string
+  draft: DraftV2
+  expires_at: string
+}
 
 // Fetch functions
 
-async function fetchDraft(token: string): Promise<DraftPublic> {
-  return apiFetch(`/drafts/${token}`)
-}
-
-async function fetchDraftDiff(token: string): Promise<VersionDiffResponse> {
-  return apiFetch(`/drafts/${token}/diff`)
-}
-
-async function createDraft(payload: DraftPayload): Promise<DraftCreateResponse> {
-  return apiFetch('/drafts/', {
-    method: 'POST',
-    body: JSON.stringify({ payload }),
-  })
-}
-
-async function updateDraft(
-  token: string,
-  payload: DraftPatchPayload
-): Promise<DraftPublic> {
-  return apiFetch(`/drafts/${token}`, {
-    method: 'PATCH',
-    body: JSON.stringify(payload),
-  })
-}
-
-export async function addDraftChange(
-  token: string,
-  change: DraftChangeCreate
-): Promise<DraftChangeResponse> {
-  return apiFetch(`/drafts/${token}/changes`, {
-    method: 'POST',
-    body: JSON.stringify(change),
+async function createDraft(params: { title?: string }): Promise<DraftCreateResponse> {
+  return apiFetch('/drafts', {
     v2: true,
+    method: 'POST',
+    body: JSON.stringify({ source: 'hub_ui', title: params.title }),
+  })
+}
+
+async function fetchDraftV2(token: string): Promise<DraftV2> {
+  return apiFetch(`/drafts/${token}`, { v2: true })
+}
+
+async function fetchDraftChanges(token: string): Promise<DraftChangesListResponse> {
+  return apiFetch(`/drafts/${token}/changes`, { v2: true })
+}
+
+async function validateDraft(token: string): Promise<ValidationReportV2> {
+  return apiFetch(`/drafts/${token}/validate`, {
+    v2: true,
+    method: 'POST',
+  })
+}
+
+async function submitDraft(
+  token: string,
+  params: SubmitRequest
+): Promise<SubmitResponse> {
+  return apiFetch(`/drafts/${token}/submit`, {
+    v2: true,
+    method: 'POST',
+    body: JSON.stringify(params),
   })
 }
 
 // Query hooks
 
-export function useDraft(token: string | undefined) {
+export function useDraftV2(token: string | undefined) {
   return useQuery({
-    queryKey: ['draft', token],
-    queryFn: () => fetchDraft(token!),
+    queryKey: ['v2', 'draft', token],
+    queryFn: () => fetchDraftV2(token!),
     enabled: !!token,
-    staleTime: 5 * 60 * 1000, // 5 minutes
   })
 }
 
-export function useDraftDiff(token: string | undefined) {
+export function useDraftChanges(token: string | undefined) {
   return useQuery({
-    queryKey: ['draft-diff', token],
-    queryFn: () => fetchDraftDiff(token!),
+    queryKey: ['v2', 'draft-changes', token],
+    queryFn: () => fetchDraftChanges(token!),
     enabled: !!token,
-    staleTime: 5 * 60 * 1000, // 5 minutes
   })
 }
 
 // Mutation hooks
 
-export function useCreateDraft() {
+export function useValidateDraft(token: string | undefined) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: createDraft,
+    mutationFn: () => validateDraft(token!),
     onSuccess: () => {
-      // Invalidate any draft queries to ensure fresh data
-      queryClient.invalidateQueries({ queryKey: ['draft'] })
+      // Invalidate draft query to refresh status
+      queryClient.invalidateQueries({ queryKey: ['v2', 'draft', token] })
     },
   })
 }
 
-export function useUpdateDraft(token: string) {
+export function useSubmitDraft(token: string | undefined) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (payload: DraftPatchPayload) => updateDraft(token, payload),
+    mutationFn: (params: SubmitRequest) => submitDraft(token!, params),
     onSuccess: () => {
-      // Invalidate the specific draft query
-      queryClient.invalidateQueries({ queryKey: ['draft', token] })
-      queryClient.invalidateQueries({ queryKey: ['draft-diff', token] })
+      // Invalidate draft query to refresh status
+      queryClient.invalidateQueries({ queryKey: ['v2', 'draft', token] })
     },
+  })
+}
+
+export function useCreateDraft() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (params: { title?: string }) => createDraft(params),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['v2', 'draft'] })
+    },
+  })
+}
+
+// Entity creation types and hooks
+
+export interface CreateEntityParams {
+  entityType: 'category' | 'property' | 'subobject' | 'template' | 'module' | 'bundle'
+  entityKey: string
+  data: Record<string, unknown>
+}
+
+async function createEntityChange(
+  token: string,
+  params: CreateEntityParams
+): Promise<DraftChangeV2> {
+  return apiFetch(`/drafts/${token}/changes`, {
+    v2: true,
+    method: 'POST',
+    body: JSON.stringify({
+      change_type: 'create',
+      entity_type: params.entityType,
+      entity_key: params.entityKey,
+      replacement_json: params.data,
+    }),
+  })
+}
+
+/**
+ * Mutation hook for creating new entities within a draft.
+ * Creates a CREATE change that will be applied when the draft is submitted.
+ *
+ * @param token - Draft capability token
+ * @returns React Query mutation with createEntityChange
+ */
+export function useCreateEntityChange(token: string | undefined) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (params: CreateEntityParams) => createEntityChange(token!, params),
+    onSuccess: () => {
+      // Invalidate draft query to refresh status (auto-reverts from validated to draft)
+      queryClient.invalidateQueries({ queryKey: ['v2', 'draft', token] })
+      // Invalidate draft changes and entity lists to refresh sidebar
+      queryClient.invalidateQueries({ queryKey: ['v2', 'draft-changes', token] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'categories'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'properties'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'subobjects'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'templates'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'modules'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'bundles'] })
+      // Invalidate graph queries to refresh graph view
+      queryClient.invalidateQueries({ queryKey: ['graph'] })
+    },
+  })
+}
+
+// Entity deletion types and hooks
+
+export interface DeleteEntityParams {
+  entityType: 'category' | 'property' | 'subobject' | 'template' | 'module' | 'bundle'
+  entityKey: string
+}
+
+async function deleteEntityChange(
+  token: string,
+  params: DeleteEntityParams
+): Promise<DraftChangeV2> {
+  return apiFetch(`/drafts/${token}/changes`, {
+    v2: true,
+    method: 'POST',
+    body: JSON.stringify({
+      change_type: 'delete',
+      entity_type: params.entityType,
+      entity_key: params.entityKey,
+    }),
+  })
+}
+
+/**
+ * Mutation hook for deleting entities within a draft.
+ * Creates a DELETE change that will be applied when the draft is submitted.
+ *
+ * @param token - Draft capability token
+ * @returns React Query mutation with deleteEntityChange
+ */
+export function useDeleteEntityChange(token: string | undefined) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (params: DeleteEntityParams) => deleteEntityChange(token!, params),
+    onSuccess: () => {
+      // Invalidate draft query to refresh status (auto-reverts from validated to draft)
+      queryClient.invalidateQueries({ queryKey: ['v2', 'draft', token] })
+      // Invalidate draft changes and entity lists to refresh sidebar
+      queryClient.invalidateQueries({ queryKey: ['v2', 'draft-changes', token] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'categories'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'properties'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'subobjects'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'templates'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'modules'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'bundles'] })
+      // Invalidate graph queries to refresh graph view
+      queryClient.invalidateQueries({ queryKey: ['graph'] })
+    },
+  })
+}
+
+async function removeChange(token: string, changeId: string): Promise<void> {
+  return apiFetch(`/drafts/${token}/changes/${changeId}`, {
+    v2: true,
+    method: 'DELETE',
+  })
+}
+
+/**
+ * Mutation hook for undoing a delete operation (removing the DELETE change).
+ * Removes a draft change record, effectively restoring the entity.
+ *
+ * @param token - Draft capability token
+ * @returns React Query mutation with removeChange
+ */
+export function useUndoDeleteChange(token: string | undefined) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (changeId: string) => removeChange(token!, changeId),
+    onSuccess: () => {
+      // Invalidate draft query to refresh status (auto-reverts from validated to draft)
+      queryClient.invalidateQueries({ queryKey: ['v2', 'draft', token] })
+      // Invalidate draft changes and entity lists to refresh sidebar
+      queryClient.invalidateQueries({ queryKey: ['v2', 'draft-changes', token] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'categories'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'properties'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'subobjects'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'templates'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'modules'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'bundles'] })
+      // Invalidate graph queries to refresh graph view
+      queryClient.invalidateQueries({ queryKey: ['graph'] })
+    },
+  })
+}
+
+/**
+ * Add a draft change for auto-save operations.
+ * Used by useAutoSave hook to persist entity edits.
+ */
+export async function addDraftChange(
+  token: string,
+  change: DraftChangeCreate
+): Promise<DraftChangeV2> {
+  return apiFetch(`/drafts/${token}/changes`, {
+    method: 'POST',
+    body: JSON.stringify(change),
+    v2: true,
   })
 }

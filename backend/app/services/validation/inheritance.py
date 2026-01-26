@@ -1,61 +1,48 @@
-"""Circular inheritance detection using Python graphlib."""
+"""Circular inheritance detection for v2 drafts.
+
+Uses Python graphlib for cycle detection in category parent graphs.
+"""
 
 from graphlib import CycleError, TopologicalSorter
 
-from sqlmodel import select
-from sqlmodel.ext.asyncio.session import AsyncSession
-
-from app.models.draft import DraftPayload
-from app.models.entity import Entity, EntityType
-from app.schemas.validation import ValidationResult
+from app.schemas.validation import ValidationResultV2
 
 
-async def check_circular_inheritance(
-    payload: DraftPayload,
-    session: AsyncSession,
-) -> list[ValidationResult]:
+def check_circular_inheritance_v2(
+    effective_entities: dict[str, dict[str, dict]],
+) -> list[ValidationResultV2]:
     """Detect circular inheritance in category parent relationships.
 
-    Checks the full inheritance graph including both canonical and draft categories.
+    Checks the full inheritance graph from effective entities (includes draft changes).
     Uses Python's graphlib.TopologicalSorter for cycle detection.
 
     Args:
-        payload: Draft payload containing categories
-        session: Database session for canonical category lookup
+        effective_entities: Dict like {"category": {"Person": {...}, ...}, ...}
 
     Returns:
-        List of ValidationResult for any circular dependencies found
+        List of ValidationResultV2 for any circular dependencies found
     """
-    results: list[ValidationResult] = []
+    results: list[ValidationResultV2] = []
 
-    # Build map of draft category parents
-    draft_parents: dict[str, str | None] = {}
-    for category in payload.entities.categories:
-        draft_parents[category.entity_id] = category.schema_definition.get("parent")
+    # Get all categories from effective entities
+    categories = effective_entities.get("category", {})
 
-    # Fetch canonical category parents (not in draft)
-    stmt = select(Entity).where(
-        Entity.entity_type == EntityType.CATEGORY, Entity.deleted_at.is_(None)
-    )
-    result = await session.execute(stmt)
-    canonical_categories = result.scalars().all()
+    # Build parent map
+    parent_map: dict[str, list[str]] = {}
+    for entity_key, category_json in categories.items():
+        # Skip deleted entities
+        if category_json.get("_deleted"):
+            continue
 
-    canonical_parents: dict[str, str | None] = {}
-    for cat in canonical_categories:
-        if cat.entity_id not in draft_parents:
-            canonical_parents[cat.entity_id] = cat.schema_definition.get("parent")
+        # v2 uses "parents" array (multiple inheritance)
+        parents = category_json.get("parents", [])
+        parent_map[entity_key] = parents
 
-    # Combined parent map (draft overrides canonical)
-    all_parents = {**canonical_parents, **draft_parents}
-
-    # Build graph: child -> {parents}
+    # Build graph: child -> {parents} for TopologicalSorter
     # TopologicalSorter expects node -> {dependencies} format
     graph: dict[str, set[str]] = {}
-    for category_id, parent in all_parents.items():
-        if parent:
-            graph[category_id] = {parent}
-        else:
-            graph[category_id] = set()
+    for category_key, parents in parent_map.items():
+        graph[category_key] = set(parents) if parents else set()
 
     # Use TopologicalSorter for cycle detection
     ts = TopologicalSorter(graph)
@@ -63,18 +50,23 @@ async def check_circular_inheritance(
     try:
         ts.prepare()  # Raises CycleError if cycle exists
     except CycleError as e:
-        # e.args[1] contains the cycle path
-        cycle_path = e.args[1]
-        cycle_str = " -> ".join(cycle_path)
+        # Extract cycle path from CycleError
+        # e.args[1] contains the cycle as a tuple
+        cycle_nodes = e.args[1] if len(e.args) > 1 else []
 
-        # Report error for each category in the cycle that's in the draft
-        for category_id in set(cycle_path):
-            if category_id in draft_parents:
+        if cycle_nodes:
+            # Create cycle path string
+            cycle_path = list(cycle_nodes)
+            cycle_path.append(cycle_path[0])  # Close the cycle
+            cycle_str = " -> ".join(cycle_path)
+
+            # Report error for each category in the cycle
+            for category_key in set(cycle_nodes):
                 results.append(
-                    ValidationResult(
+                    ValidationResultV2(
                         entity_type="category",
-                        entity_id=category_id,
-                        field="parent",
+                        entity_key=category_key,
+                        field_path="/parents",
                         code="CIRCULAR_INHERITANCE",
                         message=f"Circular inheritance detected: {cycle_str}",
                         severity="error",

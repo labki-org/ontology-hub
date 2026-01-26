@@ -1,15 +1,19 @@
-"""Services for external integrations and business logic."""
+"""Services for external integrations and business logic.
 
-from app.services.draft_diff import compute_draft_diff
+v2.0 services are organized by domain:
+- github.py - GitHub API client
+- ingest.py - Repository sync/ingest
+- draft_overlay.py - Draft overlay computation
+- draft_rebase.py - Draft rebase operations
+- draft_workflow.py - Draft status transitions
+- graph_query.py - Graph query operations
+- pr_builder.py - PR file generation
+- module_derived.py - Module derived entity computation
+"""
+
 from app.services.github import GitHubClient, GitHubRateLimitError
-from app.services.indexer import IndexerService, sync_repository
-from app.services.inheritance import get_inheritance_chain
 
 __all__ = [
-    "compute_draft_diff",
     "GitHubClient",
     "GitHubRateLimitError",
-    "IndexerService",
-    "sync_repository",
-    "get_inheritance_chain",
 ]

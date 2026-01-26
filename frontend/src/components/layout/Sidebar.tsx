@@ -18,10 +18,10 @@ import {
   useBundles,
   useTemplates,
   useOntologyVersion,
-} from '@/api/entitiesV2'
-import { useDraftV2, useCreateEntityChange, useDeleteEntityChange, useUndoDeleteChange, useDraftChanges } from '@/api/draftApiV2'
+} from '@/api/entities'
+import { useDraftV2, useCreateEntityChange, useDeleteEntityChange, useUndoDeleteChange, useDraftChanges } from '@/api/drafts'
 import { useGraphStore } from '@/stores/graphStore'
-import { useDraftStoreV2 } from '@/stores/draftStoreV2'
+import { useDraftStore } from '@/stores/draftStore'
 import { getAffectedEntityCount } from '@/lib/dependencyGraph'
 import { canDelete } from '@/lib/dependencyChecker'
 import { cn } from '@/lib/utils'
@@ -65,8 +65,8 @@ function EntitySection({
   deletedEntityChanges,
 }: EntitySectionProps) {
   const setSelectedEntity = useGraphStore((state) => state.setSelectedEntity)
-  const directEdits = useDraftStoreV2((s) => s.directlyEditedEntities)
-  const transitiveAffects = useDraftStoreV2((s) => s.transitivelyAffectedEntities)
+  const directEdits = useDraftStore((s) => s.directlyEditedEntities)
+  const transitiveAffects = useDraftStore((s) => s.transitivelyAffectedEntities)
   const filteredEntities = useSearchFilter(searchTerm, entities)
 
   if (isLoading) {
@@ -192,7 +192,7 @@ function EntitySection({
   )
 }
 
-export function SidebarV2() {
+export function Sidebar() {
   const [searchParams] = useSearchParams()
   const draftToken = searchParams.get('draft_token') || undefined
   const draftV2 = useDraftV2(draftToken)
@@ -204,21 +204,21 @@ export function SidebarV2() {
   const isDraftMode = !!draftToken
 
   // Create modal state and actions
-  const openCreateModal = useDraftStoreV2((s) => s.openCreateModal)
-  const closeCreateModal = useDraftStoreV2((s) => s.closeCreateModal)
-  const createModalOpen = useDraftStoreV2((s) => s.createModalOpen)
-  const createModalEntityType = useDraftStoreV2((s) => s.createModalEntityType)
+  const openCreateModal = useDraftStore((s) => s.openCreateModal)
+  const closeCreateModal = useDraftStore((s) => s.closeCreateModal)
+  const createModalOpen = useDraftStore((s) => s.createModalOpen)
+  const createModalEntityType = useDraftStore((s) => s.createModalEntityType)
 
   // Nested create modal state and actions (for cascading create flow)
-  const openNestedCreateModal = useDraftStoreV2((s) => s.openNestedCreateModal)
-  const setOnNestedEntityCreated = useDraftStoreV2((s) => s.setOnNestedEntityCreated)
+  const openNestedCreateModal = useDraftStore((s) => s.openNestedCreateModal)
+  const setOnNestedEntityCreated = useDraftStore((s) => s.setOnNestedEntityCreated)
 
   // Delete state and actions
-  const deleteBlockedEntity = useDraftStoreV2((s) => s.deleteBlockedEntity)
-  const setDeleteBlocked = useDraftStoreV2((s) => s.setDeleteBlocked)
-  const trackDeletedEntity = useDraftStoreV2((s) => s.trackDeletedEntity)
-  const untrackDeletedEntity = useDraftStoreV2((s) => s.untrackDeletedEntity)
-  const deletedEntityChanges = useDraftStoreV2((s) => s.deletedEntityChanges)
+  const deleteBlockedEntity = useDraftStore((s) => s.deleteBlockedEntity)
+  const setDeleteBlocked = useDraftStore((s) => s.setDeleteBlocked)
+  const trackDeletedEntity = useDraftStore((s) => s.trackDeletedEntity)
+  const untrackDeletedEntity = useDraftStore((s) => s.untrackDeletedEntity)
+  const deletedEntityChanges = useDraftStore((s) => s.deletedEntityChanges)
 
   // Entity mutations
   const createEntity = useCreateEntityChange(draftToken)
@@ -234,8 +234,8 @@ export function SidebarV2() {
   const graphEdges = useGraphStore((s) => s.edges)
 
   // Change tracking state for badge display
-  const directEdits = useDraftStoreV2((s) => s.directlyEditedEntities)
-  const transitiveAffects = useDraftStoreV2((s) => s.transitivelyAffectedEntities)
+  const directEdits = useDraftStore((s) => s.directlyEditedEntities)
+  const transitiveAffects = useDraftStore((s) => s.transitivelyAffectedEntities)
   const affectedCount = getAffectedEntityCount(directEdits, transitiveAffects)
 
   const [searchTerm, setSearchTerm] = useState('')

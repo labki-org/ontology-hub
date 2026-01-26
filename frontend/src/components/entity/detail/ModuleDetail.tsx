@@ -6,11 +6,11 @@ import {
   useProperties,
   useSubobjects,
   useTemplates,
-} from '@/api/entitiesV2'
-import type { ModuleDetailV2, EntityType } from '@/api/types'
+} from '@/api/entities'
+import type { ModuleDetailV2 } from '@/api/types'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useGraphStore } from '@/stores/graphStore'
-import { useDraftStoreV2, type CreateModalEntityType } from '@/stores/draftStoreV2'
+import { useDraftStore, type CreateModalEntityType } from '@/stores/draftStore'
 import { AccordionSection } from '@/components/entity/sections/AccordionSection'
 import { EntityHeader } from '../sections/EntityHeader'
 import { EntityCombobox } from '../forms/EntityCombobox'
@@ -47,8 +47,8 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
   const { data: templatesData } = useTemplates(undefined, undefined, draftId)
 
   const setSelectedEntity = useGraphStore((s) => s.setSelectedEntity)
-  const openNestedCreateModal = useDraftStoreV2((s) => s.openNestedCreateModal)
-  const setOnNestedEntityCreated = useDraftStoreV2((s) => s.setOnNestedEntityCreated)
+  const openNestedCreateModal = useDraftStore((s) => s.openNestedCreateModal)
+  const setOnNestedEntityCreated = useDraftStore((s) => s.setOnNestedEntityCreated)
 
   // Build available entities for lookups
   const availableCategories = (categoriesData?.items || []).map((c) => ({

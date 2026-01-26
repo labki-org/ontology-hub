@@ -13,7 +13,7 @@ import {
   useProperties,
   useSubobjects,
   useTemplates,
-} from '@/api/entitiesV2'
+} from '@/api/entities'
 
 interface ModuleFormProps {
   /** Callback when form is submitted with valid data */

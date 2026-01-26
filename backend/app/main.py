@@ -13,25 +13,20 @@ from app.config import settings
 from app.database import async_session_maker, engine, get_session
 from app.dependencies.rate_limit import limiter, rate_limit_exceeded_handler
 
-# Import all models to register them with SQLModel.metadata before create_all
-from app.models import Draft, Entity, Module, Profile  # noqa: F401
+# Import all v2 models to register them with SQLModel.metadata before create_all
+from app.models.v2 import Bundle, Category, Draft, Module, Property, Subobject, Template  # noqa: F401
 from app.routers import (
     draft_changes_router,
     drafts_router,
-    drafts_v2_router,
-    entities_router,
     graph_router,
     mediawiki_import_router,
-    modules_router,
     oauth_router,
     register_oauth_client,
-    versions_router,
     webhooks_router,
 )
-from app.routers.entities_v2 import router as entities_v2_router
+from app.routers.entities import router as entities_router
 from app.services.github import GitHubClient
-from app.services.indexer import sync_repository
-from app.services.ingest_v2 import sync_repository_v2
+from app.services.ingest import sync_repository_v2
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -130,17 +125,14 @@ app.add_middleware(
 
 
 # Include API routers
-app.include_router(drafts_router, prefix="/api/v1")
-app.include_router(entities_router, prefix="/api/v1")
-app.include_router(modules_router, prefix="/api/v1")
+# OAuth and webhooks remain at /api/v1 for compatibility
 app.include_router(oauth_router, prefix="/api/v1")
-app.include_router(versions_router, prefix="/api/v1")
 app.include_router(webhooks_router, prefix="/api/v1")
 
-# v2.0 API routers
-app.include_router(entities_v2_router, prefix="/api/v2")
+# v2.0 API routers (primary API)
+app.include_router(entities_router, prefix="/api/v2")
 app.include_router(graph_router, prefix="/api/v2")
-app.include_router(drafts_v2_router, prefix="/api/v2")
+app.include_router(drafts_router, prefix="/api/v2")
 app.include_router(draft_changes_router, prefix="/api/v2")
 app.include_router(mediawiki_import_router, prefix="/api/v2")
 
@@ -167,29 +159,6 @@ def get_github_client(request: Request) -> GitHubClient:
             detail="GitHub integration not configured. Set GITHUB_TOKEN environment variable.",
         )
     return GitHubClient(request.app.state.github_http_client)
-
-
-@app.post("/admin/sync")
-async def trigger_sync(
-    request: Request,
-    session: AsyncSession = Depends(get_session),
-):
-    """Trigger full repository sync from GitHub (v1.0).
-
-    Fetches all entity, module, and profile files from the configured
-    GitHub repository and upserts them into the database.
-
-    Returns:
-        Sync statistics including commit_sha, entities_synced, files_processed, errors
-    """
-    github_client = get_github_client(request)
-    result = await sync_repository(
-        github_client=github_client,
-        session=session,
-        owner=settings.GITHUB_REPO_OWNER,
-        repo=settings.GITHUB_REPO_NAME,
-    )
-    return result
 
 
 @app.post("/admin/sync-v2")

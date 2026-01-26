@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { useBundle, useModules } from '@/api/entitiesV2'
+import { useBundle, useModules } from '@/api/entities'
 import type { BundleDetailV2 } from '@/api/types'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useGraphStore } from '@/stores/graphStore'
-import { useDraftStoreV2 } from '@/stores/draftStoreV2'
+import { useDraftStore } from '@/stores/draftStore'
 import { AccordionSection } from '@/components/entity/sections/AccordionSection'
 import { EntityHeader } from '../sections/EntityHeader'
 import { EntityCombobox } from '../forms/EntityCombobox'
@@ -30,8 +30,8 @@ export function BundleDetail({ entityKey, draftId, draftToken, isEditing }: Bund
   const { data: modulesData } = useModules(undefined, undefined, draftId)
 
   const setSelectedEntity = useGraphStore((s) => s.setSelectedEntity)
-  const openNestedCreateModal = useDraftStoreV2((s) => s.openNestedCreateModal)
-  const setOnNestedEntityCreated = useDraftStoreV2((s) => s.setOnNestedEntityCreated)
+  const openNestedCreateModal = useDraftStore((s) => s.openNestedCreateModal)
+  const setOnNestedEntityCreated = useDraftStore((s) => s.setOnNestedEntityCreated)
 
   // Build available modules for selection
   const availableModules = (modulesData?.items || []).map((m) => ({

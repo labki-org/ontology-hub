@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { useSubobject, useProperties } from '@/api/entitiesV2'
+import { useSubobject, useProperties } from '@/api/entities'
 import { useAutoSave } from '@/hooks/useAutoSave'
-import { useDraftStoreV2 } from '@/stores/draftStoreV2'
+import { useDraftStore } from '@/stores/draftStore'
 import { EntityHeader } from '../sections/EntityHeader'
 import { AccordionSection } from '../sections/AccordionSection'
 import { MembershipSection } from '../sections/MembershipSection'
@@ -34,8 +34,8 @@ export function SubobjectDetail({
   isEditing,
 }: SubobjectDetailProps) {
   const { data, isLoading, error } = useSubobject(entityKey, draftId)
-  const openNestedCreateModal = useDraftStoreV2((s) => s.openNestedCreateModal)
-  const setOnNestedEntityCreated = useDraftStoreV2((s) => s.setOnNestedEntityCreated)
+  const openNestedCreateModal = useDraftStore((s) => s.openNestedCreateModal)
+  const setOnNestedEntityCreated = useDraftStore((s) => s.setOnNestedEntityCreated)
 
   // Fetch available properties
   const { data: propertiesData } = useProperties(undefined, undefined, draftId)

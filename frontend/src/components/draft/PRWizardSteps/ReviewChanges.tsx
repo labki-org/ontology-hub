@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import type { DraftChangeV2, ValidationReportV2 } from '@/api/draftApiV2'
+import type { DraftChangeV2, ValidationReportV2 } from '@/api/drafts'
 
 interface ReviewChangesProps {
   changes: DraftChangeV2[]

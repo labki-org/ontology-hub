@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { useProperty, usePropertyUsedBy, useTemplates } from '@/api/entitiesV2'
+import { useProperty, usePropertyUsedBy, useTemplates } from '@/api/entities'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useGraphStore } from '@/stores/graphStore'
 import { EntityHeader } from '../sections/EntityHeader'

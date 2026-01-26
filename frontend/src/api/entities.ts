@@ -1,152 +1,162 @@
-import { useQuery, useQueries } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { apiFetch } from './client'
 import type {
-  EntityType,
-  EntityPublic,
-  EntityListResponse,
-  EntityOverviewResponse,
-  InheritanceResponse,
-  ModulePublic,
+  EntityListResponseV2,
+  EntityWithStatus,
+  CategoryDetailV2,
+  OntologyVersionInfo,
 } from './types'
 
 // Fetch functions
-async function fetchEntityOverview(): Promise<EntityOverviewResponse> {
-  return apiFetch('/entities/')
+
+async function fetchOntologyVersion(): Promise<OntologyVersionInfo> {
+  return apiFetch('/ontology-version', { v2: true })
 }
 
-async function fetchEntities(
-  type: EntityType,
+async function fetchEntitiesV2(
+  entityType: string,
   cursor?: string,
-  limit?: number
-): Promise<EntityListResponse> {
+  limit?: number,
+  draftId?: string
+): Promise<EntityListResponseV2> {
   const params = new URLSearchParams()
   if (cursor) params.set('cursor', cursor)
   if (limit) params.set('limit', String(limit))
+  if (draftId) params.set('draft_id', draftId)
 
   const queryString = params.toString()
-  const endpoint = `/entities/${type}${queryString ? `?${queryString}` : ''}`
-  return apiFetch(endpoint)
+  const endpoint = `/${entityType}${queryString ? `?${queryString}` : ''}`
+  return apiFetch(endpoint, { v2: true })
 }
 
-async function fetchEntity(
-  type: EntityType,
-  entityId: string
-): Promise<EntityPublic> {
-  return apiFetch(`/entities/${type}/${entityId}`)
-}
-
-async function searchEntities(
-  query: string,
-  entityType?: EntityType,
-  limit?: number
-): Promise<EntityListResponse> {
+async function fetchEntityV2(
+  entityType: string,
+  entityKey: string,
+  draftId?: string
+): Promise<EntityWithStatus | CategoryDetailV2> {
   const params = new URLSearchParams()
-  params.set('q', query)
-  if (entityType) params.set('entity_type', entityType)
-  if (limit) params.set('limit', String(limit))
+  if (draftId) params.set('draft_id', draftId)
 
-  return apiFetch(`/entities/search?${params.toString()}`)
+  const queryString = params.toString()
+  const endpoint = `/${entityType}/${entityKey}${queryString ? `?${queryString}` : ''}`
+  return apiFetch(endpoint, { v2: true })
 }
 
-async function fetchInheritance(entityId: string): Promise<InheritanceResponse> {
-  return apiFetch(`/entities/category/${entityId}/inheritance`)
-}
+async function fetchPropertyUsedBy(
+  entityKey: string,
+  draftId?: string
+): Promise<EntityWithStatus[]> {
+  const params = new URLSearchParams()
+  if (draftId) params.set('draft_id', draftId)
 
-async function fetchUsedBy(
-  entityType: EntityType,
-  entityId: string
-): Promise<EntityPublic[]> {
-  return apiFetch(`/entities/${entityType}/${entityId}/used-by`)
-}
-
-async function fetchEntityModules(
-  entityType: EntityType,
-  entityId: string
-): Promise<ModulePublic[]> {
-  return apiFetch(`/entities/${entityType}/${entityId}/modules`)
+  const queryString = params.toString()
+  const endpoint = `/properties/${entityKey}/used-by${queryString ? `?${queryString}` : ''}`
+  return apiFetch(endpoint, { v2: true })
 }
 
 // Query hooks
-export function useEntityOverview() {
+
+export function useOntologyVersion() {
   return useQuery({
-    queryKey: ['entities', 'overview'],
-    queryFn: fetchEntityOverview,
+    queryKey: ['ontology-version'],
+    queryFn: fetchOntologyVersion,
   })
 }
 
-export function useEntities(
-  type: EntityType,
-  cursor?: string,
-  limit?: number
-) {
+export function useCategories(cursor?: string, limit?: number, draftId?: string) {
   return useQuery({
-    queryKey: ['entities', type, { cursor, limit }],
-    queryFn: () => fetchEntities(type, cursor, limit),
-    enabled: !!type,
+    queryKey: ['v2', 'categories', { cursor, limit, draftId }],
+    queryFn: () => fetchEntitiesV2('categories', cursor, limit, draftId),
   })
 }
 
-export function useEntity(type: EntityType, entityId: string) {
+export function useCategory(entityKey: string, draftId?: string) {
   return useQuery({
-    queryKey: ['entity', type, entityId],
-    queryFn: () => fetchEntity(type, entityId),
-    enabled: !!type && !!entityId,
+    queryKey: ['v2', 'category', entityKey, { draftId }],
+    queryFn: () => fetchEntityV2('categories', entityKey, draftId),
+    enabled: !!entityKey,
   })
 }
 
-export function useSearch(query: string, entityType?: EntityType, limit?: number) {
+export function useProperties(cursor?: string, limit?: number, draftId?: string) {
   return useQuery({
-    queryKey: ['search', query, entityType, limit],
-    queryFn: () => searchEntities(query, entityType, limit),
-    enabled: query.length >= 2,
+    queryKey: ['v2', 'properties', { cursor, limit, draftId }],
+    queryFn: () => fetchEntitiesV2('properties', cursor, limit, draftId),
   })
 }
 
-export function useInheritance(entityId: string) {
+export function useProperty(entityKey: string, draftId?: string) {
   return useQuery({
-    queryKey: ['inheritance', entityId],
-    queryFn: () => fetchInheritance(entityId),
-    enabled: !!entityId,
+    queryKey: ['v2', 'property', entityKey, { draftId }],
+    queryFn: () => fetchEntityV2('properties', entityKey, draftId),
+    enabled: !!entityKey,
   })
 }
 
-export function useUsedBy(entityType: EntityType, entityId: string) {
+export function useSubobjects(cursor?: string, limit?: number, draftId?: string) {
   return useQuery({
-    queryKey: ['used-by', entityType, entityId],
-    queryFn: () => fetchUsedBy(entityType, entityId),
-    enabled: !!entityType && !!entityId && entityType !== 'category',
+    queryKey: ['v2', 'subobjects', { cursor, limit, draftId }],
+    queryFn: () => fetchEntitiesV2('subobjects', cursor, limit, draftId),
   })
 }
 
-export function useEntityModules(entityType: EntityType, entityId: string) {
+export function useSubobject(entityKey: string, draftId?: string) {
   return useQuery({
-    queryKey: ['entity-modules', entityType, entityId],
-    queryFn: () => fetchEntityModules(entityType, entityId),
-    enabled: !!entityType && !!entityId,
+    queryKey: ['v2', 'subobject', entityKey, { draftId }],
+    queryFn: () => fetchEntityV2('subobjects', entityKey, draftId),
+    enabled: !!entityKey,
   })
 }
 
-// Fetch all entities by type for sidebar navigation
-export function useAllEntitiesByType() {
-  const entityTypes: EntityType[] = ['category', 'property', 'subobject']
-
-  const queries = useQueries({
-    queries: entityTypes.map((type) => ({
-      queryKey: ['entities', type, { limit: 100 }],
-      queryFn: () => fetchEntities(type, undefined, 100),
-    })),
+export function useModules(cursor?: string, limit?: number, draftId?: string) {
+  return useQuery({
+    queryKey: ['v2', 'modules', { cursor, limit, draftId }],
+    queryFn: () => fetchEntitiesV2('modules', cursor, limit, draftId),
   })
+}
 
-  const isLoading = queries.some((q) => q.isLoading)
-  const error = queries.find((q) => q.error)?.error
+export function useModule(entityKey: string, draftId?: string) {
+  return useQuery({
+    queryKey: ['v2', 'module', entityKey, { draftId }],
+    queryFn: () => fetchEntityV2('modules', entityKey, draftId),
+    enabled: !!entityKey,
+  })
+}
 
-  const data = isLoading
-    ? undefined
-    : {
-        category: queries[0].data?.items || [],
-        property: queries[1].data?.items || [],
-        subobject: queries[2].data?.items || [],
-      }
+export function useBundles(cursor?: string, limit?: number, draftId?: string) {
+  return useQuery({
+    queryKey: ['v2', 'bundles', { cursor, limit, draftId }],
+    queryFn: () => fetchEntitiesV2('bundles', cursor, limit, draftId),
+  })
+}
 
-  return { data, isLoading, error }
+export function useBundle(entityKey: string, draftId?: string) {
+  return useQuery({
+    queryKey: ['v2', 'bundle', entityKey, { draftId }],
+    queryFn: () => fetchEntityV2('bundles', entityKey, draftId),
+    enabled: !!entityKey,
+  })
+}
+
+export function useTemplates(cursor?: string, limit?: number, draftId?: string) {
+  return useQuery({
+    queryKey: ['v2', 'templates', { cursor, limit, draftId }],
+    queryFn: () => fetchEntitiesV2('templates', cursor, limit, draftId),
+  })
+}
+
+export function useTemplate(entityKey: string, draftId?: string) {
+  return useQuery({
+    queryKey: ['v2', 'template', entityKey, { draftId }],
+    queryFn: () => fetchEntityV2('templates', entityKey, draftId),
+    enabled: !!entityKey,
+  })
+}
+
+export function usePropertyUsedBy(entityKey: string, draftId?: string) {
+  return useQuery({
+    queryKey: ['v2', 'property-used-by', entityKey, { draftId }],
+    queryFn: () => fetchPropertyUsedBy(entityKey, draftId),
+    enabled: !!entityKey,
+  })
 }

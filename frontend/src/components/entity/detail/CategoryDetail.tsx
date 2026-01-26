@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { useCategory, useCategories, useProperties, useSubobjects } from '@/api/entitiesV2'
+import { useCategory, useCategories, useProperties, useSubobjects } from '@/api/entities'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useGraphStore } from '@/stores/graphStore'
-import { useDraftStoreV2 } from '@/stores/draftStoreV2'
+import { useDraftStore } from '@/stores/draftStore'
 import { EntityHeader } from '../sections/EntityHeader'
 import { AccordionSection } from '../sections/AccordionSection'
 import { MembershipSection } from '../sections/MembershipSection'
@@ -39,8 +39,8 @@ export function CategoryDetail({
   const { data: rawCategory, isLoading, error } = useCategory(entityKey, draftId)
   const { data: categoriesData } = useCategories(undefined, undefined, draftId)
   const setSelectedEntity = useGraphStore((s) => s.setSelectedEntity)
-  const openNestedCreateModal = useDraftStoreV2((s) => s.openNestedCreateModal)
-  const setOnNestedEntityCreated = useDraftStoreV2((s) => s.setOnNestedEntityCreated)
+  const openNestedCreateModal = useDraftStore((s) => s.openNestedCreateModal)
+  const setOnNestedEntityCreated = useDraftStore((s) => s.setOnNestedEntityCreated)
 
   // Build available categories for parent selection (excluding self)
   const availableCategories = (categoriesData?.items || [])
@@ -65,8 +65,8 @@ export function CategoryDetail({
   }))
 
   // Change tracking state for inheritance chain highlighting
-  const directEdits = useDraftStoreV2((s) => s.directlyEditedEntities)
-  const transitiveAffects = useDraftStoreV2((s) => s.transitivelyAffectedEntities)
+  const directEdits = useDraftStore((s) => s.directlyEditedEntities)
+  const transitiveAffects = useDraftStore((s) => s.transitivelyAffectedEntities)
 
   // Check if current entity is transitively affected by parent edits
   const isTransitivelyAffected = transitiveAffects.has(entityKey)

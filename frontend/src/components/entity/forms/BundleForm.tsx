@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { useModules } from '@/api/entitiesV2'
+import { useModules } from '@/api/entities'
 
 interface BundleFormProps {
   /** Callback when form is submitted with valid data */

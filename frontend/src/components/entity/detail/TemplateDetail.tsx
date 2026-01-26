@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { useTemplate } from '@/api/entitiesV2'
+import { useTemplate } from '@/api/entities'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { EntityHeader } from '../sections/EntityHeader'
 import { AccordionSection } from '../sections/AccordionSection'

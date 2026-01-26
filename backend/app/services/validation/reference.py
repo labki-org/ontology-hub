@@ -1,173 +1,185 @@
-"""Reference existence validation for draft payloads."""
+"""Reference existence validation for v2 drafts.
+
+Checks that referenced entities exist in either canonical or effective entity sets.
+"""
 
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.models.draft import DraftPayload
-from app.models.entity import Entity, EntityType
-from app.models.module import Module
-from app.schemas.validation import ValidationResult
+from app.models.v2 import Bundle, Category, Module, Property, Subobject, Template
+from app.schemas.validation import ValidationResultV2
 
 
-async def get_canonical_entity_ids(session: AsyncSession, entity_type: EntityType) -> set[str]:
-    """Get all entity IDs of given type from canonical database.
-
-    Args:
-        session: Database session
-        entity_type: Type of entities to fetch
-
-    Returns:
-        Set of entity_id strings
-    """
-    stmt = select(Entity.entity_id).where(
-        Entity.entity_type == entity_type, Entity.deleted_at.is_(None)
-    )
-    result = await session.execute(stmt)
-    return {row[0] for row in result.all()}
-
-
-async def get_canonical_module_ids(session: AsyncSession) -> set[str]:
-    """Get all module IDs from canonical database.
-
-    Args:
-        session: Database session
-
-    Returns:
-        Set of module_id strings
-    """
-    stmt = select(Module.module_id).where(Module.deleted_at.is_(None))
-    result = await session.execute(stmt)
-    return {row[0] for row in result.all()}
-
-
-async def check_references(
-    payload: DraftPayload,
+async def check_references_v2(
+    effective_entities: dict[str, dict[str, dict]],
     session: AsyncSession,
-) -> list[ValidationResult]:
-    """Check all referenced IDs exist in canonical or draft data.
+) -> list[ValidationResultV2]:
+    """Check all referenced entity_keys exist in canonical or effective data.
 
     Validates:
-    - Category parent references
-    - Category property references
-    - Category subobject references
-    - Module category_ids
-    - Module dependencies
-    - Profile module_ids
+    - Category parents exist (in canonical OR effective)
+    - Category properties exist
+    - Module entity_keys exist
+    - Bundle module_keys exist
 
     Args:
-        payload: Draft payload with entities, modules, profiles
-        session: Database session for canonical data lookup
+        effective_entities: Dict like {"category": {"Person": {...}, ...}, "property": {...}, ...}
+        session: Async database session for canonical data lookup
 
     Returns:
-        List of ValidationResult for missing references
+        List of ValidationResultV2 for missing references
     """
-    results: list[ValidationResult] = []
+    results: list[ValidationResultV2] = []
 
-    # Build sets of canonical IDs
-    canonical_categories = await get_canonical_entity_ids(session, EntityType.CATEGORY)
-    canonical_properties = await get_canonical_entity_ids(session, EntityType.PROPERTY)
-    canonical_subobjects = await get_canonical_entity_ids(session, EntityType.SUBOBJECT)
-    canonical_modules = await get_canonical_module_ids(session)
+    # Build sets of canonical entity_keys
+    canonical_categories = set()
+    canonical_properties = set()
+    canonical_subobjects = set()
+    canonical_modules = set()
+    canonical_bundles = set()
+    canonical_templates = set()
 
-    # Build sets of draft IDs
-    draft_categories = {c.entity_id for c in payload.entities.categories}
-    draft_properties = {p.entity_id for p in payload.entities.properties}
-    draft_subobjects = {s.entity_id for s in payload.entities.subobjects}
-    draft_modules = {m.module_id for m in payload.modules}
+    # Query canonical entity_keys
+    category_query = select(Category.entity_key)
+    category_result = await session.execute(category_query)
+    canonical_categories = {row[0] for row in category_result.all()}
 
-    # Combined sets (canonical + draft)
-    all_categories = canonical_categories | draft_categories
-    all_properties = canonical_properties | draft_properties
-    all_subobjects = canonical_subobjects | draft_subobjects
-    all_modules = canonical_modules | draft_modules
+    property_query = select(Property.entity_key)
+    property_result = await session.execute(property_query)
+    canonical_properties = {row[0] for row in property_result.all()}
+
+    subobject_query = select(Subobject.entity_key)
+    subobject_result = await session.execute(subobject_query)
+    canonical_subobjects = {row[0] for row in subobject_result.all()}
+
+    module_query = select(Module.entity_key)
+    module_result = await session.execute(module_query)
+    canonical_modules = {row[0] for row in module_result.all()}
+
+    bundle_query = select(Bundle.entity_key)
+    bundle_result = await session.execute(bundle_query)
+    canonical_bundles = {row[0] for row in bundle_result.all()}
+
+    template_query = select(Template.entity_key)
+    template_result = await session.execute(template_query)
+    canonical_templates = {row[0] for row in template_result.all()}
+
+    # Build sets of effective entity_keys (includes draft changes)
+    effective_categories = set(effective_entities.get("category", {}).keys())
+    effective_properties = set(effective_entities.get("property", {}).keys())
+    effective_subobjects = set(effective_entities.get("subobject", {}).keys())
+    effective_modules = set(effective_entities.get("module", {}).keys())
+    effective_bundles = set(effective_entities.get("bundle", {}).keys())
+    effective_templates = set(effective_entities.get("template", {}).keys())
+
+    # Combined sets (canonical + effective)
+    all_categories = canonical_categories | effective_categories
+    all_properties = canonical_properties | effective_properties
+    all_subobjects = canonical_subobjects | effective_subobjects
+    all_modules = canonical_modules | effective_modules
+    _ = canonical_bundles | effective_bundles  # Reserved for future bundle reference validation
+    all_templates = canonical_templates | effective_templates
 
     # Check category references
-    for category in payload.entities.categories:
-        schema = category.schema_definition
+    for entity_key, category_json in effective_entities.get("category", {}).items():
+        # Skip deleted entities (they should be flagged as deleted, not validated)
+        if category_json.get("_deleted"):
+            continue
 
-        # Parent reference
-        parent = schema.get("parent")
-        if parent and parent not in all_categories:
-            results.append(
-                ValidationResult(
-                    entity_type="category",
-                    entity_id=category.entity_id,
-                    field="parent",
-                    code="MISSING_PARENT",
-                    message=f"Parent category '{parent}' does not exist",
-                    severity="error",
-                )
-            )
-
-        # Property references
-        for prop_id in schema.get("properties", []):
-            if prop_id not in all_properties:
-                results.append(
-                    ValidationResult(
-                        entity_type="category",
-                        entity_id=category.entity_id,
-                        field="properties",
-                        code="MISSING_PROPERTY",
-                        message=f"Property '{prop_id}' does not exist",
-                        severity="error",
+        # Check parents (note: v2 uses "parents" array, not single "parent")
+        parents = category_json.get("parents", [])
+        if parents:
+            for i, parent_key in enumerate(parents):
+                if parent_key not in all_categories:
+                    results.append(
+                        ValidationResultV2(
+                            entity_type="category",
+                            entity_key=entity_key,
+                            field_path=f"/parents/{i}",
+                            code="MISSING_PARENT",
+                            message=f"Parent category '{parent_key}' does not exist",
+                            severity="error",
+                        )
                     )
-                )
 
-        # Subobject references
-        for sub_id in schema.get("subobjects", []):
-            if sub_id not in all_subobjects:
-                results.append(
-                    ValidationResult(
-                        entity_type="category",
-                        entity_id=category.entity_id,
-                        field="subobjects",
-                        code="MISSING_SUBOBJECT",
-                        message=f"Subobject '{sub_id}' does not exist",
-                        severity="error",
+        # Check property references
+        properties = category_json.get("properties", [])
+        if properties:
+            for i, prop_ref in enumerate(properties):
+                # Property refs can be string or dict with {"property": "key", "is_required": true}
+                prop_key = prop_ref if isinstance(prop_ref, str) else prop_ref.get("property")
+                if prop_key and prop_key not in all_properties:
+                    results.append(
+                        ValidationResultV2(
+                            entity_type="category",
+                            entity_key=entity_key,
+                            field_path=f"/properties/{i}",
+                            code="MISSING_PROPERTY",
+                            message=f"Property '{prop_key}' does not exist",
+                            severity="error",
+                        )
                     )
-                )
 
     # Check module references
-    for module in payload.modules:
-        for cat_id in module.category_ids:
-            if cat_id not in all_categories:
+    for entity_key, module_json in effective_entities.get("module", {}).items():
+        if module_json.get("_deleted"):
+            continue
+
+        # Modules reference entities of various types via "entities" array
+        # Format: [{"type": "category", "entity_key": "Person"}, ...]
+        entities = module_json.get("entities", [])
+        for i, entity_ref in enumerate(entities):
+            entity_type = entity_ref.get("type")
+            ref_key = entity_ref.get("entity_key")
+
+            if not ref_key:
+                continue
+
+            # Check entity exists based on type
+            entity_exists = False
+            if (
+                entity_type == "category"
+                and ref_key in all_categories
+                or entity_type == "property"
+                and ref_key in all_properties
+                or entity_type == "subobject"
+                and ref_key in all_subobjects
+                or entity_type == "template"
+                and ref_key in all_templates
+            ):
+                entity_exists = True
+
+            if not entity_exists:
                 results.append(
-                    ValidationResult(
+                    ValidationResultV2(
                         entity_type="module",
-                        entity_id=module.module_id,
-                        field="category_ids",
-                        code="MISSING_CATEGORY",
-                        message=f"Category '{cat_id}' does not exist",
+                        entity_key=entity_key,
+                        field_path=f"/entities/{i}",
+                        code="MISSING_ENTITY",
+                        message=f"{entity_type.capitalize()} '{ref_key}' does not exist",
                         severity="error",
                     )
                 )
 
-        for dep_id in module.dependencies:
-            if dep_id not in all_modules:
-                results.append(
-                    ValidationResult(
-                        entity_type="module",
-                        entity_id=module.module_id,
-                        field="dependencies",
-                        code="MISSING_MODULE",
-                        message=f"Module dependency '{dep_id}' does not exist",
-                        severity="error",
-                    )
-                )
+    # Check bundle references
+    for entity_key, bundle_json in effective_entities.get("bundle", {}).items():
+        if bundle_json.get("_deleted"):
+            continue
 
-    # Check profile references
-    for profile in payload.profiles:
-        for mod_id in profile.module_ids:
-            if mod_id not in all_modules:
-                results.append(
-                    ValidationResult(
-                        entity_type="profile",
-                        entity_id=profile.profile_id,
-                        field="module_ids",
-                        code="MISSING_MODULE",
-                        message=f"Module '{mod_id}' does not exist",
-                        severity="error",
+        # Bundles reference modules via "modules" array
+        modules = bundle_json.get("modules", [])
+        if modules:
+            for i, module_key in enumerate(modules):
+                if module_key not in all_modules:
+                    results.append(
+                        ValidationResultV2(
+                            entity_type="bundle",
+                            entity_key=entity_key,
+                            field_path=f"/modules/{i}",
+                            code="MISSING_MODULE",
+                            message=f"Module '{module_key}' does not exist",
+                            severity="error",
+                        )
                     )
-                )
 
     return results

@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { useCategories, useProperties, useSubobjects } from '@/api/entitiesV2'
+import { useCategories, useProperties, useSubobjects } from '@/api/entities'
 
 interface CategoryFormProps {
   /** Callback when form is submitted with valid data */

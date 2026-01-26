@@ -1,259 +1,161 @@
-"""PR builder service for file serialization and PR body generation.
+"""PR builder service for v2 draft model.
 
-Converts draft payloads to repository file format and generates structured PR bodies.
+Converts DraftChange records to repository file format and generates
+structured PR bodies with categorized changes and semver suggestions.
 """
 
 import json
+from copy import deepcopy
 from datetime import datetime
 from typing import Any
+from uuid import UUID
 
-from app.models.draft import (
-    DraftDiffResponse,
-    DraftPayload,
-    EntityDefinition,
-    ModuleDefinition,
-    ProfileDefinition,
+import jsonpatch
+from sqlmodel import select
+from sqlmodel.ext.asyncio.session import AsyncSession
+
+from app.models.v2 import (
+    Bundle,
+    Category,
+    ChangeType,
+    DraftChange,
+    Module,
+    Property,
+    Subobject,
+    Template,
 )
 
+# Import validation report type
+from app.schemas.validation import DraftValidationReportV2
 
-def serialize_entity_for_repo(entity: EntityDefinition, entity_type: str) -> dict:
-    """Convert draft entity format to repository file format.
+# Entity type to table model mapping
+ENTITY_MODELS = {
+    "category": Category,
+    "property": Property,
+    "subobject": Subobject,
+    "module": Module,
+    "bundle": Bundle,
+    "template": Template,
+}
+
+# Entity type to repo directory mapping
+ENTITY_DIRS = {
+    "category": "categories",
+    "property": "properties",
+    "subobject": "subobjects",
+    "module": "modules",
+    "bundle": "bundles",
+    "template": "templates",
+}
+
+
+async def get_canonical_json(
+    session: AsyncSession,
+    entity_type: str,
+    entity_key: str,
+) -> dict | None:
+    """Get canonical JSON for an entity."""
+    model = ENTITY_MODELS.get(entity_type)
+    if not model:
+        return None
+
+    result = await session.execute(select(model).where(model.entity_key == entity_key))
+    entity = result.scalar_one_or_none()
+    if entity and hasattr(entity, "canonical_json"):
+        return entity.canonical_json
+    return None
+
+
+def serialize_for_repo(entity_json: dict, _entity_type: str) -> dict:
+    """Convert effective entity JSON to repository format.
+
+    Repo format uses "id" instead of "entity_key" for compatibility.
+    """
+    result = deepcopy(entity_json)
+
+    # Remove internal fields
+    for internal_field in ["_change_status", "_deleted", "_patch_error", "entity_key"]:
+        result.pop(internal_field, None)
+
+    # Ensure "id" field exists (repo format uses "id", not "entity_key")
+    if "id" not in result and "entity_key" in entity_json:
+        # Extract just the filename part from entity_key (e.g., "categories/Person" -> "Person")
+        entity_key = entity_json.get("entity_key", "")
+        if "/" in entity_key:
+            result["id"] = entity_key.split("/")[-1]
+        else:
+            result["id"] = entity_key
+
+    return result
+
+
+async def build_files_from_draft_v2(
+    draft_id: UUID,
+    session: AsyncSession,
+) -> list[dict]:
+    """Build list of files from v2 draft changes for PR creation.
+
+    For each DraftChange:
+    - CREATE: File with replacement_json serialized
+    - UPDATE: File with effective JSON (canonical + patch applied)
+    - DELETE: File deletion marker
 
     Args:
-        entity: Entity definition from draft
-        entity_type: "categories", "properties", or "subobjects"
+        draft_id: UUID of the draft
+        session: Database session
 
     Returns:
-        Entity in repo format (uses "id" not "entity_id")
+        List of dicts with "path" and "content" keys (or "delete": True for deletions)
     """
-    # Base fields common to all entity types
-    repo_entity: dict[str, Any] = {
-        "id": entity.entity_id,
-        "label": entity.label,
-    }
+    # Load all draft changes
+    query = select(DraftChange).where(DraftChange.draft_id == draft_id)
+    result = await session.execute(query)
+    changes = list(result.scalars().all())
 
-    # Add description if present
-    if entity.description:
-        repo_entity["description"] = entity.description
-
-    # Add entity-type-specific fields from schema_definition
-    if entity_type == "categories":
-        repo_entity.update(
-            {
-                "parent": entity.schema_definition.get("parent"),
-                "properties": entity.schema_definition.get("properties", []),
-                "subobjects": entity.schema_definition.get("subobjects", []),
-            }
-        )
-    elif entity_type == "properties":
-        repo_entity.update(
-            {
-                "datatype": entity.schema_definition.get("datatype"),
-                "cardinality": entity.schema_definition.get("cardinality"),
-            }
-        )
-    elif entity_type == "subobjects":
-        repo_entity["properties"] = entity.schema_definition.get("properties", [])
-
-    return repo_entity
-
-
-def serialize_module_for_repo(module: ModuleDefinition) -> dict:
-    """Convert draft module format to repository file format.
-
-    Args:
-        module: Module definition from draft
-
-    Returns:
-        Module in repo format (uses "id" and "categories")
-    """
-    repo_module: dict[str, Any] = {
-        "id": module.module_id,
-        "label": module.label,
-    }
-
-    if module.description:
-        repo_module["description"] = module.description
-
-    repo_module["categories"] = module.category_ids
-    repo_module["dependencies"] = module.dependencies
-
-    return repo_module
-
-
-def serialize_profile_for_repo(profile: ProfileDefinition) -> dict:
-    """Convert draft profile format to repository file format.
-
-    Args:
-        profile: Profile definition from draft
-
-    Returns:
-        Profile in repo format (uses "id" and "modules")
-    """
-    repo_profile: dict[str, Any] = {
-        "id": profile.profile_id,
-        "label": profile.label,
-    }
-
-    if profile.description:
-        repo_profile["description"] = profile.description
-
-    repo_profile["modules"] = profile.module_ids
-
-    return repo_profile
-
-
-def build_files_from_draft(payload: DraftPayload) -> list[dict]:
-    """Build list of files from draft payload for PR creation.
-
-    Drafts are ADDITIVE by default. Files are created/updated for entities in the payload.
-    Files are deleted only for entities explicitly listed in payload.deletions.
-
-    Args:
-        payload: Draft payload containing entities, modules, profiles, and optional deletions
-
-    Returns:
-        List of dicts with "path" and "content" keys for Git tree creation.
-        Deletion entries have "path" and "delete": True instead of "content".
-    """
     files = []
 
-    # Process categories
-    for category in payload.entities.categories:
-        repo_entity = serialize_entity_for_repo(category, "categories")
-        content = json.dumps(repo_entity, indent=2) + "\n"
-        files.append({"path": f"categories/{category.entity_id}.json", "content": content})
+    for change in changes:
+        entity_dir = ENTITY_DIRS.get(change.entity_type, change.entity_type)
 
-    # Process properties
-    for prop in payload.entities.properties:
-        repo_entity = serialize_entity_for_repo(prop, "properties")
-        content = json.dumps(repo_entity, indent=2) + "\n"
-        files.append({"path": f"properties/{prop.entity_id}.json", "content": content})
+        # Extract filename from entity_key (e.g., "categories/Person" -> "Person")
+        if "/" in change.entity_key:
+            filename = change.entity_key.split("/")[-1]
+        else:
+            filename = change.entity_key
 
-    # Process subobjects
-    for subobj in payload.entities.subobjects:
-        repo_entity = serialize_entity_for_repo(subobj, "subobjects")
-        content = json.dumps(repo_entity, indent=2) + "\n"
-        files.append({"path": f"subobjects/{subobj.entity_id}.json", "content": content})
+        file_path = f"{entity_dir}/{filename}.json"
 
-    # Process modules
-    for module in payload.modules:
-        repo_module = serialize_module_for_repo(module)
-        content = json.dumps(repo_module, indent=2) + "\n"
-        files.append({"path": f"modules/{module.module_id}.json", "content": content})
+        if change.change_type == ChangeType.CREATE:
+            # New entity - use replacement_json
+            if change.replacement_json:
+                repo_json = serialize_for_repo(change.replacement_json, change.entity_type)
+                content = json.dumps(repo_json, indent=2) + "\n"
+                files.append({"path": file_path, "content": content})
 
-    # Process profiles
-    for profile in payload.profiles:
-        repo_profile = serialize_profile_for_repo(profile)
-        content = json.dumps(repo_profile, indent=2) + "\n"
-        files.append({"path": f"profiles/{profile.profile_id}.json", "content": content})
+        elif change.change_type == ChangeType.UPDATE:
+            # Modified entity - apply patch to canonical
+            canonical = await get_canonical_json(session, change.entity_type, change.entity_key)
+            if canonical and change.patch:
+                try:
+                    patch = jsonpatch.JsonPatch(change.patch)
+                    effective = patch.apply(deepcopy(canonical))
+                    repo_json = serialize_for_repo(effective, change.entity_type)
+                    content = json.dumps(repo_json, indent=2) + "\n"
+                    files.append({"path": file_path, "content": content})
+                except jsonpatch.JsonPatchException:
+                    # Patch failed - skip this file (validation should have caught this)
+                    pass
+            elif canonical:
+                # No patch but canonical exists - shouldn't happen, but handle gracefully
+                repo_json = serialize_for_repo(canonical, change.entity_type)
+                content = json.dumps(repo_json, indent=2) + "\n"
+                files.append({"path": file_path, "content": content})
 
-    # Process explicit deletions (if any)
-    if payload.deletions:
-        for cat_id in payload.deletions.categories:
-            files.append({"path": f"categories/{cat_id}.json", "delete": True})
-        for prop_id in payload.deletions.properties:
-            files.append({"path": f"properties/{prop_id}.json", "delete": True})
-        for subobj_id in payload.deletions.subobjects:
-            files.append({"path": f"subobjects/{subobj_id}.json", "delete": True})
-        for mod_id in payload.deletions.modules:
-            files.append({"path": f"modules/{mod_id}.json", "delete": True})
-        for prof_id in payload.deletions.profiles:
-            files.append({"path": f"profiles/{prof_id}.json", "delete": True})
+        elif change.change_type == ChangeType.DELETE:
+            # Deleted entity - mark for deletion
+            files.append({"path": file_path, "delete": True})
 
     return files
-
-
-def generate_pr_body(
-    diff: DraftDiffResponse, validation: dict, wiki_url: str, base_version: str
-) -> str:
-    """Generate markdown PR body with changes, validation, and semver info.
-
-    Args:
-        diff: Draft diff response showing changes
-        validation: Validation results dict with is_valid, errors, warnings, etc.
-        wiki_url: Source wiki URL
-        base_version: Base schema version
-
-    Returns:
-        Markdown string for PR body
-    """
-    sections = []
-
-    # Summary section
-    sections.append("## Summary\n")
-    sections.append(f"Changes proposed from [{wiki_url}]({wiki_url})")
-    sections.append(f"Based on version: `{base_version}`\n")
-
-    # Changes section
-    sections.append("## Changes\n")
-
-    # Helper to format changes for an entity type
-    def format_entity_changes(entity_name: str, changes: Any) -> list[str]:
-        lines = []
-        if changes.added or changes.modified or changes.deleted:
-            lines.append(f"### {entity_name.capitalize()}\n")
-            if changes.added:
-                added_ids = ", ".join([c.entity_id for c in changes.added])
-                lines.append(f"- **Added:** {added_ids}")
-            if changes.modified:
-                modified_ids = ", ".join([c.entity_id for c in changes.modified])
-                lines.append(f"- **Modified:** {modified_ids}")
-            if changes.deleted:
-                deleted_ids = ", ".join([c.entity_id for c in changes.deleted])
-                lines.append(f"- **Deleted:** {deleted_ids}")
-            lines.append("")
-        return lines
-
-    sections.extend(format_entity_changes("Categories", diff.categories))
-    sections.extend(format_entity_changes("Properties", diff.properties))
-    sections.extend(format_entity_changes("Subobjects", diff.subobjects))
-    sections.extend(format_entity_changes("Modules", diff.modules))
-    sections.extend(format_entity_changes("Profiles", diff.profiles))
-
-    # Validation section
-    sections.append("## Validation\n")
-    is_valid = validation.get("is_valid", False)
-    status = "Passed" if is_valid else "Failed"
-    sections.append(f"**Status:** {status}")
-
-    # Semver suggestion
-    suggested_bump = validation.get("suggested_semver_bump", "patch")
-    sections.append(f"**Suggested version bump:** `{suggested_bump}`\n")
-
-    # Errors
-    errors = validation.get("errors", [])
-    if errors:
-        sections.append(f"### Errors ({len(errors)})\n")
-        for error in errors:
-            field = error.get("field", "unknown")
-            message = error.get("message", "")
-            sections.append(f"- `{field}`: {message}")
-        sections.append("")
-
-    # Warnings
-    warnings = validation.get("warnings", [])
-    if warnings:
-        sections.append(f"### Warnings ({len(warnings)})\n")
-        for warning in warnings:
-            field = warning.get("field", "unknown")
-            message = warning.get("message", "")
-            sections.append(f"- `{field}`: {message}")
-        sections.append("")
-
-    # Semver reasons
-    semver_reasons = validation.get("semver_reasons", [])
-    if semver_reasons:
-        sections.append("### Version bump reasons\n")
-        for reason in semver_reasons:
-            sections.append(f"- {reason}")
-        sections.append("")
-
-    # Footer
-    sections.append("---")
-    sections.append("*Created via [Ontology Hub](https://ontology.labki.org)*")
-
-    return "\n".join(sections)
 
 
 def generate_branch_name(draft_id: str) -> str:
@@ -269,51 +171,232 @@ def generate_branch_name(draft_id: str) -> str:
     return f"draft-{draft_id[:8]}-{timestamp}"
 
 
-def generate_commit_message(diff: DraftDiffResponse) -> str:
-    """Generate commit message with change summary.
+def generate_commit_message_v2(changes: list[DraftChange]) -> str:
+    """Generate commit message from draft changes.
 
     Args:
-        diff: Draft diff response
+        changes: List of DraftChange records
 
     Returns:
-        Commit message with body
+        Commit message with change summary
     """
-    # Count total changes
-    total_added = (
-        len(diff.categories.added)
-        + len(diff.properties.added)
-        + len(diff.subobjects.added)
-        + len(diff.modules.added)
-        + len(diff.profiles.added)
-    )
-    total_modified = (
-        len(diff.categories.modified)
-        + len(diff.properties.modified)
-        + len(diff.subobjects.modified)
-        + len(diff.modules.modified)
-        + len(diff.profiles.modified)
-    )
-    total_deleted = (
-        len(diff.categories.deleted)
-        + len(diff.properties.deleted)
-        + len(diff.subobjects.deleted)
-        + len(diff.modules.deleted)
-        + len(diff.profiles.deleted)
-    )
+    # Count by change type
+    creates = sum(1 for c in changes if c.change_type == ChangeType.CREATE)
+    updates = sum(1 for c in changes if c.change_type == ChangeType.UPDATE)
+    deletes = sum(1 for c in changes if c.change_type == ChangeType.DELETE)
 
-    # Build summary lines
-    summary_parts = []
-    if total_added > 0:
-        summary_parts.append(f"{total_added} added")
-    if total_modified > 0:
-        summary_parts.append(f"{total_modified} modified")
-    if total_deleted > 0:
-        summary_parts.append(f"{total_deleted} deleted")
+    # Build summary
+    parts = []
+    if creates:
+        parts.append(f"{creates} added")
+    if updates:
+        parts.append(f"{updates} modified")
+    if deletes:
+        parts.append(f"{deletes} deleted")
 
-    summary = ", ".join(summary_parts) if summary_parts else "no changes"
+    summary = ", ".join(parts) if parts else "no changes"
 
-    # Build commit message
-    message = "feat(schema): update from wiki export\n\n"
-    message += f"Changes: {summary}\n"
+    return f"feat(schema): update from Ontology Hub\n\nChanges: {summary}\n"
 
-    return message
+
+def generate_pr_title_with_version(
+    changes: list[DraftChange],
+    base_commit_sha: str | None,
+    suggested_semver: str | None,
+    user_title: str | None = None,
+) -> str:
+    """Generate PR title with version context.
+
+    Format: "[ontology @{sha_prefix}] {summary}"
+    Examples:
+    - "[ontology @a1b2c3d] Add category: Lab_member"
+    - "[ontology @a1b2c3d] (minor) 3 additions, 2 updates"
+
+    Args:
+        changes: List of DraftChange records
+        base_commit_sha: Base commit SHA the draft is based on
+        suggested_semver: Suggested semver bump (patch/minor/major)
+        user_title: Optional user-provided title
+
+    Returns:
+        PR title with version context prefix
+    """
+    # Build prefix with commit SHA
+    sha_prefix = base_commit_sha[:7] if base_commit_sha else "unknown"
+    prefix = f"[ontology @{sha_prefix}]"
+
+    # Use user title if provided
+    if user_title:
+        return f"{prefix} {user_title}"
+
+    # Generate summary based on changes
+    if not changes:
+        return f"{prefix} Schema update (no changes)"
+
+    # Count by change type
+    creates = sum(1 for c in changes if c.change_type == ChangeType.CREATE)
+    updates = sum(1 for c in changes if c.change_type == ChangeType.UPDATE)
+    deletes = sum(1 for c in changes if c.change_type == ChangeType.DELETE)
+
+    # For single change, be specific
+    if len(changes) == 1:
+        change = changes[0]
+        action = (
+            "Add"
+            if change.change_type == ChangeType.CREATE
+            else "Update" if change.change_type == ChangeType.UPDATE else "Delete"
+        )
+        return f"{prefix} {action} {change.entity_type}: {change.entity_key}"
+
+    # For multiple changes, summarize with semver hint
+    parts = []
+    if creates:
+        parts.append(f"{creates} addition{'s' if creates != 1 else ''}")
+    if updates:
+        parts.append(f"{updates} update{'s' if updates != 1 else ''}")
+    if deletes:
+        parts.append(f"{deletes} deletion{'s' if deletes != 1 else ''}")
+
+    summary = ", ".join(parts)
+
+    # Add semver hint if available
+    if suggested_semver:
+        return f"{prefix} ({suggested_semver}) {summary}"
+    return f"{prefix} {summary}"
+
+
+def generate_pr_body_v2(
+    changes: list[DraftChange],
+    validation: DraftValidationReportV2,
+    draft_title: str | None,
+    user_comment: str | None,
+    base_commit_sha: str | None = None,
+    affected_modules: dict[str, str] | None = None,
+    affected_bundles: dict[str, str] | None = None,
+) -> str:
+    """Generate markdown PR body with changes, validation, and semver info.
+
+    Args:
+        changes: List of DraftChange records
+        validation: Validation report
+        draft_title: Optional draft title
+        user_comment: Optional user comment to include
+        base_commit_sha: Optional base commit SHA for version context
+        affected_modules: Optional dict mapping module keys to current versions
+        affected_bundles: Optional dict mapping bundle keys to current versions
+
+    Returns:
+        Markdown string for PR body
+    """
+    sections = []
+
+    # Summary section
+    sections.append("## Summary\n")
+    if draft_title:
+        sections.append(f"**Draft:** {draft_title}\n")
+
+    # User comment (if provided)
+    if user_comment:
+        sections.append(f"**Comment:** {user_comment}\n")
+
+    # Version context section
+    if base_commit_sha or affected_modules or affected_bundles:
+        sections.append("## Version Context\n")
+        if base_commit_sha:
+            sections.append(f"**Base ontology:** `{base_commit_sha[:7]}`")
+        sections.append(f"**Suggested bump:** `{validation.suggested_semver}`\n")
+
+        # Affected modules table
+        if affected_modules:
+            sections.append("### Affected Modules\n")
+            sections.append("| Module | Current Version | Suggested Version |")
+            sections.append("|--------|-----------------|-------------------|")
+            for module_key, current_version in affected_modules.items():
+                suggested = validation.module_suggestions.get(module_key, current_version)
+                sections.append(f"| {module_key} | {current_version} | {suggested} |")
+            sections.append("")
+
+        # Affected bundles table
+        if affected_bundles:
+            sections.append("### Affected Bundles\n")
+            sections.append("| Bundle | Current Version | Suggested Version |")
+            sections.append("|--------|-----------------|-------------------|")
+            for bundle_key, current_version in affected_bundles.items():
+                suggested = validation.bundle_suggestions.get(bundle_key, current_version)
+                sections.append(f"| {bundle_key} | {current_version} | {suggested} |")
+            sections.append("")
+
+    # Changes section
+    sections.append("## Changes\n")
+
+    # Group changes by entity type
+    by_type: dict[str, dict[str, list[str]]] = {}
+    for change in changes:
+        entity_type = change.entity_type
+        if entity_type not in by_type:
+            by_type[entity_type] = {"added": [], "modified": [], "deleted": []}
+
+        if change.change_type == ChangeType.CREATE:
+            by_type[entity_type]["added"].append(change.entity_key)
+        elif change.change_type == ChangeType.UPDATE:
+            by_type[entity_type]["modified"].append(change.entity_key)
+        elif change.change_type == ChangeType.DELETE:
+            by_type[entity_type]["deleted"].append(change.entity_key)
+
+    # Format each entity type
+    for entity_type, type_changes in by_type.items():
+        if any(type_changes.values()):
+            sections.append(f"### {entity_type.capitalize()}s\n")
+            if type_changes["added"]:
+                sections.append(f"- **Added:** {', '.join(type_changes['added'])}")
+            if type_changes["modified"]:
+                sections.append(f"- **Modified:** {', '.join(type_changes['modified'])}")
+            if type_changes["deleted"]:
+                sections.append(f"- **Deleted:** {', '.join(type_changes['deleted'])}")
+            sections.append("")
+
+    # Validation section
+    sections.append("## Validation\n")
+    status = "Passed" if validation.is_valid else "Failed"
+    sections.append(f"**Status:** {status}")
+    sections.append(f"**Suggested version bump:** `{validation.suggested_semver}`\n")
+
+    # Errors (if any)
+    if validation.errors:
+        sections.append(f"### Errors ({len(validation.errors)})\n")
+        for error in validation.errors:
+            sections.append(f"- `{error.entity_key}`: {error.message}")
+        sections.append("")
+
+    # Warnings (if any)
+    if validation.warnings:
+        sections.append(f"### Warnings ({len(validation.warnings)})\n")
+        for warning in validation.warnings:
+            sections.append(f"- `{warning.entity_key}`: {warning.message}")
+        sections.append("")
+
+    # Semver reasons
+    if validation.semver_reasons:
+        sections.append("### Version bump reasons\n")
+        for reason in validation.semver_reasons:
+            sections.append(f"- {reason}")
+        sections.append("")
+
+    # Module/bundle version suggestions
+    if validation.module_suggestions:
+        sections.append("### Module version suggestions\n")
+        for module_key, suggested in validation.module_suggestions.items():
+            sections.append(f"- `{module_key}`: bump to `{suggested}`")
+        sections.append("")
+
+    if validation.bundle_suggestions:
+        sections.append("### Bundle version suggestions\n")
+        for bundle_key, suggested in validation.bundle_suggestions.items():
+            sections.append(f"- `{bundle_key}`: bump to `{suggested}`")
+        sections.append("")
+
+    # Footer
+    sections.append("---")
+    sections.append("*Created via [Ontology Hub](https://ontology.labki.org)*")
+
+    return "\n".join(sections)
