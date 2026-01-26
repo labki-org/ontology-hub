@@ -8,7 +8,24 @@ A public platform for browsing, validating, and proposing changes to a shared La
 
 Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes, with zero platform accounts and strong validation feedback.
 
-## Current State: v2.0 Shipped
+## Current State: v2.1 Shipped
+
+**Shipped:** 2026-01-25
+**Codebase:** ~36,360 LOC (17,134 Python + 19,226 TypeScript)
+
+**v2.1 delivered:**
+- Entity detail endpoints for all 6 types (fixed subobjects, templates, modules, bundles)
+- Graph visualization with distinct SVG shapes per entity type (diamond, hexagon, circle)
+- Smooth Catmull-Rom module hull curves with labels
+- Inline editing with hover-reveal edit/delete icons
+- Change propagation tracking with two-tier sidebar highlighting
+- Full entity CRUD: Create via "+ New" buttons, delete with dependency checking
+- Cascading create flow for nested entities
+- Fixed Validate/Submit PR buttons with proper status normalization
+- Auto-generated PR titles based on change type/count
+- Graph auto-updates on entity creation/deletion
+
+## v2.0 Summary
 
 **Shipped:** 2026-01-25
 **Codebase:** ~30,400 LOC (15,654 Python + 14,779 TypeScript)
@@ -21,21 +38,6 @@ Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes,
 - Unified browse/draft frontend with force-directed graph visualization and module hull overlays
 - Complete entity detail pages (6 entity types) with view/edit modes and auto-save
 - Validation engine v2 + PR submission workflow with GitHub OAuth integration
-
-## Current Milestone: v2.1 Bug Fixes & UX Improvements
-
-**Goal:** Fix entity detail loading bugs, restore draft workflow functionality, and improve editing UX with inline controls and change propagation visibility.
-
-**Target features:**
-- Fix entity detail loading for subobjects, templates, modules, bundles
-- Fix Validate and Submit PR buttons not clickable in draft mode
-- Fix auto-validation not triggering on draft changes
-- Fix graph view not rendering properties, subobjects, templates (toggles exist but nodes don't appear)
-- Improve module hull rendering (currently rough/jagged)
-- Inline editing with on-hover edit/delete icons in draft mode
-- Change propagation highlighting in sidebar (direct edits strong, transitive effects subtle)
-- Add/remove entities via "+ New [Type]" button in each sidebar section
-- Add dependencies UI for existing entities
 
 ## v1.0 Summary
 
@@ -76,19 +78,23 @@ Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes,
 - ✓ Validation engine v2 with JSON Schema validation — v2.0
 - ✓ PR submission workflow with multi-step wizard — v2.0
 
+**v2.1 (Bug Fixes & UX):**
+- ✓ Entity detail pages work for all 6 types (subobjects, templates, modules, bundles) — v2.1
+- ✓ Validate and Submit PR buttons clickable in draft mode — v2.1
+- ✓ Auto-validation triggers on draft changes — v2.1
+- ✓ Graph view renders properties, subobjects, templates as distinct node types — v2.1
+- ✓ Smooth module hull rendering with Catmull-Rom curves — v2.1
+- ✓ Inline editing with on-hover edit/delete icons in draft mode — v2.1
+- ✓ Change propagation highlighting in sidebar (two-tier: direct vs transitive) — v2.1
+- ✓ Create entities via "+ New [Type]" buttons in sidebar — v2.1
+- ✓ Delete entities in draft mode with dependency checking — v2.1
+- ✓ Add dependencies to existing entities via EntityCombobox — v2.1
+- ✓ Graph auto-updates on entity creation/deletion — v2.1
+- ✓ Auto-generated PR titles based on change content — v2.1
+
 ### Active
 
-**v2.1 Bug Fixes & UX:**
-- [ ] Entity detail pages work for all 6 types (fix subobjects, templates, modules, bundles)
-- [ ] Validate and Submit PR buttons clickable in draft mode
-- [ ] Auto-validation triggers on draft changes
-- [ ] Graph view renders properties, subobjects, templates as distinct node types
-- [ ] Smooth module hull rendering in graph view
-- [ ] Inline editing with on-hover edit/delete icons in draft mode (detail modal and expanded view)
-- [ ] Change propagation highlighting in sidebar (two-tier: direct vs transitive)
-- [ ] Add new entities via "+ New [Type]" button in each sidebar section
-- [ ] Delete entities in draft mode
-- [ ] Add dependencies to existing entities
+(None — planning next milestone)
 
 ### Out of Scope
 
@@ -166,6 +172,13 @@ Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes,
 | Webhook-triggered ingest | Repo push triggers ingest via webhook; no manual refresh needed | ✓ Good |
 | Draft auto-rebase | When new canonical is ingested, in-progress drafts rebase automatically | ✓ Good |
 | GitHub Actions version bumping | Actions auto-generate tarballs and bump semver (major/minor/patch) on PR merge | — Pending |
+| SVG path generators for graph nodes | d3-shape for diamond/hexagon shapes, consistent rendering across browsers | ✓ Good |
+| Store-based hover state | Simple dimming implementation, future-proofable for connected highlighting | ✓ Good |
+| Catmull-Rom alpha=0.5 for hulls | Smooth curves without sharp corners at module boundaries | ✓ Good |
+| BFS for change propagation | Efficient reverse dependency traversal, handles DAG structure | ✓ Good |
+| cmdk Command primitive | Type-ahead entity search with Radix Popover integration | ✓ Good |
+| CREATE→DELETE removes CREATE | Deleting draft-created entity removes creation record entirely | ✓ Good |
+| Direct backend URL for OAuth | Matches GitHub app callback config, avoids Vite proxy redirect issues | ✓ Good |
 
 ---
-*Last updated: 2026-01-24 after starting v2.1 milestone*
+*Last updated: 2026-01-25 after v2.1 milestone*
