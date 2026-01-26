@@ -10,23 +10,23 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 ## Current Position
 
 Phase: 22 - Entity Lifecycle Bug Fixes (Gap Closure)
-Plan: 1 of 2 complete
-Status: In progress
-Last activity: 2026-01-25 - Completed 22-01-PLAN.md (Graph Cache Invalidation)
+Plan: 2 of 2 complete
+Status: Phase complete
+Last activity: 2026-01-26 - Completed 22-02-PLAN.md (Delete Draft-Created Entities)
 
-Progress: [########################......] 78% (Phases 16-21 complete, 22 in progress)
+Progress: [##########################....] 80% (Phases 16-22 complete)
 
-**Phase 22 Goal:** Complete entity lifecycle - new entities appear in graph and can be deleted.
+**Phase 22 Goal:** Complete entity lifecycle - new entities appear in graph and can be deleted. ACHIEVED.
 
 **Gap Closure Context:**
 - BUG-001: Newly created entities don't appear in graph view - CLOSED (22-01)
-- BUG-002: Delete functionality fails for newly created entities - PENDING (22-02)
-- Closes remaining gaps from v2.1 audit
+- BUG-002: Delete functionality fails for newly created entities - CLOSED (22-02)
+- All gaps from v2.1 audit closed
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 84 (20 v1.0 + 41 v2.0 + 23 v2.1)
+- Total plans completed: 85 (20 v1.0 + 41 v2.0 + 24 v2.1)
 - v1.0: 2 days
 - v2.0: 2 days
 - v2.1: 1+ days
@@ -37,8 +37,8 @@ Progress: [########################......] 78% (Phases 16-21 complete, 22 in pro
 |-----------|--------|-------|----------|
 | v1.0 MVP | 1-7 | 20 | 2 days |
 | v2.0 Platform Rebuild | 8-15 | 41 | 2 days |
-| v2.1 Bug Fixes & UX | 16-22 | 23 | 1+ days |
-| **Total** | 22 | 84 | 5 days |
+| v2.1 Bug Fixes & UX | 16-22 | 24 | 1+ days |
+| **Total** | 22 | 85 | 5 days |
 
 ## Accumulated Context
 
@@ -102,10 +102,11 @@ Key v2.1 decisions:
 - Auto-generated PR titles based on change type/count/entity names (21-01)
 - Broad ['graph'] invalidation catches all graph query variants (22-01)
 - Early return with single-node graph for isolated draft entities (22-01)
+- DELETE of draft-created entity removes CREATE change record (22-02)
 
 ### Pending Todos
 
-None - GRAPH-05 resolved in 22-01.
+None - all gaps closed.
 
 ### Blockers/Concerns
 
@@ -113,7 +114,7 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-25
-Stopped at: Completed 22-01-PLAN.md - Graph cache invalidation and isolated draft node handling
+Last session: 2026-01-26
+Stopped at: Completed 22-02-PLAN.md - Delete draft-created entities fix
 Resume file: None
-Next action: Execute 22-02-PLAN.md (Delete functionality fixes)
+Next action: Phase 22 verification, then v2.1 milestone audit completion
