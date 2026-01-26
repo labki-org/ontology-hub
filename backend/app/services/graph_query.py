@@ -896,6 +896,19 @@ class GraphQueryService:
                         GraphEdge(source=cat.entity_key, target=subobj_key, edge_type="subobject")
                     )
 
+        # Get subobject -> property edges
+        subobject_property_edge_query = text("""
+            SELECT s.entity_key as subobject_key, p.entity_key as property_key
+            FROM subobject_property sp
+            JOIN subobjects s ON s.id = sp.subobject_id
+            JOIN properties p ON p.id = sp.property_id
+        """)
+        result = await self.session.execute(subobject_property_edge_query)
+        for row in result.fetchall():
+            edges.append(
+                GraphEdge(source=row.subobject_key, target=row.property_key, edge_type="subobject_property")
+            )
+
         # Get all templates
         templates_query = select(Template)
         result = await self.session.execute(templates_query)
@@ -1438,6 +1451,63 @@ class GraphQueryService:
                         )
                     )
 
+        # Get subobject -> property edges and property nodes
+        subobject_property_query = text("""
+            SELECT s.entity_key as subobject_key, p.entity_key as property_key
+            FROM subobject_property sp
+            JOIN subobjects s ON s.id = sp.subobject_id
+            JOIN properties p ON p.id = sp.property_id
+            WHERE s.entity_key = ANY(:subobject_keys)
+        """)
+        result = await self.session.execute(
+            subobject_property_query, {"subobject_keys": list(seen_subobjects)}
+        )
+        subobject_property_rows = result.fetchall()
+
+        # Collect property keys and create edges
+        property_keys_for_subobjects: set[str] = set()
+        for row in subobject_property_rows:
+            property_keys_for_subobjects.add(row.property_key)
+            edges.append(
+                GraphEdge(
+                    source=row.subobject_key,
+                    target=row.property_key,
+                    edge_type="subobject_property",
+                )
+            )
+
+        # Add property nodes if we have subobject properties
+        if property_keys_for_subobjects:
+            properties_query = select(Property).where(
+                Property.entity_key.in_(list(property_keys_for_subobjects))
+            )
+            result = await self.session.execute(properties_query)
+            properties = result.scalars().all()
+
+            # Get module membership for these properties
+            property_module_membership = await self._get_module_membership(
+                list(property_keys_for_subobjects), "property"
+            )
+
+            for prop in properties:
+                effective = await self.draft_overlay.apply_overlay(
+                    prop, "property", prop.entity_key
+                )
+                change_status = None
+                if effective:
+                    change_status = effective.get("_change_status")
+
+                nodes.append(
+                    GraphNode(
+                        id=prop.entity_key,
+                        label=prop.label,
+                        entity_type="property",
+                        depth=None,
+                        modules=property_module_membership.get(prop.entity_key, []),
+                        change_status=change_status,
+                    )
+                )
+
         return nodes, edges
 
     async def _get_module_subobject_nodes(
@@ -1503,9 +1573,65 @@ class GraphQueryService:
                 )
             )
 
-        # Subobjects in module graph don't have edges to categories
-        # They're standalone module members
-        return nodes, []
+        # Get subobject -> property edges
+        edges: list[GraphEdge] = []
+        subobject_property_query = text("""
+            SELECT s.entity_key as subobject_key, p.entity_key as property_key
+            FROM subobject_property sp
+            JOIN subobjects s ON s.id = sp.subobject_id
+            JOIN properties p ON p.id = sp.property_id
+            WHERE s.entity_key = ANY(:subobject_keys)
+        """)
+        result = await self.session.execute(
+            subobject_property_query, {"subobject_keys": subobject_keys}
+        )
+        subobject_property_rows = result.fetchall()
+
+        # Collect property keys and create edges
+        property_keys_for_subobjects: set[str] = set()
+        for row in subobject_property_rows:
+            property_keys_for_subobjects.add(row.property_key)
+            edges.append(
+                GraphEdge(
+                    source=row.subobject_key,
+                    target=row.property_key,
+                    edge_type="subobject_property",
+                )
+            )
+
+        # Add property nodes if we have subobject properties
+        if property_keys_for_subobjects:
+            properties_query = select(Property).where(
+                Property.entity_key.in_(list(property_keys_for_subobjects))
+            )
+            result = await self.session.execute(properties_query)
+            properties = result.scalars().all()
+
+            # Get module membership for these properties
+            property_module_membership = await self._get_module_membership(
+                list(property_keys_for_subobjects), "property"
+            )
+
+            for prop in properties:
+                effective = await self.draft_overlay.apply_overlay(
+                    prop, "property", prop.entity_key
+                )
+                change_status = None
+                if effective:
+                    change_status = effective.get("_change_status")
+
+                nodes.append(
+                    GraphNode(
+                        id=prop.entity_key,
+                        label=prop.label,
+                        entity_type="property",
+                        depth=None,
+                        modules=property_module_membership.get(prop.entity_key, [module_key]),
+                        change_status=change_status,
+                    )
+                )
+
+        return nodes, edges
 
     async def _get_module_template_nodes(
         self,

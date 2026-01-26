@@ -361,6 +361,8 @@ function getEdgeColor(edgeType: string): string {
       return '#3b82f6' // blue
     case 'subobject':
       return '#8b5cf6' // purple
+    case 'subobject_property':
+      return '#14b8a6' // teal
     default:
       return '#888'
   }
@@ -374,6 +376,8 @@ function getEdgeStrokeDasharray(edgeType: string): string | undefined {
       return '5,5' // dashed
     case 'subobject':
       return '2,2' // dotted
+    case 'subobject_property':
+      return '5,5' // dashed (like property edges)
     default:
       return undefined
   }

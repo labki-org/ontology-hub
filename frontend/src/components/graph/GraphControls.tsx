@@ -148,6 +148,17 @@ export function GraphControls({ onResetLayout, isSimulating }: GraphControlsProp
                   />
                   <span className="text-xs">Subobjects</span>
                 </label>
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <Checkbox
+                    id="edge-subobject-property"
+                    checked={edgeTypeFilter.has('subobject_property')}
+                    onCheckedChange={(checked) =>
+                      handleEdgeTypeToggle('subobject_property', checked as boolean)
+                    }
+                    className="h-3.5 w-3.5"
+                  />
+                  <span className="text-xs">Subobject Props</span>
+                </label>
               </div>
             </div>
           </div>
