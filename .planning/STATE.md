@@ -5,33 +5,31 @@
 See: .planning/PROJECT.md (updated 2026-01-24)
 
 **Core value:** Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes, with zero platform accounts and strong validation feedback.
-**Current focus:** v2.1 Bug Fixes & UX Improvements
+**Current focus:** v2.1 Bug Fixes & UX Improvements - COMPLETE
 
 ## Current Position
 
-Phase: 20 - Entity Management
-Plan: 10 of N complete (01, 02, 03, 04, 05, 06, 07, 08 complete)
-Status: Plan 07 complete
-Last activity: 2026-01-25 - Completed 20-07-PLAN.md (Cascading Create Flow)
+Phase: 22 - Entity Lifecycle Bug Fixes (Gap Closure)
+Plan: 0 of 2 complete
+Status: Ready to plan
+Last activity: 2026-01-25 - Completed Phase 21, BUG-003 closed
 
-Progress: [################--------------] 52% (20-07 complete)
+Progress: [#######################.......] 76% (Phases 16-21 complete, 22 pending)
 
-**Phase 20 Goal:** Create and delete entities within drafts with modal forms and validation.
+**Phase 22 Goal:** Complete entity lifecycle - new entities appear in graph and can be deleted.
 
-**Phase 20 Plan 07 Completed:**
-- NestedModalStack component for cascading entity creation
-- Nested modal state in draftStoreV2 (nestedCreateModal, onNestedEntityCreated)
-- initialData prop support for all entity forms
-- Wired CategoryForm, ModuleForm, BundleForm to use nested create
-- Single-level nesting enforced (nested forms don't allow further nesting)
+**Gap Closure Context:**
+- BUG-001: Newly created entities don't appear in graph view
+- BUG-002: Delete functionality fails for newly created entities
+- Closes remaining gaps from v2.1 audit
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 77 (20 v1.0 + 41 v2.0 + 16 v2.1)
+- Total plans completed: 83 (20 v1.0 + 41 v2.0 + 22 v2.1)
 - v1.0: 2 days
 - v2.0: 2 days
-- v2.1: In progress
+- v2.1: 1+ days
 
 **Summary by Milestone:**
 
@@ -39,8 +37,8 @@ Progress: [################--------------] 52% (20-07 complete)
 |-----------|--------|-------|----------|
 | v1.0 MVP | 1-7 | 20 | 2 days |
 | v2.0 Platform Rebuild | 8-15 | 41 | 2 days |
-| v2.1 Bug Fixes & UX | 16-20 | 16 | In progress |
-| **Total** | 20 | 77 | 4+ days |
+| v2.1 Bug Fixes & UX | 16-21 | 22 | 1+ days |
+| **Total** | 21 | 83 | 5 days |
 
 ## Accumulated Context
 
@@ -99,10 +97,13 @@ Key v2.1 decisions:
 - Form sets callback via setOnNestedEntityCreated before opening nested modal (20-07)
 - Single-level nesting - nested forms don't receive onCreateRelatedEntity (20-07)
 - All forms accept initialData prop for prefilling from nested create (20-07)
+- OAuth uses direct backend URL to match GitHub app callback config (21-01)
+- Draft-created entities checked before canonical for UPDATE/DELETE validation (21-01)
+- Auto-generated PR titles based on change type/count/entity names (21-01)
 
 ### Pending Todos
 
-None.
+- **GRAPH-05**: Draft-created entities should appear in graph view even with no connections. Currently, newly created entities show "No graph data" because the graph neighborhood query only finds entities with relationships in the database. Isolated nodes (categories with no parents/properties, etc.) should still render as a single node.
 
 ### Blockers/Concerns
 
@@ -111,6 +112,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-25
-Stopped at: Completed 20-07-PLAN.md (Cascading Create Flow)
+Stopped at: Completed Phase 21 - BUG-003 closed
 Resume file: None
-Next action: Continue with Phase 20 remaining plan (09 Integration)
+Next action: Plan Phase 22 (Entity Lifecycle Bug Fixes)

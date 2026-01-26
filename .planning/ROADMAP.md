@@ -166,13 +166,13 @@ Plans:
 **Plans:** 1 plan
 
 Plans:
-- [ ] 21-01-PLAN.md — Debug and fix Validate/Submit PR button disabled state
+- [x] 21-01-PLAN.md — Debug and fix Validate/Submit PR button disabled state
 
 **Success Criteria:**
-1. User can click Validate button in draft mode when changes exist
-2. User can click Submit PR button in draft mode when changes exist
-3. Validation results appear after clicking Validate
-4. PR wizard opens after clicking Submit PR
+1. ✅ User can click Validate button in draft mode when changes exist
+2. ✅ User can click Submit PR button in draft mode when changes exist
+3. ✅ Validation results appear after clicking Validate
+4. ✅ PR wizard opens after clicking Submit PR
 
 ---
 
@@ -211,11 +211,11 @@ Phases execute in numeric order: 1 -> 2 -> ... -> 22
 | 18 | v2.1 | 3/3 | Complete | 2026-01-25 |
 | 19 | v2.1 | 4/4 | Complete | 2026-01-25 |
 | 20 | v2.1 | 9/9 | Complete | 2026-01-25 |
-| 21 | v2.1 | 0/1 | Ready | — |
+| 21 | v2.1 | 1/1 | Complete | 2026-01-25 |
 | 22 | v2.1 | 0/2 | Pending | — |
 
-**Total:** 82 plans completed across 22 phases (v1.0 + v2.0 + v2.1)
-**v2.1:** 7 phases, 26 requirements, 21/24 plans complete (3 gap closure plans pending)
+**Total:** 83 plans completed across 22 phases (v1.0 + v2.0 + v2.1)
+**v2.1:** 7 phases, 26 requirements, 22/24 plans complete (2 gap closure plans pending)
 
 ---
 *Roadmap created: 2026-01-23*
@@ -233,3 +233,4 @@ Phases execute in numeric order: 1 -> 2 -> ... -> 22
 *Phase 20 complete: 2026-01-25*
 *Gap closure phases 21-22 added: 2026-01-25 (from audit)*
 *Phase 21 planned: 2026-01-25*
+*Phase 21 complete: 2026-01-25*
