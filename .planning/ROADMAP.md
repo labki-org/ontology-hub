@@ -186,6 +186,8 @@ Plans:
 
 **Gap Closure:** Closes BUG-001, BUG-002 from v2.1 audit
 
+**Plans:** 2 plans
+
 Plans:
 - [ ] 22-01-PLAN.md — Fix graph query invalidation after entity creation
 - [ ] 22-02-PLAN.md — Fix delete functionality for newly created entities
@@ -212,10 +214,10 @@ Phases execute in numeric order: 1 -> 2 -> ... -> 22
 | 19 | v2.1 | 4/4 | Complete | 2026-01-25 |
 | 20 | v2.1 | 9/9 | Complete | 2026-01-25 |
 | 21 | v2.1 | 1/1 | Complete | 2026-01-25 |
-| 22 | v2.1 | 0/2 | Pending | — |
+| 22 | v2.1 | 0/2 | Planned | — |
 
 **Total:** 83 plans completed across 22 phases (v1.0 + v2.0 + v2.1)
-**v2.1:** 7 phases, 26 requirements, 22/24 plans complete (2 gap closure plans pending)
+**v2.1:** 7 phases, 26 requirements, 22/24 plans complete (2 gap closure plans planned)
 
 ---
 *Roadmap created: 2026-01-23*
@@ -234,3 +236,4 @@ Phases execute in numeric order: 1 -> 2 -> ... -> 22
 *Gap closure phases 21-22 added: 2026-01-25 (from audit)*
 *Phase 21 planned: 2026-01-25*
 *Phase 21 complete: 2026-01-25*
+*Phase 22 planned: 2026-01-25*
