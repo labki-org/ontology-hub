@@ -1,11 +1,10 @@
-import { useEffect, useState, useCallback } from 'react'
-import { useCategory, useCategories } from '@/api/entitiesV2'
+import { useEffect, useState, useCallback, useRef } from 'react'
+import { useCategory, useCategories, useProperties, useSubobjects } from '@/api/entitiesV2'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useDetailStore } from '@/stores/detailStore'
 import { useDraftStoreV2 } from '@/stores/draftStoreV2'
 import { EntityHeader } from '../sections/EntityHeader'
 import { AccordionSection } from '../sections/AccordionSection'
-import { PropertiesSection } from '../sections/PropertiesSection'
 import { MembershipSection } from '../sections/MembershipSection'
 import { DeletedItemBadge } from '../form/DeletedItemBadge'
 import { EntityCombobox } from '../forms/EntityCombobox'
@@ -52,6 +51,20 @@ export function CategoryDetail({
       label: c.label,
     }))
 
+  // Fetch available properties for property fields
+  const { data: propertiesData } = useProperties(undefined, undefined, draftId)
+  const availableProperties = (propertiesData?.items || []).map((p) => ({
+    key: p.entity_key,
+    label: p.label,
+  }))
+
+  // Fetch available subobjects for subobject fields
+  const { data: subobjectsData } = useSubobjects(undefined, undefined, draftId)
+  const availableSubobjects = (subobjectsData?.items || []).map((s) => ({
+    key: s.entity_key,
+    label: s.label,
+  }))
+
   // Change tracking state for inheritance chain highlighting
   const directEdits = useDraftStoreV2((s) => s.directlyEditedEntities)
   const transitiveAffects = useDraftStoreV2((s) => s.transitivelyAffectedEntities)
@@ -67,6 +80,10 @@ export function CategoryDetail({
     label?: string
     description?: string
     parents?: string[]
+    requiredProperties?: string[]
+    optionalProperties?: string[]
+    requiredSubobjects?: string[]
+    optionalSubobjects?: string[]
   }>({})
 
   // Local editable state
@@ -75,6 +92,21 @@ export function CategoryDetail({
   const [editedParents, setEditedParents] = useState<string[]>([])
   // Track soft-deleted parents (stay in position with "Deleted" badge until save)
   const [deletedParents, setDeletedParents] = useState<Set<string>>(new Set())
+
+  // Property and subobject editable state
+  const [editedRequiredProperties, setEditedRequiredProperties] = useState<string[]>([])
+  const [editedOptionalProperties, setEditedOptionalProperties] = useState<string[]>([])
+  const [editedRequiredSubobjects, setEditedRequiredSubobjects] = useState<string[]>([])
+  const [editedOptionalSubobjects, setEditedOptionalSubobjects] = useState<string[]>([])
+
+  // Track soft-deleted items
+  const [deletedRequiredProperties, setDeletedRequiredProperties] = useState<Set<string>>(new Set())
+  const [deletedOptionalProperties, setDeletedOptionalProperties] = useState<Set<string>>(new Set())
+  const [deletedRequiredSubobjects, setDeletedRequiredSubobjects] = useState<Set<string>>(new Set())
+  const [deletedOptionalSubobjects, setDeletedOptionalSubobjects] = useState<Set<string>>(new Set())
+
+  // Track which entity we've initialized original values for (prevent reset on refetch)
+  const initializedEntityRef = useRef<string | null>(null)
 
   // Auto-save hook - uses draftToken for mutations
   const { saveChange, isSaving } = useAutoSave({
@@ -87,18 +119,57 @@ export function CategoryDetail({
   // Initialize state when category loads
   useEffect(() => {
     if (category) {
-      setEditedLabel(category.label)
-      setEditedDescription(category.description || '')
-      setEditedParents(category.parents || [])
+      const isNewEntity = initializedEntityRef.current !== entityKey
 
-      // Store originals for comparison
-      setOriginalValues({
-        label: category.label,
-        description: category.description || '',
-        parents: category.parents || [],
-      })
+      // Only reset edited values and original values for a NEW entity
+      // (not on refetch after auto-save)
+      if (isNewEntity) {
+        setEditedLabel(category.label)
+        setEditedDescription(category.description || '')
+        setEditedParents(category.parents || [])
 
-      // Add to breadcrumbs
+        // Extract direct required/optional properties from category.properties
+        const reqProps = (category.properties || [])
+          .filter((p) => p.is_required && p.is_direct)
+          .map((p) => p.entity_key)
+        const optProps = (category.properties || [])
+          .filter((p) => !p.is_required && p.is_direct)
+          .map((p) => p.entity_key)
+        setEditedRequiredProperties(reqProps)
+        setEditedOptionalProperties(optProps)
+
+        // Extract required/optional subobjects
+        const reqSubobjs = (category.subobjects || [])
+          .filter((s) => s.is_required)
+          .map((s) => s.entity_key)
+        const optSubobjs = (category.subobjects || [])
+          .filter((s) => !s.is_required)
+          .map((s) => s.entity_key)
+        setEditedRequiredSubobjects(reqSubobjs)
+        setEditedOptionalSubobjects(optSubobjs)
+
+        // Store originals for comparison (only on initial load)
+        setOriginalValues({
+          label: category.label,
+          description: category.description || '',
+          parents: category.parents || [],
+          requiredProperties: reqProps,
+          optionalProperties: optProps,
+          requiredSubobjects: reqSubobjs,
+          optionalSubobjects: optSubobjs,
+        })
+
+        // Clear deleted sets for new entity
+        setDeletedParents(new Set())
+        setDeletedRequiredProperties(new Set())
+        setDeletedOptionalProperties(new Set())
+        setDeletedRequiredSubobjects(new Set())
+        setDeletedOptionalSubobjects(new Set())
+
+        initializedEntityRef.current = entityKey
+      }
+
+      // Always update breadcrumbs
       pushBreadcrumb(entityKey, 'category', category.label)
     }
   }, [category, entityKey, pushBreadcrumb])
@@ -180,6 +251,168 @@ export function CategoryDetail({
       ])
     }
   }, [originalValues.description, draftId, saveChange])
+
+  // Property handlers
+  const handleAddRequiredProperty = useCallback(
+    (propKey: string) => {
+      if (propKey && !editedRequiredProperties.includes(propKey)) {
+        const newProps = [...editedRequiredProperties.filter((p) => !deletedRequiredProperties.has(p)), propKey]
+        setEditedRequiredProperties(newProps)
+        if (draftToken) {
+          saveChange([{ op: 'add', path: '/required_properties', value: newProps }])
+        }
+      }
+    },
+    [editedRequiredProperties, deletedRequiredProperties, draftToken, saveChange]
+  )
+
+  const handleDeleteRequiredProperty = useCallback(
+    (propKey: string) => {
+      setDeletedRequiredProperties((prev) => new Set([...prev, propKey]))
+      const newProps = editedRequiredProperties.filter((p) => p !== propKey)
+      if (draftToken) {
+        saveChange([{ op: 'add', path: '/required_properties', value: newProps }])
+      }
+    },
+    [editedRequiredProperties, draftToken, saveChange]
+  )
+
+  const handleUndoDeleteRequiredProperty = useCallback(
+    (propKey: string) => {
+      setDeletedRequiredProperties((prev) => {
+        const next = new Set(prev)
+        next.delete(propKey)
+        return next
+      })
+      const newProps = [...editedRequiredProperties, propKey]
+      setEditedRequiredProperties(newProps)
+      if (draftToken) {
+        saveChange([{ op: 'add', path: '/required_properties', value: newProps }])
+      }
+    },
+    [editedRequiredProperties, draftToken, saveChange]
+  )
+
+  const handleAddOptionalProperty = useCallback(
+    (propKey: string) => {
+      if (propKey && !editedOptionalProperties.includes(propKey)) {
+        const newProps = [...editedOptionalProperties.filter((p) => !deletedOptionalProperties.has(p)), propKey]
+        setEditedOptionalProperties(newProps)
+        if (draftToken) {
+          saveChange([{ op: 'add', path: '/optional_properties', value: newProps }])
+        }
+      }
+    },
+    [editedOptionalProperties, deletedOptionalProperties, draftToken, saveChange]
+  )
+
+  const handleDeleteOptionalProperty = useCallback(
+    (propKey: string) => {
+      setDeletedOptionalProperties((prev) => new Set([...prev, propKey]))
+      const newProps = editedOptionalProperties.filter((p) => p !== propKey)
+      if (draftToken) {
+        saveChange([{ op: 'add', path: '/optional_properties', value: newProps }])
+      }
+    },
+    [editedOptionalProperties, draftToken, saveChange]
+  )
+
+  const handleUndoDeleteOptionalProperty = useCallback(
+    (propKey: string) => {
+      setDeletedOptionalProperties((prev) => {
+        const next = new Set(prev)
+        next.delete(propKey)
+        return next
+      })
+      const newProps = [...editedOptionalProperties, propKey]
+      setEditedOptionalProperties(newProps)
+      if (draftToken) {
+        saveChange([{ op: 'add', path: '/optional_properties', value: newProps }])
+      }
+    },
+    [editedOptionalProperties, draftToken, saveChange]
+  )
+
+  // Subobject handlers
+  const handleAddRequiredSubobject = useCallback(
+    (subKey: string) => {
+      if (subKey && !editedRequiredSubobjects.includes(subKey)) {
+        const newSubs = [...editedRequiredSubobjects.filter((s) => !deletedRequiredSubobjects.has(s)), subKey]
+        setEditedRequiredSubobjects(newSubs)
+        if (draftToken) {
+          saveChange([{ op: 'add', path: '/required_subobjects', value: newSubs }])
+        }
+      }
+    },
+    [editedRequiredSubobjects, deletedRequiredSubobjects, draftToken, saveChange]
+  )
+
+  const handleDeleteRequiredSubobject = useCallback(
+    (subKey: string) => {
+      setDeletedRequiredSubobjects((prev) => new Set([...prev, subKey]))
+      const newSubs = editedRequiredSubobjects.filter((s) => s !== subKey)
+      if (draftToken) {
+        saveChange([{ op: 'add', path: '/required_subobjects', value: newSubs }])
+      }
+    },
+    [editedRequiredSubobjects, draftToken, saveChange]
+  )
+
+  const handleUndoDeleteRequiredSubobject = useCallback(
+    (subKey: string) => {
+      setDeletedRequiredSubobjects((prev) => {
+        const next = new Set(prev)
+        next.delete(subKey)
+        return next
+      })
+      const newSubs = [...editedRequiredSubobjects, subKey]
+      setEditedRequiredSubobjects(newSubs)
+      if (draftToken) {
+        saveChange([{ op: 'add', path: '/required_subobjects', value: newSubs }])
+      }
+    },
+    [editedRequiredSubobjects, draftToken, saveChange]
+  )
+
+  const handleAddOptionalSubobject = useCallback(
+    (subKey: string) => {
+      if (subKey && !editedOptionalSubobjects.includes(subKey)) {
+        const newSubs = [...editedOptionalSubobjects.filter((s) => !deletedOptionalSubobjects.has(s)), subKey]
+        setEditedOptionalSubobjects(newSubs)
+        if (draftToken) {
+          saveChange([{ op: 'add', path: '/optional_subobjects', value: newSubs }])
+        }
+      }
+    },
+    [editedOptionalSubobjects, deletedOptionalSubobjects, draftToken, saveChange]
+  )
+
+  const handleDeleteOptionalSubobject = useCallback(
+    (subKey: string) => {
+      setDeletedOptionalSubobjects((prev) => new Set([...prev, subKey]))
+      const newSubs = editedOptionalSubobjects.filter((s) => s !== subKey)
+      if (draftToken) {
+        saveChange([{ op: 'add', path: '/optional_subobjects', value: newSubs }])
+      }
+    },
+    [editedOptionalSubobjects, draftToken, saveChange]
+  )
+
+  const handleUndoDeleteOptionalSubobject = useCallback(
+    (subKey: string) => {
+      setDeletedOptionalSubobjects((prev) => {
+        const next = new Set(prev)
+        next.delete(subKey)
+        return next
+      })
+      const newSubs = [...editedOptionalSubobjects, subKey]
+      setEditedOptionalSubobjects(newSubs)
+      if (draftToken) {
+        saveChange([{ op: 'add', path: '/optional_subobjects', value: newSubs }])
+      }
+    },
+    [editedOptionalSubobjects, draftToken, saveChange]
+  )
 
   if (isLoading) {
     return (
@@ -342,65 +575,279 @@ export function CategoryDetail({
         </AccordionSection>
       )}
 
-      {/* Properties section with inheritance */}
-      <PropertiesSection
-        properties={category.properties || []}
-        isEditing={isEditing}
-        onRemoveProperty={(propKey) => {
-          // TODO: Implement property removal from category
-          console.log('Remove property:', propKey)
-        }}
-      />
-
-      {/* Subobjects Section */}
-      {category.subobjects && category.subobjects.length > 0 && (
-        <AccordionSection
-          id="subobjects"
-          title="Subobjects"
-          count={category.subobjects.length}
-          defaultOpen
-        >
+      {/* Properties Section - Editable */}
+      <AccordionSection
+        id="properties"
+        title="Properties"
+        count={
+          editedRequiredProperties.filter((p) => !deletedRequiredProperties.has(p)).length +
+          editedOptionalProperties.filter((p) => !deletedOptionalProperties.has(p)).length
+        }
+        defaultOpen
+      >
+        <div className="space-y-4">
+          {/* Required Properties */}
           <div className="space-y-2">
-            {/* Required Subobjects */}
-            {category.subobjects.filter((s) => s.is_required).length > 0 && (
-              <div className="space-y-1">
-                <h4 className="text-sm font-medium text-muted-foreground">Required</h4>
-                {category.subobjects
-                  .filter((s) => s.is_required)
-                  .map((subobj) => (
-                    <button
-                      key={subobj.entity_key}
-                      onClick={() => openDetail(subobj.entity_key, 'subobject')}
-                      className="w-full text-left px-2 py-1.5 text-sm rounded flex items-center gap-2 hover:bg-sidebar-accent transition-colors"
-                    >
-                      <span className="flex-1 truncate">{subobj.label}</span>
-                      <Badge variant="default" className="text-xs">required</Badge>
-                    </button>
-                  ))}
-              </div>
-            )}
-
-            {/* Optional Subobjects */}
-            {category.subobjects.filter((s) => !s.is_required).length > 0 && (
-              <div className="space-y-1">
-                <h4 className="text-sm font-medium text-muted-foreground">Optional</h4>
-                {category.subobjects
-                  .filter((s) => !s.is_required)
-                  .map((subobj) => (
-                    <button
-                      key={subobj.entity_key}
-                      onClick={() => openDetail(subobj.entity_key, 'subobject')}
-                      className="w-full text-left px-2 py-1.5 text-sm rounded flex items-center gap-2 hover:bg-sidebar-accent transition-colors"
-                    >
-                      <span className="flex-1 truncate">{subobj.label}</span>
-                      <Badge variant="outline" className="text-xs">optional</Badge>
-                    </button>
-                  ))}
-              </div>
+            <h4 className="text-sm font-medium text-muted-foreground">Required Properties</h4>
+            <RelationshipChips
+              values={editedRequiredProperties.filter((p) => !deletedRequiredProperties.has(p))}
+              onRemove={handleDeleteRequiredProperty}
+              disabled={!isEditing}
+              getLabel={(key) => {
+                const prop = availableProperties.find((p) => p.key === key)
+                return prop?.label || key
+              }}
+            />
+            {/* Soft-deleted required properties */}
+            {Array.from(deletedRequiredProperties).map((propKey) => (
+              <DeletedItemBadge
+                key={`deleted-req-prop-${propKey}`}
+                label={availableProperties.find((p) => p.key === propKey)?.label || propKey}
+                onUndo={() => handleUndoDeleteRequiredProperty(propKey)}
+              />
+            ))}
+            {/* Empty state */}
+            {editedRequiredProperties.filter((p) => !deletedRequiredProperties.has(p)).length === 0 &&
+              deletedRequiredProperties.size === 0 &&
+              !isEditing && (
+                <p className="text-sm text-muted-foreground italic">No required properties</p>
+              )}
+            {/* Add required property in edit mode */}
+            {isEditing && (
+              <EntityCombobox
+                entityType="property"
+                availableEntities={availableProperties.filter(
+                  (p) =>
+                    !editedRequiredProperties.includes(p.key) &&
+                    !editedOptionalProperties.includes(p.key)
+                )}
+                selectedKeys={[]}
+                onChange={(keys) => {
+                  if (keys.length > 0) {
+                    handleAddRequiredProperty(keys[0])
+                  }
+                }}
+                onCreateNew={(id) => {
+                  setOnNestedEntityCreated((newKey: string) => {
+                    handleAddRequiredProperty(newKey)
+                  })
+                  openNestedCreateModal({
+                    entityType: 'property',
+                    prefilledId: id,
+                    parentContext: { entityType: 'category', fieldName: 'Required Properties' },
+                  })
+                }}
+                placeholder="Add required property..."
+              />
             )}
           </div>
-        </AccordionSection>
-      )}
+
+          {/* Optional Properties */}
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium text-muted-foreground">Optional Properties</h4>
+            <RelationshipChips
+              values={editedOptionalProperties.filter((p) => !deletedOptionalProperties.has(p))}
+              onRemove={handleDeleteOptionalProperty}
+              disabled={!isEditing}
+              getLabel={(key) => {
+                const prop = availableProperties.find((p) => p.key === key)
+                return prop?.label || key
+              }}
+            />
+            {/* Soft-deleted optional properties */}
+            {Array.from(deletedOptionalProperties).map((propKey) => (
+              <DeletedItemBadge
+                key={`deleted-opt-prop-${propKey}`}
+                label={availableProperties.find((p) => p.key === propKey)?.label || propKey}
+                onUndo={() => handleUndoDeleteOptionalProperty(propKey)}
+              />
+            ))}
+            {/* Empty state */}
+            {editedOptionalProperties.filter((p) => !deletedOptionalProperties.has(p)).length === 0 &&
+              deletedOptionalProperties.size === 0 &&
+              !isEditing && (
+                <p className="text-sm text-muted-foreground italic">No optional properties</p>
+              )}
+            {/* Add optional property in edit mode */}
+            {isEditing && (
+              <EntityCombobox
+                entityType="property"
+                availableEntities={availableProperties.filter(
+                  (p) =>
+                    !editedRequiredProperties.includes(p.key) &&
+                    !editedOptionalProperties.includes(p.key)
+                )}
+                selectedKeys={[]}
+                onChange={(keys) => {
+                  if (keys.length > 0) {
+                    handleAddOptionalProperty(keys[0])
+                  }
+                }}
+                onCreateNew={(id) => {
+                  setOnNestedEntityCreated((newKey: string) => {
+                    handleAddOptionalProperty(newKey)
+                  })
+                  openNestedCreateModal({
+                    entityType: 'property',
+                    prefilledId: id,
+                    parentContext: { entityType: 'category', fieldName: 'Optional Properties' },
+                  })
+                }}
+                placeholder="Add optional property..."
+              />
+            )}
+          </div>
+
+          {/* Inherited Properties (read-only) */}
+          {category.properties &&
+            category.properties.filter((p) => p.is_inherited).length > 0 && (
+              <div className="space-y-2 pt-2 border-t">
+                <h4 className="text-sm font-medium text-muted-foreground">
+                  Inherited Properties
+                </h4>
+                {category.properties
+                  .filter((p) => p.is_inherited)
+                  .map((prop) => (
+                    <button
+                      key={prop.entity_key}
+                      onClick={() => openDetail(prop.entity_key, 'property')}
+                      className="w-full text-left px-2 py-1.5 text-sm rounded flex items-center gap-2 hover:bg-sidebar-accent transition-colors"
+                    >
+                      <span className="flex-1 truncate">{prop.label}</span>
+                      <Badge variant="secondary" className="text-xs">
+                        from {prop.source_category}
+                      </Badge>
+                    </button>
+                  ))}
+              </div>
+            )}
+        </div>
+      </AccordionSection>
+
+      {/* Subobjects Section - Editable */}
+      <AccordionSection
+        id="subobjects"
+        title="Subobjects"
+        count={
+          editedRequiredSubobjects.filter((s) => !deletedRequiredSubobjects.has(s)).length +
+          editedOptionalSubobjects.filter((s) => !deletedOptionalSubobjects.has(s)).length
+        }
+        defaultOpen
+      >
+        <div className="space-y-4">
+          {/* Required Subobjects */}
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium text-muted-foreground">Required Subobjects</h4>
+            <RelationshipChips
+              values={editedRequiredSubobjects.filter((s) => !deletedRequiredSubobjects.has(s))}
+              onRemove={handleDeleteRequiredSubobject}
+              disabled={!isEditing}
+              getLabel={(key) => {
+                const sub = availableSubobjects.find((s) => s.key === key)
+                return sub?.label || key
+              }}
+            />
+            {/* Soft-deleted required subobjects */}
+            {Array.from(deletedRequiredSubobjects).map((subKey) => (
+              <DeletedItemBadge
+                key={`deleted-req-sub-${subKey}`}
+                label={availableSubobjects.find((s) => s.key === subKey)?.label || subKey}
+                onUndo={() => handleUndoDeleteRequiredSubobject(subKey)}
+              />
+            ))}
+            {/* Empty state */}
+            {editedRequiredSubobjects.filter((s) => !deletedRequiredSubobjects.has(s)).length === 0 &&
+              deletedRequiredSubobjects.size === 0 &&
+              !isEditing && (
+                <p className="text-sm text-muted-foreground italic">No required subobjects</p>
+              )}
+            {/* Add required subobject in edit mode */}
+            {isEditing && (
+              <EntityCombobox
+                entityType="subobject"
+                availableEntities={availableSubobjects.filter(
+                  (s) =>
+                    !editedRequiredSubobjects.includes(s.key) &&
+                    !editedOptionalSubobjects.includes(s.key)
+                )}
+                selectedKeys={[]}
+                onChange={(keys) => {
+                  if (keys.length > 0) {
+                    handleAddRequiredSubobject(keys[0])
+                  }
+                }}
+                onCreateNew={(id) => {
+                  setOnNestedEntityCreated((newKey: string) => {
+                    handleAddRequiredSubobject(newKey)
+                  })
+                  openNestedCreateModal({
+                    entityType: 'subobject',
+                    prefilledId: id,
+                    parentContext: { entityType: 'category', fieldName: 'Required Subobjects' },
+                  })
+                }}
+                placeholder="Add required subobject..."
+              />
+            )}
+          </div>
+
+          {/* Optional Subobjects */}
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium text-muted-foreground">Optional Subobjects</h4>
+            <RelationshipChips
+              values={editedOptionalSubobjects.filter((s) => !deletedOptionalSubobjects.has(s))}
+              onRemove={handleDeleteOptionalSubobject}
+              disabled={!isEditing}
+              getLabel={(key) => {
+                const sub = availableSubobjects.find((s) => s.key === key)
+                return sub?.label || key
+              }}
+            />
+            {/* Soft-deleted optional subobjects */}
+            {Array.from(deletedOptionalSubobjects).map((subKey) => (
+              <DeletedItemBadge
+                key={`deleted-opt-sub-${subKey}`}
+                label={availableSubobjects.find((s) => s.key === subKey)?.label || subKey}
+                onUndo={() => handleUndoDeleteOptionalSubobject(subKey)}
+              />
+            ))}
+            {/* Empty state */}
+            {editedOptionalSubobjects.filter((s) => !deletedOptionalSubobjects.has(s)).length === 0 &&
+              deletedOptionalSubobjects.size === 0 &&
+              !isEditing && (
+                <p className="text-sm text-muted-foreground italic">No optional subobjects</p>
+              )}
+            {/* Add optional subobject in edit mode */}
+            {isEditing && (
+              <EntityCombobox
+                entityType="subobject"
+                availableEntities={availableSubobjects.filter(
+                  (s) =>
+                    !editedRequiredSubobjects.includes(s.key) &&
+                    !editedOptionalSubobjects.includes(s.key)
+                )}
+                selectedKeys={[]}
+                onChange={(keys) => {
+                  if (keys.length > 0) {
+                    handleAddOptionalSubobject(keys[0])
+                  }
+                }}
+                onCreateNew={(id) => {
+                  setOnNestedEntityCreated((newKey: string) => {
+                    handleAddOptionalSubobject(newKey)
+                  })
+                  openNestedCreateModal({
+                    entityType: 'subobject',
+                    prefilledId: id,
+                    parentContext: { entityType: 'category', fieldName: 'Optional Subobjects' },
+                  })
+                }}
+                placeholder="Add optional subobject..."
+              />
+            )}
+          </div>
+        </div>
+      </AccordionSection>
 
       {/* Module/Bundle membership - TODO: fetch from module_entity table */}
       <MembershipSection modules={[]} bundles={[]} />

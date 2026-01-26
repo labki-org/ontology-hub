@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useTemplate } from '@/api/entitiesV2'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useDetailStore } from '@/stores/detailStore'
@@ -13,6 +13,7 @@ import type { TemplateDetailV2 } from '@/api/types'
 interface TemplateDetailProps {
   entityKey: string
   draftId?: string
+  draftToken?: string
   isEditing: boolean
 }
 
@@ -29,6 +30,7 @@ interface TemplateDetailProps {
 export function TemplateDetail({
   entityKey,
   draftId,
+  draftToken,
   isEditing,
 }: TemplateDetailProps) {
   const { data, isLoading, error } = useTemplate(entityKey, draftId)
@@ -49,9 +51,12 @@ export function TemplateDetail({
   const [editedDescription, setEditedDescription] = useState('')
   const [editedWikitext, setEditedWikitext] = useState('')
 
+  // Track which entity we've initialized original values for (prevent reset on refetch)
+  const initializedEntityRef = useRef<string | null>(null)
+
   // Auto-save hook
   const { saveChange, isSaving } = useAutoSave({
-    draftToken: draftId || '',
+    draftToken: draftToken || '',
     entityType: 'template',
     entityKey,
     debounceMs: 500,
@@ -60,16 +65,25 @@ export function TemplateDetail({
   // Initialize state
   useEffect(() => {
     if (template) {
-      setEditedLabel(template.label)
-      setEditedDescription(template.description || '')
-      setEditedWikitext(template.wikitext || '')
+      const isNewEntity = initializedEntityRef.current !== entityKey
 
-      setOriginalValues({
-        label: template.label,
-        description: template.description || '',
-        wikitext: template.wikitext || '',
-      })
+      // Only reset edited values and original values for a NEW entity
+      // (not on refetch after auto-save)
+      if (isNewEntity) {
+        setEditedLabel(template.label)
+        setEditedDescription(template.description || '')
+        setEditedWikitext(template.wikitext || '')
 
+        setOriginalValues({
+          label: template.label,
+          description: template.description || '',
+          wikitext: template.wikitext || '',
+        })
+
+        initializedEntityRef.current = entityKey
+      }
+
+      // Always update breadcrumbs
       pushBreadcrumb(entityKey, 'template', template.label)
     }
   }, [template, entityKey, pushBreadcrumb])
@@ -78,7 +92,7 @@ export function TemplateDetail({
   const handleLabelChange = useCallback(
     (value: string) => {
       setEditedLabel(value)
-      if (draftId) saveChange([{ op: 'replace', path: '/label', value }])
+      if (draftToken) saveChange([{ op: 'replace', path: '/label', value }])
     },
     [draftId, saveChange]
   )
@@ -86,7 +100,7 @@ export function TemplateDetail({
   const handleDescriptionChange = useCallback(
     (value: string) => {
       setEditedDescription(value)
-      if (draftId) saveChange([{ op: 'replace', path: '/description', value }])
+      if (draftToken) saveChange([{ op: 'replace', path: '/description', value }])
     },
     [draftId, saveChange]
   )
@@ -95,7 +109,7 @@ export function TemplateDetail({
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       const value = e.target.value
       setEditedWikitext(value)
-      if (draftId) saveChange([{ op: 'replace', path: '/wikitext', value }])
+      if (draftToken) saveChange([{ op: 'replace', path: '/wikitext', value }])
     },
     [draftId, saveChange]
   )

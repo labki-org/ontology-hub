@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   useModule,
   useCategories,
@@ -70,6 +70,9 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
   const [editedLabel, setEditedLabel] = useState('')
   const [editedEntities, setEditedEntities] = useState<Record<string, string[]>>({})
 
+  // Track which entity we've initialized original values for (prevent reset on refetch)
+  const initializedEntityRef = useRef<string | null>(null)
+
   // Auto-save hook
   const { saveChange, isSaving } = useAutoSave({
     draftToken: draftToken || '',
@@ -84,9 +87,19 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
   // Initialize state when module loads
   useEffect(() => {
     if (moduleDetail) {
-      setEditedLabel(moduleDetail.label)
-      setEditedEntities(moduleDetail.entities || {})
-      setOriginalValues({ label: moduleDetail.label })
+      const isNewEntity = initializedEntityRef.current !== entityKey
+
+      // Only reset edited values and original values for a NEW entity
+      // (not on refetch after auto-save)
+      if (isNewEntity) {
+        setEditedLabel(moduleDetail.label)
+        setEditedEntities(moduleDetail.entities || {})
+        setOriginalValues({ label: moduleDetail.label })
+
+        initializedEntityRef.current = entityKey
+      }
+
+      // Always update breadcrumbs
       pushBreadcrumb(entityKey, 'module', moduleDetail.label)
     }
   }, [moduleDetail, entityKey, pushBreadcrumb])

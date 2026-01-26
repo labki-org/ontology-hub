@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { useCategories } from '@/api/entitiesV2'
+import { useCategories, useProperties, useSubobjects } from '@/api/entitiesV2'
 
 interface CategoryFormProps {
   /** Callback when form is submitted with valid data */
@@ -62,6 +62,20 @@ export function CategoryForm({
     key: c.entity_key,
     label: c.label,
   }))
+
+  // Fetch available properties for property fields
+  const { data: propertiesData } = useProperties(undefined, undefined, draftId)
+  const availableProperties = (propertiesData?.items || []).map((p) => ({
+    key: p.entity_key,
+    label: p.label,
+  }))
+
+  // Fetch available subobjects for subobject fields
+  const { data: subobjectsData } = useSubobjects(undefined, undefined, draftId)
+  const availableSubobjects = (subobjectsData?.items || []).map((s) => ({
+    key: s.entity_key,
+    label: s.label,
+  }))
   const form = useForm<CategoryFormData>({
     resolver: zodResolver(categorySchema),
     mode: 'onBlur',
@@ -70,6 +84,10 @@ export function CategoryForm({
       label: initialData?.label ?? '',
       description: initialData?.description ?? '',
       parents: initialData?.parents ?? [],
+      required_properties: initialData?.required_properties ?? [],
+      optional_properties: initialData?.optional_properties ?? [],
+      required_subobjects: initialData?.required_subobjects ?? [],
+      optional_subobjects: initialData?.optional_subobjects ?? [],
     },
   })
 
@@ -159,6 +177,200 @@ export function CategoryForm({
             return found ? found.label : key
           }}
         />
+      </div>
+
+      {/* Properties Section */}
+      <div className="space-y-4">
+        <Label className="text-base font-semibold">Properties</Label>
+
+        {/* Required Properties */}
+        <div className="space-y-2">
+          <Label className="text-sm">Required Properties</Label>
+          <EntityCombobox
+            entityType="property"
+            availableEntities={availableProperties.filter(
+              (p) =>
+                !(form.watch('required_properties') || []).includes(p.key) &&
+                !(form.watch('optional_properties') || []).includes(p.key)
+            )}
+            selectedKeys={[]}
+            onChange={(keys) => {
+              if (keys.length > 0) {
+                const current = form.getValues('required_properties') || []
+                form.setValue('required_properties', [...current, keys[0]])
+              }
+            }}
+            onCreateNew={
+              onCreateRelatedEntity && setOnNestedEntityCreated
+                ? (id) => {
+                    setOnNestedEntityCreated((newKey: string) => {
+                      const current = form.getValues('required_properties') || []
+                      form.setValue('required_properties', [...current, newKey])
+                    })
+                    onCreateRelatedEntity('property', id)
+                  }
+                : undefined
+            }
+            placeholder="Add required property..."
+          />
+          <RelationshipChips
+            values={form.watch('required_properties') || []}
+            onRemove={(key) => {
+              const current = form.getValues('required_properties') || []
+              form.setValue(
+                'required_properties',
+                current.filter((k) => k !== key)
+              )
+            }}
+            getLabel={(key) => {
+              const found = availableProperties.find((p) => p.key === key)
+              return found ? found.label : key
+            }}
+          />
+        </div>
+
+        {/* Optional Properties */}
+        <div className="space-y-2">
+          <Label className="text-sm">Optional Properties</Label>
+          <EntityCombobox
+            entityType="property"
+            availableEntities={availableProperties.filter(
+              (p) =>
+                !(form.watch('required_properties') || []).includes(p.key) &&
+                !(form.watch('optional_properties') || []).includes(p.key)
+            )}
+            selectedKeys={[]}
+            onChange={(keys) => {
+              if (keys.length > 0) {
+                const current = form.getValues('optional_properties') || []
+                form.setValue('optional_properties', [...current, keys[0]])
+              }
+            }}
+            onCreateNew={
+              onCreateRelatedEntity && setOnNestedEntityCreated
+                ? (id) => {
+                    setOnNestedEntityCreated((newKey: string) => {
+                      const current = form.getValues('optional_properties') || []
+                      form.setValue('optional_properties', [...current, newKey])
+                    })
+                    onCreateRelatedEntity('property', id)
+                  }
+                : undefined
+            }
+            placeholder="Add optional property..."
+          />
+          <RelationshipChips
+            values={form.watch('optional_properties') || []}
+            onRemove={(key) => {
+              const current = form.getValues('optional_properties') || []
+              form.setValue(
+                'optional_properties',
+                current.filter((k) => k !== key)
+              )
+            }}
+            getLabel={(key) => {
+              const found = availableProperties.find((p) => p.key === key)
+              return found ? found.label : key
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Subobjects Section */}
+      <div className="space-y-4">
+        <Label className="text-base font-semibold">Subobjects</Label>
+
+        {/* Required Subobjects */}
+        <div className="space-y-2">
+          <Label className="text-sm">Required Subobjects</Label>
+          <EntityCombobox
+            entityType="subobject"
+            availableEntities={availableSubobjects.filter(
+              (s) =>
+                !(form.watch('required_subobjects') || []).includes(s.key) &&
+                !(form.watch('optional_subobjects') || []).includes(s.key)
+            )}
+            selectedKeys={[]}
+            onChange={(keys) => {
+              if (keys.length > 0) {
+                const current = form.getValues('required_subobjects') || []
+                form.setValue('required_subobjects', [...current, keys[0]])
+              }
+            }}
+            onCreateNew={
+              onCreateRelatedEntity && setOnNestedEntityCreated
+                ? (id) => {
+                    setOnNestedEntityCreated((newKey: string) => {
+                      const current = form.getValues('required_subobjects') || []
+                      form.setValue('required_subobjects', [...current, newKey])
+                    })
+                    onCreateRelatedEntity('subobject', id)
+                  }
+                : undefined
+            }
+            placeholder="Add required subobject..."
+          />
+          <RelationshipChips
+            values={form.watch('required_subobjects') || []}
+            onRemove={(key) => {
+              const current = form.getValues('required_subobjects') || []
+              form.setValue(
+                'required_subobjects',
+                current.filter((k) => k !== key)
+              )
+            }}
+            getLabel={(key) => {
+              const found = availableSubobjects.find((s) => s.key === key)
+              return found ? found.label : key
+            }}
+          />
+        </div>
+
+        {/* Optional Subobjects */}
+        <div className="space-y-2">
+          <Label className="text-sm">Optional Subobjects</Label>
+          <EntityCombobox
+            entityType="subobject"
+            availableEntities={availableSubobjects.filter(
+              (s) =>
+                !(form.watch('required_subobjects') || []).includes(s.key) &&
+                !(form.watch('optional_subobjects') || []).includes(s.key)
+            )}
+            selectedKeys={[]}
+            onChange={(keys) => {
+              if (keys.length > 0) {
+                const current = form.getValues('optional_subobjects') || []
+                form.setValue('optional_subobjects', [...current, keys[0]])
+              }
+            }}
+            onCreateNew={
+              onCreateRelatedEntity && setOnNestedEntityCreated
+                ? (id) => {
+                    setOnNestedEntityCreated((newKey: string) => {
+                      const current = form.getValues('optional_subobjects') || []
+                      form.setValue('optional_subobjects', [...current, newKey])
+                    })
+                    onCreateRelatedEntity('subobject', id)
+                  }
+                : undefined
+            }
+            placeholder="Add optional subobject..."
+          />
+          <RelationshipChips
+            values={form.watch('optional_subobjects') || []}
+            onRemove={(key) => {
+              const current = form.getValues('optional_subobjects') || []
+              form.setValue(
+                'optional_subobjects',
+                current.filter((k) => k !== key)
+              )
+            }}
+            getLabel={(key) => {
+              const found = availableSubobjects.find((s) => s.key === key)
+              return found ? found.label : key
+            }}
+          />
+        </div>
       </div>
 
       <div className="flex justify-end gap-2 pt-4">

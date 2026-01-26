@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useBundle, useModules } from '@/api/entitiesV2'
 import type { BundleDetailV2 } from '@/api/types'
 import { useAutoSave } from '@/hooks/useAutoSave'
@@ -14,6 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 interface BundleDetailProps {
   entityKey: string
   draftId?: string
+  draftToken?: string
   isEditing: boolean
 }
 
@@ -24,13 +25,14 @@ interface BundleDetailProps {
  * - Computed closure (all modules including transitive dependencies)
  * - Edit mode for adding/removing modules
  */
-export function BundleDetail({ entityKey, draftId, isEditing }: BundleDetailProps) {
+export function BundleDetail({ entityKey, draftId, draftToken, isEditing }: BundleDetailProps) {
   const { data: bundle, isLoading, error } = useBundle(entityKey, draftId)
   const { data: modulesData } = useModules(undefined, undefined, draftId)
 
   const openDetail = useDetailStore((s) => s.openDetail)
   const pushBreadcrumb = useDetailStore((s) => s.pushBreadcrumb)
-  const openCreateModal = useDraftStoreV2((s) => s.openCreateModal)
+  const openNestedCreateModal = useDraftStoreV2((s) => s.openNestedCreateModal)
+  const setOnNestedEntityCreated = useDraftStoreV2((s) => s.setOnNestedEntityCreated)
 
   // Build available modules for selection
   const availableModules = (modulesData?.items || []).map((m) => ({
@@ -45,9 +47,12 @@ export function BundleDetail({ entityKey, draftId, isEditing }: BundleDetailProp
   const [editedLabel, setEditedLabel] = useState('')
   const [editedModules, setEditedModules] = useState<string[]>([])
 
+  // Track which entity we've initialized original values for (prevent reset on refetch)
+  const initializedEntityRef = useRef<string | null>(null)
+
   // Auto-save hook
   const { saveChange, isSaving } = useAutoSave({
-    draftToken: draftId || '',
+    draftToken: draftToken || '',
     entityType: 'bundle',
     entityKey,
     debounceMs: 500,
@@ -59,9 +64,19 @@ export function BundleDetail({ entityKey, draftId, isEditing }: BundleDetailProp
   // Initialize state when bundle loads
   useEffect(() => {
     if (bundleDetail) {
-      setEditedLabel(bundleDetail.label)
-      setEditedModules(bundleDetail.modules || [])
-      setOriginalValues({ label: bundleDetail.label })
+      const isNewEntity = initializedEntityRef.current !== entityKey
+
+      // Only reset edited values and original values for a NEW entity
+      // (not on refetch after auto-save)
+      if (isNewEntity) {
+        setEditedLabel(bundleDetail.label)
+        setEditedModules(bundleDetail.modules || [])
+        setOriginalValues({ label: bundleDetail.label })
+
+        initializedEntityRef.current = entityKey
+      }
+
+      // Always update breadcrumbs
       pushBreadcrumb(entityKey, 'bundle', bundleDetail.label)
     }
   }, [bundleDetail, entityKey, pushBreadcrumb])
@@ -70,7 +85,7 @@ export function BundleDetail({ entityKey, draftId, isEditing }: BundleDetailProp
   const handleLabelChange = useCallback(
     (value: string) => {
       setEditedLabel(value)
-      if (draftId) {
+      if (draftToken) {
         saveChange([{ op: 'replace', path: '/label', value }])
       }
     },
@@ -81,7 +96,7 @@ export function BundleDetail({ entityKey, draftId, isEditing }: BundleDetailProp
     (moduleKey: string) => {
       const newModules = [...editedModules, moduleKey]
       setEditedModules(newModules)
-      if (draftId) {
+      if (draftToken) {
         saveChange([{ op: 'replace', path: '/modules', value: newModules }])
       }
     },
@@ -92,7 +107,7 @@ export function BundleDetail({ entityKey, draftId, isEditing }: BundleDetailProp
     (moduleKey: string) => {
       const newModules = editedModules.filter((m) => m !== moduleKey)
       setEditedModules(newModules)
-      if (draftId) {
+      if (draftToken) {
         saveChange([{ op: 'replace', path: '/modules', value: newModules }])
       }
     },
@@ -213,8 +228,15 @@ export function BundleDetail({ entityKey, draftId, isEditing }: BundleDetailProp
                   handleAddModule(keys[0])
                 }
               }}
-              onCreateNew={() => {
-                openCreateModal('module')
+              onCreateNew={(id) => {
+                setOnNestedEntityCreated((newKey: string) => {
+                  handleAddModule(newKey)
+                })
+                openNestedCreateModal({
+                  entityType: 'module',
+                  prefilledId: id,
+                  parentContext: { entityType: 'bundle', fieldName: 'Modules' },
+                })
               }}
               placeholder="Add module..."
             />

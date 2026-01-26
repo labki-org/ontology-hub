@@ -24,6 +24,10 @@ export const categorySchema = z.object({
   label: z.string().min(1, 'Label is required'),
   description: z.string().min(1, 'Description is required'),
   parents: z.array(z.string()).optional(),
+  required_properties: z.array(z.string()).optional(),
+  optional_properties: z.array(z.string()).optional(),
+  required_subobjects: z.array(z.string()).optional(),
+  optional_subobjects: z.array(z.string()).optional(),
 })
 
 export type CategoryFormData = z.infer<typeof categorySchema>
@@ -51,7 +55,8 @@ export const subobjectSchema = z.object({
   id: idValidation,
   label: z.string().min(1, 'Label is required'),
   description: z.string().min(1, 'Description is required'),
-  properties: z.array(z.string()).optional(),
+  required_properties: z.array(z.string()).optional(),
+  optional_properties: z.array(z.string()).optional(),
 })
 
 export type SubobjectFormData = z.infer<typeof subobjectSchema>

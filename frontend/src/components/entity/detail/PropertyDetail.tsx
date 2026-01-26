@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useProperty, usePropertyUsedBy } from '@/api/entitiesV2'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useDetailStore } from '@/stores/detailStore'
@@ -66,6 +66,9 @@ export function PropertyDetail({
   const [isEditingDatatype, setIsEditingDatatype] = useState(false)
   const [isEditingCardinality, setIsEditingCardinality] = useState(false)
 
+  // Track which entity we've initialized original values for (prevent reset on refetch)
+  const initializedEntityRef = useRef<string | null>(null)
+
   // Auto-save hook
   const { saveChange, isSaving } = useAutoSave({
     draftToken: draftToken || '',
@@ -77,18 +80,27 @@ export function PropertyDetail({
   // Initialize state
   useEffect(() => {
     if (property) {
-      setEditedLabel(property.label)
-      setEditedDescription(property.description || '')
-      setEditedDatatype(property.datatype)
-      setEditedCardinality(property.cardinality)
+      const isNewEntity = initializedEntityRef.current !== entityKey
 
-      setOriginalValues({
-        label: property.label,
-        description: property.description || '',
-        datatype: property.datatype,
-        cardinality: property.cardinality,
-      })
+      // Only reset edited values and original values for a NEW entity
+      // (not on refetch after auto-save)
+      if (isNewEntity) {
+        setEditedLabel(property.label)
+        setEditedDescription(property.description || '')
+        setEditedDatatype(property.datatype)
+        setEditedCardinality(property.cardinality)
 
+        setOriginalValues({
+          label: property.label,
+          description: property.description || '',
+          datatype: property.datatype,
+          cardinality: property.cardinality,
+        })
+
+        initializedEntityRef.current = entityKey
+      }
+
+      // Always update breadcrumbs
       pushBreadcrumb(entityKey, 'property', property.label)
     }
   }, [property, entityKey, pushBreadcrumb])

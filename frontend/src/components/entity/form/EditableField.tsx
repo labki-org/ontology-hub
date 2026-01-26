@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
@@ -37,10 +37,13 @@ export function EditableField({
   className,
 }: EditableFieldProps) {
   const [localValue, setLocalValue] = useState(value)
+  const isFocusedRef = useRef(false)
 
-  // Sync local value with prop when it changes externally
+  // Sync local value with prop only when not focused (external changes)
   useEffect(() => {
-    setLocalValue(value)
+    if (!isFocusedRef.current) {
+      setLocalValue(value)
+    }
   }, [value])
 
   const isModified = originalValue !== undefined && value !== originalValue
@@ -69,6 +72,16 @@ export function EditableField({
     },
     [onRevert, multiline]
   )
+
+  const handleFocus = useCallback(() => {
+    isFocusedRef.current = true
+  }, [])
+
+  const handleBlur = useCallback(() => {
+    isFocusedRef.current = false
+    // Sync with prop value on blur in case external changes happened
+    setLocalValue(value)
+  }, [value])
 
   // View mode
   if (!isEditing) {
@@ -100,6 +113,8 @@ export function EditableField({
             value={localValue}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
             placeholder={placeholder}
             className={multiline ? 'min-h-[80px]' : ''}
           />
