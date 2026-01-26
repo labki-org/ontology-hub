@@ -18,7 +18,7 @@ import { Badge } from '@/components/ui/badge'
 import { AlertTriangle } from 'lucide-react'
 import { graphNodeTypes } from './GraphNode'
 import { GraphControls } from './GraphControls'
-import { useForceLayout } from './useForceLayout'
+import { useHybridLayout } from './useHybridLayout'
 import { HullLayer } from './HullLayer'
 import { ModuleHullControls } from './ModuleHullControls'
 import type { GraphNode as ApiGraphNode, GraphEdge as ApiGraphEdge } from '@/api/types'
@@ -48,6 +48,8 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
   const edgeTypeFilter = useGraphStore((s) => s.edgeTypeFilter)
   const setHoveredNode = useGraphStore((s) => s.setHoveredNode)
   const setGraphData = useGraphStore((s) => s.setGraphData)
+  const layoutAlgorithm = useGraphStore((s) => s.layoutAlgorithm)
+  const layoutDirection = useGraphStore((s) => s.layoutDirection)
 
   // Hover handlers for node highlighting
   const onNodeMouseEnter = useCallback((_event: React.MouseEvent, node: Node) => {
@@ -100,7 +102,7 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
         id: `e${index}-${edge.source}-${edge.target}`,
         source: edge.source,
         target: edge.target,
-        type: 'default',
+        type: 'smoothstep',
         markerEnd: {
           type: MarkerType.ArrowClosed,
           width: 15,
@@ -120,10 +122,11 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
     return { initialNodes: nodes, filteredEdges: edges }
   }, [displayData, edgeTypeFilter])
 
-  // Apply force layout
-  const { nodes, isRunning, restartSimulation } = useForceLayout(
+  // Apply layout based on selected algorithm
+  const { nodes, isRunning, restartSimulation } = useHybridLayout(
     initialNodes,
-    filteredEdges
+    filteredEdges,
+    { algorithm: layoutAlgorithm, direction: layoutDirection }
   )
 
   // Extract unique module IDs for hull controls

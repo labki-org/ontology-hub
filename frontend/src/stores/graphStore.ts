@@ -6,6 +6,9 @@ import type { GraphNode, GraphEdge } from '@/api/types'
 // Enable Map and Set support in immer (required for Zustand immer middleware)
 enableMapSet()
 
+export type LayoutAlgorithm = 'force' | 'dagre' | 'hybrid'
+export type LayoutDirection = 'TB' | 'LR'
+
 interface GraphState {
   // Selection and expansion state
   selectedEntityKey: string | null
@@ -24,6 +27,10 @@ interface GraphState {
   showTemplates: boolean
   edgeTypeFilter: Set<string>
 
+  // Layout settings
+  layoutAlgorithm: LayoutAlgorithm
+  layoutDirection: LayoutDirection
+
   // Actions
   setSelectedEntity: (key: string | null, entityType?: string) => void
   toggleNodeExpanded: (key: string) => void
@@ -32,6 +39,8 @@ interface GraphState {
   setDepth: (depth: number) => void
   toggleEntityType: (type: 'property' | 'subobject' | 'template') => void
   setEdgeTypeFilter: (types: string[]) => void
+  setLayoutAlgorithm: (algorithm: LayoutAlgorithm) => void
+  setLayoutDirection: (direction: LayoutDirection) => void
   resetGraph: () => void
 }
 
@@ -47,6 +56,8 @@ const initialState = {
   showSubobjects: false,
   showTemplates: false,
   edgeTypeFilter: new Set<string>(['parent', 'property', 'subobject']),
+  layoutAlgorithm: 'hybrid' as LayoutAlgorithm,
+  layoutDirection: 'TB' as LayoutDirection,
 }
 
 export const useGraphStore = create<GraphState>()(
@@ -112,6 +123,18 @@ export const useGraphStore = create<GraphState>()(
       })
     },
 
+    setLayoutAlgorithm: (algorithm) => {
+      set((state) => {
+        state.layoutAlgorithm = algorithm
+      })
+    },
+
+    setLayoutDirection: (direction) => {
+      set((state) => {
+        state.layoutDirection = direction
+      })
+    },
+
     resetGraph: () => {
       set((state) => {
         state.selectedEntityKey = null
@@ -125,6 +148,8 @@ export const useGraphStore = create<GraphState>()(
         state.showSubobjects = false
         state.showTemplates = false
         state.edgeTypeFilter = new Set<string>(['parent', 'property', 'subobject'])
+        state.layoutAlgorithm = 'hybrid'
+        state.layoutDirection = 'TB'
       })
     },
   }))
