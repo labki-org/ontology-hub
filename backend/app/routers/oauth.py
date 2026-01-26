@@ -18,7 +18,7 @@ from starlette.responses import RedirectResponse
 from app.config import Settings, settings
 from app.database import get_session
 from app.dependencies.capability import hash_token
-from app.models.v2 import Draft, DraftChange, DraftStatus
+from app.models.v2 import Bundle, Draft, DraftChange, DraftStatus, Module, ModuleEntity
 from app.services.draft_workflow import transition_to_submitted
 from app.services.github import GitHubClient
 from app.services.pr_builder_v2 import (
@@ -26,6 +26,7 @@ from app.services.pr_builder_v2 import (
     generate_branch_name,
     generate_commit_message_v2,
     generate_pr_body_v2,
+    generate_pr_title_with_version,
 )
 from app.services.validation.validator_v2 import validate_draft_v2
 
@@ -64,16 +65,19 @@ async def github_login(
     draft_token: str,
     pr_title: str | None = None,
     user_comment: str | None = None,
+    suggested_semver: str | None = None,
 ):
     """Initiate GitHub OAuth flow for PR creation.
 
-    Stores draft_token, pr_title, and user_comment in session and redirects to GitHub authorization.
+    Stores draft_token, pr_title, user_comment, and suggested_semver in session
+    and redirects to GitHub authorization.
 
     Args:
         request: FastAPI request with session
         draft_token: Draft capability token to associate with OAuth
         pr_title: Optional custom PR title
         user_comment: Optional comment to include in PR body
+        suggested_semver: Optional suggested semver bump (patch/minor/major)
 
     Returns:
         Redirect to GitHub authorization page
@@ -95,6 +99,8 @@ async def github_login(
         request.session["pending_pr_title"] = pr_title
     if user_comment:
         request.session["pending_user_comment"] = user_comment
+    if suggested_semver:
+        request.session["pending_suggested_semver"] = suggested_semver
 
     # Build callback URL
     redirect_uri = request.url_for("github_callback")
@@ -109,6 +115,7 @@ async def create_pr_from_draft(
     session: AsyncSession,
     pr_title: str | None = None,
     user_comment: str | None = None,
+    suggested_semver: str | None = None,
 ) -> str:
     """Create a GitHub PR from a draft using v2 models and services.
 
@@ -118,6 +125,7 @@ async def create_pr_from_draft(
         session: Database session
         pr_title: Optional custom PR title
         user_comment: Optional comment to include in PR body
+        suggested_semver: Optional suggested semver bump (patch/minor/major)
 
     Returns:
         PR URL (html_url)
@@ -161,6 +169,45 @@ async def create_pr_from_draft(
     if not changes:
         raise HTTPException(status_code=400, detail="Draft has no changes to submit.")
 
+    # Gather affected module/bundle keys from changes
+    affected_module_keys: set[str] = set()
+    affected_bundle_keys: set[str] = set()
+
+    for change in changes:
+        if change.entity_type == "module":
+            affected_module_keys.add(change.entity_key)
+        elif change.entity_type == "bundle":
+            affected_bundle_keys.add(change.entity_key)
+        elif change.entity_type in ("category", "property", "subobject"):
+            # Find which module(s) this entity belongs to
+            module_entity_query = select(ModuleEntity).where(
+                ModuleEntity.entity_type == change.entity_type,
+                ModuleEntity.entity_key == change.entity_key,
+            )
+            module_entity_result = await session.execute(module_entity_query)
+            for module_entity in module_entity_result.scalars():
+                # Get module key from module_id
+                module_query = select(Module).where(Module.id == module_entity.module_id)
+                module_result = await session.execute(module_query)
+                if module := module_result.scalar_one_or_none():
+                    affected_module_keys.add(module.entity_key)
+
+    # Load current versions for affected modules
+    affected_modules: dict[str, str] = {}
+    for key in affected_module_keys:
+        module_query = select(Module).where(Module.entity_key == key)
+        module_result = await session.execute(module_query)
+        if module := module_result.scalar_one_or_none():
+            affected_modules[key] = module.version or "unversioned"
+
+    # Load current versions for affected bundles
+    affected_bundles: dict[str, str] = {}
+    for key in affected_bundle_keys:
+        bundle_query = select(Bundle).where(Bundle.entity_key == key)
+        bundle_result = await session.execute(bundle_query)
+        if bundle := bundle_result.scalar_one_or_none():
+            affected_bundles[key] = bundle.version or "unversioned"
+
     # Build files from draft using v2 service
     files = await build_files_from_draft_v2(draft.id, session)
     if not files:
@@ -172,15 +219,23 @@ async def create_pr_from_draft(
     # Generate commit message using v2 service
     commit_message = generate_commit_message_v2(changes)
 
-    # Generate PR title (use custom or default)
-    final_pr_title = pr_title or f"Schema update: {draft.title or str(draft.id)[:8]}"
+    # Generate PR title with version context
+    final_pr_title = generate_pr_title_with_version(
+        changes=changes,
+        base_commit_sha=draft.base_commit_sha,
+        suggested_semver=suggested_semver or validation.suggested_semver,
+        user_title=pr_title,
+    )
 
-    # Generate PR body using v2 service
+    # Generate PR body using v2 service with version context
     pr_body = generate_pr_body_v2(
         changes=changes,
         validation=validation,
         draft_title=draft.title,
         user_comment=user_comment,
+        base_commit_sha=draft.base_commit_sha,
+        affected_modules=affected_modules if affected_modules else None,
+        affected_bundles=affected_bundles if affected_bundles else None,
     )
 
     # Create PR via GitHub API
@@ -240,15 +295,16 @@ async def github_callback(request: Request, session: AsyncSession = Depends(get_
 
     pr_title = request.session.pop("pending_pr_title", None)
     user_comment = request.session.pop("pending_user_comment", None)
+    suggested_semver = request.session.pop("pending_suggested_semver", None)
 
     # Store access_token and completion time in session
     request.session["github_access_token"] = token["access_token"]
     request.session["oauth_completed_at"] = datetime.utcnow().isoformat()
 
-    # Create PR from draft with optional pr_title and user_comment
+    # Create PR from draft with optional pr_title, user_comment, and suggested_semver
     try:
         pr_url = await create_pr_from_draft(
-            draft_token, token["access_token"], session, pr_title, user_comment
+            draft_token, token["access_token"], session, pr_title, user_comment, suggested_semver
         )
         # Success - redirect with PR URL
         redirect_url = f"{settings.FRONTEND_URL}/draft/{draft_token}?pr_url={quote(pr_url)}"

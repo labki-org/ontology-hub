@@ -201,6 +201,7 @@ export function PRWizard({
             draftToken={draftToken}
             prTitle={prTitle}
             userComment={userComment}
+            suggestedSemver={validationReport.suggested_semver}
             onBack={() => setStep('details')}
             onSuccess={handleSuccess}
             onError={handleError}

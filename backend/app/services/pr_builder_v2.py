@@ -215,11 +215,80 @@ def generate_commit_message_v2(changes: list[DraftChange]) -> str:
     return f"feat(schema): update from Ontology Hub\n\nChanges: {summary}\n"
 
 
+def generate_pr_title_with_version(
+    changes: list[DraftChange],
+    base_commit_sha: str | None,
+    suggested_semver: str | None,
+    user_title: str | None = None,
+) -> str:
+    """Generate PR title with version context.
+
+    Format: "[ontology @{sha_prefix}] {summary}"
+    Examples:
+    - "[ontology @a1b2c3d] Add category: Lab_member"
+    - "[ontology @a1b2c3d] (minor) 3 additions, 2 updates"
+
+    Args:
+        changes: List of DraftChange records
+        base_commit_sha: Base commit SHA the draft is based on
+        suggested_semver: Suggested semver bump (patch/minor/major)
+        user_title: Optional user-provided title
+
+    Returns:
+        PR title with version context prefix
+    """
+    # Build prefix with commit SHA
+    sha_prefix = base_commit_sha[:7] if base_commit_sha else "unknown"
+    prefix = f"[ontology @{sha_prefix}]"
+
+    # Use user title if provided
+    if user_title:
+        return f"{prefix} {user_title}"
+
+    # Generate summary based on changes
+    if not changes:
+        return f"{prefix} Schema update (no changes)"
+
+    # Count by change type
+    creates = sum(1 for c in changes if c.change_type == ChangeType.CREATE)
+    updates = sum(1 for c in changes if c.change_type == ChangeType.UPDATE)
+    deletes = sum(1 for c in changes if c.change_type == ChangeType.DELETE)
+
+    # For single change, be specific
+    if len(changes) == 1:
+        change = changes[0]
+        action = (
+            "Add"
+            if change.change_type == ChangeType.CREATE
+            else "Update" if change.change_type == ChangeType.UPDATE else "Delete"
+        )
+        return f"{prefix} {action} {change.entity_type}: {change.entity_key}"
+
+    # For multiple changes, summarize with semver hint
+    parts = []
+    if creates:
+        parts.append(f"{creates} addition{'s' if creates != 1 else ''}")
+    if updates:
+        parts.append(f"{updates} update{'s' if updates != 1 else ''}")
+    if deletes:
+        parts.append(f"{deletes} deletion{'s' if deletes != 1 else ''}")
+
+    summary = ", ".join(parts)
+
+    # Add semver hint if available
+    if suggested_semver:
+        return f"{prefix} ({suggested_semver}) {summary}"
+    return f"{prefix} {summary}"
+
+
 def generate_pr_body_v2(
     changes: list[DraftChange],
     validation: DraftValidationReportV2,
     draft_title: str | None,
     user_comment: str | None,
+    base_commit_sha: str | None = None,
+    affected_modules: dict[str, str] | None = None,
+    affected_bundles: dict[str, str] | None = None,
 ) -> str:
     """Generate markdown PR body with changes, validation, and semver info.
 
@@ -228,6 +297,9 @@ def generate_pr_body_v2(
         validation: Validation report
         draft_title: Optional draft title
         user_comment: Optional user comment to include
+        base_commit_sha: Optional base commit SHA for version context
+        affected_modules: Optional dict mapping module keys to current versions
+        affected_bundles: Optional dict mapping bundle keys to current versions
 
     Returns:
         Markdown string for PR body
@@ -242,6 +314,33 @@ def generate_pr_body_v2(
     # User comment (if provided)
     if user_comment:
         sections.append(f"**Comment:** {user_comment}\n")
+
+    # Version context section
+    if base_commit_sha or affected_modules or affected_bundles:
+        sections.append("## Version Context\n")
+        if base_commit_sha:
+            sections.append(f"**Base ontology:** `{base_commit_sha[:7]}`")
+        sections.append(f"**Suggested bump:** `{validation.suggested_semver}`\n")
+
+        # Affected modules table
+        if affected_modules:
+            sections.append("### Affected Modules\n")
+            sections.append("| Module | Current Version | Suggested Version |")
+            sections.append("|--------|-----------------|-------------------|")
+            for module_key, current_version in affected_modules.items():
+                suggested = validation.module_suggestions.get(module_key, current_version)
+                sections.append(f"| {module_key} | {current_version} | {suggested} |")
+            sections.append("")
+
+        # Affected bundles table
+        if affected_bundles:
+            sections.append("### Affected Bundles\n")
+            sections.append("| Bundle | Current Version | Suggested Version |")
+            sections.append("|--------|-----------------|-------------------|")
+            for bundle_key, current_version in affected_bundles.items():
+                suggested = validation.bundle_suggestions.get(bundle_key, current_version)
+                sections.append(f"| {bundle_key} | {current_version} | {suggested} |")
+            sections.append("")
 
     # Changes section
     sections.append("## Changes\n")

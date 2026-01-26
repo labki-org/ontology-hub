@@ -137,6 +137,20 @@ export function BrowsePage() {
     }
   }
 
+  // Auto-fetch validation report when draft is validated but report is missing
+  // This handles the case where the page is refreshed and the local store is cleared
+  useEffect(() => {
+    if (
+      draftV2.data?.status === 'validated' &&
+      !validationReport &&
+      !isValidating &&
+      draftToken
+    ) {
+      handleValidate()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftV2.data?.status, validationReport, isValidating, draftToken])
+
   const handleSubmitPR = () => {
     setPrWizardOpen(true)
   }
