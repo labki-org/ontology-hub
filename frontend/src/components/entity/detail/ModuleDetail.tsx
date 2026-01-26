@@ -109,11 +109,19 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
     (value: string) => {
       setEditedLabel(value)
       if (draftToken) {
-        saveChange([{ op: 'replace', path: '/label', value }])
+        saveChange([{ op: 'add', path: '/label', value }])
       }
     },
     [draftId, saveChange]
   )
+
+  // Map entity type to canonical_json path (plural form)
+  const entityTypeToPath: Record<string, string> = {
+    category: '/categories',
+    property: '/properties',
+    subobject: '/subobjects',
+    template: '/templates',
+  }
 
   const handleAddEntity = useCallback(
     (entityType: string, entKey: string) => {
@@ -122,10 +130,14 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
       newEntities[entityType] = [...newEntities[entityType], entKey]
       setEditedEntities(newEntities)
       if (draftToken) {
-        saveChange([{ op: 'replace', path: '/entities', value: newEntities }])
+        // Patch the individual array path in canonical_json (e.g., /categories, /properties)
+        const path = entityTypeToPath[entityType]
+        if (path) {
+          saveChange([{ op: 'add', path, value: newEntities[entityType] }])
+        }
       }
     },
-    [editedEntities, draftId, saveChange]
+    [editedEntities, draftToken, saveChange]
   )
 
   const handleRemoveEntity = useCallback(
@@ -134,10 +146,14 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
       newEntities[entityType] = (newEntities[entityType] || []).filter((k) => k !== entKey)
       setEditedEntities(newEntities)
       if (draftToken) {
-        saveChange([{ op: 'replace', path: '/entities', value: newEntities }])
+        // Patch the individual array path in canonical_json (e.g., /categories, /properties)
+        const path = entityTypeToPath[entityType]
+        if (path) {
+          saveChange([{ op: 'add', path, value: newEntities[entityType] }])
+        }
       }
     },
-    [editedEntities, draftId, saveChange]
+    [editedEntities, draftToken, saveChange]
   )
 
   if (isLoading) {

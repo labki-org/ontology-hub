@@ -105,39 +105,40 @@ export function PropertyDetail({
     }
   }, [property, entityKey, pushBreadcrumb])
 
-  // Change handlers
+  // Change handlers - use 'add' instead of 'replace' for robustness
+  // (add works whether field exists or not in canonical_json)
   const handleLabelChange = useCallback(
     (value: string) => {
       setEditedLabel(value)
-      if (draftToken) saveChange([{ op: 'replace', path: '/label', value }])
+      if (draftToken) saveChange([{ op: 'add', path: '/label', value }])
     },
-    [draftId, saveChange]
+    [draftToken, saveChange]
   )
 
   const handleDescriptionChange = useCallback(
     (value: string) => {
       setEditedDescription(value)
-      if (draftToken) saveChange([{ op: 'replace', path: '/description', value }])
+      if (draftToken) saveChange([{ op: 'add', path: '/description', value }])
     },
-    [draftId, saveChange]
+    [draftToken, saveChange]
   )
 
   const handleDatatypeChange = useCallback(
     (value: string) => {
       setEditedDatatype(value)
       setIsEditingDatatype(false) // Close edit mode after selection
-      if (draftToken) saveChange([{ op: 'replace', path: '/datatype', value }])
+      if (draftToken) saveChange([{ op: 'add', path: '/datatype', value }])
     },
-    [draftId, saveChange]
+    [draftToken, saveChange]
   )
 
   const handleCardinalityChange = useCallback(
     (value: string) => {
       setEditedCardinality(value)
       setIsEditingCardinality(false) // Close edit mode after selection
-      if (draftToken) saveChange([{ op: 'replace', path: '/cardinality', value }])
+      if (draftToken) saveChange([{ op: 'add', path: '/cardinality', value }])
     },
-    [draftId, saveChange]
+    [draftToken, saveChange]
   )
 
   if (isLoading) {

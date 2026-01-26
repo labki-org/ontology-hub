@@ -174,25 +174,26 @@ export function CategoryDetail({
     }
   }, [category, entityKey, pushBreadcrumb])
 
-  // Change handlers with auto-save
+  // Change handlers with auto-save - use 'add' for robustness
+  // (add works whether field exists or not in canonical_json)
   const handleLabelChange = useCallback(
     (value: string) => {
       setEditedLabel(value)
       if (draftToken) {
-        saveChange([{ op: 'replace', path: '/label', value }])
+        saveChange([{ op: 'add', path: '/label', value }])
       }
     },
-    [draftId, saveChange]
+    [draftToken, saveChange]
   )
 
   const handleDescriptionChange = useCallback(
     (value: string) => {
       setEditedDescription(value)
       if (draftToken) {
-        saveChange([{ op: 'replace', path: '/description', value }])
+        saveChange([{ op: 'add', path: '/description', value }])
       }
     },
-    [draftId, saveChange]
+    [draftToken, saveChange]
   )
 
   // Soft delete: mark parent as deleted (shows DeletedItemBadge with undo)
@@ -247,10 +248,10 @@ export function CategoryDetail({
     setEditedDescription(originalValues.description || '')
     if (draftToken) {
       saveChange([
-        { op: 'replace', path: '/description', value: originalValues.description },
+        { op: 'add', path: '/description', value: originalValues.description },
       ])
     }
-  }, [originalValues.description, draftId, saveChange])
+  }, [originalValues.description, draftToken, saveChange])
 
   // Property handlers
   const handleAddRequiredProperty = useCallback(

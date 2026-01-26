@@ -88,30 +88,31 @@ export function TemplateDetail({
     }
   }, [template, entityKey, pushBreadcrumb])
 
-  // Change handlers
+  // Change handlers - use 'add' instead of 'replace' for robustness
+  // (add works whether field exists or not in canonical_json)
   const handleLabelChange = useCallback(
     (value: string) => {
       setEditedLabel(value)
-      if (draftToken) saveChange([{ op: 'replace', path: '/label', value }])
+      if (draftToken) saveChange([{ op: 'add', path: '/label', value }])
     },
-    [draftId, saveChange]
+    [draftToken, saveChange]
   )
 
   const handleDescriptionChange = useCallback(
     (value: string) => {
       setEditedDescription(value)
-      if (draftToken) saveChange([{ op: 'replace', path: '/description', value }])
+      if (draftToken) saveChange([{ op: 'add', path: '/description', value }])
     },
-    [draftId, saveChange]
+    [draftToken, saveChange]
   )
 
   const handleWikitextChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       const value = e.target.value
       setEditedWikitext(value)
-      if (draftToken) saveChange([{ op: 'replace', path: '/wikitext', value }])
+      if (draftToken) saveChange([{ op: 'add', path: '/wikitext', value }])
     },
-    [draftId, saveChange]
+    [draftToken, saveChange]
   )
 
   if (isLoading) {

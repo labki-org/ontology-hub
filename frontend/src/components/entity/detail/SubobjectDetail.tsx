@@ -118,7 +118,7 @@ export function SubobjectDetail({
   const handleLabelChange = useCallback(
     (value: string) => {
       setEditedLabel(value)
-      if (draftToken) saveChange([{ op: 'replace', path: '/label', value }])
+      if (draftToken) saveChange([{ op: 'add', path: '/label', value }])
     },
     [draftId, saveChange]
   )
@@ -126,7 +126,7 @@ export function SubobjectDetail({
   const handleDescriptionChange = useCallback(
     (value: string) => {
       setEditedDescription(value)
-      if (draftToken) saveChange([{ op: 'replace', path: '/description', value }])
+      if (draftToken) saveChange([{ op: 'add', path: '/description', value }])
     },
     [draftId, saveChange]
   )

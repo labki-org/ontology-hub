@@ -516,11 +516,49 @@ async def get_subobject(
     if not effective:
         raise HTTPException(status_code=404, detail="Subobject not found")
 
-    # Get properties from subobject_property table
+    # Get properties
     required_properties: list[SubobjectPropertyInfo] = []
     optional_properties: list[SubobjectPropertyInfo] = []
+    change_status = effective.get("_change_status")
 
-    if subobj:
+    # Check if effective JSON has draft-modified properties
+    has_draft_properties = change_status in ("modified", "added") and (
+        "required_properties" in effective or "optional_properties" in effective
+    )
+
+    if has_draft_properties:
+        # Use properties from effective JSON (draft changes take precedence)
+        # Build a property label lookup for better display
+        prop_labels: dict[str, str] = {}
+        all_prop_keys = list(effective.get("required_properties", [])) + list(
+            effective.get("optional_properties", [])
+        )
+        if all_prop_keys:
+            label_query = select(Property.entity_key, Property.label).where(
+                Property.entity_key.in_(all_prop_keys)
+            )
+            label_result = await session.execute(label_query)
+            for row in label_result.fetchall():
+                prop_labels[row[0]] = row[1]
+
+        for prop_key in effective.get("required_properties", []):
+            required_properties.append(
+                SubobjectPropertyInfo(
+                    entity_key=prop_key,
+                    label=prop_labels.get(prop_key, prop_key),
+                    is_required=True,
+                )
+            )
+        for prop_key in effective.get("optional_properties", []):
+            optional_properties.append(
+                SubobjectPropertyInfo(
+                    entity_key=prop_key,
+                    label=prop_labels.get(prop_key, prop_key),
+                    is_required=False,
+                )
+            )
+    elif subobj:
+        # No draft changes to properties - query canonical from database
         props_query = (
             select(Property.entity_key, Property.label, SubobjectProperty.is_required)
             .join(SubobjectProperty, SubobjectProperty.property_id == Property.id)
@@ -539,15 +577,19 @@ async def get_subobject(
             else:
                 optional_properties.append(prop_info)
     else:
-        # Draft-created subobject - extract from effective JSON
+        # Draft-created subobject with no property fields
         for prop_key in effective.get("required_properties", []):
-            required_properties.append(SubobjectPropertyInfo(
-                entity_key=prop_key, label=prop_key, is_required=True
-            ))
+            required_properties.append(
+                SubobjectPropertyInfo(
+                    entity_key=prop_key, label=prop_key, is_required=True
+                )
+            )
         for prop_key in effective.get("optional_properties", []):
-            optional_properties.append(SubobjectPropertyInfo(
-                entity_key=prop_key, label=prop_key, is_required=False
-            ))
+            optional_properties.append(
+                SubobjectPropertyInfo(
+                    entity_key=prop_key, label=prop_key, is_required=False
+                )
+            )
 
     return SubobjectDetailResponse(
         entity_key=effective.get("entity_key", entity_key),
@@ -776,9 +818,46 @@ async def get_module(
     # Get entities grouped by type
     entities: dict[str, list[str]] = {}
     direct_category_keys: list[str] = []
+    change_status = effective.get("_change_status")
 
-    if module:
-        # Query module_entity to get all entities in this module
+    # Check if effective JSON has draft-modified entity arrays
+    # canonical_json uses: categories, properties, subobjects, templates
+    has_draft_entities = change_status in ("modified", "added") and any(
+        key in effective for key in ("categories", "properties", "subobjects", "templates")
+    )
+
+    if has_draft_entities:
+        # Use entity arrays from effective JSON (draft changes take precedence)
+        # Convert from canonical_json format (categories/properties/etc) to API format (entities object)
+        if "categories" in effective:
+            entities["category"] = effective.get("categories", [])
+            direct_category_keys = entities["category"]
+        if "properties" in effective:
+            entities["property"] = effective.get("properties", [])
+        if "subobjects" in effective:
+            entities["subobject"] = effective.get("subobjects", [])
+        if "templates" in effective:
+            entities["template"] = effective.get("templates", [])
+
+        # Compute closure using draft-modified categories
+        closure = await compute_module_closure(session, direct_category_keys) if direct_category_keys else []
+
+        # Get module dependencies (may also be draft-modified)
+        if "dependencies" in effective:
+            dependencies = effective.get("dependencies", [])
+        elif module:
+            dep_query = (
+                select(Module.entity_key)
+                .join(ModuleDependency, ModuleDependency.dependency_id == Module.id)
+                .where(ModuleDependency.module_id == module.id)
+                .order_by(Module.entity_key)
+            )
+            dep_result = await session.execute(dep_query)
+            dependencies = [row[0] for row in dep_result.fetchall()]
+        else:
+            dependencies = []
+    elif module:
+        # No draft changes to entities - query canonical from database
         entity_query = (
             select(ModuleEntity.entity_type, ModuleEntity.entity_key)
             .where(ModuleEntity.module_id == module.id)
@@ -813,7 +892,18 @@ async def get_module(
         dependencies = [row[0] for row in dep_result.fetchall()]
     else:
         # Draft-created module - extract entities from effective JSON if present
-        entities = effective.get("entities", {})
+        # Try both formats: canonical (categories/properties) and API (entities object)
+        if "entities" in effective:
+            entities = effective.get("entities", {})
+        else:
+            if "categories" in effective:
+                entities["category"] = effective.get("categories", [])
+            if "properties" in effective:
+                entities["property"] = effective.get("properties", [])
+            if "subobjects" in effective:
+                entities["subobject"] = effective.get("subobjects", [])
+            if "templates" in effective:
+                entities["template"] = effective.get("templates", [])
         dependencies = effective.get("dependencies", [])
         closure = []  # No closure for draft-created modules yet
 
@@ -976,9 +1066,17 @@ async def get_bundle(
 
     # Get direct modules
     modules: list[str] = []
+    change_status = effective.get("_change_status")
 
-    if bundle:
-        # Query bundle_module to get all modules in this bundle
+    # Check if effective JSON has draft-modified modules
+    # (if "modules" key exists in effective and status is modified or added)
+    if change_status in ("modified", "added") and "modules" in effective:
+        # Use modules from effective JSON (draft changes take precedence)
+        modules = effective.get("modules", [])
+        # Compute closure using draft-modified modules list
+        closure = await compute_bundle_closure(session, modules) if modules else []
+    elif bundle:
+        # No draft changes to modules - query canonical from database
         module_query = (
             select(Module.entity_key)
             .join(BundleModule, BundleModule.module_id == Module.id)
@@ -991,9 +1089,9 @@ async def get_bundle(
         # Compute closure (transitive module dependencies)
         closure = await compute_bundle_closure(session, modules)
     else:
-        # Draft-created bundle - extract modules from effective JSON if present
-        modules = effective.get("modules", [])
-        closure = []  # No closure for draft-created bundles yet
+        # Draft-created bundle with no modules field
+        modules = []
+        closure = []
 
     return BundleDetailResponse(
         entity_key=effective.get("entity_key", entity_key),

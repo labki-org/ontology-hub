@@ -86,7 +86,7 @@ export function BundleDetail({ entityKey, draftId, draftToken, isEditing }: Bund
     (value: string) => {
       setEditedLabel(value)
       if (draftToken) {
-        saveChange([{ op: 'replace', path: '/label', value }])
+        saveChange([{ op: 'add', path: '/label', value }])
       }
     },
     [draftId, saveChange]
@@ -97,7 +97,7 @@ export function BundleDetail({ entityKey, draftId, draftToken, isEditing }: Bund
       const newModules = [...editedModules, moduleKey]
       setEditedModules(newModules)
       if (draftToken) {
-        saveChange([{ op: 'replace', path: '/modules', value: newModules }])
+        saveChange([{ op: 'add', path: '/modules', value: newModules }])
       }
     },
     [editedModules, draftId, saveChange]
@@ -108,7 +108,7 @@ export function BundleDetail({ entityKey, draftId, draftToken, isEditing }: Bund
       const newModules = editedModules.filter((m) => m !== moduleKey)
       setEditedModules(newModules)
       if (draftToken) {
-        saveChange([{ op: 'replace', path: '/modules', value: newModules }])
+        saveChange([{ op: 'add', path: '/modules', value: newModules }])
       }
     },
     [editedModules, draftId, saveChange]
