@@ -656,7 +656,7 @@ async def list_templates(
     )
 
 
-@router.get("/templates/{entity_key}", response_model=TemplateDetailResponse)
+@router.get("/templates/{entity_key:path}", response_model=TemplateDetailResponse)
 @limiter.limit(RATE_LIMITS["entity_read"])
 async def get_template(
     request: Request,

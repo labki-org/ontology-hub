@@ -98,9 +98,8 @@ class IngestService:
             path = entry.get("path", "")
             parts = path.split("/")
 
-            # Only process files directly in entity directories (e.g., "bundles/Default.json")
-            # Skip nested files like "bundles/Default/versions/1.0.0.json"
-            if len(parts) != 2:
+            # Need at least directory/filename
+            if len(parts) < 2:
                 continue
 
             directory = parts[0]
@@ -110,12 +109,21 @@ class IngestService:
             if filename == "_schema.json":
                 continue
 
-            if directory in files:
-                try:
-                    content = await self._github.get_file_content(owner, repo, path, ref=ref)
-                    files[directory].append((path, content))
-                except Exception as e:
-                    self._warnings.append(f"Failed to load {path}: {e}")
+            # Skip non-entity directories
+            if directory not in files:
+                continue
+
+            # Only process files directly in entity directories (e.g., "bundles/Default.json")
+            # Skip nested files like "bundles/Default/versions/1.0.0.json"
+            # Exception: templates allow nested paths (e.g., templates/Property/Page.json)
+            if len(parts) != 2 and directory != "templates":
+                continue
+
+            try:
+                content = await self._github.get_file_content(owner, repo, path, ref=ref)
+                files[directory].append((path, content))
+            except Exception as e:
+                self._warnings.append(f"Failed to load {path}: {e}")
 
         return files
 
