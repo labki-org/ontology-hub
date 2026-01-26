@@ -6,6 +6,7 @@ import {
   forceCollide,
   forceX,
   forceY,
+  forceRadial,
 } from 'd3-force'
 import dagre from '@dagrejs/dagre'
 import type { Node, Edge } from '@xyflow/react'
@@ -74,6 +75,8 @@ export function useHybridLayout(
       positionedNodes = applyDagreLayout(initialNodes, edges, direction)
     } else if (algorithm === 'force') {
       positionedNodes = applyForceLayout(initialNodes, edges)
+    } else if (algorithm === 'radial') {
+      positionedNodes = applyRadialLayout(initialNodes, edges, simulationRef, d3NodesRef)
     } else {
       // Hybrid: dagre + force constraints
       positionedNodes = applyHybridLayout(initialNodes, edges, direction, simulationRef, d3NodesRef)
@@ -98,10 +101,12 @@ export function useHybridLayout(
     }
 
     if (!simulationRef.current || !d3NodesRef.current.length) {
-      // Force or hybrid: rerun layout
+      // Force, radial, or hybrid: rerun layout
       let positionedNodes: Node[]
       if (algorithm === 'force') {
         positionedNodes = applyForceLayout(initialNodes, edges)
+      } else if (algorithm === 'radial') {
+        positionedNodes = applyRadialLayout(initialNodes, edges, simulationRef, d3NodesRef)
       } else {
         positionedNodes = applyHybridLayout(initialNodes, edges, direction, simulationRef, d3NodesRef)
       }
@@ -469,4 +474,228 @@ function applyHybridLayout(
   }
 
   return [...positionedConnected, ...positionedOrphans]
+}
+
+/**
+ * Radial layout: positions nodes in concentric rings based on depth from root nodes.
+ * Uses a dendrogram-style approach where children fan out from their parents,
+ * spreading different node types across the graph based on hierarchy.
+ */
+function applyRadialLayout(
+  nodes: Node[],
+  edges: Edge[],
+  simulationRef: React.MutableRefObject<ReturnType<typeof forceSimulation<D3Node>> | null>,
+  d3NodesRef: React.MutableRefObject<D3Node[]>
+): Node[] {
+  if (!nodes.length) return []
+
+  // Step 1: Build hierarchy from parent edges
+  const parentEdges = edges.filter(e => e.data?.edge_type === 'parent')
+
+  // Build parent -> children map (parent edges go child -> parent, so we reverse)
+  const parentToChildren = new Map<string, string[]>()
+  const childToParent = new Map<string, string>()
+
+  for (const edge of parentEdges) {
+    const child = edge.source
+    const parent = edge.target
+    // Only track first parent for tree structure (handle multi-parent later)
+    if (!childToParent.has(child)) {
+      childToParent.set(child, parent)
+      if (!parentToChildren.has(parent)) {
+        parentToChildren.set(parent, [])
+      }
+      parentToChildren.get(parent)!.push(child)
+    }
+  }
+
+  // Find root nodes (nodes with no parents in our tree)
+  const nodeIds = new Set(nodes.map(n => n.id))
+  const rootNodes: string[] = []
+  for (const id of nodeIds) {
+    if (!childToParent.has(id)) {
+      rootNodes.push(id)
+    }
+  }
+
+  // Step 2: Calculate subtree sizes (leaf count) for angular allocation
+  const subtreeSize = new Map<string, number>()
+
+  function calculateSubtreeSize(nodeId: string): number {
+    const children = parentToChildren.get(nodeId) ?? []
+    if (children.length === 0) {
+      subtreeSize.set(nodeId, 1)
+      return 1
+    }
+    let size = 0
+    for (const child of children) {
+      size += calculateSubtreeSize(child)
+    }
+    subtreeSize.set(nodeId, size)
+    return size
+  }
+
+  // Calculate sizes for all trees starting from roots
+  for (const root of rootNodes) {
+    calculateSubtreeSize(root)
+  }
+
+  // Assign size 1 to any disconnected nodes
+  for (const node of nodes) {
+    if (!subtreeSize.has(node.id)) {
+      subtreeSize.set(node.id, 1)
+    }
+  }
+
+  // Step 3: Calculate total leaf count for angular range allocation
+  let totalLeaves = 0
+  for (const root of rootNodes) {
+    totalLeaves += subtreeSize.get(root) ?? 1
+  }
+  // Add orphan nodes (not in any tree)
+  const treeNodes = new Set<string>()
+  function collectTreeNodes(nodeId: string) {
+    treeNodes.add(nodeId)
+    const children = parentToChildren.get(nodeId) ?? []
+    for (const child of children) {
+      collectTreeNodes(child)
+    }
+  }
+  for (const root of rootNodes) {
+    collectTreeNodes(root)
+  }
+  const orphanNodes = nodes.filter(n => !treeNodes.has(n.id))
+  totalLeaves += orphanNodes.length
+
+  // Step 4: Assign angular ranges and positions using tree traversal
+  const ringSpacing = 220 // Distance between rings (increased for more spacing)
+  const nodePositions = new Map<string, { x: number; y: number; radius: number; angle: number }>()
+  const nodeDepth = new Map<string, number>()
+
+  function positionSubtree(
+    nodeId: string,
+    depth: number,
+    startAngle: number,
+    endAngle: number
+  ) {
+    nodeDepth.set(nodeId, depth)
+    const radius = depth * ringSpacing
+    const angle = (startAngle + endAngle) / 2 // Center of angular range
+
+    const x = radius * Math.cos(angle)
+    const y = radius * Math.sin(angle)
+    nodePositions.set(nodeId, { x, y, radius, angle })
+
+    // Position children within this node's angular range
+    const children = parentToChildren.get(nodeId) ?? []
+    if (children.length > 0) {
+      const totalChildSize = children.reduce((sum, c) => sum + (subtreeSize.get(c) ?? 1), 0)
+      let currentAngle = startAngle
+
+      for (const child of children) {
+        const childSize = subtreeSize.get(child) ?? 1
+        const childAngleRange = (endAngle - startAngle) * (childSize / totalChildSize)
+        const childEndAngle = currentAngle + childAngleRange
+
+        positionSubtree(child, depth + 1, currentAngle, childEndAngle)
+        currentAngle = childEndAngle
+      }
+    }
+  }
+
+  // Position all root trees, distributing angular space by subtree size
+  let currentAngle = -Math.PI / 2 // Start from top
+  const fullCircle = 2 * Math.PI
+
+  for (const root of rootNodes) {
+    const rootSize = subtreeSize.get(root) ?? 1
+    const angleRange = fullCircle * (rootSize / totalLeaves)
+    positionSubtree(root, 0, currentAngle, currentAngle + angleRange)
+    currentAngle += angleRange
+  }
+
+  // Position orphan nodes (spread them evenly in remaining space or as outer ring)
+  if (orphanNodes.length > 0) {
+    const maxDepth = Math.max(...Array.from(nodeDepth.values()), 0)
+    const orphanRadius = (maxDepth + 1.5) * ringSpacing
+    const orphanAngleRange = fullCircle * (orphanNodes.length / totalLeaves)
+    const orphanAngleStep = orphanAngleRange / orphanNodes.length
+
+    orphanNodes.forEach((node, i) => {
+      const angle = currentAngle + i * orphanAngleStep + orphanAngleStep / 2
+      const x = orphanRadius * Math.cos(angle)
+      const y = orphanRadius * Math.sin(angle)
+      nodePositions.set(node.id, { x, y, radius: orphanRadius, angle })
+      nodeDepth.set(node.id, maxDepth + 2)
+    })
+  }
+
+  // Step 5: Create d3 nodes with tree-based positions
+  const d3Nodes: D3Node[] = nodes.map((node) => {
+    const pos = nodePositions.get(node.id) ?? { x: 0, y: 0, radius: 0 }
+    return {
+      id: node.id,
+      x: pos.x,
+      y: pos.y,
+      targetX: pos.x,
+      targetY: pos.y,
+    }
+  })
+  d3NodesRef.current = d3Nodes
+
+  // Step 6: Create d3 links with edge-type-aware distances
+  // Parent edges follow the tree structure, other edges should pull nodes closer
+  const d3Links = edges.map((edge) => {
+    const isParentEdge = edge.data?.edge_type === 'parent'
+    return {
+      source: edge.source,
+      target: edge.target,
+      // Parent edges: use ring spacing. Other edges: shorter to pull connected nodes together
+      distance: isParentEdge ? ringSpacing * 0.9 : ringSpacing * 0.5,
+      // Non-parent edges get stronger pull to bring connected nodes closer
+      strength: isParentEdge ? 0.3 : 0.6,
+    }
+  })
+
+  // Step 7: Run force simulation with radial constraint
+  // Balance between maintaining radial structure and pulling connected nodes together
+  const simulation = forceSimulation(d3Nodes)
+    .force('charge', forceManyBody().strength(-250))
+    .force(
+      'link',
+      forceLink(d3Links)
+        .id((d: any) => d.id)
+        .distance((d: any) => d.distance)
+        .strength((d: any) => d.strength)
+    )
+    .force('collide', forceCollide(70)) // Increased collision radius for more spacing
+    // Use forceRadial to keep nodes at their assigned ring distances
+    // Reduced strength to allow more flexibility for connected nodes
+    .force('radial', forceRadial(
+      (d: any) => nodePositions.get(d.id)?.radius ?? 0,
+      0, 0
+    ).strength(0.4))
+    .alphaDecay(0.025) // Slower decay for better convergence
+    .stop()
+
+  simulationRef.current = simulation
+
+  // Run simulation to completion (more iterations for better convergence)
+  const maxIterations = 400
+  for (let i = 0; i < maxIterations; i++) {
+    simulation.tick()
+    if (simulation.alpha() < 0.005) break
+  }
+
+  // Build positioned nodes
+  return nodes.map((node) => {
+    const d3Node = d3Nodes.find((n) => n.id === node.id)
+    return {
+      ...node,
+      position: {
+        x: d3Node?.x ?? 0,
+        y: d3Node?.y ?? 0,
+      },
+    }
+  })
 }

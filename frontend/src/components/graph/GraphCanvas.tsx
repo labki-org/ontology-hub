@@ -77,6 +77,9 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
   }
   const displayData = data ?? prevDataRef.current
 
+  // Get hovered node for edge highlighting
+  const hoveredNodeId = useGraphStore((s) => s.hoveredNodeId)
+
   // Convert API response to React Flow format
   const { initialNodes, filteredEdges } = useMemo(() => {
     if (!displayData) return { initialNodes: [], filteredEdges: [] }
@@ -98,29 +101,50 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
     // Filter edges by edge_type
     const edges: Edge[] = displayData.edges
       .filter((edge: ApiGraphEdge) => edgeTypeFilter.has(edge.edge_type))
-      .map((edge: ApiGraphEdge, index: number) => ({
-        id: `e${index}-${edge.source}-${edge.target}`,
-        source: edge.source,
-        target: edge.target,
-        type: 'smoothstep',
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          width: 15,
-          height: 15,
-          color: getEdgeColor(edge.edge_type),
-        },
-        style: {
-          stroke: getEdgeColor(edge.edge_type),
-          strokeWidth: 1.5,
-          strokeDasharray: getEdgeStrokeDasharray(edge.edge_type),
-        },
-        data: {
-          edge_type: edge.edge_type,
-        },
-      }))
+      .map((edge: ApiGraphEdge, index: number) => {
+        // Determine if this edge connects to the hovered node
+        const isConnectedToHovered = hoveredNodeId
+          ? edge.source === hoveredNodeId || edge.target === hoveredNodeId
+          : false
+
+        // Calculate opacity and stroke width based on hover state
+        let opacity = 0.7 // Default opacity
+        let strokeWidth = 1.5
+        if (hoveredNodeId) {
+          if (isConnectedToHovered) {
+            opacity = 1
+            strokeWidth = 2.5
+          } else {
+            opacity = 0.15
+          }
+        }
+
+        return {
+          id: `e${index}-${edge.source}-${edge.target}`,
+          source: edge.source,
+          target: edge.target,
+          type: 'default', // 'default' is bezier curve in React Flow
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            width: 15,
+            height: 15,
+            color: getEdgeColor(edge.edge_type),
+          },
+          style: {
+            stroke: getEdgeColor(edge.edge_type),
+            strokeWidth,
+            strokeDasharray: getEdgeStrokeDasharray(edge.edge_type),
+            opacity,
+            transition: 'opacity 0.2s ease, stroke-width 0.2s ease',
+          },
+          data: {
+            edge_type: edge.edge_type,
+          },
+        }
+      })
 
     return { initialNodes: nodes, filteredEdges: edges }
-  }, [displayData, edgeTypeFilter])
+  }, [displayData, edgeTypeFilter, hoveredNodeId])
 
   // Apply layout based on selected algorithm
   const { nodes, isRunning, restartSimulation } = useHybridLayout(
@@ -356,15 +380,15 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
 function getEdgeColor(edgeType: string): string {
   switch (edgeType) {
     case 'parent':
-      return '#888'
+      return '#475569' // slate-600 (more contrast than #888)
     case 'property':
-      return '#3b82f6' // blue
+      return '#2563eb' // blue-600 (more saturated)
     case 'subobject':
-      return '#8b5cf6' // purple
+      return '#7c3aed' // violet-600 (more saturated)
     case 'subobject_property':
-      return '#14b8a6' // teal
+      return '#0d9488' // teal-600 (more saturated)
     default:
-      return '#888'
+      return '#475569'
   }
 }
 

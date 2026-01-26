@@ -6,7 +6,7 @@ import type { GraphNode, GraphEdge } from '@/api/types'
 // Enable Map and Set support in immer (required for Zustand immer middleware)
 enableMapSet()
 
-export type LayoutAlgorithm = 'force' | 'dagre' | 'hybrid'
+export type LayoutAlgorithm = 'force' | 'dagre' | 'hybrid' | 'radial'
 export type LayoutDirection = 'TB' | 'LR'
 
 interface GraphState {
@@ -56,7 +56,7 @@ const initialState = {
   showSubobjects: false,
   showTemplates: false,
   edgeTypeFilter: new Set<string>(['parent', 'property', 'subobject', 'subobject_property']),
-  layoutAlgorithm: 'hybrid' as LayoutAlgorithm,
+  layoutAlgorithm: 'radial' as LayoutAlgorithm,
   layoutDirection: 'TB' as LayoutDirection,
 }
 
@@ -148,7 +148,7 @@ export const useGraphStore = create<GraphState>()(
         state.showSubobjects = false
         state.showTemplates = false
         state.edgeTypeFilter = new Set<string>(['parent', 'property', 'subobject', 'subobject_property'])
-        state.layoutAlgorithm = 'hybrid'
+        state.layoutAlgorithm = 'radial'
         state.layoutDirection = 'TB'
       })
     },

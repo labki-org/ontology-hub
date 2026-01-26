@@ -152,6 +152,9 @@ function GraphNodeComponent({ data }: { data: GraphNodeData }) {
   const directEdits = useDraftStoreV2((s) => s.directlyEditedEntities)
   const transitiveAffects = useDraftStoreV2((s) => s.transitivelyAffectedEntities)
 
+  // Get edges from store to determine connectivity to hovered node
+  const edges = useGraphStore((s) => s.edges)
+
   const handleClick = () => {
     setSelectedEntity(data.entity_key, data.entity_type)
   }
@@ -180,7 +183,14 @@ function GraphNodeComponent({ data }: { data: GraphNodeData }) {
   const getOpacity = (): number => {
     if (!hoveredNodeId) return 1
     if (data.entity_key === hoveredNodeId) return 1
-    return 0.3
+    // Check if this node is connected to the hovered node
+    const isConnected = edges.some(
+      (edge) =>
+        (edge.source === hoveredNodeId && edge.target === data.entity_key) ||
+        (edge.target === hoveredNodeId && edge.source === data.entity_key)
+    )
+    if (isConnected) return 0.85 // Connected nodes are slightly dimmed
+    return 0.25 // Unconnected nodes are more dimmed
   }
 
   // Get glow filter for change_status or selection

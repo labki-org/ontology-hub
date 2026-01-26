@@ -76,25 +76,29 @@ export function GraphControls({ onResetLayout, isSimulating }: GraphControlsProp
                     <SelectItem value="hybrid" className="text-xs">Hierarchy + Flow</SelectItem>
                     <SelectItem value="dagre" className="text-xs">Strict Hierarchy</SelectItem>
                     <SelectItem value="force" className="text-xs">Force-Directed</SelectItem>
+                    <SelectItem value="radial" className="text-xs">Radial (Outward)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-muted-foreground">Direction:</span>
-                <Select
-                  value={layoutDirection}
-                  onValueChange={(value) => setLayoutDirection(value as LayoutDirection)}
-                >
-                  <SelectTrigger className="h-7 w-[100px] text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="TB" className="text-xs">Top-Down</SelectItem>
-                    <SelectItem value="LR" className="text-xs">Left-Right</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Hide direction selector for radial layout (it has no direction) */}
+              {layoutAlgorithm !== 'radial' && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-muted-foreground">Direction:</span>
+                  <Select
+                    value={layoutDirection}
+                    onValueChange={(value) => setLayoutDirection(value as LayoutDirection)}
+                  >
+                    <SelectTrigger className="h-7 w-[100px] text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="TB" className="text-xs">Top-Down</SelectItem>
+                      <SelectItem value="LR" className="text-xs">Left-Right</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               <div className="h-4 w-px bg-border" />
 
