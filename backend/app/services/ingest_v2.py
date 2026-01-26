@@ -11,22 +11,22 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.models.v2 import (
     # Entities
     Bundle,
-    Category,
-    Module,
-    Property,
-    Subobject,
-    Template,
     # Relationships
     BundleModule,
+    Category,
     CategoryParent,
     CategoryProperty,
     CategorySubobject,
+    IngestStatus,
+    Module,
     ModuleDependency,
     ModuleEntity,
-    SubobjectProperty,
     # Version tracking
     OntologyVersion,
-    IngestStatus,
+    Property,
+    Subobject,
+    SubobjectProperty,
+    Template,
     # Mat view refresh
     refresh_category_property_effective,
 )
@@ -90,9 +90,7 @@ class IngestService:
         # Get repository tree
         tree_entries = await self._github.get_repository_tree(owner, repo, ref)
 
-        files: dict[str, list[tuple[str, dict]]] = {
-            key: [] for key in ENTITY_DIRECTORIES.keys()
-        }
+        files: dict[str, list[tuple[str, dict]]] = {key: [] for key in ENTITY_DIRECTORIES}
 
         for entry in tree_entries:
             path = entry.get("path", "")
@@ -193,10 +191,12 @@ class IngestService:
                 cat_id = categories.get(rel.source_key)
                 parent_id = categories.get(rel.target_key)
                 if cat_id and parent_id:
-                    self._session.add(CategoryParent(
-                        category_id=cat_id,
-                        parent_id=parent_id,
-                    ))
+                    self._session.add(
+                        CategoryParent(
+                            category_id=cat_id,
+                            parent_id=parent_id,
+                        )
+                    )
                 else:
                     self._warnings.append(
                         f"Unresolved parent: {rel.source_key} -> {rel.target_key}"
@@ -206,11 +206,13 @@ class IngestService:
                 cat_id = categories.get(rel.source_key)
                 prop_id = properties.get(rel.target_key)
                 if cat_id and prop_id:
-                    self._session.add(CategoryProperty(
-                        category_id=cat_id,
-                        property_id=prop_id,
-                        is_required=rel.extra.get("is_required", False),
-                    ))
+                    self._session.add(
+                        CategoryProperty(
+                            category_id=cat_id,
+                            property_id=prop_id,
+                            is_required=rel.extra.get("is_required", False),
+                        )
+                    )
                 else:
                     self._warnings.append(
                         f"Unresolved category_property: {rel.source_key} -> {rel.target_key}"
@@ -220,11 +222,13 @@ class IngestService:
                 cat_id = categories.get(rel.source_key)
                 sub_id = subobjects.get(rel.target_key)
                 if cat_id and sub_id:
-                    self._session.add(CategorySubobject(
-                        category_id=cat_id,
-                        subobject_id=sub_id,
-                        is_required=rel.extra.get("is_required", False),
-                    ))
+                    self._session.add(
+                        CategorySubobject(
+                            category_id=cat_id,
+                            subobject_id=sub_id,
+                            is_required=rel.extra.get("is_required", False),
+                        )
+                    )
                 else:
                     self._warnings.append(
                         f"Unresolved category_subobject: {rel.source_key} -> {rel.target_key}"
@@ -234,11 +238,13 @@ class IngestService:
                 sub_id = subobjects.get(rel.source_key)
                 prop_id = properties.get(rel.target_key)
                 if sub_id and prop_id:
-                    self._session.add(SubobjectProperty(
-                        subobject_id=sub_id,
-                        property_id=prop_id,
-                        is_required=rel.extra.get("is_required", False),
-                    ))
+                    self._session.add(
+                        SubobjectProperty(
+                            subobject_id=sub_id,
+                            property_id=prop_id,
+                            is_required=rel.extra.get("is_required", False),
+                        )
+                    )
                 else:
                     self._warnings.append(
                         f"Unresolved subobject_property: {rel.source_key} -> {rel.target_key}"
@@ -249,25 +255,29 @@ class IngestService:
                 if module_id:
                     # Convert enum to value string for storage
                     entity_type = rel.extra["entity_type"]
-                    entity_type_value = entity_type.value if hasattr(entity_type, 'value') else entity_type
-                    self._session.add(ModuleEntity(
-                        module_id=module_id,
-                        entity_type=entity_type_value,
-                        entity_key=rel.target_key,
-                    ))
-                else:
-                    self._warnings.append(
-                        f"Unresolved module: {rel.source_key}"
+                    entity_type_value = (
+                        entity_type.value if hasattr(entity_type, "value") else entity_type
                     )
+                    self._session.add(
+                        ModuleEntity(
+                            module_id=module_id,
+                            entity_type=entity_type_value,
+                            entity_key=rel.target_key,
+                        )
+                    )
+                else:
+                    self._warnings.append(f"Unresolved module: {rel.source_key}")
 
             elif rel.type == "module_dependency":
                 module_id = modules.get(rel.source_key)
                 dep_id = modules.get(rel.target_key)
                 if module_id and dep_id:
-                    self._session.add(ModuleDependency(
-                        module_id=module_id,
-                        dependency_id=dep_id,
-                    ))
+                    self._session.add(
+                        ModuleDependency(
+                            module_id=module_id,
+                            dependency_id=dep_id,
+                        )
+                    )
                 else:
                     self._warnings.append(
                         f"Unresolved module_dependency: {rel.source_key} -> {rel.target_key}"
@@ -277,10 +287,12 @@ class IngestService:
                 bundle_id = bundles.get(rel.source_key)
                 module_id = modules.get(rel.target_key)
                 if bundle_id and module_id:
-                    self._session.add(BundleModule(
-                        bundle_id=bundle_id,
-                        module_id=module_id,
-                    ))
+                    self._session.add(
+                        BundleModule(
+                            bundle_id=bundle_id,
+                            module_id=module_id,
+                        )
+                    )
                 else:
                     self._warnings.append(
                         f"Unresolved bundle_module: {rel.source_key} -> {rel.target_key}"
@@ -331,10 +343,12 @@ async def sync_repository_v2(
 
     # 4. Validate all files against schemas
     validator = SchemaValidator(schemas)
-    validation_errors = validator.validate_all({
-        entity_type: [(path, content) for path, content in files]
-        for entity_type, files in entity_files.items()
-    })
+    validation_errors = validator.validate_all(
+        {
+            entity_type: [(path, content) for path, content in files]
+            for entity_type, files in entity_files.items()
+        }
+    )
 
     if validation_errors:
         # Log errors and abort - don't ingest invalid data

@@ -16,7 +16,6 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from httpx import AsyncClient
 
-
 pytestmark = pytest.mark.asyncio
 
 
@@ -30,11 +29,14 @@ def create_signature(body: bytes, secret: str) -> str:
     Returns:
         HMAC-SHA256 signature in GitHub's format (sha256=...)
     """
-    return "sha256=" + hmac.new(
-        secret.encode("utf-8"),
-        body,
-        hashlib.sha256,
-    ).hexdigest()
+    return (
+        "sha256="
+        + hmac.new(
+            secret.encode("utf-8"),
+            body,
+            hashlib.sha256,
+        ).hexdigest()
+    )
 
 
 class TestWebhookSignatureVerification:
@@ -237,9 +239,7 @@ class TestPushEventHandling:
 
         assert response.json()["forced"] is True
 
-    async def test_push_without_github_token_returns_skipped(
-        self, client: AsyncClient
-    ):
+    async def test_push_without_github_token_returns_skipped(self, client: AsyncClient):
         """Push event should return skipped when GITHUB_TOKEN not configured."""
         payload = {"ref": "refs/heads/main", "commits": []}
 
@@ -324,9 +324,7 @@ class TestNonPushEvents:
         assert data["status"] == "ignored"
         assert data["event"] == "custom_event"
 
-    async def test_missing_event_header_treated_as_unknown(
-        self, client: AsyncClient
-    ):
+    async def test_missing_event_header_treated_as_unknown(self, client: AsyncClient):
         """Missing event header should be treated as unknown event."""
         payload = {"data": "test"}
 

@@ -6,11 +6,10 @@ OAuth tokens are held in session temporarily, never persisted.
 
 import logging
 from datetime import datetime
-from typing import Optional
 from urllib.parse import quote
 
-from authlib.integrations.starlette_client import OAuth
 from authlib.integrations.base_client.errors import OAuthError
+from authlib.integrations.starlette_client import OAuth
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
@@ -63,8 +62,8 @@ router = APIRouter(prefix="/oauth", tags=["oauth"])
 async def github_login(
     request: Request,
     draft_token: str,
-    pr_title: Optional[str] = None,
-    user_comment: Optional[str] = None,
+    pr_title: str | None = None,
+    user_comment: str | None = None,
 ):
     """Initiate GitHub OAuth flow for PR creation.
 
@@ -108,8 +107,8 @@ async def create_pr_from_draft(
     draft_token: str,
     github_token: str,
     session: AsyncSession,
-    pr_title: Optional[str] = None,
-    user_comment: Optional[str] = None,
+    pr_title: str | None = None,
+    user_comment: str | None = None,
 ) -> str:
     """Create a GitHub PR from a draft using v2 models and services.
 
@@ -198,7 +197,7 @@ async def create_pr_from_draft(
         )
     except Exception as e:
         logger.error(f"Failed to create PR: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to create PR: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create PR: {str(e)}") from e
 
     # Update draft status using v2 workflow transition
     await transition_to_submitted(draft.id, pr_url, session)
@@ -229,7 +228,7 @@ async def github_callback(request: Request, session: AsyncSession = Depends(get_
         raise HTTPException(
             status_code=400,
             detail=f"OAuth authorization failed: {str(e)}",
-        )
+        ) from e
 
     # Retrieve draft_token and optional params from session
     draft_token = request.session.pop("pending_draft_token", None)
@@ -257,7 +256,9 @@ async def github_callback(request: Request, session: AsyncSession = Depends(get_
     except HTTPException as e:
         # Handle known errors
         logger.warning(f"PR creation failed: {e.detail}")
-        redirect_url = f"{settings.FRONTEND_URL}/draft/{draft_token}?pr_error={quote(str(e.detail))}"
+        redirect_url = (
+            f"{settings.FRONTEND_URL}/draft/{draft_token}?pr_error={quote(str(e.detail))}"
+        )
         return RedirectResponse(url=redirect_url)
     except Exception as e:
         # Handle unexpected errors

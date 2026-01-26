@@ -9,7 +9,7 @@ from app.schemas.validation_v2 import ValidationResultV2
 
 
 def check_circular_inheritance_v2(
-    effective_entities: dict[str, dict[str, dict]]
+    effective_entities: dict[str, dict[str, dict]],
 ) -> list[ValidationResultV2]:
     """Detect circular inheritance in category parent relationships.
 

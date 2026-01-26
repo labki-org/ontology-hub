@@ -82,7 +82,7 @@ async def get_canonical_json(
     return None
 
 
-def serialize_for_repo(entity_json: dict, entity_type: str) -> dict:
+def serialize_for_repo(entity_json: dict, _entity_type: str) -> dict:
     """Convert effective entity JSON to repository format.
 
     Repo format uses "id" instead of "entity_key" for compatibility.

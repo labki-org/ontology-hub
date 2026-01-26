@@ -5,7 +5,6 @@ Separated from SQLModel models to decouple API contracts from database schema.
 """
 
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -21,11 +20,11 @@ class DraftCreate(BaseModel):
     """
 
     source: DraftSource = Field(description="Origin of the draft (hub_ui or mediawiki_push)")
-    title: Optional[str] = Field(
+    title: str | None = Field(
         default=None,
         description="Draft title (auto-generated if not provided)",
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None,
         description="Draft description",
     )
@@ -40,15 +39,15 @@ class DraftResponse(BaseModel):
     id: UUID
     status: DraftStatus
     source: DraftSource
-    title: Optional[str] = None
-    description: Optional[str] = None
-    user_comment: Optional[str] = None
+    title: str | None = None
+    description: str | None = None
+    user_comment: str | None = None
     base_commit_sha: str = Field(description="Git SHA of canonical version when draft created")
-    rebase_status: Optional[str] = Field(
+    rebase_status: str | None = Field(
         default=None,
         description="Rebase status: clean, conflict, or pending",
     )
-    rebase_commit_sha: Optional[str] = Field(
+    rebase_commit_sha: str | None = Field(
         default=None,
         description="New canonical SHA after rebase",
     )
@@ -88,7 +87,7 @@ class DraftStatusUpdate(BaseModel):
     """
 
     status: DraftStatus = Field(description="New status for the draft")
-    user_comment: Optional[str] = Field(
+    user_comment: str | None = Field(
         default=None,
         description="Optional user notes to attach to draft",
     )
@@ -98,10 +97,8 @@ class DraftSubmitRequest(BaseModel):
     """Request body for submitting a draft as PR."""
 
     github_token: str = Field(..., description="GitHub OAuth access token")
-    pr_title: Optional[str] = Field(None, description="Optional custom PR title")
-    user_comment: Optional[str] = Field(
-        None, description="Optional comment to include in PR body"
-    )
+    pr_title: str | None = Field(None, description="Optional custom PR title")
+    user_comment: str | None = Field(None, description="Optional comment to include in PR body")
 
 
 class DraftSubmitResponse(BaseModel):

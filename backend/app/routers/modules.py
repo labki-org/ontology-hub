@@ -12,18 +12,14 @@ Provides read-only access to modules and profiles:
 All endpoints filter out soft-deleted records (deleted_at is not None).
 """
 
-from typing import Optional
-
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
-from sqlalchemy import cast, String
 from sqlmodel import select
 
 from app.database import SessionDep
 from app.dependencies.rate_limit import RATE_LIMITS, limiter
 from app.models.entity import Entity, EntityPublic, EntityType
 from app.models.module import Module, ModulePublic, Profile, ProfilePublic
-
 
 router = APIRouter(tags=["modules"])
 
@@ -44,9 +40,7 @@ class ModuleEntitiesResponse(BaseModel):
 async def list_modules(
     request: Request,
     session: SessionDep,
-    search: Optional[str] = Query(
-        None, min_length=2, max_length=100, description="Search by label"
-    ),
+    search: str | None = Query(None, min_length=2, max_length=100, description="Search by label"),
 ) -> list[ModulePublic]:
     """List all modules with optional search.
 
@@ -148,11 +142,15 @@ async def get_module_entities(
     # Get categories directly in module
     categories: list[EntityPublic] = []
     if category_ids:
-        cat_query = select(Entity).where(
-            Entity.entity_type == EntityType.CATEGORY,
-            Entity.entity_id.in_(category_ids),
-            Entity.deleted_at.is_(None),
-        ).order_by(Entity.label)
+        cat_query = (
+            select(Entity)
+            .where(
+                Entity.entity_type == EntityType.CATEGORY,
+                Entity.entity_id.in_(category_ids),
+                Entity.deleted_at.is_(None),
+            )
+            .order_by(Entity.label)
+        )
         result = await session.execute(cat_query)
         categories = [EntityPublic.model_validate(e) for e in result.scalars().all()]
 
@@ -173,22 +171,30 @@ async def get_module_entities(
     # Get properties
     properties: list[EntityPublic] = []
     if property_ids:
-        prop_query = select(Entity).where(
-            Entity.entity_type == EntityType.PROPERTY,
-            Entity.entity_id.in_(list(property_ids)),
-            Entity.deleted_at.is_(None),
-        ).order_by(Entity.label)
+        prop_query = (
+            select(Entity)
+            .where(
+                Entity.entity_type == EntityType.PROPERTY,
+                Entity.entity_id.in_(list(property_ids)),
+                Entity.deleted_at.is_(None),
+            )
+            .order_by(Entity.label)
+        )
         result = await session.execute(prop_query)
         properties = [EntityPublic.model_validate(e) for e in result.scalars().all()]
 
     # Get subobjects
     subobjects: list[EntityPublic] = []
     if subobject_ids:
-        sub_query = select(Entity).where(
-            Entity.entity_type == EntityType.SUBOBJECT,
-            Entity.entity_id.in_(list(subobject_ids)),
-            Entity.deleted_at.is_(None),
-        ).order_by(Entity.label)
+        sub_query = (
+            select(Entity)
+            .where(
+                Entity.entity_type == EntityType.SUBOBJECT,
+                Entity.entity_id.in_(list(subobject_ids)),
+                Entity.deleted_at.is_(None),
+            )
+            .order_by(Entity.label)
+        )
         result = await session.execute(sub_query)
         subobjects = [EntityPublic.model_validate(e) for e in result.scalars().all()]
 
@@ -244,10 +250,7 @@ async def get_module_overlaps(
     # Find overlaps - categories from this module that appear in other modules
     overlaps: dict[str, list[str]] = {}
     for cat_id in module.category_ids or []:
-        other_module_ids = [
-            m.module_id for m in other_modules
-            if cat_id in (m.category_ids or [])
-        ]
+        other_module_ids = [m.module_id for m in other_modules if cat_id in (m.category_ids or [])]
         if other_module_ids:
             overlaps[cat_id] = other_module_ids
 
@@ -262,9 +265,7 @@ async def get_module_overlaps(
 async def list_profiles(
     request: Request,
     session: SessionDep,
-    search: Optional[str] = Query(
-        None, min_length=2, max_length=100, description="Search by label"
-    ),
+    search: str | None = Query(None, min_length=2, max_length=100, description="Search by label"),
 ) -> list[ProfilePublic]:
     """List all profiles with optional search.
 
@@ -366,10 +367,14 @@ async def get_profile_modules(
         return []
 
     # Get modules
-    modules_query = select(Module).where(
-        Module.module_id.in_(module_ids),
-        Module.deleted_at.is_(None),
-    ).order_by(Module.label)
+    modules_query = (
+        select(Module)
+        .where(
+            Module.module_id.in_(module_ids),
+            Module.deleted_at.is_(None),
+        )
+        .order_by(Module.label)
+    )
 
     result = await session.execute(modules_query)
     modules = result.scalars().all()

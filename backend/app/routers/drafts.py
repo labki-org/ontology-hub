@@ -13,7 +13,6 @@ Security requirements:
 """
 
 from datetime import datetime, timedelta
-from typing import Optional
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, HTTPException, Request
@@ -301,9 +300,7 @@ async def update_draft(
                             existing_map[entity_id][key] = value
                 else:
                     # Add new entity
-                    new_entity = (
-                        update.model_dump() if hasattr(update, "model_dump") else update
-                    )
+                    new_entity = update.model_dump() if hasattr(update, "model_dump") else update
                     existing_list.append(new_entity)
                     existing_map[entity_id] = new_entity
 
@@ -338,9 +335,7 @@ async def update_draft(
         module_map = {m.get("module_id"): m for m in existing_modules}
 
         for update in patch.modules:
-            update_dict = (
-                update.model_dump() if hasattr(update, "model_dump") else update
-            )
+            update_dict = update.model_dump() if hasattr(update, "model_dump") else update
             module_id = update_dict.get("module_id")
             if module_id:
                 if module_id in module_map:
@@ -357,9 +352,7 @@ async def update_draft(
         profile_map = {p.get("profile_id"): p for p in existing_profiles}
 
         for update in patch.profiles:
-            update_dict = (
-                update.model_dump() if hasattr(update, "model_dump") else update
-            )
+            update_dict = update.model_dump() if hasattr(update, "model_dump") else update
             profile_id = update_dict.get("profile_id")
             if profile_id:
                 if profile_id in profile_map:

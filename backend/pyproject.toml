@@ -22,7 +22,15 @@ select = [
 ignore = [
     "E501",  # line too long (handled by formatter)
     "B008",  # do not perform function calls in argument defaults (FastAPI Depends pattern)
+    "SIM102",  # nested if statements - sometimes clearer than combined
 ]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests often have unused arguments in mocks
+"tests/**/*.py" = ["ARG001", "F841"]
+# SlowAPI requires request parameter for rate limiting even when unused
+"app/routers/**/*.py" = ["ARG001"]
+"app/dependencies/rate_limit.py" = ["ARG001"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]

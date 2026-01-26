@@ -39,7 +39,6 @@ from app.schemas.draft_change import (
 )
 from app.services.draft_workflow import auto_revert_if_validated
 
-
 router = APIRouter(tags=["draft-changes"])
 
 
@@ -54,9 +53,7 @@ ENTITY_MODEL_MAP = {
 }
 
 
-async def validate_v2_capability_token(
-    token: str, session: AsyncSession
-) -> Draft:
+async def validate_v2_capability_token(token: str, session: AsyncSession) -> Draft:
     """Validate capability token and return v2 Draft.
 
     Args:
@@ -85,9 +82,7 @@ async def validate_v2_capability_token(
     return draft
 
 
-async def entity_exists(
-    session: AsyncSession, entity_type: str, entity_key: str
-) -> bool:
+async def entity_exists(session: AsyncSession, entity_type: str, entity_key: str) -> bool:
     """Check if entity exists in canonical tables.
 
     Args:
@@ -102,9 +97,7 @@ async def entity_exists(
     if not model:
         return False
 
-    result = await session.execute(
-        select(model).where(model.entity_key == entity_key)
-    )
+    result = await session.execute(select(model).where(model.entity_key == entity_key))
     return result.scalars().first() is not None
 
 
@@ -137,9 +130,7 @@ async def list_draft_changes(
 
     # Query all changes for this draft
     query = (
-        select(DraftChange)
-        .where(DraftChange.draft_id == draft.id)
-        .order_by(DraftChange.created_at)
+        select(DraftChange).where(DraftChange.draft_id == draft.id).order_by(DraftChange.created_at)
     )
     result = await session.execute(query)
     changes = list(result.scalars().all())
@@ -236,6 +227,7 @@ async def add_draft_change(
             # Updating a draft-created entity: apply patch to replacement_json
             # Keep it as a CREATE change with the updated JSON
             import jsonpatch
+
             base_json = existing_change.replacement_json or {}
             try:
                 patch = jsonpatch.JsonPatch(change_in.patch or [])
@@ -245,7 +237,7 @@ async def add_draft_change(
                 raise HTTPException(
                     status_code=400,
                     detail=f"Failed to apply patch to draft-created entity: {e}",
-                )
+                ) from e
             change = existing_change
         else:
             # Updating a canonical entity: merge patches
@@ -264,7 +256,10 @@ async def add_draft_change(
         # Special case: DELETE of a draft-created entity
         # Instead of replacing CREATE with DELETE, remove the CREATE entirely
         # (the entity never existed in canonical, so there's nothing to delete)
-        if change_in.change_type == ChangeType.DELETE and existing_change.change_type == ChangeType.CREATE:
+        if (
+            change_in.change_type == ChangeType.DELETE
+            and existing_change.change_type == ChangeType.CREATE
+        ):
             await session.delete(existing_change)
             # Update draft modified_at
             draft.modified_at = datetime.utcnow()

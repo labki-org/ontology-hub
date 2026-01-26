@@ -20,51 +20,43 @@ v2.0:
 - Materialized view: category_property_effective
 - Draft tables: draft, draft_change
 """
-from typing import Sequence, Union
+
+from collections.abc import Sequence
 
 import sqlalchemy as sa
-from alembic import op
 from sqlalchemy.dialects import postgresql
+
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "001"
-down_revision: Union[str, None] = None
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = None
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 # v1.0 enum types
 entitytype = postgresql.ENUM(
-    "category", "property", "subobject",
-    name="entitytype",
-    create_type=False
+    "category", "property", "subobject", name="entitytype", create_type=False
 )
 draftstatus = postgresql.ENUM(
-    "pending", "validated", "submitted", "expired",
-    name="draftstatus",
-    create_type=False
+    "pending", "validated", "submitted", "expired", name="draftstatus", create_type=False
 )
 
 # v2.0 enum types
 ingeststatus = postgresql.ENUM(
-    "pending", "in_progress", "completed", "failed",
-    name="ingeststatus",
-    create_type=False
+    "pending", "in_progress", "completed", "failed", name="ingeststatus", create_type=False
 )
 draftstatus_v2 = postgresql.ENUM(
-    "draft", "validated", "submitted", "merged", "rejected",
+    "draft",
+    "validated",
+    "submitted",
+    "merged",
+    "rejected",
     name="draftstatus_v2",
-    create_type=False
+    create_type=False,
 )
-changetype = postgresql.ENUM(
-    "create", "update", "delete",
-    name="changetype",
-    create_type=False
-)
-draftsource = postgresql.ENUM(
-    "hub_ui", "mediawiki_push",
-    name="draftsource",
-    create_type=False
-)
+changetype = postgresql.ENUM("create", "update", "delete", name="changetype", create_type=False)
+draftsource = postgresql.ENUM("hub_ui", "mediawiki_push", name="draftsource", create_type=False)
 
 # Materialized view SQL
 CATEGORY_PROPERTY_EFFECTIVE_SQL = """
@@ -220,11 +212,7 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        op.f("ix_ontology_version_commit_sha"),
-        "ontology_version",
-        ["commit_sha"]
-    )
+    op.create_index(op.f("ix_ontology_version_commit_sha"), "ontology_version", ["commit_sha"])
 
     # categories table
     op.create_table(

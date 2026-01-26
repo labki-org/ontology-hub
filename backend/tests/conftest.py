@@ -1,15 +1,14 @@
 """Pytest configuration and fixtures for testing."""
 
 import asyncio
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
-
 
 # Use in-memory SQLite for tests
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
@@ -32,7 +31,7 @@ async def test_engine():
         connect_args={"check_same_thread": False},
     )
     # Import models to register metadata
-    from app.models import Entity, Module, Profile, Draft  # noqa: F401
+    from app.models import Draft, Entity, Module, Profile  # noqa: F401
 
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
@@ -53,8 +52,8 @@ async def test_session(test_engine) -> AsyncGenerator[AsyncSession, None]:
 @pytest_asyncio.fixture
 async def client(test_engine) -> AsyncGenerator[AsyncClient, None]:
     """Create test HTTP client with overridden dependencies."""
+    from app.database import get_session
     from app.main import app
-    from app.database import get_session, async_session_maker as prod_session_maker
 
     test_session_maker = async_sessionmaker(
         test_engine, class_=AsyncSession, expire_on_commit=False

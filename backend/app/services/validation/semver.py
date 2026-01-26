@@ -8,7 +8,6 @@ Uses SchemaVer-inspired rules adapted for SemanticSchemas:
 
 from typing import Literal
 
-from typing import Union
 from app.schemas.validation import ValidationResult
 from app.schemas.validation_v2 import ValidationResultV2
 
@@ -52,7 +51,7 @@ def classify_change(code: str) -> Literal["major", "minor", "patch"]:
 
 
 def compute_semver_suggestion(
-    results: list[Union[ValidationResult, ValidationResultV2]],
+    results: list[ValidationResult | ValidationResultV2],
 ) -> tuple[Literal["major", "minor", "patch"], list[str]]:
     """Compute aggregate semver suggestion from validation results.
 
@@ -73,7 +72,9 @@ def compute_semver_suggestion(
 
     for result in results:
         # Handle both v1 (entity_id) and v2 (entity_key) result types
-        entity_identifier = getattr(result, 'entity_key', None) or getattr(result, 'entity_id', 'unknown')
+        entity_identifier = getattr(result, "entity_key", None) or getattr(
+            result, "entity_id", "unknown"
+        )
 
         if result.suggested_semver == "major":
             reason = f"{result.code}: {entity_identifier}"

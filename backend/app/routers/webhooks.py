@@ -51,11 +51,14 @@ async def verify_github_signature(request: Request) -> bytes:
 
     body = await request.body()
 
-    expected_signature = "sha256=" + hmac.new(
-        settings.GITHUB_WEBHOOK_SECRET.encode("utf-8"),
-        body,
-        hashlib.sha256,
-    ).hexdigest()
+    expected_signature = (
+        "sha256="
+        + hmac.new(
+            settings.GITHUB_WEBHOOK_SECRET.encode("utf-8"),
+            body,
+            hashlib.sha256,
+        ).hexdigest()
+    )
 
     if not hmac.compare_digest(expected_signature, signature_header):
         raise HTTPException(status_code=403, detail="Invalid signature")
@@ -133,10 +136,14 @@ async def trigger_sync_background_v2(httpx_client: Any) -> None:
         try:
             # Get previous commit SHA for draft staleness detection
             prev_version = (
-                await session.execute(
-                    select(OntologyVersion).order_by(OntologyVersion.created_at.desc())
+                (
+                    await session.execute(
+                        select(OntologyVersion).order_by(OntologyVersion.created_at.desc())
+                    )
                 )
-            ).scalars().first()
+                .scalars()
+                .first()
+            )
             old_commit_sha = prev_version.commit_sha if prev_version else None
 
             # Run v2.0 ingest

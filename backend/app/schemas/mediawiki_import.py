@@ -68,8 +68,7 @@ class MediaWikiChange(BaseModel):
     def validate_entity_type(cls, v: str) -> str:
         if v not in VALID_ENTITY_TYPES:
             raise ValueError(
-                f"Invalid entity_type: {v}. "
-                f"Must be one of: {', '.join(sorted(VALID_ENTITY_TYPES))}"
+                f"Invalid entity_type: {v}. Must be one of: {', '.join(sorted(VALID_ENTITY_TYPES))}"
             )
         return v
 
@@ -81,7 +80,7 @@ class MediaWikiChange(BaseModel):
         try:
             jsonpatch.JsonPatch(v)
         except jsonpatch.InvalidJsonPatch as e:
-            raise ValueError(f"Invalid JSON Patch: {e}")
+            raise ValueError(f"Invalid JSON Patch: {e}") from e
         return v
 
     @model_validator(mode="after")
@@ -107,9 +106,7 @@ class MediaWikiChange(BaseModel):
                 )
         elif self.action == "delete":
             if self.patch or self.entity:
-                raise ValueError(
-                    "action 'delete' must not have patch or entity field"
-                )
+                raise ValueError("action 'delete' must not have patch or entity field")
         return self
 
 

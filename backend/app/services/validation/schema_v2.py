@@ -29,7 +29,7 @@ ENTITY_SCHEMA_PATHS = {
 
 async def check_schema_v2(
     effective_entities: dict[str, dict[str, dict]],
-    session: AsyncSession,
+    _session: AsyncSession,
 ) -> list[ValidationResultV2]:
     """Validate effective entity JSON against _schema.json definitions.
 
@@ -75,10 +75,7 @@ async def check_schema_v2(
 
             # Remove metadata fields before validation
             # These are added by DraftOverlayService and aren't part of canonical JSON
-            entity_data = {
-                k: v for k, v in entity_json.items()
-                if not k.startswith("_")
-            }
+            entity_data = {k: v for k, v in entity_json.items() if not k.startswith("_")}
 
             # Validate against schema
             errors = list(validator.iter_errors(entity_data))

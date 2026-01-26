@@ -74,9 +74,7 @@ async def validate_draft_v2(
     results.extend(await check_schema_v2(effective_entities, session))
 
     # 6. Breaking change detection (warnings/info)
-    results.extend(
-        await detect_breaking_changes_v2(effective_entities, draft_changes, session)
-    )
+    results.extend(await detect_breaking_changes_v2(effective_entities, draft_changes, session))
 
     # Separate by severity
     errors = [r for r in results if r.severity == "error"]
@@ -254,9 +252,7 @@ async def _load_canonical_entities(
     return canonical
 
 
-def check_datatypes_v2(
-    effective_entities: dict[str, dict[str, dict]]
-) -> list[ValidationResultV2]:
+def check_datatypes_v2(effective_entities: dict[str, dict[str, dict]]) -> list[ValidationResultV2]:
     """Check property datatypes are in the allowed set.
 
     Reuses ALLOWED_DATATYPES from v1 validation.

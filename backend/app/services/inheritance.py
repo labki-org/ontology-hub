@@ -4,7 +4,6 @@ Resolves full inheritance chain for a category, returning nodes and edges
 suitable for React Flow graph visualization.
 """
 
-from sqlalchemy import or_
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 

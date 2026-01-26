@@ -372,9 +372,7 @@ class EntityParser:
             canonical_json=content,
         )
 
-    def parse_all(
-        self, files: dict[str, list[tuple[str, dict]]]
-    ) -> ParsedEntities:
+    def parse_all(self, files: dict[str, list[tuple[str, dict]]]) -> ParsedEntities:
         """Parse all entity files from a repository.
 
         Args:

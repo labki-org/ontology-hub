@@ -3,8 +3,6 @@
 Provides schemas for entity listing with cursor-based pagination.
 """
 
-from typing import Optional
-
 from pydantic import BaseModel
 
 from app.models.entity import EntityPublic
@@ -23,7 +21,7 @@ class EntityListResponse(BaseModel):
     """
 
     items: list[EntityPublic]
-    next_cursor: Optional[str] = None
+    next_cursor: str | None = None
     has_next: bool
 
 

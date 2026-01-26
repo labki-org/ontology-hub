@@ -25,9 +25,7 @@ class SchemaValidator:
                 Draft202012Validator.check_schema(schema)
                 self._validators[entity_type] = Draft202012Validator(schema)
             except SchemaError as e:
-                self._schema_errors.append(
-                    f"Invalid schema for {entity_type}: {e.message}"
-                )
+                self._schema_errors.append(f"Invalid schema for {entity_type}: {e.message}")
 
     @property
     def schema_errors(self) -> list[str]:
