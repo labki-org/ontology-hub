@@ -1,12 +1,10 @@
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 
 interface EditDetailsProps {
   prTitle: string
   userComment: string
-  onPrTitleChange: (title: string) => void
   onUserCommentChange: (comment: string) => void
   onNext: () => void
   onBack: () => void
@@ -15,27 +13,20 @@ interface EditDetailsProps {
 export function EditDetails({
   prTitle,
   userComment,
-  onPrTitleChange,
   onUserCommentChange,
   onNext,
   onBack,
 }: EditDetailsProps) {
-  const canProceed = prTitle.trim().length > 0
-
   return (
     <div className="space-y-6">
-      {/* PR Title */}
+      {/* PR Title (auto-generated, read-only) */}
       <div className="space-y-2">
-        <Label htmlFor="pr-title">Pull Request Title</Label>
-        <Input
-          id="pr-title"
-          value={prTitle}
-          onChange={(e) => onPrTitleChange(e.target.value)}
-          placeholder="Enter a descriptive title for your pull request"
-          className="w-full"
-        />
+        <Label>Pull Request Title</Label>
+        <div className="px-3 py-2 border rounded-md bg-muted/50 text-sm">
+          {prTitle}
+        </div>
         <p className="text-xs text-muted-foreground">
-          This will be the title of the GitHub pull request
+          Auto-generated based on your changes
         </p>
       </div>
 
@@ -60,7 +51,7 @@ export function EditDetails({
         <Button variant="outline" onClick={onBack}>
           Back
         </Button>
-        <Button onClick={onNext} disabled={!canProceed}>
+        <Button onClick={onNext}>
           Next
         </Button>
       </div>

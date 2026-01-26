@@ -10,6 +10,70 @@ import { ReviewChanges } from './PRWizardSteps/ReviewChanges'
 import { EditDetails } from './PRWizardSteps/EditDetails'
 import { ConfirmSubmit } from './PRWizardSteps/ConfirmSubmit'
 
+/**
+ * Generate an informative PR title based on the draft changes.
+ * Examples:
+ * - "Add category: Lab_member"
+ * - "Update property: Has_email"
+ * - "Add 2 categories, update 1 property"
+ * - "Schema changes: 3 additions, 2 updates, 1 deletion"
+ */
+function generatePrTitle(changes: DraftChangeV2[]): string {
+  if (changes.length === 0) {
+    return 'Schema update (no changes)'
+  }
+
+  // Count changes by type
+  const creates = changes.filter((c) => c.change_type === 'create')
+  const updates = changes.filter((c) => c.change_type === 'update')
+  const deletes = changes.filter((c) => c.change_type === 'delete')
+
+  // For a single change, be specific
+  if (changes.length === 1) {
+    const change = changes[0]
+    const action =
+      change.change_type === 'create'
+        ? 'Add'
+        : change.change_type === 'update'
+          ? 'Update'
+          : 'Delete'
+    return `${action} ${change.entity_type}: ${change.entity_key}`
+  }
+
+  // For 2-3 changes of the same type, list them
+  if (changes.length <= 3 && (creates.length === changes.length || updates.length === changes.length || deletes.length === changes.length)) {
+    const action =
+      creates.length === changes.length
+        ? 'Add'
+        : updates.length === changes.length
+          ? 'Update'
+          : 'Delete'
+    const entityType = changes[0].entity_type
+    const allSameType = changes.every((c) => c.entity_type === entityType)
+
+    if (allSameType) {
+      const keys = changes.map((c) => c.entity_key).join(', ')
+      const plural = changes.length > 1 ? 'ies' : 'y'
+      const typeLabel = entityType === 'category' ? `categor${plural}` : `${entityType}s`
+      return `${action} ${typeLabel}: ${keys}`
+    }
+  }
+
+  // For mixed changes, summarize by action
+  const parts: string[] = []
+  if (creates.length > 0) {
+    parts.push(`${creates.length} addition${creates.length !== 1 ? 's' : ''}`)
+  }
+  if (updates.length > 0) {
+    parts.push(`${updates.length} update${updates.length !== 1 ? 's' : ''}`)
+  }
+  if (deletes.length > 0) {
+    parts.push(`${deletes.length} deletion${deletes.length !== 1 ? 's' : ''}`)
+  }
+
+  return `Schema changes: ${parts.join(', ')}`
+}
+
 interface PRWizardProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -33,13 +97,12 @@ export function PRWizard({
   const [submittedPrUrl, setSubmittedPrUrl] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
-  // Auto-generate PR title on mount
+  // Auto-generate informative PR title based on changes
   useEffect(() => {
     if (open && !prTitle) {
-      const changeCount = changes.length
-      setPrTitle(`Schema update: ${changeCount} change${changeCount !== 1 ? 's' : ''}`)
+      setPrTitle(generatePrTitle(changes))
     }
-  }, [open, changes.length, prTitle])
+  }, [open, changes, prTitle])
 
   // Check for pr_url in URL params (set by OAuth callback redirect)
   useEffect(() => {
@@ -66,7 +129,7 @@ export function PRWizard({
 
   const resetWizard = () => {
     setStep('review')
-    setPrTitle(`Schema update: ${changes.length} change${changes.length !== 1 ? 's' : ''}`)
+    setPrTitle(generatePrTitle(changes))
     setUserComment('')
     setSubmittedPrUrl(null)
     setSubmitError(null)
@@ -127,7 +190,6 @@ export function PRWizard({
           <EditDetails
             prTitle={prTitle}
             userComment={userComment}
-            onPrTitleChange={setPrTitle}
             onUserCommentChange={setUserComment}
             onNext={() => setStep('confirm')}
             onBack={() => setStep('review')}
