@@ -124,6 +124,28 @@ class EntityParser:
                 )
             )
 
+        # Extract required subobject relationships
+        for sub_key in content.get("required_subobjects", []):
+            relationships.append(
+                PendingRelationship(
+                    type="category_subobject",
+                    source_key=entity_key,
+                    target_key=sub_key,
+                    extra={"is_required": True},
+                )
+            )
+
+        # Extract optional subobject relationships
+        for sub_key in content.get("optional_subobjects", []):
+            relationships.append(
+                PendingRelationship(
+                    type="category_subobject",
+                    source_key=entity_key,
+                    target_key=sub_key,
+                    extra={"is_required": False},
+                )
+            )
+
         return category, relationships
 
     def parse_property(self, content: dict, source_path: str) -> Property:
@@ -144,27 +166,68 @@ class EntityParser:
             label=content.get("label", entity_key),
             description=content.get("description"),
             canonical_json=content,
+            # Core fields
+            datatype=content.get("datatype"),
+            cardinality=content.get("cardinality"),
+            # Validation constraints
+            allowed_values=content.get("allowed_values"),
+            allowed_pattern=content.get("allowed_pattern"),
+            allowed_value_list=content.get("allowed_value_list"),
+            # Display configuration
+            display_units=content.get("display_units"),
+            display_precision=content.get("display_precision"),
+            # Constraints and relationships
+            unique_values=content.get("unique_values", False),
+            has_display_template_key=content.get("has_display_template"),
         )
 
-    def parse_subobject(self, content: dict, source_path: str) -> Subobject:
-        """Parse subobject JSON into model instance.
+    def parse_subobject(
+        self, content: dict, source_path: str
+    ) -> tuple[Subobject, list[PendingRelationship]]:
+        """Parse subobject JSON into model and extracted relationships.
 
         Args:
             content: Parsed JSON content from subobject file
             source_path: Original file path, e.g., "subobjects/Address.json"
 
         Returns:
-            Subobject instance (no relationships extracted)
+            (Subobject instance, list of PendingRelationship objects)
         """
         entity_key = content["id"]
 
-        return Subobject(
+        subobject = Subobject(
             entity_key=entity_key,
             source_path=source_path,
             label=content.get("label", entity_key),
             description=content.get("description"),
             canonical_json=content,
         )
+
+        relationships: list[PendingRelationship] = []
+
+        # Extract required property relationships
+        for prop_key in content.get("required_properties", []):
+            relationships.append(
+                PendingRelationship(
+                    type="subobject_property",
+                    source_key=entity_key,
+                    target_key=prop_key,
+                    extra={"is_required": True},
+                )
+            )
+
+        # Extract optional property relationships
+        for prop_key in content.get("optional_properties", []):
+            relationships.append(
+                PendingRelationship(
+                    type="subobject_property",
+                    source_key=entity_key,
+                    target_key=prop_key,
+                    extra={"is_required": False},
+                )
+            )
+
+        return subobject, relationships
 
     def parse_module(
         self, content: dict, source_path: str
@@ -232,6 +295,16 @@ class EntityParser:
                     source_key=entity_key,
                     target_key=tmpl_key,
                     extra={"entity_type": EntityType.TEMPLATE},
+                )
+            )
+
+        # Extract module dependencies
+        for dep_key in content.get("dependencies", []):
+            relationships.append(
+                PendingRelationship(
+                    type="module_dependency",
+                    source_key=entity_key,
+                    target_key=dep_key,
                 )
             )
 
@@ -332,8 +405,9 @@ class EntityParser:
 
         # Parse subobjects
         for path, content in files.get("subobjects", []):
-            subobj = self.parse_subobject(content, path)
+            subobj, rels = self.parse_subobject(content, path)
             subobjects.append(subobj)
+            relationships.extend(rels)
 
         # Parse modules
         for path, content in files.get("modules", []):

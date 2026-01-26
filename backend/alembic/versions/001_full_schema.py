@@ -15,7 +15,8 @@ v1.0 (legacy):
 v2.0:
 - ontology_version: Current canonical state tracking
 - Entity tables: categories, properties, subobjects, modules_v2, bundles, templates
-- Relationship tables: category_parent, category_property, module_entity, bundle_module
+- Relationship tables: category_parent, category_property, category_subobject,
+  subobject_property, module_entity, module_dependency, bundle_module
 - Materialized view: category_property_effective
 - Draft tables: draft, draft_change
 """
@@ -251,6 +252,17 @@ def upgrade() -> None:
         sa.Column("label", sa.String(), nullable=False),
         sa.Column("description", sa.String(), nullable=True),
         sa.Column("canonical_json", sa.JSON(), nullable=True),
+        # Promoted from canonical_json for easier querying
+        sa.Column("datatype", sa.String(), nullable=True),
+        sa.Column("cardinality", sa.String(), nullable=True),
+        # New fields from labki-schemas
+        sa.Column("allowed_values", sa.JSON(), nullable=True),  # Array of strings
+        sa.Column("allowed_pattern", sa.String(), nullable=True),
+        sa.Column("allowed_value_list", sa.String(), nullable=True),
+        sa.Column("display_units", sa.JSON(), nullable=True),  # Array of strings
+        sa.Column("display_precision", sa.Integer(), nullable=True),
+        sa.Column("unique_values", sa.Boolean(), nullable=False, server_default="false"),
+        sa.Column("has_display_template_key", sa.String(), nullable=True),  # Template entity_key
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
@@ -353,6 +365,28 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["property_id"], ["properties.id"]),
     )
 
+    # category_subobject - links categories to subobjects (required/optional)
+    op.create_table(
+        "category_subobject",
+        sa.Column("category_id", sa.UUID(), nullable=False),
+        sa.Column("subobject_id", sa.UUID(), nullable=False),
+        sa.Column("is_required", sa.Boolean(), nullable=False, server_default="false"),
+        sa.PrimaryKeyConstraint("category_id", "subobject_id"),
+        sa.ForeignKeyConstraint(["category_id"], ["categories.id"]),
+        sa.ForeignKeyConstraint(["subobject_id"], ["subobjects.id"]),
+    )
+
+    # subobject_property - links subobjects to properties (required/optional)
+    op.create_table(
+        "subobject_property",
+        sa.Column("subobject_id", sa.UUID(), nullable=False),
+        sa.Column("property_id", sa.UUID(), nullable=False),
+        sa.Column("is_required", sa.Boolean(), nullable=False, server_default="false"),
+        sa.PrimaryKeyConstraint("subobject_id", "property_id"),
+        sa.ForeignKeyConstraint(["subobject_id"], ["subobjects.id"]),
+        sa.ForeignKeyConstraint(["property_id"], ["properties.id"]),
+    )
+
     # module_entity
     op.create_table(
         "module_entity",
@@ -374,6 +408,16 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("bundle_id", "module_id"),
         sa.ForeignKeyConstraint(["bundle_id"], ["bundles.id"]),
         sa.ForeignKeyConstraint(["module_id"], ["modules_v2.id"]),
+    )
+
+    # module_dependency - module depends on another module
+    op.create_table(
+        "module_dependency",
+        sa.Column("module_id", sa.UUID(), nullable=False),
+        sa.Column("dependency_id", sa.UUID(), nullable=False),
+        sa.PrimaryKeyConstraint("module_id", "dependency_id"),
+        sa.ForeignKeyConstraint(["module_id"], ["modules_v2.id"]),
+        sa.ForeignKeyConstraint(["dependency_id"], ["modules_v2.id"]),
     )
 
     # === Materialized View ===
@@ -441,12 +485,15 @@ def downgrade() -> None:
     op.execute("DROP MATERIALIZED VIEW IF EXISTS category_property_effective;")
 
     # === Drop Relationship Tables ===
+    op.drop_table("module_dependency")
     op.drop_table("bundle_module")
 
     op.drop_index(op.f("ix_module_entity_entity_key"), table_name="module_entity")
     op.drop_index(op.f("ix_module_entity_module_id"), table_name="module_entity")
     op.drop_table("module_entity")
 
+    op.drop_table("subobject_property")
+    op.drop_table("category_subobject")
     op.drop_table("category_property")
     op.drop_table("category_parent")
 

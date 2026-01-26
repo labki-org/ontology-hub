@@ -59,8 +59,19 @@ class PropertyProvenance(BaseModel):
     )
 
 
+class SubobjectProvenance(BaseModel):
+    """Subobject assignment information for categories.
+
+    Used in category detail to show required/optional subobjects.
+    """
+
+    entity_key: str
+    label: str
+    is_required: bool = Field(description="True if subobject is required")
+
+
 class CategoryDetailResponse(BaseModel):
-    """Detailed category response with parents and properties.
+    """Detailed category response with parents, properties, and subobjects.
 
     Includes full property provenance for inheritance visualization.
     """
@@ -74,6 +85,10 @@ class CategoryDetailResponse(BaseModel):
     properties: list[PropertyProvenance] = Field(
         default_factory=list,
         description="Properties with provenance (direct + inherited)",
+    )
+    subobjects: list[SubobjectProvenance] = Field(
+        default_factory=list,
+        description="Subobjects assigned to this category (required + optional)",
     )
     change_status: Optional[ChangeStatus] = Field(
         default=None,
@@ -100,6 +115,31 @@ class PropertyDetailResponse(BaseModel):
     description: Optional[str] = None
     datatype: str = Field(description="Property data type")
     cardinality: str = Field(description="Property cardinality (single/multiple)")
+    # Validation constraints
+    allowed_values: Optional[list[str]] = Field(
+        default=None, description="Enumeration of permitted values"
+    )
+    allowed_pattern: Optional[str] = Field(
+        default=None, description="Regex pattern for validating values"
+    )
+    allowed_value_list: Optional[str] = Field(
+        default=None, description="Reference to a wiki page containing allowed values"
+    )
+    # Display configuration
+    display_units: Optional[list[str]] = Field(
+        default=None, description="Units or formats for display"
+    )
+    display_precision: Optional[int] = Field(
+        default=None, description="Number of decimal places for numeric display"
+    )
+    # Constraints and relationships
+    unique_values: bool = Field(
+        default=False,
+        description="If true, each value can only be assigned once across all pages",
+    )
+    has_display_template: Optional[str] = Field(
+        default=None, description="Template entity key for custom rendering"
+    )
     change_status: Optional[ChangeStatus] = Field(
         default=None,
         validation_alias="_change_status",
@@ -112,14 +152,25 @@ class PropertyDetailResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
 
+class SubobjectPropertyInfo(BaseModel):
+    """Property assignment info for subobjects."""
+
+    entity_key: str
+    label: str
+    is_required: bool = Field(description="True if property is required")
+
+
 class SubobjectDetailResponse(BaseModel):
-    """Detailed subobject response."""
+    """Detailed subobject response with required and optional properties."""
 
     entity_key: str
     label: str
     description: Optional[str] = None
-    properties: list[str] = Field(
-        default_factory=list, description="Property entity keys for this subobject"
+    required_properties: list[SubobjectPropertyInfo] = Field(
+        default_factory=list, description="Required property assignments"
+    )
+    optional_properties: list[SubobjectPropertyInfo] = Field(
+        default_factory=list, description="Optional property assignments"
     )
     change_status: Optional[ChangeStatus] = Field(
         default=None,
@@ -158,7 +209,7 @@ class TemplateDetailResponse(BaseModel):
 
 
 class ModuleDetailResponse(BaseModel):
-    """Detailed module response with entities and closure.
+    """Detailed module response with entities, dependencies, and closure.
 
     Entities are grouped by type for easy UI rendering.
     Closure contains computed transitive dependencies.
@@ -167,13 +218,18 @@ class ModuleDetailResponse(BaseModel):
     entity_key: str
     label: str
     version: Optional[str] = None
+    description: Optional[str] = None
     entities: dict[str, list[str]] = Field(
         default_factory=dict,
         description="Entities by type: {category: [...], property: [...], ...}",
     )
+    dependencies: list[str] = Field(
+        default_factory=list,
+        description="Module entity keys that this module depends on",
+    )
     closure: list[str] = Field(
         default_factory=list,
-        description="Computed transitive module dependencies (entity keys)",
+        description="Computed transitive category dependencies (entity keys)",
     )
     change_status: Optional[ChangeStatus] = Field(
         default=None,

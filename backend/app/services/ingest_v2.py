@@ -20,7 +20,10 @@ from app.models.v2 import (
     BundleModule,
     CategoryParent,
     CategoryProperty,
+    CategorySubobject,
+    ModuleDependency,
     ModuleEntity,
+    SubobjectProperty,
     # Version tracking
     OntologyVersion,
     IngestStatus,
@@ -119,8 +122,11 @@ class IngestService:
     async def delete_all_canonical(self) -> None:
         """Delete all canonical data in correct FK order."""
         # 1. Delete relationships first (they reference entities)
+        await self._session.execute(delete(ModuleDependency))
         await self._session.execute(delete(ModuleEntity))
         await self._session.execute(delete(BundleModule))
+        await self._session.execute(delete(SubobjectProperty))
+        await self._session.execute(delete(CategorySubobject))
         await self._session.execute(delete(CategoryProperty))
         await self._session.execute(delete(CategoryParent))
 
@@ -161,6 +167,10 @@ class IngestService:
             p.entity_key: p.id
             for p in (await self._session.execute(select(Property))).scalars().all()
         }
+        subobjects = {
+            s.entity_key: s.id
+            for s in (await self._session.execute(select(Subobject))).scalars().all()
+        }
         modules = {
             m.entity_key: m.id
             for m in (await self._session.execute(select(Module))).scalars().all()
@@ -198,6 +208,34 @@ class IngestService:
                         f"Unresolved category_property: {rel.source_key} -> {rel.target_key}"
                     )
 
+            elif rel.type == "category_subobject":
+                cat_id = categories.get(rel.source_key)
+                sub_id = subobjects.get(rel.target_key)
+                if cat_id and sub_id:
+                    self._session.add(CategorySubobject(
+                        category_id=cat_id,
+                        subobject_id=sub_id,
+                        is_required=rel.extra.get("is_required", False),
+                    ))
+                else:
+                    self._warnings.append(
+                        f"Unresolved category_subobject: {rel.source_key} -> {rel.target_key}"
+                    )
+
+            elif rel.type == "subobject_property":
+                sub_id = subobjects.get(rel.source_key)
+                prop_id = properties.get(rel.target_key)
+                if sub_id and prop_id:
+                    self._session.add(SubobjectProperty(
+                        subobject_id=sub_id,
+                        property_id=prop_id,
+                        is_required=rel.extra.get("is_required", False),
+                    ))
+                else:
+                    self._warnings.append(
+                        f"Unresolved subobject_property: {rel.source_key} -> {rel.target_key}"
+                    )
+
             elif rel.type == "module_entity":
                 module_id = modules.get(rel.source_key)
                 if module_id:
@@ -212,6 +250,19 @@ class IngestService:
                 else:
                     self._warnings.append(
                         f"Unresolved module: {rel.source_key}"
+                    )
+
+            elif rel.type == "module_dependency":
+                module_id = modules.get(rel.source_key)
+                dep_id = modules.get(rel.target_key)
+                if module_id and dep_id:
+                    self._session.add(ModuleDependency(
+                        module_id=module_id,
+                        dependency_id=dep_id,
+                    ))
+                else:
+                    self._warnings.append(
+                        f"Unresolved module_dependency: {rel.source_key} -> {rel.target_key}"
                     )
 
             elif rel.type == "bundle_module":
