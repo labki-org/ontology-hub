@@ -214,6 +214,8 @@ export function useCreateEntityChange(token: string | undefined) {
       queryClient.invalidateQueries({ queryKey: ['v2', 'templates'] })
       queryClient.invalidateQueries({ queryKey: ['v2', 'modules'] })
       queryClient.invalidateQueries({ queryKey: ['v2', 'bundles'] })
+      // Invalidate graph queries to refresh graph view
+      queryClient.invalidateQueries({ queryKey: ['graph'] })
     },
   })
 }
@@ -263,6 +265,8 @@ export function useDeleteEntityChange(token: string | undefined) {
       queryClient.invalidateQueries({ queryKey: ['v2', 'templates'] })
       queryClient.invalidateQueries({ queryKey: ['v2', 'modules'] })
       queryClient.invalidateQueries({ queryKey: ['v2', 'bundles'] })
+      // Invalidate graph queries to refresh graph view
+      queryClient.invalidateQueries({ queryKey: ['graph'] })
     },
   })
 }
@@ -297,6 +301,8 @@ export function useUndoDeleteChange(token: string | undefined) {
       queryClient.invalidateQueries({ queryKey: ['v2', 'templates'] })
       queryClient.invalidateQueries({ queryKey: ['v2', 'modules'] })
       queryClient.invalidateQueries({ queryKey: ['v2', 'bundles'] })
+      // Invalidate graph queries to refresh graph view
+      queryClient.invalidateQueries({ queryKey: ['graph'] })
     },
   })
 }
