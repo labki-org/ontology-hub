@@ -19,7 +19,7 @@ export function MainLayoutV2() {
       <div className="flex-1 flex flex-col">
         {/* Header */}
         <header className="border-b px-6 py-4 flex items-center justify-between bg-background">
-          <Link to="/browse" className="font-semibold text-lg hover:opacity-80">
+          <Link to="/" className="font-semibold text-lg hover:opacity-80">
             Browse
           </Link>
           <DraftSelector />
