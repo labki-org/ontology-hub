@@ -4,7 +4,7 @@
 
 - [x] **v1.0 MVP** - Phases 1-7 (shipped 2026-01-23)
 - [x] **v2.0 Platform Rebuild** - Phases 8-15 (shipped 2026-01-25)
-- [ ] **v2.1 Bug Fixes & UX Improvements** - Phases 16-22 (audit: 3 bugs found, gap closure phases 21-22)
+- [x] **v2.1 Bug Fixes & UX Improvements** - Phases 16-22 (shipped 2026-01-25)
 
 ## Phases
 
@@ -189,13 +189,13 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 22-01-PLAN.md — Fix graph query invalidation after entity creation
-- [ ] 22-02-PLAN.md — Fix delete functionality for newly created entities
+- [x] 22-01-PLAN.md — Fix graph query invalidation after entity creation
+- [x] 22-02-PLAN.md — Fix delete functionality for newly created entities
 
 **Success Criteria:**
-1. User creates new entity and sees it appear in graph view immediately
-2. User can delete a newly created entity from the current draft session
-3. Graph updates correctly after entity deletion
+1. ✅ User creates new entity and sees it appear in graph view immediately
+2. ✅ User can delete a newly created entity from the current draft session
+3. ✅ Graph updates correctly after entity deletion
 
 ---
 
@@ -214,10 +214,10 @@ Phases execute in numeric order: 1 -> 2 -> ... -> 22
 | 19 | v2.1 | 4/4 | Complete | 2026-01-25 |
 | 20 | v2.1 | 9/9 | Complete | 2026-01-25 |
 | 21 | v2.1 | 1/1 | Complete | 2026-01-25 |
-| 22 | v2.1 | 0/2 | Planned | — |
+| 22 | v2.1 | 2/2 | Complete | 2026-01-25 |
 
-**Total:** 83 plans completed across 22 phases (v1.0 + v2.0 + v2.1)
-**v2.1:** 7 phases, 26 requirements, 22/24 plans complete (2 gap closure plans planned)
+**Total:** 85 plans completed across 22 phases (v1.0 + v2.0 + v2.1)
+**v2.1:** 7 phases, 26 requirements, 24/24 plans complete
 
 ---
 *Roadmap created: 2026-01-23*
@@ -237,3 +237,5 @@ Phases execute in numeric order: 1 -> 2 -> ... -> 22
 *Phase 21 planned: 2026-01-25*
 *Phase 21 complete: 2026-01-25*
 *Phase 22 planned: 2026-01-25*
+*Phase 22 complete: 2026-01-25*
+*v2.1 shipped: 2026-01-25*
