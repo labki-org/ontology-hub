@@ -18,30 +18,30 @@ interface GroupedChanges {
   [entityType: string]: DraftChangeV2[]
 }
 
-// Map change_type to display info
+// Map change_type to display info (lowercase keys match ChangeType values)
 const changeTypeConfig = {
-  CREATE: {
+  create: {
     icon: Plus,
     label: '+',
     badgeClass: 'bg-green-100 text-green-800',
   },
-  UPDATE: {
+  update: {
     icon: Pencil,
     label: '~',
     badgeClass: 'bg-amber-100 text-amber-800',
   },
-  DELETE: {
+  delete: {
     icon: Trash2,
     label: '-',
     badgeClass: 'bg-red-100 text-red-800',
   },
 }
 
-// Sort order for change types
+// Sort order for change types (lowercase keys match ChangeType values)
 const changeTypeOrder: Record<string, number> = {
-  CREATE: 0,
-  UPDATE: 1,
-  DELETE: 2,
+  create: 0,
+  update: 1,
+  delete: 2,
 }
 
 function groupChangesByEntityType(changes: DraftChangeV2[]): GroupedChanges {
@@ -124,7 +124,7 @@ function ChangeCard({
       {/* Expandable detail panel */}
       {isExpanded && (
         <div className="mt-3 pt-3 border-t text-sm space-y-2">
-          {change.change_type === 'CREATE' && change.replacement_json && (
+          {change.change_type === 'create' && change.replacement_json && (
             <div className="space-y-1">
               <div className="font-medium text-muted-foreground mb-2">
                 New Entity Fields:
@@ -145,7 +145,7 @@ function ChangeCard({
             </div>
           )}
 
-          {change.change_type === 'UPDATE' && change.patch && (
+          {change.change_type === 'update' && change.patch && (
             <div className="space-y-1">
               <div className="font-medium text-muted-foreground mb-2">
                 Patch Operations:
@@ -176,7 +176,7 @@ function ChangeCard({
             </div>
           )}
 
-          {change.change_type === 'DELETE' && (
+          {change.change_type === 'delete' && (
             <div className="text-red-600 dark:text-red-400 font-medium">
               Entity will be deleted
             </div>
@@ -199,9 +199,9 @@ function EntityTypeSection({
   const [isOpen, setIsOpen] = useState(true)
 
   // Calculate counts by change type
-  const createCount = changes.filter((c) => c.change_type === 'CREATE').length
-  const updateCount = changes.filter((c) => c.change_type === 'UPDATE').length
-  const deleteCount = changes.filter((c) => c.change_type === 'DELETE').length
+  const createCount = changes.filter((c) => c.change_type === 'create').length
+  const updateCount = changes.filter((c) => c.change_type === 'update').length
+  const deleteCount = changes.filter((c) => c.change_type === 'delete').length
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -266,9 +266,9 @@ export function DraftDiffViewerV2({
   const entityTypes = Object.keys(grouped).sort()
 
   // Calculate summary counts
-  const createCount = changes.filter((c) => c.change_type === 'CREATE').length
-  const updateCount = changes.filter((c) => c.change_type === 'UPDATE').length
-  const deleteCount = changes.filter((c) => c.change_type === 'DELETE').length
+  const createCount = changes.filter((c) => c.change_type === 'create').length
+  const updateCount = changes.filter((c) => c.change_type === 'update').length
+  const deleteCount = changes.filter((c) => c.change_type === 'delete').length
 
   return (
     <div className="space-y-4">
