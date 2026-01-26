@@ -11,11 +11,28 @@ from sqlmodel import Field, SQLModel
 class PropertyBase(SQLModel):
     """Base model for Property with common fields."""
 
-    entity_key: str = Field(index=True)  # Path-derived key, e.g., "hasName"
-    source_path: str  # Original file path, e.g., "properties/hasName.json"
+    entity_key: str = Field(index=True)  # Path-derived key, e.g., "Has_name"
+    source_path: str  # Original file path, e.g., "properties/Has_name.json"
     label: str = Field(index=True)
     description: str | None = None
     canonical_json: dict = Field(default_factory=dict, sa_column=Column(JSON))
+
+    # Core property fields (promoted from canonical_json for easier querying)
+    datatype: str | None = None
+    cardinality: str | None = None
+
+    # Validation constraints
+    allowed_values: list[str] | None = Field(default=None, sa_column=Column(JSON))
+    allowed_pattern: str | None = None
+    allowed_value_list: str | None = None
+
+    # Display configuration
+    display_units: list[str] | None = Field(default=None, sa_column=Column(JSON))
+    display_precision: int | None = None
+
+    # Constraints and relationships
+    unique_values: bool = Field(default=False)
+    has_display_template_key: str | None = None  # Template entity_key reference
 
 
 class Property(PropertyBase, table=True):

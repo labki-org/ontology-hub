@@ -31,12 +31,15 @@ from app.models.v2 import (
     Category,
     CategoryParent,
     CategoryProperty,
+    CategorySubobject,
     Module,
+    ModuleDependency,
     ModuleEntity,
     OntologyVersion,
     OntologyVersionPublic,
     Property,
     Subobject,
+    SubobjectProperty,
     Template,
 )
 from app.schemas.entity_v2 import (
@@ -48,6 +51,8 @@ from app.schemas.entity_v2 import (
     PropertyDetailResponse,
     PropertyProvenance,
     SubobjectDetailResponse,
+    SubobjectPropertyInfo,
+    SubobjectProvenance,
     TemplateDetailResponse,
 )
 from app.services.draft_overlay import DraftContextDep
@@ -242,12 +247,38 @@ async def get_category(
                 )
             )
 
+    # Get subobjects assigned to this category
+    subobjects: list[SubobjectProvenance] = []
+    if category:
+        subobject_query = (
+            select(Subobject.entity_key, Subobject.label, CategorySubobject.is_required)
+            .join(CategorySubobject, CategorySubobject.subobject_id == Subobject.id)
+            .where(CategorySubobject.category_id == category.id)
+            .order_by(Subobject.label)
+        )
+        subobject_result = await session.execute(subobject_query)
+        for row in subobject_result.fetchall():
+            subobjects.append(
+                SubobjectProvenance(
+                    entity_key=row[0],
+                    label=row[1],
+                    is_required=row[2],
+                )
+            )
+    else:
+        # Draft-created category - extract from effective JSON if present
+        for sub_key in effective.get("required_subobjects", []):
+            subobjects.append(SubobjectProvenance(entity_key=sub_key, label=sub_key, is_required=True))
+        for sub_key in effective.get("optional_subobjects", []):
+            subobjects.append(SubobjectProvenance(entity_key=sub_key, label=sub_key, is_required=False))
+
     return CategoryDetailResponse(
         entity_key=effective.get("entity_key", entity_key),
         label=effective.get("label", ""),
         description=effective.get("description"),
         parents=parents,
         properties=properties,
+        subobjects=subobjects,
         change_status=effective.get("_change_status"),
         deleted=effective.get("_deleted", False),
         patch_error=effective.get("_patch_error"),
@@ -342,8 +373,18 @@ async def get_property(
         entity_key=effective.get("entity_key", entity_key),
         label=effective.get("label", ""),
         description=effective.get("description"),
-        datatype=effective.get("datatype", "text"),
+        datatype=effective.get("datatype", "Text"),
         cardinality=effective.get("cardinality", "single"),
+        # Validation constraints
+        allowed_values=effective.get("allowed_values"),
+        allowed_pattern=effective.get("allowed_pattern"),
+        allowed_value_list=effective.get("allowed_value_list"),
+        # Display configuration
+        display_units=effective.get("display_units"),
+        display_precision=effective.get("display_precision"),
+        # Constraints and relationships
+        unique_values=effective.get("unique_values", False),
+        has_display_template=effective.get("has_display_template_key"),
         change_status=effective.get("_change_status"),
         deleted=effective.get("_deleted", False),
     )
@@ -475,11 +516,45 @@ async def get_subobject(
     if not effective:
         raise HTTPException(status_code=404, detail="Subobject not found")
 
+    # Get properties from subobject_property table
+    required_properties: list[SubobjectPropertyInfo] = []
+    optional_properties: list[SubobjectPropertyInfo] = []
+
+    if subobj:
+        props_query = (
+            select(Property.entity_key, Property.label, SubobjectProperty.is_required)
+            .join(SubobjectProperty, SubobjectProperty.property_id == Property.id)
+            .where(SubobjectProperty.subobject_id == subobj.id)
+            .order_by(Property.label)
+        )
+        props_result = await session.execute(props_query)
+        for row in props_result.fetchall():
+            prop_info = SubobjectPropertyInfo(
+                entity_key=row[0],
+                label=row[1],
+                is_required=row[2],
+            )
+            if row[2]:
+                required_properties.append(prop_info)
+            else:
+                optional_properties.append(prop_info)
+    else:
+        # Draft-created subobject - extract from effective JSON
+        for prop_key in effective.get("required_properties", []):
+            required_properties.append(SubobjectPropertyInfo(
+                entity_key=prop_key, label=prop_key, is_required=True
+            ))
+        for prop_key in effective.get("optional_properties", []):
+            optional_properties.append(SubobjectPropertyInfo(
+                entity_key=prop_key, label=prop_key, is_required=False
+            ))
+
     return SubobjectDetailResponse(
         entity_key=effective.get("entity_key", entity_key),
         label=effective.get("label", ""),
         description=effective.get("description"),
-        properties=effective.get("properties", []),
+        required_properties=required_properties,
+        optional_properties=optional_properties,
         change_status=effective.get("_change_status"),
         deleted=effective.get("_deleted", False),
     )
@@ -726,16 +801,29 @@ async def get_module(
 
         # Compute closure (transitive category dependencies)
         closure = await compute_module_closure(session, direct_category_keys)
+
+        # Get module dependencies
+        dep_query = (
+            select(Module.entity_key)
+            .join(ModuleDependency, ModuleDependency.dependency_id == Module.id)
+            .where(ModuleDependency.module_id == module.id)
+            .order_by(Module.entity_key)
+        )
+        dep_result = await session.execute(dep_query)
+        dependencies = [row[0] for row in dep_result.fetchall()]
     else:
         # Draft-created module - extract entities from effective JSON if present
         entities = effective.get("entities", {})
+        dependencies = effective.get("dependencies", [])
         closure = []  # No closure for draft-created modules yet
 
     return ModuleDetailResponse(
         entity_key=effective.get("entity_key", entity_key),
         label=effective.get("label", ""),
         version=effective.get("version"),
+        description=effective.get("description"),
         entities=entities,
+        dependencies=dependencies,
         closure=closure,
         change_status=effective.get("_change_status"),
         deleted=effective.get("_deleted", False),

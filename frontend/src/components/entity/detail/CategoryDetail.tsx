@@ -16,7 +16,10 @@ import { cn } from '@/lib/utils'
 
 interface CategoryDetailProps {
   entityKey: string
+  /** Draft UUID for query params (fetching effective views) */
   draftId?: string
+  /** Draft capability token for mutations */
+  draftToken?: string
   isEditing: boolean
 }
 
@@ -31,13 +34,15 @@ interface CategoryDetailProps {
 export function CategoryDetail({
   entityKey,
   draftId,
+  draftToken,
   isEditing,
 }: CategoryDetailProps) {
   const { data: rawCategory, isLoading, error } = useCategory(entityKey, draftId)
   const { data: categoriesData } = useCategories(undefined, undefined, draftId)
   const openDetail = useDetailStore((s) => s.openDetail)
   const pushBreadcrumb = useDetailStore((s) => s.pushBreadcrumb)
-  const openCreateModal = useDraftStoreV2((s) => s.openCreateModal)
+  const openNestedCreateModal = useDraftStoreV2((s) => s.openNestedCreateModal)
+  const setOnNestedEntityCreated = useDraftStoreV2((s) => s.setOnNestedEntityCreated)
 
   // Build available categories for parent selection (excluding self)
   const availableCategories = (categoriesData?.items || [])
@@ -71,9 +76,9 @@ export function CategoryDetail({
   // Track soft-deleted parents (stay in position with "Deleted" badge until save)
   const [deletedParents, setDeletedParents] = useState<Set<string>>(new Set())
 
-  // Auto-save hook
+  // Auto-save hook - uses draftToken for mutations
   const { saveChange, isSaving } = useAutoSave({
-    draftToken: draftId || '',
+    draftToken: draftToken || '',
     entityType: 'category',
     entityKey,
     debounceMs: 500,
@@ -102,7 +107,7 @@ export function CategoryDetail({
   const handleLabelChange = useCallback(
     (value: string) => {
       setEditedLabel(value)
-      if (draftId) {
+      if (draftToken) {
         saveChange([{ op: 'replace', path: '/label', value }])
       }
     },
@@ -112,7 +117,7 @@ export function CategoryDetail({
   const handleDescriptionChange = useCallback(
     (value: string) => {
       setEditedDescription(value)
-      if (draftId) {
+      if (draftToken) {
         saveChange([{ op: 'replace', path: '/description', value }])
       }
     },
@@ -125,11 +130,12 @@ export function CategoryDetail({
       setDeletedParents((prev) => new Set([...prev, parent]))
       // Save the change with parent removed from list
       const newParents = editedParents.filter((p) => p !== parent)
-      if (draftId) {
-        saveChange([{ op: 'replace', path: '/parents', value: newParents }])
+      if (draftToken) {
+        // Use 'add' not 'replace' because canonical_json doesn't have parents field
+        saveChange([{ op: 'add', path: '/parents', value: newParents }])
       }
     },
-    [editedParents, draftId, saveChange]
+    [editedParents, draftToken, saveChange]
   )
 
   // Undo soft delete: restore parent to list
@@ -143,11 +149,12 @@ export function CategoryDetail({
       // Re-add parent to the list
       const newParents = [...editedParents, parent]
       setEditedParents(newParents)
-      if (draftId) {
-        saveChange([{ op: 'replace', path: '/parents', value: newParents }])
+      if (draftToken) {
+        // Use 'add' not 'replace' because canonical_json doesn't have parents field
+        saveChange([{ op: 'add', path: '/parents', value: newParents }])
       }
     },
-    [editedParents, draftId, saveChange]
+    [editedParents, draftToken, saveChange]
   )
 
   // Handler for adding new parent
@@ -156,17 +163,18 @@ export function CategoryDetail({
       if (parentKey && !editedParents.includes(parentKey)) {
         const newParents = [...editedParents.filter((p) => !deletedParents.has(p)), parentKey]
         setEditedParents(newParents)
-        if (draftId) {
-          saveChange([{ op: 'replace', path: '/parents', value: newParents }])
+        if (draftToken) {
+          // Use 'add' not 'replace' because canonical_json doesn't have parents field
+          saveChange([{ op: 'add', path: '/parents', value: newParents }])
         }
       }
     },
-    [editedParents, deletedParents, draftId, saveChange]
+    [editedParents, deletedParents, draftToken, saveChange]
   )
 
   const handleRevertDescription = useCallback(() => {
     setEditedDescription(originalValues.description || '')
-    if (draftId) {
+    if (draftToken) {
       saveChange([
         { op: 'replace', path: '/description', value: originalValues.description },
       ])
@@ -277,9 +285,17 @@ export function CategoryDetail({
                   handleAddNewParent(keys[0])
                 }
               }}
-              onCreateNew={() => {
-                // Open create modal for new category
-                openCreateModal('category')
+              onCreateNew={(id) => {
+                // Set callback to add created entity to parents
+                setOnNestedEntityCreated((newKey: string) => {
+                  handleAddNewParent(newKey)
+                })
+                // Open nested modal with prefilled ID
+                openNestedCreateModal({
+                  entityType: 'category',
+                  prefilledId: id,
+                  parentContext: { entityType: 'category', fieldName: 'Parent Categories' },
+                })
               }}
               placeholder="Add parent category..."
             />
@@ -335,6 +351,56 @@ export function CategoryDetail({
           console.log('Remove property:', propKey)
         }}
       />
+
+      {/* Subobjects Section */}
+      {category.subobjects && category.subobjects.length > 0 && (
+        <AccordionSection
+          id="subobjects"
+          title="Subobjects"
+          count={category.subobjects.length}
+          defaultOpen
+        >
+          <div className="space-y-2">
+            {/* Required Subobjects */}
+            {category.subobjects.filter((s) => s.is_required).length > 0 && (
+              <div className="space-y-1">
+                <h4 className="text-sm font-medium text-muted-foreground">Required</h4>
+                {category.subobjects
+                  .filter((s) => s.is_required)
+                  .map((subobj) => (
+                    <button
+                      key={subobj.entity_key}
+                      onClick={() => openDetail(subobj.entity_key, 'subobject')}
+                      className="w-full text-left px-2 py-1.5 text-sm rounded flex items-center gap-2 hover:bg-sidebar-accent transition-colors"
+                    >
+                      <span className="flex-1 truncate">{subobj.label}</span>
+                      <Badge variant="default" className="text-xs">required</Badge>
+                    </button>
+                  ))}
+              </div>
+            )}
+
+            {/* Optional Subobjects */}
+            {category.subobjects.filter((s) => !s.is_required).length > 0 && (
+              <div className="space-y-1">
+                <h4 className="text-sm font-medium text-muted-foreground">Optional</h4>
+                {category.subobjects
+                  .filter((s) => !s.is_required)
+                  .map((subobj) => (
+                    <button
+                      key={subobj.entity_key}
+                      onClick={() => openDetail(subobj.entity_key, 'subobject')}
+                      className="w-full text-left px-2 py-1.5 text-sm rounded flex items-center gap-2 hover:bg-sidebar-accent transition-colors"
+                    >
+                      <span className="flex-1 truncate">{subobj.label}</span>
+                      <Badge variant="outline" className="text-xs">optional</Badge>
+                    </button>
+                  ))}
+              </div>
+            )}
+          </div>
+        </AccordionSection>
+      )}
 
       {/* Module/Bundle membership - TODO: fetch from module_entity table */}
       <MembershipSection modules={[]} bundles={[]} />

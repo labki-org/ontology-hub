@@ -33,7 +33,10 @@ from app.models.v2.relationships import (
     BundleModule,
     CategoryParent,
     CategoryProperty,
+    CategorySubobject,
+    ModuleDependency,
     ModuleEntity,
+    SubobjectProperty,
 )
 
 # Materialized view
@@ -92,7 +95,10 @@ __all__ = [
     # Relationship tables
     "CategoryParent",
     "CategoryProperty",
+    "CategorySubobject",
+    "SubobjectProperty",
     "ModuleEntity",
+    "ModuleDependency",
     "BundleModule",
     # Materialized view
     "CategoryPropertyEffective",

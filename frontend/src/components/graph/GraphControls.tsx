@@ -1,13 +1,20 @@
 import { useState } from 'react'
-import { useGraphStore } from '@/stores/graphStore'
+import { useGraphStore, type LayoutAlgorithm, type LayoutDirection } from '@/stores/graphStore'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { RotateCw, Minus, Plus, ChevronDown, ChevronRight, Settings2 } from 'lucide-react'
+import { RotateCw, ChevronDown, ChevronRight, Settings2 } from 'lucide-react'
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 interface GraphControlsProps {
   onResetLayout: () => void
@@ -20,14 +27,12 @@ interface GraphControlsProps {
  */
 export function GraphControls({ onResetLayout, isSimulating }: GraphControlsProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const depth = useGraphStore((s) => s.depth)
-  const setDepth = useGraphStore((s) => s.setDepth)
   const edgeTypeFilter = useGraphStore((s) => s.edgeTypeFilter)
   const setEdgeTypeFilter = useGraphStore((s) => s.setEdgeTypeFilter)
-
-  const handleDepthChange = (delta: number) => {
-    setDepth(depth + delta)
-  }
+  const layoutAlgorithm = useGraphStore((s) => s.layoutAlgorithm)
+  const layoutDirection = useGraphStore((s) => s.layoutDirection)
+  const setLayoutAlgorithm = useGraphStore((s) => s.setLayoutAlgorithm)
+  const setLayoutDirection = useGraphStore((s) => s.setLayoutDirection)
 
   const handleEdgeTypeToggle = (edgeType: string, checked: boolean) => {
     const newFilter = new Set(edgeTypeFilter)
@@ -46,9 +51,6 @@ export function GraphControls({ onResetLayout, isSimulating }: GraphControlsProp
           <button className="flex items-center gap-2 px-3 py-2 w-full hover:bg-muted/50 rounded-lg transition-colors">
             <Settings2 className="h-4 w-4" />
             <span className="text-sm font-medium">Graph Settings</span>
-            <span className="text-xs text-muted-foreground ml-1">
-              (Depth: {depth})
-            </span>
             {isOpen ? (
               <ChevronDown className="h-4 w-4 ml-auto" />
             ) : (
@@ -58,35 +60,59 @@ export function GraphControls({ onResetLayout, isSimulating }: GraphControlsProp
         </CollapsibleTrigger>
 
         <CollapsibleContent>
-          <div className="px-3 pb-3 pt-1 border-t">
+          <div className="px-3 pb-3 pt-1 border-t space-y-3">
+            {/* Layout controls row */}
             <div className="flex flex-wrap items-center gap-4">
-              {/* Depth control */}
               <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-muted-foreground">Depth:</span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() => handleDepthChange(-1)}
-                  disabled={depth <= 1}
+                <span className="text-xs font-medium text-muted-foreground">Layout:</span>
+                <Select
+                  value={layoutAlgorithm}
+                  onValueChange={(value) => setLayoutAlgorithm(value as LayoutAlgorithm)}
                 >
-                  <Minus className="h-3 w-3" />
-                </Button>
-                <span className="text-sm font-medium w-4 text-center">{depth}</span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() => handleDepthChange(1)}
-                  disabled={depth >= 3}
+                  <SelectTrigger className="h-7 w-[140px] text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="hybrid" className="text-xs">Hierarchy + Flow</SelectItem>
+                    <SelectItem value="dagre" className="text-xs">Strict Hierarchy</SelectItem>
+                    <SelectItem value="force" className="text-xs">Force-Directed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground">Direction:</span>
+                <Select
+                  value={layoutDirection}
+                  onValueChange={(value) => setLayoutDirection(value as LayoutDirection)}
                 >
-                  <Plus className="h-3 w-3" />
-                </Button>
+                  <SelectTrigger className="h-7 w-[100px] text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="TB" className="text-xs">Top-Down</SelectItem>
+                    <SelectItem value="LR" className="text-xs">Left-Right</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="h-4 w-px bg-border" />
 
-              {/* Edge type filters - inline */}
+              {/* Reset layout button */}
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={onResetLayout}
+                disabled={isSimulating}
+              >
+                <RotateCw className="h-3 w-3 mr-1" />
+                Reset
+              </Button>
+            </div>
+
+            {/* Edge type filters row */}
+            <div className="flex flex-wrap items-center gap-4">
               <div className="flex items-center gap-3">
                 <span className="text-xs font-medium text-muted-foreground">Edges:</span>
                 <label className="flex items-center gap-1.5 cursor-pointer">
@@ -123,20 +149,6 @@ export function GraphControls({ onResetLayout, isSimulating }: GraphControlsProp
                   <span className="text-xs">Subobjects</span>
                 </label>
               </div>
-
-              <div className="h-4 w-px bg-border" />
-
-              {/* Reset layout button */}
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={onResetLayout}
-                disabled={isSimulating}
-              >
-                <RotateCw className="h-3 w-3 mr-1" />
-                Reset
-              </Button>
             </div>
           </div>
         </CollapsibleContent>

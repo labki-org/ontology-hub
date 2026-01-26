@@ -261,7 +261,28 @@ async def add_draft_change(
             existing_change.patch = merged_patches
             change = existing_change
     elif existing_change:
-        # For CREATE/DELETE, replace the existing change entirely
+        # Special case: DELETE of a draft-created entity
+        # Instead of replacing CREATE with DELETE, remove the CREATE entirely
+        # (the entity never existed in canonical, so there's nothing to delete)
+        if change_in.change_type == ChangeType.DELETE and existing_change.change_type == ChangeType.CREATE:
+            await session.delete(existing_change)
+            # Update draft modified_at
+            draft.modified_at = datetime.utcnow()
+            session.add(draft)
+            await session.commit()
+            # Return a special response indicating the change was removed
+            # Use the existing change data for the response (it no longer exists but we need something to return)
+            return DraftChangeResponse(
+                id=existing_change.id,
+                change_type=ChangeType.DELETE,
+                entity_type=existing_change.entity_type,
+                entity_key=existing_change.entity_key,
+                patch=None,
+                replacement_json=None,
+                created_at=existing_change.created_at,
+            )
+
+        # For other cases (CREATE->CREATE, DELETE->DELETE), replace the existing change entirely
         existing_change.change_type = change_in.change_type
         existing_change.patch = change_in.patch
         existing_change.replacement_json = change_in.replacement_json

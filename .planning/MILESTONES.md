@@ -1,5 +1,34 @@
 # Project Milestones: Ontology Hub
 
+## v2.1 Bug Fixes & UX Improvements (Shipped: 2026-01-25)
+
+**Delivered:** Fixed all entity detail loading, restored draft workflow (validate/submit PR), added inline editing with hover controls, change propagation visualization, and full entity CRUD within drafts.
+
+**Phases completed:** 16-22 (24 plans total)
+
+**Key accomplishments:**
+- Fixed entity detail loading for all 6 entity types (subobjects, templates, modules, bundles)
+- Graph visualization renders properties, subobjects, templates as distinct SVG shapes with hover highlighting
+- Inline editing with hover-reveal edit/delete icons in draft mode
+- Change propagation tracking with two-tier sidebar highlighting (direct vs transitive)
+- Full entity CRUD: Create via "+ New" buttons, delete with dependency checking, cascading create flow
+- Restored draft workflow: Validate/Submit PR buttons, OAuth redirect, auto-generated PR titles
+- Entity lifecycle fixes: Graph auto-updates on creation, delete works for newly created entities
+
+**Stats:**
+- 115 files created/modified
+- ~36,360 lines of code (17,134 Python + 19,226 TypeScript)
+- 7 phases, 24 plans
+- 5 days from v2.0 ship to v2.1 ship
+
+**Git range:** `feat(16-02)` → `fix(22-02)`
+
+**Bugs fixed:** BUG-001 (graph update), BUG-002 (delete new entities), BUG-003 (buttons disabled)
+
+**What's next:** Production deployment, performance optimization, user feedback integration
+
+---
+
 ## v2.0 Platform Rebuild (Shipped: 2026-01-25)
 
 **Delivered:** Full database/API/frontend rebuild with versioned canonical data, relationship tables, draft-as-deltas with auto-rebase, and graph visualization with module hull overlays.

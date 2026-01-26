@@ -18,6 +18,26 @@ from app.services.graph_query import GraphQueryService
 router = APIRouter(prefix="/graph", tags=["graph"])
 
 
+@router.get("/full", response_model=GraphResponse)
+async def get_full_ontology_graph(
+    draft_ctx: DraftContextDep = None,
+) -> GraphResponse:
+    """Get the full ontology graph with all entities (GRP-05).
+
+    Returns all categories, properties, subobjects, and templates with their
+    relationships. Bundles are excluded. Modules are represented via hull
+    membership on nodes.
+
+    Args:
+        draft_ctx: Draft context from query param (via DraftContextDep)
+
+    Returns:
+        GraphResponse with all entities and relationships
+    """
+    service = GraphQueryService(draft_ctx.session, draft_ctx)
+    return await service.get_full_ontology_graph()
+
+
 @router.get("/neighborhood", response_model=GraphResponse)
 async def get_neighborhood_graph(
     entity_key: str = Query(..., description="Starting entity key (e.g., 'Person')"),

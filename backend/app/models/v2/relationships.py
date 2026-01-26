@@ -39,6 +39,34 @@ class CategoryProperty(SQLModel, table=True):
     is_required: bool = Field(default=False)
 
 
+class CategorySubobject(SQLModel, table=True):
+    """Category-to-subobject assignment.
+
+    Represents: "category X has subobject Y (required/optional)"
+    A category can have multiple subobjects.
+    """
+
+    __tablename__ = "category_subobject"
+
+    category_id: uuid.UUID = Field(foreign_key="categories.id", primary_key=True)
+    subobject_id: uuid.UUID = Field(foreign_key="subobjects.id", primary_key=True)
+    is_required: bool = Field(default=False)
+
+
+class SubobjectProperty(SQLModel, table=True):
+    """Subobject-to-property assignment.
+
+    Represents: "subobject X has property Y (required/optional)"
+    A subobject can have multiple properties.
+    """
+
+    __tablename__ = "subobject_property"
+
+    subobject_id: uuid.UUID = Field(foreign_key="subobjects.id", primary_key=True)
+    property_id: uuid.UUID = Field(foreign_key="properties.id", primary_key=True)
+    is_required: bool = Field(default=False)
+
+
 class ModuleEntity(SQLModel, table=True):
     """Module membership for all entity types.
 
@@ -53,6 +81,19 @@ class ModuleEntity(SQLModel, table=True):
     module_id: uuid.UUID = Field(foreign_key="modules_v2.id", index=True)
     entity_type: EntityType = Field(sa_column=Column(String))  # Stored as string value
     entity_key: str = Field(index=True)
+
+
+class ModuleDependency(SQLModel, table=True):
+    """Module dependency relationship.
+
+    Represents: "module X depends on module Y"
+    A module can depend on multiple other modules.
+    """
+
+    __tablename__ = "module_dependency"
+
+    module_id: uuid.UUID = Field(foreign_key="modules_v2.id", primary_key=True)
+    dependency_id: uuid.UUID = Field(foreign_key="modules_v2.id", primary_key=True)
 
 
 class BundleModule(SQLModel, table=True):

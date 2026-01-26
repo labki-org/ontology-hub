@@ -65,10 +65,36 @@ class GraphQueryService:
         Raises:
             ValueError: If starting entity not found
         """
-        if entity_type != "category":
-            # For now, only category graphs are supported
+        # Dispatch to type-specific neighborhood handlers
+        if entity_type == "category":
+            return await self._get_category_neighborhood(entity_key, depth)
+        elif entity_type == "property":
+            return await self._get_property_neighborhood(entity_key, depth)
+        elif entity_type == "subobject":
+            return await self._get_subobject_neighborhood(entity_key, depth)
+        elif entity_type == "template":
+            return await self._get_template_neighborhood(entity_key, depth)
+        elif entity_type == "module":
+            return await self._get_module_neighborhood(entity_key, depth)
+        else:
             raise ValueError(f"Entity type '{entity_type}' not supported for graph queries")
 
+    async def _get_category_neighborhood(
+        self,
+        entity_key: str,
+        depth: int,
+    ) -> GraphResponse:
+        """Get neighborhood graph for a category.
+
+        Returns nodes and edges for ancestors, descendants, properties, and subobjects.
+
+        Args:
+            entity_key: Category entity key
+            depth: Max traversal depth
+
+        Returns:
+            GraphResponse with nodes, edges, and cycle detection flag
+        """
         # Verify starting entity exists
         start_query = select(Category).where(Category.entity_key == entity_key)
         result = await self.session.execute(start_query)
@@ -141,6 +167,31 @@ class GraphQueryService:
         )
         rows = result.fetchall()
 
+        # Handle isolated draft-created entities (GRAPH-05)
+        # If CTE returned no rows but entity exists in draft creates, it's an isolated node
+        if not rows:
+            draft_creates = await self.draft_overlay.get_draft_creates("category")
+            draft_match = next(
+                (c for c in draft_creates if c.get("entity_key") == entity_key),
+                None,
+            )
+            if draft_match:
+                # Return isolated draft node as single-node graph
+                return GraphResponse(
+                    nodes=[
+                        GraphNode(
+                            id=entity_key,
+                            label=draft_match.get("label", entity_key),
+                            entity_type="category",
+                            depth=0,
+                            modules=[],
+                            change_status="added",
+                        )
+                    ],
+                    edges=[],
+                    has_cycles=False,
+                )
+
         # Collect entity keys for batch operations
         entity_keys = [row.entity_key for row in rows]
 
@@ -156,7 +207,7 @@ class GraphQueryService:
                     entity_keys.append(draft_key)
 
         # Batch load module membership
-        module_membership = await self._get_module_membership(entity_keys, entity_type)
+        module_membership = await self._get_module_membership(entity_keys, "category")
 
         # Build nodes with draft overlay applied
         nodes: list[GraphNode] = []
@@ -181,7 +232,7 @@ class GraphQueryService:
                 GraphNode(
                     id=row.entity_key,
                     label=row.label,
-                    entity_type=entity_type,
+                    entity_type="category",
                     depth=row.depth,
                     modules=module_membership.get(row.entity_key, []),
                     change_status=change_status,
@@ -196,7 +247,7 @@ class GraphQueryService:
                     GraphNode(
                         id=draft_key,
                         label=draft_cat.get("label", draft_key),
-                        entity_type=entity_type,
+                        entity_type="category",
                         depth=1,  # Draft-created are adjacent to existing
                         modules=module_membership.get(draft_key, []),
                         change_status="added",
@@ -258,6 +309,620 @@ class GraphQueryService:
         )
         cycle_row = cycle_result.fetchone()
         has_cycles = bool(cycle_row and cycle_row.has_cycles)
+
+        return GraphResponse(nodes=nodes, edges=edges, has_cycles=has_cycles)
+
+    async def _get_property_neighborhood(
+        self,
+        entity_key: str,
+        depth: int,
+    ) -> GraphResponse:
+        """Get neighborhood graph for a property.
+
+        Shows the property as center node and categories that use this property.
+        At depth > 1, includes parent categories of those categories.
+
+        Args:
+            entity_key: Property entity key
+            depth: Max traversal depth
+
+        Returns:
+            GraphResponse with nodes and edges
+        """
+        # Verify property exists
+        prop_query = select(Property).where(Property.entity_key == entity_key)
+        result = await self.session.execute(prop_query)
+        prop = result.scalar_one_or_none()
+
+        if not prop:
+            # Check draft creates
+            draft_creates = await self.draft_overlay.get_draft_creates("property")
+            draft_match = next(
+                (p for p in draft_creates if p.get("entity_key") == entity_key),
+                None,
+            )
+            if not draft_match:
+                raise ValueError(f"Property '{entity_key}' not found")
+            # Return isolated draft node
+            return GraphResponse(
+                nodes=[
+                    GraphNode(
+                        id=entity_key,
+                        label=draft_match.get("label", entity_key),
+                        entity_type="property",
+                        depth=0,
+                        modules=[],
+                        change_status="added",
+                    )
+                ],
+                edges=[],
+                has_cycles=False,
+            )
+
+        # Get categories that use this property via category_property relationship
+        category_query = text("""
+            SELECT c.entity_key, c.label
+            FROM categories c
+            JOIN category_property cp ON cp.category_id = c.id
+            JOIN properties p ON p.id = cp.property_id
+            WHERE p.entity_key = :property_key
+        """)
+        result = await self.session.execute(category_query, {"property_key": entity_key})
+        category_rows = result.fetchall()
+
+        # Collect category keys
+        category_keys = [row.entity_key for row in category_rows]
+
+        # At depth > 1, include parent categories
+        if depth > 1 and category_keys:
+            parent_query = text("""
+                WITH RECURSIVE ancestors AS (
+                    SELECT c.id, c.entity_key, c.label, 1 as depth
+                    FROM categories c
+                    WHERE c.entity_key = ANY(:category_keys)
+
+                    UNION ALL
+
+                    SELECT p.id, p.entity_key, p.label, a.depth + 1
+                    FROM categories p
+                    JOIN category_parent cp ON cp.parent_id = p.id
+                    JOIN ancestors a ON a.id = cp.category_id
+                    WHERE a.depth < :max_depth
+                )
+                SELECT DISTINCT entity_key, label FROM ancestors
+            """)
+            result = await self.session.execute(
+                parent_query, {"category_keys": category_keys, "max_depth": depth}
+            )
+            parent_rows = result.fetchall()
+            for row in parent_rows:
+                if row.entity_key not in category_keys:
+                    category_keys.append(row.entity_key)
+
+        # Build nodes list
+        nodes: list[GraphNode] = []
+
+        # Add property as center node
+        prop_module_membership = await self._get_module_membership([entity_key], "property")
+        effective = await self.draft_overlay.apply_overlay(prop, "property", entity_key)
+        change_status = effective.get("_change_status") if effective else None
+
+        nodes.append(
+            GraphNode(
+                id=entity_key,
+                label=prop.label,
+                entity_type="property",
+                depth=0,
+                modules=prop_module_membership.get(entity_key, []),
+                change_status=change_status,
+            )
+        )
+
+        # Add category nodes
+        if category_keys:
+            cat_module_membership = await self._get_module_membership(category_keys, "category")
+            categories_query = select(Category).where(Category.entity_key.in_(category_keys))
+            result = await self.session.execute(categories_query)
+            categories = result.scalars().all()
+
+            for cat in categories:
+                effective = await self.draft_overlay.apply_overlay(cat, "category", cat.entity_key)
+                change_status = effective.get("_change_status") if effective else None
+
+                nodes.append(
+                    GraphNode(
+                        id=cat.entity_key,
+                        label=cat.label,
+                        entity_type="category",
+                        depth=1,
+                        modules=cat_module_membership.get(cat.entity_key, []),
+                        change_status=change_status,
+                    )
+                )
+
+        # Build edges: category -> property
+        edges: list[GraphEdge] = []
+        for row in category_rows:
+            edges.append(
+                GraphEdge(
+                    source=row.entity_key,
+                    target=entity_key,
+                    edge_type="property",
+                )
+            )
+
+        # Add parent edges between categories if depth > 1
+        if depth > 1 and category_keys:
+            parent_edges = await self._get_edges_for_categories(category_keys)
+            edges.extend(parent_edges)
+
+        return GraphResponse(nodes=nodes, edges=edges, has_cycles=False)
+
+    async def _get_subobject_neighborhood(
+        self,
+        entity_key: str,
+        depth: int,
+    ) -> GraphResponse:
+        """Get neighborhood graph for a subobject.
+
+        Shows the subobject as center node and categories that reference it.
+        At depth > 1, includes parent categories of those categories.
+
+        Args:
+            entity_key: Subobject entity key
+            depth: Max traversal depth
+
+        Returns:
+            GraphResponse with nodes and edges
+        """
+        # Verify subobject exists
+        subobj_query = select(Subobject).where(Subobject.entity_key == entity_key)
+        result = await self.session.execute(subobj_query)
+        subobj = result.scalar_one_or_none()
+
+        if not subobj:
+            # Check draft creates
+            draft_creates = await self.draft_overlay.get_draft_creates("subobject")
+            draft_match = next(
+                (s for s in draft_creates if s.get("entity_key") == entity_key),
+                None,
+            )
+            if not draft_match:
+                raise ValueError(f"Subobject '{entity_key}' not found")
+            # Return isolated draft node
+            return GraphResponse(
+                nodes=[
+                    GraphNode(
+                        id=entity_key,
+                        label=draft_match.get("label", entity_key),
+                        entity_type="subobject",
+                        depth=0,
+                        modules=[],
+                        change_status="added",
+                    )
+                ],
+                edges=[],
+                has_cycles=False,
+            )
+
+        # Find categories that reference this subobject in their canonical_json
+        # Check both optional_subobjects and required_subobjects
+        categories_query = select(Category)
+        result = await self.session.execute(categories_query)
+        all_categories = result.scalars().all()
+
+        referencing_categories: list[Category] = []
+        for cat in all_categories:
+            canonical = cat.canonical_json or {}
+            optional = canonical.get("optional_subobjects", [])
+            required = canonical.get("required_subobjects", [])
+            all_subobjs = (optional if isinstance(optional, list) else []) + \
+                         (required if isinstance(required, list) else [])
+            if entity_key in all_subobjs:
+                referencing_categories.append(cat)
+
+        category_keys = [cat.entity_key for cat in referencing_categories]
+
+        # At depth > 1, include parent categories
+        if depth > 1 and category_keys:
+            parent_query = text("""
+                WITH RECURSIVE ancestors AS (
+                    SELECT c.id, c.entity_key, c.label, 1 as depth
+                    FROM categories c
+                    WHERE c.entity_key = ANY(:category_keys)
+
+                    UNION ALL
+
+                    SELECT p.id, p.entity_key, p.label, a.depth + 1
+                    FROM categories p
+                    JOIN category_parent cp ON cp.parent_id = p.id
+                    JOIN ancestors a ON a.id = cp.category_id
+                    WHERE a.depth < :max_depth
+                )
+                SELECT DISTINCT entity_key, label FROM ancestors
+            """)
+            result = await self.session.execute(
+                parent_query, {"category_keys": category_keys, "max_depth": depth}
+            )
+            parent_rows = result.fetchall()
+            for row in parent_rows:
+                if row.entity_key not in category_keys:
+                    category_keys.append(row.entity_key)
+
+        # Build nodes list
+        nodes: list[GraphNode] = []
+
+        # Add subobject as center node
+        subobj_module_membership = await self._get_module_membership([entity_key], "subobject")
+        effective = await self.draft_overlay.apply_overlay(subobj, "subobject", entity_key)
+        change_status = effective.get("_change_status") if effective else None
+
+        nodes.append(
+            GraphNode(
+                id=entity_key,
+                label=subobj.label,
+                entity_type="subobject",
+                depth=0,
+                modules=subobj_module_membership.get(entity_key, []),
+                change_status=change_status,
+            )
+        )
+
+        # Add category nodes
+        if category_keys:
+            cat_module_membership = await self._get_module_membership(category_keys, "category")
+            categories_query = select(Category).where(Category.entity_key.in_(category_keys))
+            result = await self.session.execute(categories_query)
+            categories = result.scalars().all()
+
+            for cat in categories:
+                effective = await self.draft_overlay.apply_overlay(cat, "category", cat.entity_key)
+                change_status = effective.get("_change_status") if effective else None
+
+                nodes.append(
+                    GraphNode(
+                        id=cat.entity_key,
+                        label=cat.label,
+                        entity_type="category",
+                        depth=1,
+                        modules=cat_module_membership.get(cat.entity_key, []),
+                        change_status=change_status,
+                    )
+                )
+
+        # Build edges: category -> subobject
+        edges: list[GraphEdge] = []
+        for cat in referencing_categories:
+            edges.append(
+                GraphEdge(
+                    source=cat.entity_key,
+                    target=entity_key,
+                    edge_type="subobject",
+                )
+            )
+
+        # Add parent edges between categories if depth > 1
+        if depth > 1 and category_keys:
+            parent_edges = await self._get_edges_for_categories(category_keys)
+            edges.extend(parent_edges)
+
+        return GraphResponse(nodes=nodes, edges=edges, has_cycles=False)
+
+    async def _get_template_neighborhood(
+        self,
+        entity_key: str,
+        depth: int,
+    ) -> GraphResponse:
+        """Get neighborhood graph for a template.
+
+        Shows the template as center node and other templates in the same module(s).
+        Templates don't have direct relationships - they're grouped by module membership.
+
+        Args:
+            entity_key: Template entity key
+            depth: Max traversal depth (used to limit number of related templates)
+
+        Returns:
+            GraphResponse with nodes (no edges between templates)
+        """
+        # Verify template exists
+        template_query = select(Template).where(Template.entity_key == entity_key)
+        result = await self.session.execute(template_query)
+        template = result.scalar_one_or_none()
+
+        if not template:
+            # Check draft creates
+            draft_creates = await self.draft_overlay.get_draft_creates("template")
+            draft_match = next(
+                (t for t in draft_creates if t.get("entity_key") == entity_key),
+                None,
+            )
+            if not draft_match:
+                raise ValueError(f"Template '{entity_key}' not found")
+            # Return isolated draft node
+            return GraphResponse(
+                nodes=[
+                    GraphNode(
+                        id=entity_key,
+                        label=draft_match.get("label", entity_key),
+                        entity_type="template",
+                        depth=0,
+                        modules=[],
+                        change_status="added",
+                    )
+                ],
+                edges=[],
+                has_cycles=False,
+            )
+
+        # Get module membership for this template
+        template_module_membership = await self._get_module_membership([entity_key], "template")
+        template_modules = template_module_membership.get(entity_key, [])
+
+        # Build nodes list
+        nodes: list[GraphNode] = []
+
+        # Add template as center node
+        effective = await self.draft_overlay.apply_overlay(template, "template", entity_key)
+        change_status = effective.get("_change_status") if effective else None
+
+        nodes.append(
+            GraphNode(
+                id=entity_key,
+                label=template.label,
+                entity_type="template",
+                depth=0,
+                modules=template_modules,
+                change_status=change_status,
+            )
+        )
+
+        # Find other templates in the same modules (limited to ~10 for performance)
+        if template_modules:
+            # Get module IDs for the template's modules
+            module_query = select(Module.id, Module.entity_key).where(
+                Module.entity_key.in_(template_modules)
+            )
+            result = await self.session.execute(module_query)
+            module_rows = result.fetchall()
+            module_ids = [row.id for row in module_rows]
+
+            if module_ids:
+                # Get other templates in those modules
+                other_templates_query = (
+                    select(ModuleEntity.entity_key)
+                    .where(
+                        ModuleEntity.module_id.in_(module_ids),
+                        ModuleEntity.entity_type == "template",
+                        ModuleEntity.entity_key != entity_key,
+                    )
+                    .limit(10)  # Limit for performance
+                )
+                result = await self.session.execute(other_templates_query)
+                other_template_keys = [row[0] for row in result.fetchall()]
+
+                if other_template_keys:
+                    # Get template data
+                    templates_query = select(Template).where(
+                        Template.entity_key.in_(other_template_keys)
+                    )
+                    result = await self.session.execute(templates_query)
+                    other_templates = result.scalars().all()
+
+                    # Get module membership for other templates
+                    other_module_membership = await self._get_module_membership(
+                        other_template_keys, "template"
+                    )
+
+                    for tmpl in other_templates:
+                        effective = await self.draft_overlay.apply_overlay(
+                            tmpl, "template", tmpl.entity_key
+                        )
+                        change_status = effective.get("_change_status") if effective else None
+
+                        nodes.append(
+                            GraphNode(
+                                id=tmpl.entity_key,
+                                label=tmpl.label,
+                                entity_type="template",
+                                depth=1,
+                                modules=other_module_membership.get(tmpl.entity_key, []),
+                                change_status=change_status,
+                            )
+                        )
+
+        # No edges between templates - they're grouped by module hulls
+        return GraphResponse(nodes=nodes, edges=[], has_cycles=False)
+
+    async def _get_module_neighborhood(
+        self,
+        entity_key: str,
+        depth: int,
+    ) -> GraphResponse:
+        """Get neighborhood graph for a module.
+
+        Reuses get_module_graph() to show all entities within the module.
+        Modules are visualized as hulls around their contained entities.
+
+        Args:
+            entity_key: Module entity key
+            depth: Max traversal depth (not used, included for interface consistency)
+
+        Returns:
+            GraphResponse with all module entities
+        """
+        # Reuse the module graph which shows all entities in the module
+        # Modules are displayed as hulls, not as nodes themselves
+        return await self.get_module_graph(entity_key)
+
+    async def get_full_ontology_graph(self) -> GraphResponse:
+        """Get the full ontology graph with all entities (GRP-05).
+
+        Returns all categories, properties, subobjects, and templates with their
+        relationships. Bundles are excluded. Modules are represented via hull
+        membership on nodes.
+
+        Returns:
+            GraphResponse with all entities and relationships
+        """
+        nodes: list[GraphNode] = []
+        edges: list[GraphEdge] = []
+
+        # Get all categories
+        categories_query = select(Category)
+        result = await self.session.execute(categories_query)
+        categories = result.scalars().all()
+
+        category_keys = [c.entity_key for c in categories]
+
+        # Get module membership for categories
+        if category_keys:
+            cat_module_membership = await self._get_module_membership(category_keys, "category")
+
+            for cat in categories:
+                effective = await self.draft_overlay.apply_overlay(cat, "category", cat.entity_key)
+                change_status = effective.get("_change_status") if effective else None
+
+                nodes.append(
+                    GraphNode(
+                        id=cat.entity_key,
+                        label=cat.label,
+                        entity_type="category",
+                        depth=None,
+                        modules=cat_module_membership.get(cat.entity_key, []),
+                        change_status=change_status,
+                    )
+                )
+
+            # Get parent edges between categories
+            parent_edges = await self._get_edges_for_categories(category_keys)
+            edges.extend(parent_edges)
+
+        # Add draft-created categories
+        draft_creates = await self.draft_overlay.get_draft_creates("category")
+        for draft_cat in draft_creates:
+            draft_key = draft_cat.get("entity_key")
+            if draft_key and not any(n.id == draft_key for n in nodes):
+                nodes.append(
+                    GraphNode(
+                        id=draft_key,
+                        label=draft_cat.get("label", draft_key),
+                        entity_type="category",
+                        depth=None,
+                        modules=[],
+                        change_status="added",
+                    )
+                )
+                # Add parent edges for draft categories
+                parents = draft_cat.get("parents", [])
+                for parent_key in parents:
+                    edges.append(
+                        GraphEdge(source=draft_key, target=parent_key, edge_type="parent")
+                    )
+
+        # Get all properties
+        properties_query = select(Property)
+        result = await self.session.execute(properties_query)
+        properties = result.scalars().all()
+
+        property_keys = [p.entity_key for p in properties]
+
+        if property_keys:
+            prop_module_membership = await self._get_module_membership(property_keys, "property")
+
+            for prop in properties:
+                effective = await self.draft_overlay.apply_overlay(prop, "property", prop.entity_key)
+                change_status = effective.get("_change_status") if effective else None
+
+                nodes.append(
+                    GraphNode(
+                        id=prop.entity_key,
+                        label=prop.label,
+                        entity_type="property",
+                        depth=None,
+                        modules=prop_module_membership.get(prop.entity_key, []),
+                        change_status=change_status,
+                    )
+                )
+
+            # Get property edges (category -> property)
+            property_edge_query = text("""
+                SELECT c.entity_key as category_key, p.entity_key as property_key
+                FROM category_property cp
+                JOIN categories c ON c.id = cp.category_id
+                JOIN properties p ON p.id = cp.property_id
+            """)
+            result = await self.session.execute(property_edge_query)
+            for row in result.fetchall():
+                edges.append(
+                    GraphEdge(source=row.category_key, target=row.property_key, edge_type="property")
+                )
+
+        # Get all subobjects
+        subobjects_query = select(Subobject)
+        result = await self.session.execute(subobjects_query)
+        subobjects = result.scalars().all()
+
+        subobject_keys = [s.entity_key for s in subobjects]
+
+        if subobject_keys:
+            subobj_module_membership = await self._get_module_membership(subobject_keys, "subobject")
+
+            for subobj in subobjects:
+                effective = await self.draft_overlay.apply_overlay(subobj, "subobject", subobj.entity_key)
+                change_status = effective.get("_change_status") if effective else None
+
+                nodes.append(
+                    GraphNode(
+                        id=subobj.entity_key,
+                        label=subobj.label,
+                        entity_type="subobject",
+                        depth=None,
+                        modules=subobj_module_membership.get(subobj.entity_key, []),
+                        change_status=change_status,
+                    )
+                )
+
+        # Get subobject edges from category canonical_json
+        for cat in categories:
+            canonical = cat.canonical_json or {}
+            optional = canonical.get("optional_subobjects", [])
+            required = canonical.get("required_subobjects", [])
+            all_subobjs = (optional if isinstance(optional, list) else []) + \
+                         (required if isinstance(required, list) else [])
+            for subobj_key in all_subobjs:
+                if subobj_key in subobject_keys:
+                    edges.append(
+                        GraphEdge(source=cat.entity_key, target=subobj_key, edge_type="subobject")
+                    )
+
+        # Get all templates
+        templates_query = select(Template)
+        result = await self.session.execute(templates_query)
+        templates = result.scalars().all()
+
+        template_keys = [t.entity_key for t in templates]
+
+        if template_keys:
+            template_module_membership = await self._get_module_membership(template_keys, "template")
+
+            for template in templates:
+                effective = await self.draft_overlay.apply_overlay(template, "template", template.entity_key)
+                change_status = effective.get("_change_status") if effective else None
+
+                nodes.append(
+                    GraphNode(
+                        id=template.entity_key,
+                        label=template.label,
+                        entity_type="template",
+                        depth=None,
+                        modules=template_module_membership.get(template.entity_key, []),
+                        change_status=change_status,
+                    )
+                )
+
+        # Check for cycles in category hierarchy
+        has_cycles = await self._check_cycles_in_subgraph(category_keys) if category_keys else False
 
         return GraphResponse(nodes=nodes, edges=edges, has_cycles=has_cycles)
 

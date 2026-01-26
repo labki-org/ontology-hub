@@ -20,6 +20,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 interface ModuleDetailProps {
   entityKey: string
   draftId?: string
+  draftToken?: string
   isEditing: boolean
 }
 
@@ -30,7 +31,7 @@ interface ModuleDetailProps {
  * - Computed closure (transitive category dependencies)
  * - Edit mode for adding/removing members
  */
-export function ModuleDetail({ entityKey, draftId, isEditing }: ModuleDetailProps) {
+export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: ModuleDetailProps) {
   const { data: module, isLoading, error } = useModule(entityKey, draftId)
   const { data: categoriesData } = useCategories(undefined, undefined, draftId)
   const { data: propertiesData } = useProperties(undefined, undefined, draftId)
@@ -39,7 +40,8 @@ export function ModuleDetail({ entityKey, draftId, isEditing }: ModuleDetailProp
 
   const openDetail = useDetailStore((s) => s.openDetail)
   const pushBreadcrumb = useDetailStore((s) => s.pushBreadcrumb)
-  const openCreateModal = useDraftStoreV2((s) => s.openCreateModal)
+  const openNestedCreateModal = useDraftStoreV2((s) => s.openNestedCreateModal)
+  const setOnNestedEntityCreated = useDraftStoreV2((s) => s.setOnNestedEntityCreated)
 
   // Build available entities for each type
   const availableEntitiesByType: Record<string, Array<{ key: string; label: string }>> = {
@@ -70,7 +72,7 @@ export function ModuleDetail({ entityKey, draftId, isEditing }: ModuleDetailProp
 
   // Auto-save hook
   const { saveChange, isSaving } = useAutoSave({
-    draftToken: draftId || '',
+    draftToken: draftToken || '',
     entityType: 'module',
     entityKey,
     debounceMs: 500,
@@ -93,7 +95,7 @@ export function ModuleDetail({ entityKey, draftId, isEditing }: ModuleDetailProp
   const handleLabelChange = useCallback(
     (value: string) => {
       setEditedLabel(value)
-      if (draftId) {
+      if (draftToken) {
         saveChange([{ op: 'replace', path: '/label', value }])
       }
     },
@@ -106,7 +108,7 @@ export function ModuleDetail({ entityKey, draftId, isEditing }: ModuleDetailProp
       if (!newEntities[entityType]) newEntities[entityType] = []
       newEntities[entityType] = [...newEntities[entityType], entKey]
       setEditedEntities(newEntities)
-      if (draftId) {
+      if (draftToken) {
         saveChange([{ op: 'replace', path: '/entities', value: newEntities }])
       }
     },
@@ -118,7 +120,7 @@ export function ModuleDetail({ entityKey, draftId, isEditing }: ModuleDetailProp
       const newEntities = { ...editedEntities }
       newEntities[entityType] = (newEntities[entityType] || []).filter((k) => k !== entKey)
       setEditedEntities(newEntities)
-      if (draftId) {
+      if (draftToken) {
         saveChange([{ op: 'replace', path: '/entities', value: newEntities }])
       }
     },
@@ -255,8 +257,17 @@ export function ModuleDetail({ entityKey, draftId, isEditing }: ModuleDetailProp
                           handleAddEntity(entityType, keys[0])
                         }
                       }}
-                      onCreateNew={() => {
-                        openCreateModal(entityType as CreateModalEntityType)
+                      onCreateNew={(id) => {
+                        // Capture entityType for the callback
+                        const capturedType = entityType
+                        setOnNestedEntityCreated((newKey: string) => {
+                          handleAddEntity(capturedType, newKey)
+                        })
+                        openNestedCreateModal({
+                          entityType: capturedType as CreateModalEntityType,
+                          prefilledId: id,
+                          parentContext: { entityType: 'module', fieldName: `${capturedType}s` },
+                        })
                       }}
                       placeholder={`Add ${entityType}...`}
                     />
@@ -274,7 +285,40 @@ export function ModuleDetail({ entityKey, draftId, isEditing }: ModuleDetailProp
         </div>
       </AccordionSection>
 
-      {/* Computed closure (transitive dependencies) */}
+      {/* Module Dependencies */}
+      <AccordionSection
+        id="dependencies"
+        title="Module Dependencies"
+        count={moduleDetail.dependencies?.length || 0}
+        defaultOpen={true}
+      >
+        <div className="space-y-2">
+          <p className="text-sm text-muted-foreground">
+            Modules that must be installed before this module
+          </p>
+          {moduleDetail.dependencies && moduleDetail.dependencies.length > 0 ? (
+            <ul className="space-y-1 pl-4">
+              {moduleDetail.dependencies.map((moduleKey) => (
+                <li key={moduleKey} className="text-sm py-1">
+                  <Badge
+                    variant="secondary"
+                    className="cursor-pointer hover:bg-secondary/80"
+                    onClick={() => openDetail(moduleKey, 'module')}
+                  >
+                    {moduleKey}
+                  </Badge>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="text-sm text-muted-foreground italic">
+              No module dependencies
+            </div>
+          )}
+        </div>
+      </AccordionSection>
+
+      {/* Computed closure (transitive category dependencies) */}
       <AccordionSection
         id="closure"
         title="Computed Closure"

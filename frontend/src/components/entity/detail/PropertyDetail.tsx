@@ -7,6 +7,7 @@ import { AccordionSection } from '../sections/AccordionSection'
 import { MembershipSection } from '../sections/MembershipSection'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Badge } from '@/components/ui/badge'
 import { VisualChangeMarker } from '../form/VisualChangeMarker'
 import {
   Select,
@@ -15,12 +16,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Pencil, X } from 'lucide-react'
+import { Pencil, X, Check, Link2 } from 'lucide-react'
 import type { PropertyDetailV2, EntityWithStatus } from '@/api/types'
 
 interface PropertyDetailProps {
   entityKey: string
   draftId?: string
+  draftToken?: string
   isEditing: boolean
 }
 
@@ -34,6 +36,7 @@ interface PropertyDetailProps {
 export function PropertyDetail({
   entityKey,
   draftId,
+  draftToken,
   isEditing,
 }: PropertyDetailProps) {
   const { data, isLoading, error } = useProperty(entityKey, draftId)
@@ -65,7 +68,7 @@ export function PropertyDetail({
 
   // Auto-save hook
   const { saveChange, isSaving } = useAutoSave({
-    draftToken: draftId || '',
+    draftToken: draftToken || '',
     entityType: 'property',
     entityKey,
     debounceMs: 500,
@@ -94,7 +97,7 @@ export function PropertyDetail({
   const handleLabelChange = useCallback(
     (value: string) => {
       setEditedLabel(value)
-      if (draftId) saveChange([{ op: 'replace', path: '/label', value }])
+      if (draftToken) saveChange([{ op: 'replace', path: '/label', value }])
     },
     [draftId, saveChange]
   )
@@ -102,7 +105,7 @@ export function PropertyDetail({
   const handleDescriptionChange = useCallback(
     (value: string) => {
       setEditedDescription(value)
-      if (draftId) saveChange([{ op: 'replace', path: '/description', value }])
+      if (draftToken) saveChange([{ op: 'replace', path: '/description', value }])
     },
     [draftId, saveChange]
   )
@@ -111,7 +114,7 @@ export function PropertyDetail({
     (value: string) => {
       setEditedDatatype(value)
       setIsEditingDatatype(false) // Close edit mode after selection
-      if (draftId) saveChange([{ op: 'replace', path: '/datatype', value }])
+      if (draftToken) saveChange([{ op: 'replace', path: '/datatype', value }])
     },
     [draftId, saveChange]
   )
@@ -120,7 +123,7 @@ export function PropertyDetail({
     (value: string) => {
       setEditedCardinality(value)
       setIsEditingCardinality(false) // Close edit mode after selection
-      if (draftId) saveChange([{ op: 'replace', path: '/cardinality', value }])
+      if (draftToken) saveChange([{ op: 'replace', path: '/cardinality', value }])
     },
     [draftId, saveChange]
   )
@@ -282,6 +285,118 @@ export function PropertyDetail({
           </div>
         </div>
       </AccordionSection>
+
+      {/* Validation Rules Section */}
+      {(property.allowed_values?.length || property.allowed_pattern || property.allowed_value_list) && (
+        <AccordionSection id="validation" title="Validation Rules" defaultOpen>
+          <div className="space-y-4">
+            {/* Allowed Values */}
+            {property.allowed_values && property.allowed_values.length > 0 && (
+              <div>
+                <label className="text-sm font-medium text-muted-foreground block mb-2">
+                  Allowed Values
+                </label>
+                <div className="flex flex-wrap gap-1">
+                  {property.allowed_values.map((value) => (
+                    <Badge key={value} variant="secondary">
+                      {value}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Allowed Pattern */}
+            {property.allowed_pattern && (
+              <div>
+                <label className="text-sm font-medium text-muted-foreground block mb-2">
+                  Allowed Pattern (Regex)
+                </label>
+                <code className="bg-muted px-2 py-1 rounded text-sm font-mono">
+                  {property.allowed_pattern}
+                </code>
+              </div>
+            )}
+
+            {/* Allowed Value List */}
+            {property.allowed_value_list && (
+              <div>
+                <label className="text-sm font-medium text-muted-foreground block mb-2">
+                  Allowed Value List
+                </label>
+                <span className="text-sm">{property.allowed_value_list}</span>
+              </div>
+            )}
+          </div>
+        </AccordionSection>
+      )}
+
+      {/* Display Settings Section */}
+      {(property.display_units?.length || property.display_precision != null) && (
+        <AccordionSection id="display" title="Display Settings" defaultOpen>
+          <div className="space-y-4">
+            {/* Display Units */}
+            {property.display_units && property.display_units.length > 0 && (
+              <div>
+                <label className="text-sm font-medium text-muted-foreground block mb-2">
+                  Display Units
+                </label>
+                <div className="flex flex-wrap gap-1">
+                  {property.display_units.map((unit) => (
+                    <Badge key={unit} variant="outline">
+                      {unit}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Display Precision */}
+            {property.display_precision != null && (
+              <div>
+                <label className="text-sm font-medium text-muted-foreground block mb-2">
+                  Display Precision
+                </label>
+                <span className="text-sm">{property.display_precision} decimal places</span>
+              </div>
+            )}
+          </div>
+        </AccordionSection>
+      )}
+
+      {/* Constraints Section */}
+      {(property.unique_values || property.has_display_template) && (
+        <AccordionSection id="constraints" title="Constraints & Relationships" defaultOpen>
+          <div className="space-y-4">
+            {/* Unique Values */}
+            {property.unique_values && (
+              <div className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-green-600" />
+                <span className="text-sm">Values must be unique across all pages</span>
+              </div>
+            )}
+
+            {/* Display Template */}
+            {property.has_display_template && (
+              <div>
+                <label className="text-sm font-medium text-muted-foreground block mb-2">
+                  Display Template
+                </label>
+                <button
+                  onClick={() => {
+                    const openDetail = useDetailStore.getState().openDetail
+                    openDetail(property.has_display_template!, 'template')
+                  }}
+                  className="flex items-center gap-1 text-sm text-primary hover:underline"
+                >
+                  <Link2 className="h-3 w-3" />
+                  {property.has_display_template}
+                </button>
+              </div>
+            )}
+          </div>
+        </AccordionSection>
+      )}
 
       {/* Where-used list */}
       <AccordionSection

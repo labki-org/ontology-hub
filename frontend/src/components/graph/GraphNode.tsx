@@ -145,6 +145,7 @@ function getNodePath(entityType: string): string {
  */
 function GraphNodeComponent({ data }: { data: GraphNodeData }) {
   const setSelectedEntity = useGraphStore((s) => s.setSelectedEntity)
+  const selectedEntityKey = useGraphStore((s) => s.selectedEntityKey)
   const hoveredNodeId = useGraphStore((s) => s.hoveredNodeId)
 
   // Change propagation state
@@ -159,6 +160,9 @@ function GraphNodeComponent({ data }: { data: GraphNodeData }) {
   const size = NODE_SIZES[entityType] ?? 50
   const borderColor = ENTITY_BORDER_COLORS[entityType] ?? '#64748b'
   const path = getNodePath(entityType)
+
+  // Check if this node is currently selected
+  const isSelected = data.entity_key === selectedEntityKey
 
   // Calculate change propagation state
   const isDirectEdit = directEdits.has(data.entity_key)
@@ -179,8 +183,14 @@ function GraphNodeComponent({ data }: { data: GraphNodeData }) {
     return 0.3
   }
 
-  // Get glow filter for change_status
+  // Get glow filter for change_status or selection
   const getGlowStyle = (): React.CSSProperties => {
+    // Selection glow takes priority
+    if (isSelected) {
+      return {
+        filter: `drop-shadow(0 0 8px #3b82f6) drop-shadow(0 0 4px #3b82f6)`,
+      }
+    }
     if (!data.change_status || data.change_status === 'unchanged') return {}
     const glowColor = CHANGE_STATUS_GLOW[data.change_status]
     if (!glowColor) return {}
@@ -222,12 +232,22 @@ function GraphNodeComponent({ data }: { data: GraphNodeData }) {
         viewBox={`${-svgSize / 2} ${-svgSize / 2} ${svgSize} ${svgSize}`}
         style={glowStyle}
       >
+        {/* Selection ring - rendered behind the node */}
+        {isSelected && (
+          <path
+            d={path}
+            fill="none"
+            stroke="#3b82f6"
+            strokeWidth={6}
+            opacity={0.5}
+          />
+        )}
         {/* Node shape */}
         <path
           d={path}
           fill={fillColor}
-          stroke={borderColor}
-          strokeWidth={2}
+          stroke={isSelected ? '#2563eb' : borderColor}
+          strokeWidth={isSelected ? 3 : 2}
         />
 
         {/* Label text */}

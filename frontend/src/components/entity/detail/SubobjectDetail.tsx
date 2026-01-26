@@ -6,11 +6,13 @@ import { EntityHeader } from '../sections/EntityHeader'
 import { AccordionSection } from '../sections/AccordionSection'
 import { MembershipSection } from '../sections/MembershipSection'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Badge } from '@/components/ui/badge'
 import type { SubobjectDetailV2 } from '@/api/types'
 
 interface SubobjectDetailProps {
   entityKey: string
   draftId?: string
+  draftToken?: string
   isEditing: boolean
 }
 
@@ -26,6 +28,7 @@ interface SubobjectDetailProps {
 export function SubobjectDetail({
   entityKey,
   draftId,
+  draftToken,
   isEditing,
 }: SubobjectDetailProps) {
   const { data, isLoading, error } = useSubobject(entityKey, draftId)
@@ -46,7 +49,7 @@ export function SubobjectDetail({
 
   // Auto-save hook
   const { saveChange, isSaving } = useAutoSave({
-    draftToken: draftId || '',
+    draftToken: draftToken || '',
     entityType: 'subobject',
     entityKey,
     debounceMs: 500,
@@ -71,7 +74,7 @@ export function SubobjectDetail({
   const handleLabelChange = useCallback(
     (value: string) => {
       setEditedLabel(value)
-      if (draftId) saveChange([{ op: 'replace', path: '/label', value }])
+      if (draftToken) saveChange([{ op: 'replace', path: '/label', value }])
     },
     [draftId, saveChange]
   )
@@ -79,7 +82,7 @@ export function SubobjectDetail({
   const handleDescriptionChange = useCallback(
     (value: string) => {
       setEditedDescription(value)
-      if (draftId) saveChange([{ op: 'replace', path: '/description', value }])
+      if (draftToken) saveChange([{ op: 'replace', path: '/description', value }])
     },
     [draftId, saveChange]
   )
@@ -105,7 +108,9 @@ export function SubobjectDetail({
     )
   }
 
-  const properties = subobject.properties || []
+  const requiredProps = subobject.required_properties || []
+  const optionalProps = subobject.optional_properties || []
+  const totalProps = requiredProps.length + optionalProps.length
 
   return (
     <div className="p-6 space-y-6">
@@ -129,30 +134,60 @@ export function SubobjectDetail({
         onDescriptionChange={handleDescriptionChange}
       />
 
-      {/* Properties list */}
+      {/* Properties list - split into required and optional */}
       <AccordionSection
         id="properties"
         title="Properties"
-        count={properties.length}
+        count={totalProps}
         defaultOpen
       >
-        {properties.length > 0 ? (
-          <div className="space-y-2">
-            {properties.map((propertyKey: string) => (
-              <div
-                key={propertyKey}
-                className="flex items-center justify-between p-2 rounded hover:bg-muted/50 cursor-pointer"
-                onClick={() => {
-                  const openDetail = useDetailStore.getState().openDetail
-                  openDetail(propertyKey, 'property')
-                }}
-              >
-                <div className="flex-1">
-                  <div className="font-medium">{propertyKey}</div>
-                  <div className="text-xs text-muted-foreground">Property</div>
-                </div>
+        {totalProps > 0 ? (
+          <div className="space-y-4">
+            {/* Required Properties */}
+            {requiredProps.length > 0 && (
+              <div className="space-y-1">
+                <h4 className="text-sm font-medium text-muted-foreground">Required Properties</h4>
+                {requiredProps.map((prop) => (
+                  <div
+                    key={prop.entity_key}
+                    className="flex items-center justify-between p-2 rounded hover:bg-muted/50 cursor-pointer"
+                    onClick={() => {
+                      const openDetail = useDetailStore.getState().openDetail
+                      openDetail(prop.entity_key, 'property')
+                    }}
+                  >
+                    <div className="flex-1">
+                      <div className="font-medium">{prop.label}</div>
+                      <div className="text-xs text-muted-foreground">{prop.entity_key}</div>
+                    </div>
+                    <Badge variant="default" className="text-xs">required</Badge>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
+
+            {/* Optional Properties */}
+            {optionalProps.length > 0 && (
+              <div className="space-y-1">
+                <h4 className="text-sm font-medium text-muted-foreground">Optional Properties</h4>
+                {optionalProps.map((prop) => (
+                  <div
+                    key={prop.entity_key}
+                    className="flex items-center justify-between p-2 rounded hover:bg-muted/50 cursor-pointer"
+                    onClick={() => {
+                      const openDetail = useDetailStore.getState().openDetail
+                      openDetail(prop.entity_key, 'property')
+                    }}
+                  >
+                    <div className="flex-1">
+                      <div className="font-medium">{prop.label}</div>
+                      <div className="text-xs text-muted-foreground">{prop.entity_key}</div>
+                    </div>
+                    <Badge variant="outline" className="text-xs">optional</Badge>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         ) : (
           <p className="text-sm text-muted-foreground italic">
