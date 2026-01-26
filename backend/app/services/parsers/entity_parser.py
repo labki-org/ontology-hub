@@ -1,6 +1,6 @@
 """Entity parser service for v2.0 ingest pipeline.
 
-Parses raw JSON from labki-schemas repo into v2.0 model instances
+Parses raw JSON from labki-ontology repo into v2.0 model instances
 and extracts relationships for separate relationship tables.
 """
 

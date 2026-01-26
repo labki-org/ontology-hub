@@ -243,7 +243,7 @@ def upgrade() -> None:
         # Promoted from canonical_json for easier querying
         sa.Column("datatype", sa.String(), nullable=True),
         sa.Column("cardinality", sa.String(), nullable=True),
-        # New fields from labki-schemas
+        # New fields from labki-ontology
         sa.Column("allowed_values", sa.JSON(), nullable=True),  # Array of strings
         sa.Column("allowed_pattern", sa.String(), nullable=True),
         sa.Column("allowed_value_list", sa.String(), nullable=True),

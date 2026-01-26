@@ -13,7 +13,7 @@ from app.models.v2.enums import IngestStatus
 class OntologyVersionBase(SQLModel):
     """Base model for OntologyVersion with common fields."""
 
-    commit_sha: str = Field(index=True)  # Git commit SHA from labki-schemas
+    commit_sha: str = Field(index=True)  # Git commit SHA from labki-ontology
     ingest_status: IngestStatus = Field(
         default=IngestStatus.PENDING,
         sa_column=Column(

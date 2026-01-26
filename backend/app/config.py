@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     # GitHub API configuration
     GITHUB_TOKEN: str | None = None  # Optional for startup, required for sync
     GITHUB_REPO_OWNER: str = "labki-org"
-    GITHUB_REPO_NAME: str = "labki-schemas"
+    GITHUB_REPO_NAME: str = "labki-ontology"
     GITHUB_WEBHOOK_SECRET: str | None = None
 
     # GitHub OAuth configuration

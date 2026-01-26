@@ -1,4 +1,4 @@
-"""v2.0 ingest service for populating database from labki-schemas repo."""
+"""v2.0 ingest service for populating database from labki-ontology repo."""
 
 import logging
 import time
@@ -48,7 +48,7 @@ ENTITY_DIRECTORIES = {
 
 
 class IngestService:
-    """Service for ingesting canonical data from labki-schemas repo."""
+    """Service for ingesting canonical data from labki-ontology repo."""
 
     def __init__(
         self,
