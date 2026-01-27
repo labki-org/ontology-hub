@@ -44,7 +44,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     - X-Frame-Options: DENY - prevents clickjacking
     """
 
-    async def dispatch(self, request: Request, call_next) -> Response:  # type: ignore[no-untyped-def]
+    async def dispatch(self, request: Request, call_next) -> Response:
         response: Response = await call_next(request)
         response.headers["Referrer-Policy"] = "origin"
         response.headers["X-Content-Type-Options"] = "nosniff"
