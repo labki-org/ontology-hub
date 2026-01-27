@@ -12,25 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-
-/** Datatype options for property fields */
-const DATATYPE_OPTIONS = [
-  { value: 'text', label: 'Text' },
-  { value: 'number', label: 'Number' },
-  { value: 'date', label: 'Date' },
-  { value: 'datetime', label: 'Date/Time' },
-  { value: 'boolean', label: 'Boolean' },
-  { value: 'page', label: 'Page' },
-  { value: 'url', label: 'URL' },
-  { value: 'email', label: 'Email' },
-  { value: 'telephone', label: 'Telephone' },
-] as const
-
-/** Cardinality options for property fields */
-const CARDINALITY_OPTIONS = [
-  { value: 'single', label: 'Single value' },
-  { value: 'multiple', label: 'Multiple values' },
-] as const
+import { DATATYPE_OPTIONS, CARDINALITY_OPTIONS } from '@/constants'
 
 interface PropertyFormProps {
   /** Callback when form is submitted with valid data */
@@ -50,7 +32,7 @@ interface PropertyFormProps {
  * - Validates on blur (per CONTEXT.md)
  * - Create button disabled until form is valid
  * - ID field validates for kebab-case format
- * - Datatype select with 9 options (text, number, date, etc.)
+ * - Datatype select with SemanticMediaWiki datatypes
  * - Cardinality select (single/multiple)
  *
  * @example
