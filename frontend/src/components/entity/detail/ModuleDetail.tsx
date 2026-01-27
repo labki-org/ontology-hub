@@ -102,30 +102,29 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
   // Type assertion since useModule returns EntityWithStatus | ModuleDetailV2
   const moduleDetail = module as ModuleDetailV2 | undefined
 
-  // Initialize state when module loads
+  // Initialize state when module loads for a new entity (not on refetch)
+  // This effect synchronizes local state with API data on entity change
+  /* eslint-disable react-hooks/set-state-in-effect -- Valid sync with external data */
   useEffect(() => {
-    if (moduleDetail) {
-      const isNewEntity = initializedEntityRef.current !== entityKey
+    if (moduleDetail && initializedEntityRef.current !== entityKey) {
+      const categories = moduleDetail.entities?.category || []
+      const dependencies = moduleDetail.dependencies || []
 
-      if (isNewEntity) {
-        const categories = moduleDetail.entities?.category || []
-        const dependencies = moduleDetail.dependencies || []
+      setEditedLabel(moduleDetail.label)
+      setEditedDescription(moduleDetail.description || '')
+      setEditedCategories(categories)
+      setEditedDependencies(dependencies)
+      setOriginalValues({
+        label: moduleDetail.label,
+        description: moduleDetail.description || '',
+        categories,
+        dependencies,
+      })
 
-        setEditedLabel(moduleDetail.label)
-        setEditedDescription(moduleDetail.description || '')
-        setEditedCategories(categories)
-        setEditedDependencies(dependencies)
-        setOriginalValues({
-          label: moduleDetail.label,
-          description: moduleDetail.description || '',
-          categories,
-          dependencies,
-        })
-
-        initializedEntityRef.current = entityKey
-      }
+      initializedEntityRef.current = entityKey
     }
   }, [moduleDetail, entityKey])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Change handlers with auto-save
   const handleLabelChange = useCallback(

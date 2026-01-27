@@ -76,7 +76,9 @@ export function SubobjectDetail({
     debounceMs: 500,
   })
 
-  // Initialize state
+  // Initialize state when subobject loads for a new entity (not on refetch)
+  // This effect synchronizes local state with API data on entity change
+  /* eslint-disable react-hooks/set-state-in-effect -- Valid sync with external data */
   useEffect(() => {
     if (subobject) {
       const isNewEntity = initializedEntityRef.current !== entityKey
@@ -108,6 +110,7 @@ export function SubobjectDetail({
       }
     }
   }, [subobject, entityKey])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Change handlers
   const handleLabelChange = useCallback(
@@ -115,7 +118,7 @@ export function SubobjectDetail({
       setEditedLabel(value)
       if (draftToken) saveChange([{ op: 'add', path: '/label', value }])
     },
-    [draftId, saveChange]
+    [draftToken, saveChange]
   )
 
   const handleDescriptionChange = useCallback(
@@ -123,7 +126,7 @@ export function SubobjectDetail({
       setEditedDescription(value)
       if (draftToken) saveChange([{ op: 'add', path: '/description', value }])
     },
-    [draftId, saveChange]
+    [draftToken, saveChange]
   )
 
   // Property handlers

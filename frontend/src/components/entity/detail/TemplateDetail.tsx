@@ -60,7 +60,9 @@ export function TemplateDetail({
     debounceMs: 500,
   })
 
-  // Initialize state
+  // Initialize state when template loads for a new entity (not on refetch)
+  // This effect synchronizes local state with API data on entity change
+  /* eslint-disable react-hooks/set-state-in-effect -- Valid sync with external data */
   useEffect(() => {
     if (template) {
       const isNewEntity = initializedEntityRef.current !== entityKey
@@ -82,6 +84,7 @@ export function TemplateDetail({
       }
     }
   }, [template, entityKey])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Change handlers - use 'add' instead of 'replace' for robustness
   // (add works whether field exists or not in canonical_json)

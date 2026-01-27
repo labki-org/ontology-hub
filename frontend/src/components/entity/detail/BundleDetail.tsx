@@ -61,26 +61,22 @@ export function BundleDetail({ entityKey, draftId, draftToken, isEditing }: Bund
   // Type assertion since useBundle returns EntityWithStatus | BundleDetailV2
   const bundleDetail = bundle as BundleDetailV2 | undefined
 
-  // Initialize state when bundle loads
+  // Initialize state when bundle loads for a new entity (not on refetch)
+  // This effect synchronizes local state with the API data on entity change
+  /* eslint-disable react-hooks/set-state-in-effect -- Valid sync with external data */
   useEffect(() => {
-    if (bundleDetail) {
-      const isNewEntity = initializedEntityRef.current !== entityKey
-
-      // Only reset edited values and original values for a NEW entity
-      // (not on refetch after auto-save)
-      if (isNewEntity) {
-        setEditedLabel(bundleDetail.label)
-        setEditedDescription(bundleDetail.description || '')
-        setEditedModules(bundleDetail.modules || [])
-        setOriginalValues({
-          label: bundleDetail.label,
-          description: bundleDetail.description || '',
-        })
-
-        initializedEntityRef.current = entityKey
-      }
+    if (bundleDetail && initializedEntityRef.current !== entityKey) {
+      setEditedLabel(bundleDetail.label)
+      setEditedDescription(bundleDetail.description || '')
+      setEditedModules(bundleDetail.modules || [])
+      setOriginalValues({
+        label: bundleDetail.label,
+        description: bundleDetail.description || '',
+      })
+      initializedEntityRef.current = entityKey
     }
   }, [bundleDetail, entityKey])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Change handlers with auto-save
   const handleLabelChange = useCallback(
@@ -111,7 +107,7 @@ export function BundleDetail({ entityKey, draftId, draftToken, isEditing }: Bund
         saveChange([{ op: 'add', path: '/modules', value: newModules }])
       }
     },
-    [editedModules, draftId, saveChange]
+    [editedModules, draftToken, saveChange]
   )
 
   const handleRemoveModule = useCallback(
@@ -122,7 +118,7 @@ export function BundleDetail({ entityKey, draftId, draftToken, isEditing }: Bund
         saveChange([{ op: 'add', path: '/modules', value: newModules }])
       }
     },
-    [editedModules, draftId, saveChange]
+    [editedModules, draftToken, saveChange]
   )
 
   if (isLoading) {

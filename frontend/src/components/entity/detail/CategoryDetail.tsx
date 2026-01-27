@@ -115,60 +115,57 @@ export function CategoryDetail({
     debounceMs: 500,
   })
 
-  // Initialize state when category loads
+  // Initialize state when category loads for a new entity (not on refetch)
+  // This effect synchronizes local state with API data on entity change
+  /* eslint-disable react-hooks/set-state-in-effect -- Valid sync with external data */
   useEffect(() => {
-    if (category) {
-      const isNewEntity = initializedEntityRef.current !== entityKey
+    if (category && initializedEntityRef.current !== entityKey) {
+      setEditedLabel(category.label)
+      setEditedDescription(category.description || '')
+      setEditedParents(category.parents || [])
 
-      // Only reset edited values and original values for a NEW entity
-      // (not on refetch after auto-save)
-      if (isNewEntity) {
-        setEditedLabel(category.label)
-        setEditedDescription(category.description || '')
-        setEditedParents(category.parents || [])
+      // Extract direct required/optional properties from category.properties
+      const reqProps = (category.properties || [])
+        .filter((p) => p.is_required && p.is_direct)
+        .map((p) => p.entity_key)
+      const optProps = (category.properties || [])
+        .filter((p) => !p.is_required && p.is_direct)
+        .map((p) => p.entity_key)
+      setEditedRequiredProperties(reqProps)
+      setEditedOptionalProperties(optProps)
 
-        // Extract direct required/optional properties from category.properties
-        const reqProps = (category.properties || [])
-          .filter((p) => p.is_required && p.is_direct)
-          .map((p) => p.entity_key)
-        const optProps = (category.properties || [])
-          .filter((p) => !p.is_required && p.is_direct)
-          .map((p) => p.entity_key)
-        setEditedRequiredProperties(reqProps)
-        setEditedOptionalProperties(optProps)
+      // Extract required/optional subobjects
+      const reqSubobjs = (category.subobjects || [])
+        .filter((s) => s.is_required)
+        .map((s) => s.entity_key)
+      const optSubobjs = (category.subobjects || [])
+        .filter((s) => !s.is_required)
+        .map((s) => s.entity_key)
+      setEditedRequiredSubobjects(reqSubobjs)
+      setEditedOptionalSubobjects(optSubobjs)
 
-        // Extract required/optional subobjects
-        const reqSubobjs = (category.subobjects || [])
-          .filter((s) => s.is_required)
-          .map((s) => s.entity_key)
-        const optSubobjs = (category.subobjects || [])
-          .filter((s) => !s.is_required)
-          .map((s) => s.entity_key)
-        setEditedRequiredSubobjects(reqSubobjs)
-        setEditedOptionalSubobjects(optSubobjs)
+      // Store originals for comparison (only on initial load)
+      setOriginalValues({
+        label: category.label,
+        description: category.description || '',
+        parents: category.parents || [],
+        requiredProperties: reqProps,
+        optionalProperties: optProps,
+        requiredSubobjects: reqSubobjs,
+        optionalSubobjects: optSubobjs,
+      })
 
-        // Store originals for comparison (only on initial load)
-        setOriginalValues({
-          label: category.label,
-          description: category.description || '',
-          parents: category.parents || [],
-          requiredProperties: reqProps,
-          optionalProperties: optProps,
-          requiredSubobjects: reqSubobjs,
-          optionalSubobjects: optSubobjs,
-        })
+      // Clear deleted sets for new entity
+      setDeletedParents(new Set())
+      setDeletedRequiredProperties(new Set())
+      setDeletedOptionalProperties(new Set())
+      setDeletedRequiredSubobjects(new Set())
+      setDeletedOptionalSubobjects(new Set())
 
-        // Clear deleted sets for new entity
-        setDeletedParents(new Set())
-        setDeletedRequiredProperties(new Set())
-        setDeletedOptionalProperties(new Set())
-        setDeletedRequiredSubobjects(new Set())
-        setDeletedOptionalSubobjects(new Set())
-
-        initializedEntityRef.current = entityKey
-      }
+      initializedEntityRef.current = entityKey
     }
   }, [category, entityKey])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Change handlers with auto-save - use 'add' for robustness
   // (add works whether field exists or not in canonical_json)

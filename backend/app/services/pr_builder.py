@@ -7,7 +7,6 @@ structured PR bodies with categorized changes and semver suggestions.
 import json
 from copy import deepcopy
 from datetime import datetime
-from typing import Any
 from uuid import UUID
 
 import jsonpatch

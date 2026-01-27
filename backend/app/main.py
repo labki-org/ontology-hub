@@ -12,7 +12,6 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.config import settings
 from app.database import async_session_maker, engine, get_session
 from app.dependencies.rate_limit import limiter, rate_limit_exceeded_handler
-
 # Import all v2 models to register them with SQLModel.metadata before create_all
 from app.models.v2 import Bundle, Category, Draft, Module, Property, Subobject, Template  # noqa: F401
 from app.routers import (

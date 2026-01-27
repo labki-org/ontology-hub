@@ -112,7 +112,9 @@ export function PropertyDetail({
     debounceMs: 500,
   })
 
-  // Initialize state
+  // Initialize state when property loads for a new entity (not on refetch)
+  // This effect synchronizes local state with API data on entity change
+  /* eslint-disable react-hooks/set-state-in-effect -- Valid sync with external data */
   useEffect(() => {
     if (property) {
       const isNewEntity = initializedEntityRef.current !== entityKey
@@ -148,6 +150,7 @@ export function PropertyDetail({
       }
     }
   }, [property, entityKey])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Change handlers with auto-save
   const handleLabelChange = useCallback(
