@@ -55,9 +55,11 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifespan context manager for startup and shutdown logic."""
-    # Startup: Create database tables (use Alembic in production)
-    async with engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.create_all)
+    # In development, auto-create tables for convenience
+    # In production, use Alembic migrations: alembic upgrade head
+    if settings.DEBUG:
+        async with engine.begin() as conn:
+            await conn.run_sync(SQLModel.metadata.create_all)
 
     # Create GitHub API client with connection pooling
     # Only initialize if token is configured
