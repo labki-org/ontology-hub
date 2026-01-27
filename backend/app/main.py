@@ -123,11 +123,7 @@ app.add_middleware(SecurityHeadersMiddleware)
 # CORS middleware
 # In production, set CORS_ORIGINS to your frontend domain(s)
 # In development, defaults to allowing all origins
-cors_origins = (
-    settings.CORS_ORIGINS.split(",")
-    if settings.CORS_ORIGINS
-    else ["*"]
-)
+cors_origins = settings.CORS_ORIGINS.split(",") if settings.CORS_ORIGINS else ["*"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
