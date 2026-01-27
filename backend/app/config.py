@@ -8,6 +8,9 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     API_V1_PREFIX: str = "/api/v1"
 
+    # CORS configuration (comma-separated origins, empty for same-origin only)
+    CORS_ORIGINS: str = ""
+
     # GitHub API configuration
     GITHUB_TOKEN: str | None = None  # Optional for startup, required for sync
     GITHUB_REPO_OWNER: str = "labki-org"
