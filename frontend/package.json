@@ -55,7 +55,7 @@
     "@testing-library/user-event": "^14.6.1",
     "@types/d3-force": "^3.0.10",
     "@types/d3-polygon": "^3.0.2",
-    "@types/node": "^24.10.9",
+    "@types/node": "^25.0.10",
     "@types/react": "^19.2.9",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
