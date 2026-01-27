@@ -127,6 +127,14 @@ export function BrowsePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftV2.data?.status, validationReport, isValidating, draftToken])
 
+  // Auto-open PR wizard when pr_url is detected (OAuth callback redirect)
+  useEffect(() => {
+    const prUrl = searchParams.get('pr_url')
+    if (prUrl && draftToken) {
+      setPrWizardOpen(true)
+    }
+  }, [searchParams, draftToken, setPrWizardOpen])
+
   const handleSubmitPR = () => {
     setPrWizardOpen(true)
   }

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -84,18 +84,6 @@ interface PRWizardProps {
 
 type Step = 'review' | 'details' | 'confirm' | 'success'
 
-// Helper to check for pr_url in URL params (set by OAuth callback redirect)
-function getInitialPrUrlFromParams(): { prUrl: string | null; step: Step } {
-  const params = new URLSearchParams(window.location.search)
-  const prUrl = params.get('pr_url')
-  if (prUrl) {
-    // Clean up URL immediately
-    window.history.replaceState({}, '', window.location.pathname)
-    return { prUrl, step: 'success' }
-  }
-  return { prUrl: null, step: 'review' }
-}
-
 export function PRWizard({
   open,
   onOpenChange,
@@ -103,13 +91,36 @@ export function PRWizard({
   changes,
   validationReport,
 }: PRWizardProps) {
-  // Check URL params once on mount to handle OAuth callback redirect
-  const [initialState] = useState(() => getInitialPrUrlFromParams())
-  const [step, setStep] = useState<Step>(initialState.step)
-  const [prTitle, setPrTitle] = useState(() => generatePrTitle(changes))
+  const [step, setStep] = useState<Step>('review')
+  const [prTitle, setPrTitle] = useState('')
   const [userComment, setUserComment] = useState('')
-  const [submittedPrUrl, setSubmittedPrUrl] = useState<string | null>(initialState.prUrl)
+  const [submittedPrUrl, setSubmittedPrUrl] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
+
+  // Auto-generate informative PR title based on changes
+  useEffect(() => {
+    if (open && !prTitle) {
+      setPrTitle(generatePrTitle(changes))
+    }
+  }, [open, changes, prTitle])
+
+  // Check for pr_url in URL params (set by OAuth callback redirect)
+  useEffect(() => {
+    if (open) {
+      const params = new URLSearchParams(window.location.search)
+      const prUrl = params.get('pr_url')
+      if (prUrl) {
+        setSubmittedPrUrl(prUrl)
+        setStep('success')
+        // Clean up URL, preserving draft_token and other params
+        params.delete('pr_url')
+        const newUrl = params.toString()
+          ? `${window.location.pathname}?${params.toString()}`
+          : window.location.pathname
+        window.history.replaceState({}, '', newUrl)
+      }
+    }
+  }, [open])
 
   const handleSuccess = (prUrl: string) => {
     setSubmittedPrUrl(prUrl)

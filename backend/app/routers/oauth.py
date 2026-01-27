@@ -306,18 +306,18 @@ async def github_callback(request: Request, session: AsyncSession = Depends(get_
         pr_url = await create_pr_from_draft(
             draft_token, token["access_token"], session, pr_title, user_comment, suggested_semver
         )
-        # Success - redirect with PR URL
-        redirect_url = f"{settings.FRONTEND_URL}/draft/{draft_token}?pr_url={quote(pr_url)}"
+        # Success - redirect with PR URL (use query param format that frontend expects)
+        redirect_url = f"{settings.FRONTEND_URL}/?draft_token={draft_token}&pr_url={quote(pr_url)}"
         return RedirectResponse(url=redirect_url)
     except HTTPException as e:
         # Handle known errors
         logger.warning(f"PR creation failed: {e.detail}")
         redirect_url = (
-            f"{settings.FRONTEND_URL}/draft/{draft_token}?pr_error={quote(str(e.detail))}"
+            f"{settings.FRONTEND_URL}/?draft_token={draft_token}&pr_error={quote(str(e.detail))}"
         )
         return RedirectResponse(url=redirect_url)
     except Exception as e:
         # Handle unexpected errors
         logger.error(f"Unexpected error creating PR: {e}")
-        redirect_url = f"{settings.FRONTEND_URL}/draft/{draft_token}?pr_error={quote('Unexpected error creating PR')}"
+        redirect_url = f"{settings.FRONTEND_URL}/?draft_token={draft_token}&pr_error={quote('Unexpected error creating PR')}"
         return RedirectResponse(url=redirect_url)
