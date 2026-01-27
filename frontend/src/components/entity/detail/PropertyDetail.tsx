@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/select'
 import { Pencil, X, Plus, Link2 } from 'lucide-react'
 import type { PropertyDetailV2, EntityWithStatus } from '@/api/types'
+import { DATATYPE_OPTIONS, CARDINALITY_OPTIONS } from '@/constants'
 
 interface PropertyDetailProps {
   entityKey: string
@@ -389,15 +390,11 @@ export function PropertyDetail({
                       <SelectValue placeholder="Select datatype" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Text">Text</SelectItem>
-                      <SelectItem value="Number">Number</SelectItem>
-                      <SelectItem value="Boolean">Boolean</SelectItem>
-                      <SelectItem value="Date">Date</SelectItem>
-                      <SelectItem value="URL">URL</SelectItem>
-                      <SelectItem value="Page">Page</SelectItem>
-                      <SelectItem value="Email">Email</SelectItem>
-                      <SelectItem value="Telephone">Telephone</SelectItem>
-                      <SelectItem value="Geographic coordinate">Geographic coordinate</SelectItem>
+                      {DATATYPE_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <Button
@@ -445,8 +442,11 @@ export function PropertyDetail({
                       <SelectValue placeholder="Select cardinality" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="single">Single</SelectItem>
-                      <SelectItem value="multiple">Multiple</SelectItem>
+                      {CARDINALITY_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <Button
