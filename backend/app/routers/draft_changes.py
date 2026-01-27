@@ -231,7 +231,9 @@ async def list_draft_changes(
 
     # Query all changes for this draft
     query = (
-        select(DraftChange).where(DraftChange.draft_id == draft.id).order_by(col(DraftChange.created_at))
+        select(DraftChange)
+        .where(DraftChange.draft_id == draft.id)
+        .order_by(col(DraftChange.created_at))
     )
     result = await session.execute(query)
     changes = list(result.scalars().all())
