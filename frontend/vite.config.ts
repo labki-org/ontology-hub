@@ -18,6 +18,7 @@ export default defineConfig({
   build: {
     commonjsOptions: {
       include: [/node_modules/],
+      transformMixedEsModules: true,
     },
   },
   server: {
