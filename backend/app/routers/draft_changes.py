@@ -196,7 +196,7 @@ async def auto_populate_module_derived(
         ]:
             filtered_patches.append({"op": "add", "path": path, "value": values})
 
-        change.patch = cast(dict[str, Any], filtered_patches)
+        change.patch = filtered_patches  # type: ignore[assignment]
 
     await session.commit()
     await session.refresh(change)
