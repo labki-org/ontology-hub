@@ -51,11 +51,13 @@ export function InlineEditField({
   const saveButtonRef = useRef<HTMLButtonElement>(null)
 
   // Sync edit value when prop changes (e.g., external updates)
+  /* eslint-disable react-hooks/set-state-in-effect -- Valid sync with external prop */
   useEffect(() => {
     if (!isEditing) {
       setEditValue(value)
     }
   }, [value, isEditing])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Auto-focus and select text when entering edit mode
   useEffect(() => {

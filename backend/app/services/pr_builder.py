@@ -243,7 +243,9 @@ def generate_pr_title_with_version(
         action = (
             "Add"
             if change.change_type == ChangeType.CREATE
-            else "Update" if change.change_type == ChangeType.UPDATE else "Delete"
+            else "Update"
+            if change.change_type == ChangeType.UPDATE
+            else "Delete"
         )
         return f"{prefix} {action} {change.entity_type}: {change.entity_key}"
 

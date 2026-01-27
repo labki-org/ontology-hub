@@ -193,9 +193,7 @@ async def detect_breaking_changes_v2(
         if entity_key in canonical_templates:
             # Existing template - check for breaking changes
             canonical_tmpl = canonical_templates[entity_key]
-            results.extend(
-                _check_template_breaking_changes(entity_key, canonical_tmpl, tmpl_json)
-            )
+            results.extend(_check_template_breaking_changes(entity_key, canonical_tmpl, tmpl_json))
             results.extend(
                 _check_metadata_changes("template", entity_key, canonical_tmpl, tmpl_json)
             )

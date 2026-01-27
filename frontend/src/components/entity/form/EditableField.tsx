@@ -40,11 +40,13 @@ export function EditableField({
   const isFocusedRef = useRef(false)
 
   // Sync local value with prop only when not focused (external changes)
+  /* eslint-disable react-hooks/set-state-in-effect -- Valid sync with external prop */
   useEffect(() => {
     if (!isFocusedRef.current) {
       setLocalValue(value)
     }
   }, [value])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const isModified = originalValue !== undefined && value !== originalValue
   const status = isModified ? 'modified' : 'unchanged'

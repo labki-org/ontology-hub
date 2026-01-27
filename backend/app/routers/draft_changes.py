@@ -142,8 +142,7 @@ async def auto_populate_module_derived(
             canonical_json = deepcopy(module.canonical_json)
             # Extract only /categories-related patches
             categories_patches = [
-                op for op in (change.patch or [])
-                if op.get("path", "").startswith("/categories")
+                op for op in (change.patch or []) if op.get("path", "").startswith("/categories")
             ]
             if categories_patches:
                 try:
@@ -163,9 +162,7 @@ async def auto_populate_module_derived(
         derived = {"properties": [], "subobjects": [], "templates": []}
     else:
         # Compute derived entities from categories
-        derived = await compute_module_derived_entities(
-            session, categories, draft_id=draft.id
-        )
+        derived = await compute_module_derived_entities(session, categories, draft_id=draft.id)
 
     # Update the change with derived entities
     if change.change_type == ChangeType.CREATE:
@@ -181,9 +178,7 @@ async def auto_populate_module_derived(
 
         # Remove any existing patches for derived paths
         derived_paths = {"/properties", "/subobjects", "/templates"}
-        filtered_patches = [
-            p for p in existing_patches if p.get("path") not in derived_paths
-        ]
+        filtered_patches = [p for p in existing_patches if p.get("path") not in derived_paths]
 
         # Add new patches for derived entities
         # IMPORTANT: Use "add" not "replace"! The "replace" op fails if the field
@@ -414,8 +409,7 @@ async def add_draft_change(
         if change_in.change_type == ChangeType.UPDATE:
             # Check for any patch operation affecting /categories or /categories/*
             should_populate = any(
-                op.get("path", "").startswith("/categories")
-                for op in (change_in.patch or [])
+                op.get("path", "").startswith("/categories") for op in (change_in.patch or [])
             )
 
         if should_populate:
