@@ -30,8 +30,16 @@ async def test_engine():
         echo=False,
         connect_args={"check_same_thread": False},
     )
-    # Import models to register metadata
-    from app.models import Draft, Entity, Module, Profile  # noqa: F401
+    # Import models to register metadata (v2 models)
+    from app.models import (  # noqa: F401
+        Bundle,
+        Category,
+        Draft,
+        Module,
+        Property,
+        Subobject,
+        Template,
+    )
 
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
