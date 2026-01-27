@@ -601,7 +601,7 @@ export function Sidebar() {
       </CreateEntityModal>
 
       {/* Nested Create Modal for cascading entity creation */}
-      {draftToken && <NestedModalStack draftToken={draftToken} />}
+      {draftToken && <NestedModalStack draftToken={draftToken} draftId={draftId} />}
     </aside>
   )
 }

@@ -11,6 +11,7 @@ import { BundleForm } from '../forms/BundleForm'
 
 interface NestedModalStackProps {
   draftToken: string
+  draftId?: string
 }
 
 /**
@@ -27,7 +28,7 @@ interface NestedModalStackProps {
  * - Limited to 1 level of nesting (nested forms don't allow further nesting)
  * - Reuses CreateEntityModal for consistent styling
  */
-export function NestedModalStack({ draftToken }: NestedModalStackProps) {
+export function NestedModalStack({ draftToken, draftId }: NestedModalStackProps) {
   const nestedCreateModal = useDraftStore((s) => s.nestedCreateModal)
   const closeNestedCreateModal = useDraftStore((s) => s.closeNestedCreateModal)
   const onNestedEntityCreated = useDraftStore((s) => s.onNestedEntityCreated)
@@ -94,7 +95,7 @@ export function NestedModalStack({ draftToken }: NestedModalStackProps) {
           onCancel={closeNestedCreateModal}
           isSubmitting={createEntity.isPending}
           initialData={initialData}
-          draftId={draftToken}
+          draftId={draftId}
           // Don't allow nested-nested create (limit to 1 level)
         />
       )}
@@ -112,6 +113,7 @@ export function NestedModalStack({ draftToken }: NestedModalStackProps) {
           onCancel={closeNestedCreateModal}
           isSubmitting={createEntity.isPending}
           initialData={initialData}
+          draftId={draftId}
         />
       )}
       {entityType === 'template' && (
@@ -128,7 +130,7 @@ export function NestedModalStack({ draftToken }: NestedModalStackProps) {
           onCancel={closeNestedCreateModal}
           isSubmitting={createEntity.isPending}
           initialData={initialData}
-          draftId={draftToken}
+          draftId={draftId}
           // Don't allow nested-nested create (limit to 1 level)
         />
       )}
@@ -138,7 +140,7 @@ export function NestedModalStack({ draftToken }: NestedModalStackProps) {
           onCancel={closeNestedCreateModal}
           isSubmitting={createEntity.isPending}
           initialData={initialData}
-          draftId={draftToken}
+          draftId={draftId}
           // Don't allow nested-nested create (limit to 1 level)
         />
       )}
