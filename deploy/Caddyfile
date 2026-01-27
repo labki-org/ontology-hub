@@ -1,0 +1,37 @@
+# Ontology Hub - Caddy Configuration
+# Replace 'ontology-hub.yourdomain.com' with your actual domain
+
+ontology-hub.yourdomain.com {
+    # Serve static frontend
+    root * /srv/ontology-hub/frontend/dist
+    encode gzip zstd
+
+    # Proxy API requests to backend container
+    handle /api/* {
+        reverse_proxy backend:8000
+    }
+
+    # Health endpoint for monitoring
+    handle /health {
+        reverse_proxy backend:8000
+    }
+
+    # Admin endpoints
+    handle /admin/* {
+        reverse_proxy backend:8000
+    }
+
+    # SPA fallback - serve index.html for client-side routing
+    handle {
+        try_files {path} /index.html
+        file_server
+    }
+
+    # Cache hashed assets (Vite adds content hashes to filenames)
+    @immutable path *.js *.css *.woff2
+    header @immutable Cache-Control "public, max-age=31536000, immutable"
+
+    # Don't cache HTML - always fetch fresh for SPA routing
+    @html path *.html /
+    header @html Cache-Control "no-cache"
+}

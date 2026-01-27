@@ -1,0 +1,49 @@
+name: ontology-hub
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ontology
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ontology_hub
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ontology"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - internal
+
+  backend:
+    image: ghcr.io/${GITHUB_REPOSITORY}-backend:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://ontology:${POSTGRES_PASSWORD}@db:5432/ontology_hub
+      DEBUG: "false"
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
+      GITHUB_REPO_OWNER: ${GITHUB_REPO_OWNER}
+      GITHUB_REPO_NAME: ${GITHUB_REPO_NAME}
+      GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
+      SESSION_SECRET: ${SESSION_SECRET}
+      FRONTEND_URL: ${FRONTEND_URL}
+    networks:
+      - internal
+      - caddy
+
+networks:
+  internal:
+  caddy:
+    external: true
+
+volumes:
+  pgdata:
