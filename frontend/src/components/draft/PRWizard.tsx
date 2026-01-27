@@ -112,8 +112,12 @@ export function PRWizard({
       if (prUrl) {
         setSubmittedPrUrl(prUrl)
         setStep('success')
-        // Clean up URL
-        window.history.replaceState({}, '', window.location.pathname)
+        // Clean up URL, preserving draft_token and other params
+        params.delete('pr_url')
+        const newUrl = params.toString()
+          ? `${window.location.pathname}?${params.toString()}`
+          : window.location.pathname
+        window.history.replaceState({}, '', newUrl)
       }
     }
   }, [open])
