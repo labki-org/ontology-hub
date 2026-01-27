@@ -16,7 +16,6 @@ interface EntityHeaderProps {
   originalDescription?: string
   onLabelChange?: (value: string) => void
   onDescriptionChange?: (value: string) => void
-  onRevertLabel?: () => void
   onRevertDescription?: () => void
 }
 
@@ -35,7 +34,6 @@ export function EntityHeader({
   originalDescription,
   onLabelChange,
   onDescriptionChange,
-  onRevertLabel: _onRevertLabel,
   onRevertDescription,
 }: EntityHeaderProps) {
   const statusBadge = changeStatus && changeStatus !== 'unchanged' && (

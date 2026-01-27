@@ -302,6 +302,7 @@ function GraphNodeComponent({ data }: { data: GraphNodeData }) {
 }
 
 // Register outside component to prevent re-renders
+/* eslint-disable react-refresh/only-export-components -- nodeTypes and NODE_SIZES must be stable */
 export const graphNodeTypes = {
   entity: GraphNodeComponent,
 }
@@ -310,3 +311,4 @@ export { GraphNodeComponent }
 
 // Export sizes for use in force layout collision detection
 export { NODE_SIZES }
+/* eslint-enable react-refresh/only-export-components */

@@ -71,18 +71,22 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
   const { data, isLoading, error, isFetching } = useFullOntologyGraph(draftId)
 
   // Track previous data to keep showing graph while loading
+  /* eslint-disable react-hooks/refs -- Intentional pattern to preserve data during loading */
   const prevDataRef = useRef(data)
   if (data && !isFetching) {
     prevDataRef.current = data
   }
   const displayData = data ?? prevDataRef.current
+  /* eslint-enable react-hooks/refs */
 
   // Get hovered node for edge highlighting
   const hoveredNodeId = useGraphStore((s) => s.hoveredNodeId)
 
   // Convert API response to React Flow format
+  /* eslint-disable react-hooks/refs -- displayData derived from ref for loading state preservation */
   const { initialNodes, filteredEdges } = useMemo(() => {
     if (!displayData) return { initialNodes: [], filteredEdges: [] }
+    /* eslint-enable react-hooks/refs */
 
     // Convert nodes
     const nodes: Node[] = displayData.nodes.map((node: ApiGraphNode) => ({
@@ -292,6 +296,7 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
   }, [displayData, setGraphData])
 
   // Only show loading skeleton on initial load
+  // eslint-disable-next-line react-hooks/refs -- Intentional check for initial load state
   if (isLoading && !prevDataRef.current) {
     return (
       <div className="h-full flex items-center justify-center">

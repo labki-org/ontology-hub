@@ -43,4 +43,5 @@ function Badge({
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- Intentional export for variant utility
 export { Badge, badgeVariants }

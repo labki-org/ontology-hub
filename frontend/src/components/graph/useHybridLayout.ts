@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- d3-force callback types use any */
 import { useEffect, useRef, useCallback, useState, useMemo } from 'react'
 import {
   forceSimulation,
@@ -62,6 +63,7 @@ export function useHybridLayout(
     [initialNodes, edges, algorithm, direction]
   )
 
+  /* eslint-disable react-hooks/set-state-in-effect -- Valid sync with layout computation */
   useEffect(() => {
     if (!initialNodes.length) {
       setNodes([])
@@ -90,6 +92,7 @@ export function useHybridLayout(
       }
     }
   }, [layoutKey]) // eslint-disable-line react-hooks/exhaustive-deps
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Restart simulation (for user-triggered re-layout)
   const restartSimulation = useCallback(() => {

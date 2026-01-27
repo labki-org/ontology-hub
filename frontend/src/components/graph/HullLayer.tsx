@@ -34,6 +34,7 @@ const HULL_COLORS = [
  * Deterministic color assignment based on moduleId hash.
  * Same module always gets same color across sessions.
  */
+// eslint-disable-next-line react-refresh/only-export-components -- Utility function
 export function getModuleColor(moduleId: string): string {
   let hash = 0
   for (const char of moduleId) {

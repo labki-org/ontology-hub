@@ -38,6 +38,7 @@ export function EntitySearch({
  * @param entities - The list of entities to filter
  * @returns Filtered entity list
  */
+// eslint-disable-next-line react-refresh/only-export-components -- Hook co-located with component
 export function useSearchFilter<T extends { label: string }>(
   searchTerm: string,
   entities: T[]

@@ -27,6 +27,7 @@ function CategoryNodeComponent({ data }: { data: CategoryNodeData }) {
 }
 
 // Register outside component to prevent re-renders
+// eslint-disable-next-line react-refresh/only-export-components -- nodeTypes must be stable
 export const nodeTypes = {
   category: CategoryNodeComponent,
 }

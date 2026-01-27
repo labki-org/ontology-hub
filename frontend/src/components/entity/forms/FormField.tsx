@@ -14,7 +14,7 @@ interface FormFieldProps<TFieldValues extends FieldValues> {
   /** React Hook Form control object */
   control: Control<TFieldValues>
   /** Render function that receives field props and renders the input */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  /* eslint-disable @typescript-eslint/no-explicit-any -- React Hook Form types use any */
   render: (field: {
     value: string
     onChange: (...event: any[]) => void
@@ -23,6 +23,7 @@ interface FormFieldProps<TFieldValues extends FieldValues> {
     ref: React.Ref<any>
     'data-invalid'?: boolean
   }) => ReactNode
+  /* eslint-enable @typescript-eslint/no-explicit-any */
   /** Optional description text below the label */
   description?: string
   /** Additional CSS classes for the wrapper */

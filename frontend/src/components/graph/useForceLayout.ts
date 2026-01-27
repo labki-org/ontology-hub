@@ -49,6 +49,7 @@ export function useForceLayout(
     collisionRadius = 55,     // Increased from 50 for larger category nodes (80px)
   } = options ?? {}
 
+  /* eslint-disable react-hooks/set-state-in-effect -- Valid sync with d3-force simulation */
   useEffect(() => {
     if (!initialNodes.length) {
       setNodes([])
@@ -87,6 +88,7 @@ export function useForceLayout(
       .force(
         'link',
         forceLink(d3Links)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- d3-force types
           .id((d: any) => d.id)
           .distance(linkDistance)
       )
@@ -121,6 +123,7 @@ export function useForceLayout(
       simulation.stop()
     }
   }, [initialNodes, edges, chargeStrength, linkDistance, collisionRadius])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Restart simulation with animation (for user-triggered re-layout)
   const restartSimulation = useCallback(() => {
