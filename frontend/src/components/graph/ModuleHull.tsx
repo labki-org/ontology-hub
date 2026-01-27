@@ -3,6 +3,10 @@ import { polygonHull } from 'd3-polygon'
 import { line, curveCatmullRomClosed } from 'd3-shape'
 import type { Node } from '@xyflow/react'
 
+// Node dimensions (must match useHybridLayout.ts)
+const NODE_WIDTH = 172
+const NODE_HEIGHT = 36
+
 interface ModuleHullProps {
   moduleId: string
   nodes: Node[]
@@ -11,39 +15,38 @@ interface ModuleHullProps {
 }
 
 /**
- * Computes a smooth hull path using Catmull-Rom curve interpolation.
- * Returns null if fewer than 3 points.
+ * Get padded corner points for a node's bounding box.
+ * Padding is applied uniformly to all sides.
  */
-function getSmoothHullPath(points: [number, number][], padding: number): string | null {
+function getPaddedNodeCorners(n: Node, padding: number): [number, number][] {
+  const x = n.position.x
+  const y = n.position.y
+  return [
+    [x - padding, y - padding],                             // top-left
+    [x + NODE_WIDTH + padding, y - padding],                // top-right
+    [x - padding, y + NODE_HEIGHT + padding],               // bottom-left
+    [x + NODE_WIDTH + padding, y + NODE_HEIGHT + padding],  // bottom-right
+  ]
+}
+
+/**
+ * Computes a smooth hull path using Catmull-Rom curve interpolation.
+ * Points should already include padding for uniform spacing.
+ */
+function getSmoothHullPath(points: [number, number][]): string | null {
   if (points.length < 3) return null
 
-  // 1. Compute convex hull
+  // 1. Compute convex hull from padded corners
   const hull = polygonHull(points)
   if (!hull || hull.length < 3) return null
 
-  // 2. Calculate centroid for expansion
-  const centroid: [number, number] = [
-    hull.reduce((sum, p) => sum + p[0], 0) / hull.length,
-    hull.reduce((sum, p) => sum + p[1], 0) / hull.length,
-  ]
-
-  // 3. Expand hull points outward from centroid by padding
-  const expandedPoints: [number, number][] = hull.map((p) => {
-    const dx = p[0] - centroid[0]
-    const dy = p[1] - centroid[1]
-    const distance = Math.sqrt(dx * dx + dy * dy)
-    if (distance === 0) return p
-    const factor = (distance + padding) / distance
-    return [centroid[0] + dx * factor, centroid[1] + dy * factor]
-  })
-
-  // 4. Create smooth curve with Catmull-Rom interpolation
+  // 2. Create smooth curve with Catmull-Rom interpolation
   const lineGenerator = line<[number, number]>()
     .x((d) => d[0])
     .y((d) => d[1])
     .curve(curveCatmullRomClosed.alpha(0.5))
 
-  return lineGenerator(expandedPoints)
+  return lineGenerator(hull)
 }
 
 type HullShape =
@@ -76,39 +79,40 @@ export function ModuleHull({
 
     if (moduleNodes.length === 0) return null
 
-    // Extract positions as typed tuples
-    const points: [number, number][] = moduleNodes.map((n) => [n.position.x, n.position.y])
-
-    // Single node: circle
+    // Single node: ellipse around node bounds
     if (moduleNodes.length === 1) {
-      const [x, y] = points[0]
-      return {
-        type: 'circle' as const,
-        cx: x,
-        cy: y,
-        r: padding,
-      }
-    }
-
-    // Two nodes: ellipse
-    if (moduleNodes.length === 2) {
-      const [x1, y1] = points[0]
-      const [x2, y2] = points[1]
-      const cx = (x1 + x2) / 2
-      const cy = (y1 + y2) / 2
-      const dx = Math.abs(x2 - x1)
-      const dy = Math.abs(y2 - y1)
+      const n = moduleNodes[0]
+      const cx = n.position.x + NODE_WIDTH / 2
+      const cy = n.position.y + NODE_HEIGHT / 2
       return {
         type: 'ellipse' as const,
         cx,
         cy,
-        rx: dx / 2 + padding,
-        ry: Math.max(dy / 2 + padding, padding), // Ensure minimum height
+        rx: NODE_WIDTH / 2 + padding,
+        ry: NODE_HEIGHT / 2 + padding,
       }
     }
 
-    // 3+ nodes: smooth hull path
-    const path = getSmoothHullPath(points, padding)
+    // Two nodes: ellipse around combined bounds
+    if (moduleNodes.length === 2) {
+      const minX = Math.min(moduleNodes[0].position.x, moduleNodes[1].position.x)
+      const maxX = Math.max(moduleNodes[0].position.x, moduleNodes[1].position.x) + NODE_WIDTH
+      const minY = Math.min(moduleNodes[0].position.y, moduleNodes[1].position.y)
+      const maxY = Math.max(moduleNodes[0].position.y, moduleNodes[1].position.y) + NODE_HEIGHT
+      const cx = (minX + maxX) / 2
+      const cy = (minY + maxY) / 2
+      return {
+        type: 'ellipse' as const,
+        cx,
+        cy,
+        rx: (maxX - minX) / 2 + padding,
+        ry: (maxY - minY) / 2 + padding,
+      }
+    }
+
+    // 3+ nodes: smooth hull path from padded bounding box corners
+    const paddedCorners: [number, number][] = moduleNodes.flatMap((n) => getPaddedNodeCorners(n, padding))
+    const path = getSmoothHullPath(paddedCorners)
     if (!path) return null
     return { type: 'path' as const, d: path }
   }, [moduleId, nodes, padding])
@@ -120,9 +124,11 @@ export function ModuleHull({
     )
     if (moduleNodes.length === 0) return null
 
-    const points = moduleNodes.map((n) => [n.position.x, n.position.y] as [number, number])
-    const cx = points.reduce((sum, p) => sum + p[0], 0) / points.length
-    const minY = Math.min(...points.map((p) => p[1]))
+    // Use node bounds for label positioning
+    const minX = Math.min(...moduleNodes.map((n) => n.position.x))
+    const maxX = Math.max(...moduleNodes.map((n) => n.position.x + NODE_WIDTH))
+    const minY = Math.min(...moduleNodes.map((n) => n.position.y))
+    const cx = (minX + maxX) / 2
 
     return { x: cx, y: minY - padding - 15 } // Above hull
   }, [moduleId, nodes, padding])
