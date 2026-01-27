@@ -191,35 +191,6 @@ Visit https://ontology.labki.org in your browser.
 
 ---
 
-## Automated Deployments (CI/CD)
-
-The `.github/workflows/deploy.yml` workflow automatically deploys on push to main.
-
-### Required GitHub Secrets
-
-Set these in your repo settings (Settings > Secrets > Actions):
-
-| Secret | Description |
-|--------|-------------|
-| `VPS_HOST` | Your VPS IP address or hostname |
-| `VPS_USER` | SSH username |
-| `VPS_SSH_KEY` | SSH private key (ed25519 or RSA) |
-
-### Generate SSH Key (if needed)
-
-```bash
-# On your local machine
-ssh-keygen -t ed25519 -C "github-actions-deploy"
-
-# Copy public key to VPS
-ssh-copy-id -i ~/.ssh/id_ed25519.pub user@your-vps
-
-# Add private key content to GitHub secret VPS_SSH_KEY
-cat ~/.ssh/id_ed25519
-```
-
----
-
 ## Manual Updates
 
 ### Update Backend
