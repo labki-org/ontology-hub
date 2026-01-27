@@ -63,7 +63,9 @@ async def entity_exists(
     model = ENTITY_MODELS.get(entity_type)
     if not model:
         return False
-    result = await session.execute(select(model).where(model.entity_key == entity_key))
+    # Use getattr to access entity_key column dynamically (models all have it)
+    entity_key_col = getattr(model, "entity_key")
+    result = await session.execute(select(model).where(entity_key_col == entity_key))
     return result.scalars().first() is not None
 
 
@@ -116,8 +118,10 @@ async def import_from_mediawiki(
         raise HTTPException(status_code=400, detail={"errors": errors})
 
     # Get current ontology version for base_commit_sha
+    from sqlalchemy import desc
+
     version_result = await session.execute(
-        select(OntologyVersion).order_by(OntologyVersion.created_at.desc())
+        select(OntologyVersion).order_by(desc(OntologyVersion.created_at))
     )
     current_version = version_result.scalars().first()
     if not current_version:

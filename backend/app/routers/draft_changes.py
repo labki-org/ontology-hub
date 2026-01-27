@@ -11,10 +11,11 @@ Adding/removing changes from VALIDATED drafts auto-reverts status to DRAFT.
 """
 
 from datetime import datetime
+from typing import Any, cast
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request
-from sqlmodel import select
+from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.database import SessionDep
@@ -80,7 +81,7 @@ async def validate_v2_capability_token(token: str, session: AsyncSession) -> Dra
     if draft.expires_at < datetime.utcnow():
         raise HTTPException(status_code=404, detail="Draft not found")
 
-    return draft
+    return cast(Draft, draft)
 
 
 async def entity_exists(session: AsyncSession, entity_type: str, entity_key: str) -> bool:
@@ -98,7 +99,8 @@ async def entity_exists(session: AsyncSession, entity_type: str, entity_key: str
     if not model:
         return False
 
-    result = await session.execute(select(model).where(model.entity_key == entity_key))
+    # All entity models have entity_key; use getattr for type checker
+    result = await session.execute(select(model).where(getattr(model, "entity_key") == entity_key))
     return result.scalars().first() is not None
 
 
@@ -159,7 +161,7 @@ async def auto_populate_module_derived(
 
     if not categories:
         # No categories to derive from - set empty derived arrays
-        derived = {"properties": [], "subobjects": [], "templates": []}
+        derived: dict[str, list[str]] = {"properties": [], "subobjects": [], "templates": []}
     else:
         # Compute derived entities from categories
         derived = await compute_module_derived_entities(session, categories, draft_id=draft.id)
@@ -174,7 +176,7 @@ async def auto_populate_module_derived(
         change.replacement_json = replacement
     else:
         # For UPDATE: add/merge patch operations for derived arrays
-        existing_patches = change.patch or []
+        existing_patches: list[dict[str, Any]] = list(change.patch) if change.patch else []
 
         # Remove any existing patches for derived paths
         derived_paths = {"/properties", "/subobjects", "/templates"}
@@ -192,7 +194,7 @@ async def auto_populate_module_derived(
         ]:
             filtered_patches.append({"op": "add", "path": path, "value": values})
 
-        change.patch = filtered_patches
+        change.patch = cast(dict[str, Any], filtered_patches)
 
     await session.commit()
     await session.refresh(change)
@@ -227,7 +229,7 @@ async def list_draft_changes(
 
     # Query all changes for this draft
     query = (
-        select(DraftChange).where(DraftChange.draft_id == draft.id).order_by(DraftChange.created_at)
+        select(DraftChange).where(DraftChange.draft_id == draft.id).order_by(col(DraftChange.created_at))
     )
     result = await session.execute(query)
     changes = list(result.scalars().all())

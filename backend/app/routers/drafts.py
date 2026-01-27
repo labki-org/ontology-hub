@@ -14,9 +14,10 @@ Security requirements:
 
 import logging
 from datetime import datetime, timedelta
+from typing import cast
 
 from fastapi import APIRouter, HTTPException, Request
-from sqlmodel import func, select
+from sqlmodel import col, func, select
 
 from app.config import settings
 from app.database import SessionDep
@@ -94,16 +95,16 @@ async def get_draft_by_token(token: str, session: SessionDep) -> Draft:
     if draft.expires_at < datetime.utcnow():
         raise HTTPException(status_code=404, detail="Draft not found")
 
-    return draft
+    return cast(Draft, draft)
 
 
-async def get_change_count(draft_id, session: SessionDep) -> int:
+async def get_change_count(draft_id: object, session: SessionDep) -> int:
     """Get the number of changes in a draft."""
     statement = (
         select(func.count()).select_from(DraftChange).where(DraftChange.draft_id == draft_id)
     )
     result = await session.execute(statement)
-    return result.scalar_one()
+    return cast(int, result.scalar_one())
 
 
 def draft_to_response(draft: Draft, change_count: int) -> DraftResponse:
@@ -154,7 +155,7 @@ async def create_draft(
         HTTPException: 503 if no ontology version exists
     """
     # Get current OntologyVersion for base_commit_sha
-    version_stmt = select(OntologyVersion).order_by(OntologyVersion.created_at.desc()).limit(1)
+    version_stmt = select(OntologyVersion).order_by(col(OntologyVersion.created_at).desc()).limit(1)
     version_result = await session.execute(version_stmt)
     current_version = version_result.scalar_one_or_none()
 
@@ -443,7 +444,9 @@ async def submit_draft(
     )
 
     try:
-        pr_url = await GitHubClient(None).create_pr_with_token(
+        # GitHubClient instance with None client - create_pr_with_token creates its own client
+        github = GitHubClient.__new__(GitHubClient)
+        pr_url = await github.create_pr_with_token(
             token=submit_req.github_token,
             owner=settings.GITHUB_REPO_OWNER,
             repo=settings.GITHUB_REPO_NAME,

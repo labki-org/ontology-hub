@@ -44,8 +44,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     - X-Frame-Options: DENY - prevents clickjacking
     """
 
-    async def dispatch(self, request: Request, call_next) -> Response:
-        response = await call_next(request)
+    async def dispatch(self, request: Request, call_next) -> Response:  # type: ignore[no-untyped-def]
+        response: Response = await call_next(request)
         response.headers["Referrer-Policy"] = "origin"
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
@@ -107,7 +107,7 @@ app = FastAPI(
 app.state.limiter = limiter
 
 # Register rate limit exceeded handler
-app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)  # type: ignore[arg-type]
 
 # SessionMiddleware must come before other middleware for OAuth
 app.add_middleware(

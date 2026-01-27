@@ -4,13 +4,15 @@ Detects changes that may break backward compatibility by comparing
 effective entities against canonical data.
 """
 
-from typing import Any
+from typing import Any, Literal, cast
 
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.models.v2 import Bundle, Category, DraftChange, Module, Property, Subobject, Template
 from app.schemas.validation import ValidationResultV2
+
+EntityType = Literal["category", "property", "subobject", "module", "bundle", "template"]
 
 
 async def detect_breaking_changes_v2(
@@ -389,7 +391,7 @@ def _check_category_breaking_changes(
 
 
 def _check_metadata_changes(
-    entity_type: str,
+    entity_type: EntityType,
     entity_key: str,
     canonical: dict[str, Any],
     effective: dict[str, Any],

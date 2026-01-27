@@ -4,6 +4,7 @@ Validates effective entity JSON against _schema.json definitions from the canoni
 """
 
 import logging
+from typing import Any, Literal, cast
 
 import httpx
 from jsonschema import Draft202012Validator
@@ -15,6 +16,8 @@ from app.schemas.validation import ValidationResultV2
 from app.services.github import GitHubClient
 
 logger = logging.getLogger(__name__)
+
+EntityType = Literal["category", "property", "subobject", "module", "bundle", "template"]
 
 # Entity type to schema path mapping (same as ingest_v2.py)
 ENTITY_SCHEMA_PATHS = {
@@ -87,7 +90,7 @@ async def check_schema_v2(
 
                 results.append(
                     ValidationResultV2(
-                        entity_type=entity_type,
+                        entity_type=cast(EntityType, entity_type),
                         entity_key=entity_key,
                         field_path=field_path,
                         code="SCHEMA_VIOLATION",
@@ -99,13 +102,13 @@ async def check_schema_v2(
     return results
 
 
-async def _load_schemas_from_github() -> dict[str, dict]:
+async def _load_schemas_from_github() -> dict[str, dict[str, Any]]:
     """Load _schema.json files from GitHub canonical repo.
 
     Returns:
         Dict mapping entity type to schema JSON
     """
-    schemas = {}
+    schemas: dict[str, dict[str, Any]] = {}
 
     # Check if GitHub token is configured
     if not settings.GITHUB_TOKEN:
@@ -181,8 +184,11 @@ def _format_error_message(error: JsonSchemaValidationError) -> str:
         return f"Invalid type: expected {expected_type}"
 
     elif validator_name == "enum":
-        allowed_values = ", ".join(str(v) for v in error.validator_value)
-        return f"Value must be one of: {allowed_values}"
+        validator_value = error.validator_value
+        if validator_value is not None and hasattr(validator_value, "__iter__"):
+            allowed_values = ", ".join(str(v) for v in validator_value)
+            return f"Value must be one of: {allowed_values}"
+        return error.message
 
     elif validator_name == "pattern":
         return f"Value does not match required pattern: {error.validator_value}"

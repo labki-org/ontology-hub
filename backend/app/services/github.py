@@ -3,7 +3,7 @@
 import base64
 import json
 import logging
-from typing import Any
+from typing import Any, cast
 
 import httpx
 from tenacity import (
@@ -79,7 +79,7 @@ class GitHubClient:
                 raise GitHubRateLimitError(reset_time)
 
         response.raise_for_status()
-        return response.json()
+        return cast(dict[str, Any], response.json())
 
     async def get_repository_tree(
         self, owner: str, repo: str, sha: str = "HEAD"
@@ -136,7 +136,7 @@ class GitHubClient:
         content_bytes = base64.b64decode(data["content"])
         content_str = content_bytes.decode("utf-8")
 
-        return json.loads(content_str)
+        return cast(dict[str, Any], json.loads(content_str))
 
     async def get_latest_commit_sha(self, owner: str, repo: str, branch: str = "main") -> str:
         """Get the SHA of the latest commit on a branch.
@@ -151,7 +151,7 @@ class GitHubClient:
         """
         url = f"/repos/{owner}/{repo}/commits/{branch}"
         data = await self._request("GET", url)
-        return data["sha"]
+        return cast(str, data["sha"])
 
     async def get_releases(self, owner: str, repo: str, per_page: int = 30) -> list[dict[str, Any]]:
         """Fetch releases from GitHub repository.
@@ -165,7 +165,10 @@ class GitHubClient:
             List of release objects with tag_name, name, created_at, published_at, body
         """
         url = f"/repos/{owner}/{repo}/releases"
-        return await self._request("GET", url, params={"per_page": per_page})
+        # GitHub releases API returns a JSON array, cast appropriately
+        response = await self._client.request("GET", url, params={"per_page": per_page})
+        response.raise_for_status()
+        return cast(list[dict[str, Any]], response.json())
 
     async def get_file_at_ref(self, owner: str, repo: str, path: str, ref: str) -> dict[str, Any]:
         """Fetch and decode a JSON file at a specific git ref (tag/sha).
@@ -198,7 +201,7 @@ class GitHubClient:
         """
         url = f"/repos/{owner}/{repo}/git/refs/heads/{branch}"
         data = await self._request("GET", url)
-        return data["object"]["sha"]
+        return cast(str, data["object"]["sha"])
 
     async def get_commit_tree_sha(self, owner: str, repo: str, commit_sha: str) -> str:
         """Get the tree SHA from a commit.
@@ -213,7 +216,7 @@ class GitHubClient:
         """
         url = f"/repos/{owner}/{repo}/git/commits/{commit_sha}"
         data = await self._request("GET", url)
-        return data["tree"]["sha"]
+        return cast(str, data["tree"]["sha"])
 
     async def create_tree(self, owner: str, repo: str, files: list[dict], base_tree: str) -> str:
         """Create a new git tree with files.
@@ -253,7 +256,7 @@ class GitHubClient:
 
         url = f"/repos/{owner}/{repo}/git/trees"
         data = await self._request("POST", url, json={"tree": tree_items, "base_tree": base_tree})
-        return data["sha"]
+        return cast(str, data["sha"])
 
     async def create_commit(
         self, owner: str, repo: str, message: str, tree_sha: str, parent_sha: str
@@ -276,7 +279,7 @@ class GitHubClient:
             url,
             json={"message": message, "tree": tree_sha, "parents": [parent_sha]},
         )
-        return data["sha"]
+        return cast(str, data["sha"])
 
     async def create_branch(
         self, owner: str, repo: str, branch_name: str, sha: str
@@ -391,4 +394,4 @@ class GitHubClient:
                 owner, repo, pr_title, pr_body, branch_name, base_branch
             )
 
-            return pr["html_url"]
+            return cast(str, pr["html_url"])

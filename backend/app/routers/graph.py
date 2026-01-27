@@ -20,7 +20,7 @@ router = APIRouter(prefix="/graph", tags=["graph"])
 
 @router.get("/full", response_model=GraphResponse)
 async def get_full_ontology_graph(
-    draft_ctx: DraftContextDep = None,
+    draft_ctx: DraftContextDep,
 ) -> GraphResponse:
     """Get the full ontology graph with all entities (GRP-05).
 
@@ -40,12 +40,12 @@ async def get_full_ontology_graph(
 
 @router.get("/neighborhood", response_model=GraphResponse)
 async def get_neighborhood_graph(
+    draft_ctx: DraftContextDep,
     entity_key: str = Query(..., description="Starting entity key (e.g., 'Person')"),
     entity_type: str = Query(
         "category", description="Entity type (currently only 'category' supported)"
     ),
     depth: int = Query(2, ge=1, le=5, description="Max traversal depth (1-5)"),
-    draft_ctx: DraftContextDep = None,
 ) -> GraphResponse:
     """Get neighborhood graph for entity within specified depth (GRP-01).
 
@@ -80,7 +80,7 @@ async def get_neighborhood_graph(
 @router.get("/module/{module_key}", response_model=GraphResponse)
 async def get_module_graph(
     module_key: str,
-    draft_ctx: DraftContextDep = None,
+    draft_ctx: DraftContextDep,
 ) -> GraphResponse:
     """Get graph of all entities in a module (GRP-02).
 

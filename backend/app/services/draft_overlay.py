@@ -7,7 +7,7 @@ computation ensures frontend never performs draft merging.
 
 import uuid
 from copy import deepcopy
-from typing import Annotated
+from typing import Annotated, Any, cast
 
 import jsonpatch
 from fastapi import Depends, Query
@@ -115,7 +115,7 @@ class DraftOverlayService:
                     # Ensure entity_key is present (canonical_json uses "id")
                     if "entity_key" not in result and "id" in result:
                         result["entity_key"] = result["id"]
-                    return result
+                    return cast(dict[Any, Any], result)
             return None
 
         # Draft creates new entity
@@ -140,7 +140,7 @@ class DraftOverlayService:
                     # Ensure entity_key is present
                     if "entity_key" not in result and "id" in result:
                         result["entity_key"] = result["id"]
-                    return result
+                    return cast(dict[Any, Any], result)
             # Deleted entity that doesn't exist in canonical (shouldn't happen)
             return None
 
@@ -169,7 +169,7 @@ class DraftOverlayService:
                 # Ensure entity_key is present
                 if "entity_key" not in result and "id" in result:
                     result["entity_key"] = result["id"]
-                return result
+                return cast(dict[Any, Any], result)
             except jsonpatch.JsonPatchException as e:
                 # Patch failed - return canonical with error marker
                 # This indicates draft is stale or invalid
@@ -179,7 +179,7 @@ class DraftOverlayService:
                 # Ensure entity_key is present
                 if "entity_key" not in result and "id" in result:
                     result["entity_key"] = result["id"]
-                return result
+                return cast(dict[Any, Any], result)
 
         return None
 
@@ -292,7 +292,7 @@ class DraftOverlayService:
             return []
 
         # Check if patch modifies parents
-        patch_ops = draft_change.patch or []
+        patch_ops: list[dict[str, Any]] = draft_change.patch or []
         modifies_parents = any(op.get("path", "").startswith("/parents") for op in patch_ops)
 
         if not modifies_parents:
@@ -351,7 +351,7 @@ class DraftOverlayService:
 
                 if parent_change and parent_change.change_type == ChangeType.UPDATE:
                     # Apply patch to get effective grandparents
-                    parent_patch = parent_change.patch or []
+                    parent_patch: list[dict[str, Any]] = parent_change.patch or []
                     if any(op.get("path", "").startswith("/parents") for op in parent_patch):
                         # Get canonical grandparents
                         gp_query = text("""
@@ -463,9 +463,9 @@ class DraftOverlayService:
                 seen_props[prop_key] = prop
 
         # Return sorted by depth, then label
-        result = list(seen_props.values())
-        result.sort(key=lambda p: (p["inheritance_depth"], p["label"]))
-        return result
+        sorted_props = list(seen_props.values())
+        sorted_props.sort(key=lambda p: (p["inheritance_depth"], p["label"]))
+        return sorted_props
 
 
 async def get_draft_context(
