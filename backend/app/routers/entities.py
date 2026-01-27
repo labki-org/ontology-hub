@@ -18,7 +18,7 @@ metadata (added/modified/deleted/unchanged).
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from sqlalchemy import text
-from sqlmodel import select
+from sqlmodel import col, select
 
 from app.database import SessionDep
 from app.dependencies.rate_limit import RATE_LIMITS, limiter
@@ -76,7 +76,7 @@ async def get_ontology_version(
     Rate limited to 200/minute per IP.
     """
     # Get the latest ontology version (only one row)
-    query = select(OntologyVersion).order_by(OntologyVersion.created_at.desc()).limit(1)
+    query = select(OntologyVersion).order_by(col(OntologyVersion.created_at).desc()).limit(1)
     result = await session.execute(query)
     version = result.scalar_one_or_none()
 
@@ -189,7 +189,7 @@ async def get_category(
         # No draft parent changes - use canonical relationship table
         parent_query = (
             select(Category.entity_key)
-            .join(CategoryParent, CategoryParent.parent_id == Category.id)
+            .join(CategoryParent, col(CategoryParent.parent_id) == col(Category.id))
             .where(CategoryParent.category_id == category.id)
         )
         parent_result = await session.execute(parent_query)
@@ -247,7 +247,7 @@ async def get_category(
     if category:
         subobject_query = (
             select(Subobject.entity_key, Subobject.label, CategorySubobject.is_required)
-            .join(CategorySubobject, CategorySubobject.subobject_id == Subobject.id)
+            .join(CategorySubobject, col(CategorySubobject.subobject_id) == col(Subobject.id))
             .where(CategorySubobject.category_id == category.id)
             .order_by(Subobject.label)
         )
@@ -420,7 +420,7 @@ async def get_property_used_by(
     # Query categories that use this property via category_property join
     query = (
         select(Category)
-        .join(CategoryProperty, CategoryProperty.category_id == Category.id)
+        .join(CategoryProperty, col(CategoryProperty.category_id) == col(Category.id))
         .where(CategoryProperty.property_id == prop.id)
         .order_by(Category.entity_key)
     )
@@ -534,7 +534,7 @@ async def get_subobject(
         )
         if all_prop_keys:
             label_query = select(Property.entity_key, Property.label).where(
-                Property.entity_key.in_(all_prop_keys)
+                col(Property.entity_key).in_(all_prop_keys)
             )
             label_result = await session.execute(label_query)
             for row in label_result.fetchall():
@@ -560,7 +560,7 @@ async def get_subobject(
         # No draft changes to properties - query canonical from database
         props_query = (
             select(Property.entity_key, Property.label, SubobjectProperty.is_required)
-            .join(SubobjectProperty, SubobjectProperty.property_id == Property.id)
+            .join(SubobjectProperty, col(SubobjectProperty.property_id) == col(Property.id))
             .where(SubobjectProperty.subobject_id == subobj.id)
             .order_by(Property.label)
         )
@@ -847,7 +847,7 @@ async def get_module(
         elif module:
             dep_query = (
                 select(Module.entity_key)
-                .join(ModuleDependency, ModuleDependency.dependency_id == Module.id)
+                .join(ModuleDependency, col(ModuleDependency.dependency_id) == col(Module.id))
                 .where(ModuleDependency.module_id == module.id)
                 .order_by(Module.entity_key)
             )
@@ -883,7 +883,7 @@ async def get_module(
         # Get module dependencies
         dep_query = (
             select(Module.entity_key)
-            .join(ModuleDependency, ModuleDependency.dependency_id == Module.id)
+            .join(ModuleDependency, col(ModuleDependency.dependency_id) == col(Module.id))
             .where(ModuleDependency.module_id == module.id)
             .order_by(Module.entity_key)
         )
@@ -1078,7 +1078,7 @@ async def get_bundle(
         # No draft changes to modules - query canonical from database
         module_query = (
             select(Module.entity_key)
-            .join(BundleModule, BundleModule.module_id == Module.id)
+            .join(BundleModule, col(BundleModule.module_id) == col(Module.id))
             .where(BundleModule.bundle_id == bundle.id)
             .order_by(Module.entity_key)
         )

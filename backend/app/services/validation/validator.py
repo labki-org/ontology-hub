@@ -5,6 +5,7 @@ and running all validation checks.
 """
 
 from copy import deepcopy
+from typing import Literal
 from uuid import UUID
 
 from sqlmodel import select
@@ -27,6 +28,8 @@ from app.services.validation.inheritance import check_circular_inheritance_v2
 from app.services.validation.reference import check_references_v2
 from app.services.validation.schema_v2 import check_schema_v2
 from app.services.validation.semver import compute_semver_suggestion
+
+SemverLevel = Literal["major", "minor", "patch"]
 
 
 async def validate_draft_v2(
@@ -82,6 +85,7 @@ async def validate_draft_v2(
     info = [r for r in results if r.severity == "info"]
 
     # 7. Compute semver suggestion
+    suggested_semver: SemverLevel
     if errors:
         # Don't suggest semver until errors are resolved
         suggested_semver = "patch"
@@ -108,10 +112,10 @@ async def validate_draft_v2(
 
     # Assign suggested semver to affected modules/bundles
     for module_key in affected_modules:
-        module_suggestions[module_key] = suggested_semver
+        module_suggestions[module_key] = str(suggested_semver)
 
     for bundle_key in affected_bundles:
-        bundle_suggestions[bundle_key] = suggested_semver
+        bundle_suggestions[bundle_key] = str(suggested_semver)
 
     return DraftValidationReportV2(
         is_valid=len(errors) == 0,

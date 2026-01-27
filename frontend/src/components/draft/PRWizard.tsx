@@ -97,30 +97,34 @@ export function PRWizard({
   const [submittedPrUrl, setSubmittedPrUrl] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
-  // Auto-generate informative PR title based on changes
-  useEffect(() => {
-    if (open && !prTitle) {
-      setPrTitle(generatePrTitle(changes))
-    }
-  }, [open, changes, prTitle])
-
   // Check for pr_url in URL params (set by OAuth callback redirect)
+  // and initialize title when dialog opens
   useEffect(() => {
-    if (open) {
-      const params = new URLSearchParams(window.location.search)
-      const prUrl = params.get('pr_url')
-      if (prUrl) {
+    if (!open) return
+
+    // Auto-generate informative PR title when dialog opens
+    if (!prTitle) {
+      // Use queueMicrotask to avoid synchronous setState in effect
+      queueMicrotask(() => setPrTitle(generatePrTitle(changes)))
+    }
+
+    // Check for OAuth callback result
+    const params = new URLSearchParams(window.location.search)
+    const prUrl = params.get('pr_url')
+    if (prUrl) {
+      // Use queueMicrotask to avoid synchronous setState in effect
+      queueMicrotask(() => {
         setSubmittedPrUrl(prUrl)
         setStep('success')
-        // Clean up URL, preserving draft_token and other params
-        params.delete('pr_url')
-        const newUrl = params.toString()
-          ? `${window.location.pathname}?${params.toString()}`
-          : window.location.pathname
-        window.history.replaceState({}, '', newUrl)
-      }
+      })
+      // Clean up URL, preserving draft_token and other params
+      params.delete('pr_url')
+      const newUrl = params.toString()
+        ? `${window.location.pathname}?${params.toString()}`
+        : window.location.pathname
+      window.history.replaceState({}, '', newUrl)
     }
-  }, [open])
+  }, [open, changes, prTitle])
 
   const handleSuccess = (prUrl: string) => {
     setSubmittedPrUrl(prUrl)

@@ -11,8 +11,8 @@ from urllib.parse import quote
 from authlib.integrations.base_client.errors import OAuthError
 from authlib.integrations.starlette_client import OAuth
 from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
+from sqlmodel.ext.asyncio.session import AsyncSession
 from starlette.responses import RedirectResponse
 
 from app.config import Settings, settings

@@ -25,9 +25,7 @@ class Settings(BaseSettings):
         """Full repository path as owner/repo."""
         return f"{self.GITHUB_REPO_OWNER}/{self.GITHUB_REPO_NAME}"
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
 
-settings = Settings()
+settings = Settings()  # type: ignore[call-arg]

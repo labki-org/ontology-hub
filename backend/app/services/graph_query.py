@@ -9,7 +9,7 @@ for change status badges (GRP-04).
 import uuid
 
 from sqlalchemy import text
-from sqlmodel import select
+from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.models.v2 import (
@@ -244,11 +244,12 @@ class GraphQueryService:
         # Add draft-created categories as nodes
         for draft_cat in draft_creates:
             draft_key = draft_cat.get("entity_key")
-            if draft_key in entity_keys and not any(n.id == draft_key for n in nodes):
+            if draft_key and draft_key in entity_keys and not any(n.id == draft_key for n in nodes):
+                draft_label = draft_cat.get("label")
                 nodes.append(
                     GraphNode(
                         id=draft_key,
-                        label=draft_cat.get("label", draft_key),
+                        label=draft_label if isinstance(draft_label, str) else draft_key,
                         entity_type="category",
                         depth=1,  # Draft-created are adjacent to existing
                         modules=module_membership.get(draft_key, []),
@@ -262,17 +263,18 @@ class GraphQueryService:
         # Add edges from draft-created categories
         for draft_cat in draft_creates:
             draft_key = draft_cat.get("entity_key")
-            if draft_key in entity_keys:
+            if draft_key and draft_key in entity_keys:
                 parents = draft_cat.get("parents", [])
-                for parent_key in parents:
-                    if parent_key in entity_keys:
-                        edges.append(
-                            GraphEdge(
-                                source=draft_key,
-                                target=parent_key,
-                                edge_type="parent",
+                if isinstance(parents, list):
+                    for parent_key in parents:
+                        if isinstance(parent_key, str) and parent_key in entity_keys:
+                            edges.append(
+                                GraphEdge(
+                                    source=draft_key,
+                                    target=parent_key,
+                                    edge_type="parent",
+                                )
                             )
-                        )
 
         # Add property nodes and edges for categories in the neighborhood
         property_nodes, property_edges = await self._get_property_nodes_and_edges(entity_keys)
@@ -419,7 +421,7 @@ class GraphQueryService:
         # Add category nodes
         if category_keys:
             cat_module_membership = await self._get_module_membership(category_keys, "category")
-            categories_query = select(Category).where(Category.entity_key.in_(category_keys))
+            categories_query = select(Category).where(col(Category.entity_key).in_(category_keys))
             result = await self.session.execute(categories_query)
             categories = result.scalars().all()
 
@@ -570,7 +572,7 @@ class GraphQueryService:
         # Add category nodes
         if category_keys:
             cat_module_membership = await self._get_module_membership(category_keys, "category")
-            categories_query = select(Category).where(Category.entity_key.in_(category_keys))
+            categories_query = select(Category).where(col(Category.entity_key).in_(category_keys))
             result = await self.session.execute(categories_query)
             categories = result.scalars().all()
 
@@ -680,7 +682,7 @@ class GraphQueryService:
         if template_modules:
             # Get module IDs for the template's modules
             module_query = select(Module.id, Module.entity_key).where(
-                Module.entity_key.in_(template_modules)
+                col(Module.entity_key).in_(template_modules)
             )
             result = await self.session.execute(module_query)
             module_rows = result.fetchall()
@@ -691,7 +693,7 @@ class GraphQueryService:
                 other_templates_query = (
                     select(ModuleEntity.entity_key)
                     .where(
-                        ModuleEntity.module_id.in_(module_ids),
+                        col(ModuleEntity.module_id).in_(module_ids),
                         ModuleEntity.entity_type == "template",
                         ModuleEntity.entity_key != entity_key,
                     )
@@ -703,7 +705,7 @@ class GraphQueryService:
                 if other_template_keys:
                     # Get template data
                     templates_query = select(Template).where(
-                        Template.entity_key.in_(other_template_keys)
+                        col(Template.entity_key).in_(other_template_keys)
                     )
                     result = await self.session.execute(templates_query)
                     other_templates = result.scalars().all()
@@ -993,7 +995,7 @@ class GraphQueryService:
             return GraphResponse(nodes=[], edges=[], has_cycles=False)
 
         # Get category data for all module entities
-        categories_query = select(Category).where(Category.entity_key.in_(entity_keys))
+        categories_query = select(Category).where(col(Category.entity_key).in_(entity_keys))
         result = await self.session.execute(categories_query)
         categories = result.scalars().all()
 
@@ -1027,16 +1029,19 @@ class GraphQueryService:
         draft_creates = await self.draft_overlay.get_draft_creates("category")
         for draft_cat in draft_creates:
             draft_key = draft_cat.get("entity_key")
+            if not draft_key:
+                continue
             # Check if draft category declares membership in this module
             # (Draft-created entities would declare their module in canonical_json)
             draft_modules = draft_cat.get("modules", [])
             if module_key in draft_modules or draft_key in entity_keys:
                 if not any(n.id == draft_key for n in nodes):
                     entity_keys.append(draft_key)
+                    draft_label = draft_cat.get("label")
                     nodes.append(
                         GraphNode(
                             id=draft_key,
-                            label=draft_cat.get("label", draft_key),
+                            label=draft_label if isinstance(draft_label, str) else draft_key,
                             entity_type="category",
                             depth=None,
                             modules=module_membership.get(draft_key, [module_key]),
@@ -1050,17 +1055,18 @@ class GraphQueryService:
         # Add edges from draft-created categories
         for draft_cat in draft_creates:
             draft_key = draft_cat.get("entity_key")
-            if draft_key in entity_keys:
+            if draft_key and draft_key in entity_keys:
                 parents = draft_cat.get("parents", [])
-                for parent_key in parents:
-                    if parent_key in entity_keys:
-                        edges.append(
-                            GraphEdge(
-                                source=draft_key,
-                                target=parent_key,
-                                edge_type="parent",
+                if isinstance(parents, list):
+                    for parent_key in parents:
+                        if isinstance(parent_key, str) and parent_key in entity_keys:
+                            edges.append(
+                                GraphEdge(
+                                    source=draft_key,
+                                    target=parent_key,
+                                    edge_type="parent",
+                                )
                             )
-                        )
 
         # Add property nodes belonging to this module
         property_nodes, property_edges = await self._get_module_property_nodes(
@@ -1106,10 +1112,10 @@ class GraphQueryService:
         # Query module membership with module details
         # entity_type is stored as string value (e.g., "category" not "CATEGORY")
         query = (
-            select(ModuleEntity.entity_key, Module.entity_key.label("module_key"))
-            .join(Module, Module.id == ModuleEntity.module_id)
+            select(ModuleEntity.entity_key, col(Module.entity_key).label("module_key"))  # type: ignore[var-annotated]
+            .join(Module, onclause=col(Module.id) == col(ModuleEntity.module_id))
             .where(
-                ModuleEntity.entity_key.in_(entity_keys),
+                col(ModuleEntity.entity_key).in_(entity_keys),
                 ModuleEntity.entity_type == entity_type,
             )
         )
@@ -1314,7 +1320,7 @@ class GraphQueryService:
             return [], []
 
         # Get property data
-        properties_query = select(Property).where(Property.entity_key.in_(property_keys))
+        properties_query = select(Property).where(col(Property.entity_key).in_(property_keys))
         result = await self.session.execute(properties_query)
         properties = result.scalars().all()
 
@@ -1366,7 +1372,7 @@ class GraphQueryService:
             return [], []
 
         # Get categories with their canonical_json to extract subobject references
-        categories_query = select(Category).where(Category.entity_key.in_(category_keys))
+        categories_query = select(Category).where(col(Category.entity_key).in_(category_keys))
         result = await self.session.execute(categories_query)
         categories = result.scalars().all()
 
@@ -1397,7 +1403,7 @@ class GraphQueryService:
 
         # Get subobject data
         subobjects_query = select(Subobject).where(
-            Subobject.entity_key.in_(list(all_subobject_keys))
+            col(Subobject.entity_key).in_(list(all_subobject_keys))
         )
         result = await self.session.execute(subobjects_query)
         subobjects = result.scalars().all()
@@ -1477,7 +1483,7 @@ class GraphQueryService:
         # Add property nodes if we have subobject properties
         if property_keys_for_subobjects:
             properties_query = select(Property).where(
-                Property.entity_key.in_(list(property_keys_for_subobjects))
+                col(Property.entity_key).in_(list(property_keys_for_subobjects))
             )
             result = await self.session.execute(properties_query)
             properties = result.scalars().all()
@@ -1537,7 +1543,7 @@ class GraphQueryService:
             return [], []
 
         # Get subobject data
-        subobjects_query = select(Subobject).where(Subobject.entity_key.in_(subobject_keys))
+        subobjects_query = select(Subobject).where(col(Subobject.entity_key).in_(subobject_keys))
         result = await self.session.execute(subobjects_query)
         subobjects = result.scalars().all()
 
@@ -1596,7 +1602,7 @@ class GraphQueryService:
         # Add property nodes if we have subobject properties
         if property_keys_for_subobjects:
             properties_query = select(Property).where(
-                Property.entity_key.in_(list(property_keys_for_subobjects))
+                col(Property.entity_key).in_(list(property_keys_for_subobjects))
             )
             result = await self.session.execute(properties_query)
             properties = result.scalars().all()
@@ -1656,7 +1662,7 @@ class GraphQueryService:
             return []
 
         # Get template data
-        templates_query = select(Template).where(Template.entity_key.in_(template_keys))
+        templates_query = select(Template).where(col(Template.entity_key).in_(template_keys))
         result = await self.session.execute(templates_query)
         templates = result.scalars().all()
 
