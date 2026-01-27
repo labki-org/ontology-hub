@@ -112,10 +112,10 @@ async def validate_draft_v2(
 
     # Assign suggested semver to affected modules/bundles
     for module_key in affected_modules:
-        module_suggestions[module_key] = suggested_semver
+        module_suggestions[module_key] = str(suggested_semver)
 
     for bundle_key in affected_bundles:
-        bundle_suggestions[bundle_key] = suggested_semver
+        bundle_suggestions[bundle_key] = str(suggested_semver)
 
     return DraftValidationReportV2(
         is_valid=len(errors) == 0,

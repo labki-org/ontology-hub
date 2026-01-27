@@ -292,7 +292,7 @@ class DraftOverlayService:
             return []
 
         # Check if patch modifies parents
-        patch_ops: list[dict[str, Any]] = draft_change.patch or []
+        patch_ops: list[dict[str, Any]] = list(draft_change.patch) if draft_change.patch else []
         modifies_parents = any(op.get("path", "").startswith("/parents") for op in patch_ops)
 
         if not modifies_parents:
@@ -351,7 +351,9 @@ class DraftOverlayService:
 
                 if parent_change and parent_change.change_type == ChangeType.UPDATE:
                     # Apply patch to get effective grandparents
-                    parent_patch: list[dict[str, Any]] = parent_change.patch or []
+                    parent_patch: list[dict[str, Any]] = (
+                        list(parent_change.patch) if parent_change.patch else []
+                    )
                     if any(op.get("path", "").startswith("/parents") for op in parent_patch):
                         # Get canonical grandparents
                         gp_query = text("""

@@ -77,12 +77,12 @@ async def trigger_sync_background_v2(httpx_client: Any) -> None:
         github_client = GitHubClient(httpx_client)
         try:
             # Get previous commit SHA for draft staleness detection
-            from sqlalchemy import desc
+            from sqlmodel import col
 
             prev_version = (
                 (
                     await session.execute(
-                        select(OntologyVersion).order_by(desc(OntologyVersion.created_at))
+                        select(OntologyVersion).order_by(col(OntologyVersion.created_at).desc())
                     )
                 )
                 .scalars()

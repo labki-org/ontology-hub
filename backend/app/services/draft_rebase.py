@@ -5,7 +5,7 @@ from copy import deepcopy
 from typing import Any
 
 import jsonpatch
-from sqlalchemy import select
+from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.models.v2 import (
@@ -45,10 +45,10 @@ async def load_canonical_entity(
         return None
 
     # All entity models have entity_key
-    result = await session.execute(select(model).where(model.entity_key == entity_key))  # type: ignore[union-attr]
+    result = await session.execute(select(model).where(col(model.entity_key) == entity_key))  # type: ignore[attr-defined]
     entity = result.scalars().first()
     if entity and hasattr(entity, "canonical_json"):
-        canonical: dict = entity.canonical_json  # type: ignore[assignment]
+        canonical: dict = entity.canonical_json
         return canonical
     return None
 
@@ -102,7 +102,7 @@ async def auto_rebase_drafts(
     # Find drafts that need rebase
     drafts_query = select(Draft).where(
         Draft.base_commit_sha == old_commit_sha,
-        Draft.status.in_([DraftStatus.DRAFT, DraftStatus.VALIDATED]),  # type: ignore[union-attr]
+        col(Draft.status).in_([DraftStatus.DRAFT, DraftStatus.VALIDATED]),
     )
     result = await session.execute(drafts_query)
     drafts = result.scalars().all()

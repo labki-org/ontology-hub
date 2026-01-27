@@ -8,7 +8,7 @@ import logging
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, HTTPException, Request
-from sqlalchemy import select
+from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.database import SessionDep
@@ -64,7 +64,7 @@ async def entity_exists(
     if not model:
         return False
     # All entity models have entity_key
-    result = await session.execute(select(model).where(model.entity_key == entity_key))  # type: ignore[union-attr]
+    result = await session.execute(select(model).where(model.entity_key == entity_key))  # type: ignore[attr-defined]
     return result.scalars().first() is not None
 
 
@@ -117,10 +117,8 @@ async def import_from_mediawiki(
         raise HTTPException(status_code=400, detail={"errors": errors})
 
     # Get current ontology version for base_commit_sha
-    from sqlalchemy import desc
-
     version_result = await session.execute(
-        select(OntologyVersion).order_by(desc(OntologyVersion.created_at))
+        select(OntologyVersion).order_by(col(OntologyVersion.created_at).desc())
     )
     current_version = version_result.scalars().first()
     if not current_version:

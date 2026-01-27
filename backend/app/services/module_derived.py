@@ -11,10 +11,11 @@ Module members:
 
 import uuid
 from copy import deepcopy
+from typing import Any
 
 import jsonpatch
 from sqlalchemy import text
-from sqlmodel import select
+from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.models.v2 import Category, ChangeType, DraftChange, Property
@@ -153,7 +154,7 @@ async def _get_category_members(
 
     # If draft modifies parents, we need draft-aware inheritance
     if draft_change and draft_change.change_type == ChangeType.UPDATE:
-        patch_ops: list[dict] = draft_change.patch or []
+        patch_ops: list[dict[str, Any]] = list(draft_change.patch) if draft_change.patch else []
         modifies_parents = any(op.get("path", "").startswith("/parents") for op in patch_ops)
 
         if modifies_parents:
@@ -206,7 +207,7 @@ async def _get_templates_from_properties(
         return templates
 
     # Query canonical properties with has_display_template_key
-    query = select(Property).where(Property.entity_key.in_(property_keys))  # type: ignore[union-attr]
+    query = select(Property).where(col(Property.entity_key).in_(property_keys))
     result = await session.execute(query)
     props = result.scalars().all()
 

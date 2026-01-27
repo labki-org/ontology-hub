@@ -10,7 +10,7 @@ from datetime import datetime
 from uuid import UUID
 
 import jsonpatch
-from sqlmodel import select
+from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.models.v2 import (
@@ -59,10 +59,10 @@ async def get_canonical_json(
         return None
 
     # All entity models have entity_key
-    result = await session.execute(select(model).where(model.entity_key == entity_key))  # type: ignore[union-attr]
+    result = await session.execute(select(model).where(col(model.entity_key) == entity_key))  # type: ignore[attr-defined]
     entity = result.scalar_one_or_none()
     if entity and hasattr(entity, "canonical_json"):
-        canonical: dict = entity.canonical_json  # type: ignore[assignment]
+        canonical: dict = entity.canonical_json
         return canonical
     return None
 
@@ -113,7 +113,7 @@ async def build_files_from_draft_v2(
     result = await session.execute(query)
     changes = list(result.scalars().all())
 
-    files = []
+    files: list[dict[str, str | bool]] = []
 
     for change in changes:
         entity_dir = ENTITY_DIRS.get(change.entity_type, change.entity_type)

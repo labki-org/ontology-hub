@@ -9,7 +9,7 @@ for change status badges (GRP-04).
 import uuid
 
 from sqlalchemy import text
-from sqlmodel import select
+from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.models.v2 import (
@@ -421,7 +421,7 @@ class GraphQueryService:
         # Add category nodes
         if category_keys:
             cat_module_membership = await self._get_module_membership(category_keys, "category")
-            categories_query = select(Category).where(Category.entity_key.in_(category_keys))
+            categories_query = select(Category).where(col(Category.entity_key).in_(category_keys))
             result = await self.session.execute(categories_query)
             categories = result.scalars().all()
 
@@ -572,7 +572,7 @@ class GraphQueryService:
         # Add category nodes
         if category_keys:
             cat_module_membership = await self._get_module_membership(category_keys, "category")
-            categories_query = select(Category).where(Category.entity_key.in_(category_keys))
+            categories_query = select(Category).where(col(Category.entity_key).in_(category_keys))
             result = await self.session.execute(categories_query)
             categories = result.scalars().all()
 
@@ -681,10 +681,8 @@ class GraphQueryService:
         # Find other templates in the same modules (limited to ~10 for performance)
         if template_modules:
             # Get module IDs for the template's modules
-            # Access via __table__.c for proper SQLAlchemy column operations
-            module_entity_key_col = Module.__table__.c.entity_key
             module_query = select(Module.id, Module.entity_key).where(
-                module_entity_key_col.in_(template_modules)
+                col(Module.entity_key).in_(template_modules)
             )
             result = await self.session.execute(module_query)
             module_rows = result.fetchall()
@@ -695,7 +693,7 @@ class GraphQueryService:
                 other_templates_query = (
                     select(ModuleEntity.entity_key)
                     .where(
-                        ModuleEntity.module_id.in_(module_ids),
+                        col(ModuleEntity.module_id).in_(module_ids),
                         ModuleEntity.entity_type == "template",
                         ModuleEntity.entity_key != entity_key,
                     )
@@ -707,7 +705,7 @@ class GraphQueryService:
                 if other_template_keys:
                     # Get template data
                     templates_query = select(Template).where(
-                        Template.entity_key.in_(other_template_keys)
+                        col(Template.entity_key).in_(other_template_keys)
                     )
                     result = await self.session.execute(templates_query)
                     other_templates = result.scalars().all()
@@ -997,7 +995,7 @@ class GraphQueryService:
             return GraphResponse(nodes=[], edges=[], has_cycles=False)
 
         # Get category data for all module entities
-        categories_query = select(Category).where(Category.entity_key.in_(entity_keys))
+        categories_query = select(Category).where(col(Category.entity_key).in_(entity_keys))
         result = await self.session.execute(categories_query)
         categories = result.scalars().all()
 
@@ -1113,13 +1111,11 @@ class GraphQueryService:
 
         # Query module membership with module details
         # entity_type is stored as string value (e.g., "category" not "CATEGORY")
-        # Access Module's entity_key column via __table__.c for proper SQLAlchemy typing
-        module_entity_key_col = Module.__table__.c.entity_key
         query = (
-            select(ModuleEntity.entity_key, module_entity_key_col.label("module_key"))
-            .join(Module, onclause=Module.id == ModuleEntity.module_id)
+            select(ModuleEntity.entity_key, col(Module.entity_key).label("module_key"))  # type: ignore[var-annotated]
+            .join(Module, onclause=col(Module.id) == col(ModuleEntity.module_id))
             .where(
-                ModuleEntity.entity_key.in_(entity_keys),
+                col(ModuleEntity.entity_key).in_(entity_keys),
                 ModuleEntity.entity_type == entity_type,
             )
         )
@@ -1324,7 +1320,7 @@ class GraphQueryService:
             return [], []
 
         # Get property data
-        properties_query = select(Property).where(Property.entity_key.in_(property_keys))
+        properties_query = select(Property).where(col(Property.entity_key).in_(property_keys))
         result = await self.session.execute(properties_query)
         properties = result.scalars().all()
 
@@ -1376,7 +1372,7 @@ class GraphQueryService:
             return [], []
 
         # Get categories with their canonical_json to extract subobject references
-        categories_query = select(Category).where(Category.entity_key.in_(category_keys))
+        categories_query = select(Category).where(col(Category.entity_key).in_(category_keys))
         result = await self.session.execute(categories_query)
         categories = result.scalars().all()
 
@@ -1407,7 +1403,7 @@ class GraphQueryService:
 
         # Get subobject data
         subobjects_query = select(Subobject).where(
-            Subobject.entity_key.in_(list(all_subobject_keys))
+            col(Subobject.entity_key).in_(list(all_subobject_keys))
         )
         result = await self.session.execute(subobjects_query)
         subobjects = result.scalars().all()
@@ -1487,7 +1483,7 @@ class GraphQueryService:
         # Add property nodes if we have subobject properties
         if property_keys_for_subobjects:
             properties_query = select(Property).where(
-                Property.entity_key.in_(list(property_keys_for_subobjects))
+                col(Property.entity_key).in_(list(property_keys_for_subobjects))
             )
             result = await self.session.execute(properties_query)
             properties = result.scalars().all()
@@ -1547,7 +1543,7 @@ class GraphQueryService:
             return [], []
 
         # Get subobject data
-        subobjects_query = select(Subobject).where(Subobject.entity_key.in_(subobject_keys))
+        subobjects_query = select(Subobject).where(col(Subobject.entity_key).in_(subobject_keys))
         result = await self.session.execute(subobjects_query)
         subobjects = result.scalars().all()
 
@@ -1606,7 +1602,7 @@ class GraphQueryService:
         # Add property nodes if we have subobject properties
         if property_keys_for_subobjects:
             properties_query = select(Property).where(
-                Property.entity_key.in_(list(property_keys_for_subobjects))
+                col(Property.entity_key).in_(list(property_keys_for_subobjects))
             )
             result = await self.session.execute(properties_query)
             properties = result.scalars().all()
@@ -1666,7 +1662,7 @@ class GraphQueryService:
             return []
 
         # Get template data
-        templates_query = select(Template).where(Template.entity_key.in_(template_keys))
+        templates_query = select(Template).where(col(Template.entity_key).in_(template_keys))
         result = await self.session.execute(templates_query)
         templates = result.scalars().all()
 

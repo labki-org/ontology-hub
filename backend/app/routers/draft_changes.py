@@ -101,7 +101,7 @@ async def entity_exists(session: AsyncSession, entity_type: str, entity_key: str
 
     # All entity models have entity_key
     result = await session.execute(
-        select(model).where(model.entity_key == entity_key)  # type: ignore[union-attr]
+        select(model).where(model.entity_key == entity_key)  # type: ignore[attr-defined]
     )
     return result.scalars().first() is not None
 
