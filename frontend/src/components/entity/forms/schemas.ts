@@ -1,18 +1,44 @@
 import { z } from 'zod'
 
 /**
- * Shared ID validation pattern for all entity types.
- * IDs follow MediaWiki page title format: starts with uppercase letter,
- * followed by lowercase letters, with underscores separating words.
- * Examples: "Person", "Has_property", "Located_in_city"
+ * ID validation patterns matching labki-ontology _schema.json definitions.
+ * These patterns are the source of truth from: https://github.com/labki-org/labki-ontology
+ *
+ * Pattern: ^[A-Z][a-z]*(_[a-z]+)*$
+ * Used by: Category, Subobject, Module, Bundle
+ * Examples: "Person", "Contact_info", "Core"
  */
-const idValidation = z
+const genericIdValidation = z
   .string()
   .min(1, 'ID is required')
   .regex(
     /^[A-Z][a-z]*(_[a-z]+)*$/,
-    'ID must start with uppercase letter, use underscores between words (e.g., Has_property)'
+    'ID must start with uppercase letter, use underscores between words (e.g., Person, Contact_info)'
   )
+
+/**
+ * Property ID validation pattern from labki-ontology properties/_schema.json.
+ * Properties must have Has_ or Is_ prefix per SemanticMediaWiki convention.
+ *
+ * Pattern: ^(Has|Is)_[a-z]+(_[a-z]+)*$
+ * Examples: "Has_name", "Is_part_of", "Has_email_address"
+ */
+const propertyIdValidation = z
+  .string()
+  .min(1, 'ID is required')
+  .regex(
+    /^(Has|Is)_[a-z]+(_[a-z]+)*$/,
+    'Property ID must start with Has_ or Is_ prefix (e.g., Has_name, Is_part_of)'
+  )
+
+/**
+ * Template ID validation from labki-ontology templates/_schema.json.
+ * Templates allow more flexible IDs including / for subpages.
+ *
+ * Pattern: minLength 1 (no strict pattern)
+ * Examples: "Infobox", "Person/sidebar", "Navigation/main"
+ */
+const templateIdValidation = z.string().min(1, 'ID is required')
 
 /**
  * Category entity schema.
@@ -20,7 +46,7 @@ const idValidation = z
  * Optional: parents (relationship to other categories)
  */
 export const categorySchema = z.object({
-  id: idValidation,
+  id: genericIdValidation,
   label: z.string().min(1, 'Label is required'),
   description: z.string().min(1, 'Description is required'),
   parents: z.array(z.string()).optional(),
@@ -37,7 +63,7 @@ export type CategoryFormData = z.infer<typeof categorySchema>
  * Required: id, label, description, datatype, cardinality
  */
 export const propertySchema = z.object({
-  id: idValidation,
+  id: propertyIdValidation,
   label: z.string().min(1, 'Label is required'),
   description: z.string().min(1, 'Description is required'),
   datatype: z.string().min(1, 'Datatype is required'),
@@ -52,7 +78,7 @@ export type PropertyFormData = z.infer<typeof propertySchema>
  * Optional: properties (relationship to properties)
  */
 export const subobjectSchema = z.object({
-  id: idValidation,
+  id: genericIdValidation,
   label: z.string().min(1, 'Label is required'),
   description: z.string().min(1, 'Description is required'),
   required_properties: z.array(z.string()).optional(),
@@ -66,7 +92,7 @@ export type SubobjectFormData = z.infer<typeof subobjectSchema>
  * Required: id, label, description, wikitext
  */
 export const templateSchema = z.object({
-  id: idValidation,
+  id: templateIdValidation,
   label: z.string().min(1, 'Label is required'),
   description: z.string().min(1, 'Description is required'),
   wikitext: z.string().min(1, 'Wikitext is required'),
@@ -79,7 +105,7 @@ export type TemplateFormData = z.infer<typeof templateSchema>
  * Used for initial creation when entities will be added after.
  */
 const moduleBaseSchema = z.object({
-  id: idValidation,
+  id: genericIdValidation,
   version: z.string().min(1, 'Version is required'),
   label: z.string().min(1, 'Label is required'),
   description: z.string().min(1, 'Description is required'),
@@ -125,7 +151,7 @@ export type ModuleFormData = z.infer<typeof moduleSchema>
  * Allows creating bundle without modules - they can be added after.
  */
 export const bundleCreateSchema = z.object({
-  id: idValidation,
+  id: genericIdValidation,
   version: z.string().min(1, 'Version is required'),
   label: z.string().min(1, 'Label is required'),
   description: z.string().min(1, 'Description is required'),
@@ -139,7 +165,7 @@ export type BundleCreateFormData = z.infer<typeof bundleCreateSchema>
  * Required: id, version, label, description, modules (at least one)
  */
 export const bundleSchema = z.object({
-  id: idValidation,
+  id: genericIdValidation,
   version: z.string().min(1, 'Version is required'),
   label: z.string().min(1, 'Label is required'),
   description: z.string().min(1, 'Description is required'),

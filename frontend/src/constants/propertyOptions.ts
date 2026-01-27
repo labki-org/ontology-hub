@@ -1,10 +1,10 @@
 /**
  * Shared property options for datatypes and cardinality.
  *
- * IMPORTANT: These values must match the backend ALLOWED_DATATYPES in
- * backend/app/services/validation/datatype.py
- *
+ * Source of truth: labki-ontology/properties/_schema.json
  * Reference: https://www.semantic-mediawiki.org/wiki/Help:List_of_datatypes
+ *
+ * IMPORTANT: Keep this in sync with the enum in labki-ontology properties/_schema.json
  */
 
 /**
