@@ -5,7 +5,7 @@ and running all validation checks.
 """
 
 from copy import deepcopy
-from typing import Literal, cast
+from typing import Literal
 from uuid import UUID
 
 from sqlmodel import select

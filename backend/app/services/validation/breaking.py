@@ -4,7 +4,7 @@ Detects changes that may break backward compatibility by comparing
 effective entities against canonical data.
 """
 
-from typing import Any, Literal, cast
+from typing import Any, Literal
 
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession

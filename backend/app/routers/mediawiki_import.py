@@ -63,9 +63,8 @@ async def entity_exists(
     model = ENTITY_MODELS.get(entity_type)
     if not model:
         return False
-    # Use getattr to access entity_key column dynamically (models all have it)
-    entity_key_col = getattr(model, "entity_key")
-    result = await session.execute(select(model).where(entity_key_col == entity_key))
+    # All entity models have entity_key
+    result = await session.execute(select(model).where(model.entity_key == entity_key))  # type: ignore[union-attr]
     return result.scalars().first() is not None
 
 

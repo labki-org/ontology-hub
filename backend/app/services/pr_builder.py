@@ -58,9 +58,8 @@ async def get_canonical_json(
     if not model:
         return None
 
-    # Use getattr to access entity_key column dynamically (models all have it)
-    entity_key_col = getattr(model, "entity_key")
-    result = await session.execute(select(model).where(entity_key_col == entity_key))
+    # All entity models have entity_key
+    result = await session.execute(select(model).where(model.entity_key == entity_key))  # type: ignore[union-attr]
     entity = result.scalar_one_or_none()
     if entity and hasattr(entity, "canonical_json"):
         canonical: dict = entity.canonical_json  # type: ignore[assignment]

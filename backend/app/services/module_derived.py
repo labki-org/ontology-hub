@@ -206,9 +206,7 @@ async def _get_templates_from_properties(
         return templates
 
     # Query canonical properties with has_display_template_key
-    # Use getattr to access entity_key column dynamically
-    entity_key_col = getattr(Property, "entity_key")
-    query = select(Property).where(entity_key_col.in_(property_keys))
+    query = select(Property).where(Property.entity_key.in_(property_keys))  # type: ignore[union-attr]
     result = await session.execute(query)
     props = result.scalars().all()
 

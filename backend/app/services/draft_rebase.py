@@ -44,9 +44,8 @@ async def load_canonical_entity(
     if not model:
         return None
 
-    # Use getattr to access entity_key column dynamically (models all have it)
-    entity_key_col = getattr(model, "entity_key")
-    result = await session.execute(select(model).where(entity_key_col == entity_key))
+    # All entity models have entity_key
+    result = await session.execute(select(model).where(model.entity_key == entity_key))  # type: ignore[union-attr]
     entity = result.scalars().first()
     if entity and hasattr(entity, "canonical_json"):
         canonical: dict = entity.canonical_json  # type: ignore[assignment]
@@ -101,11 +100,9 @@ async def auto_rebase_drafts(
     stats = {"rebased": 0, "conflicted": 0, "skipped": 0}
 
     # Find drafts that need rebase
-    # Use getattr for status column to access .in_() method
-    status_col = getattr(Draft, "status")
     drafts_query = select(Draft).where(
         Draft.base_commit_sha == old_commit_sha,
-        status_col.in_([DraftStatus.DRAFT, DraftStatus.VALIDATED]),
+        Draft.status.in_([DraftStatus.DRAFT, DraftStatus.VALIDATED]),  # type: ignore[union-attr]
     )
     result = await session.execute(drafts_query)
     drafts = result.scalars().all()
