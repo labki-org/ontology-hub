@@ -11,7 +11,17 @@ from alembic import context
 from app.config import settings
 
 # Import all models to ensure they are registered with SQLModel.metadata
-from app.models import Draft, Entity, Module, Profile  # noqa: F401
+from app.models import (  # noqa: F401
+    Bundle,
+    Category,
+    Draft,
+    DraftChange,
+    Module,
+    OntologyVersion,
+    Property,
+    Subobject,
+    Template,
+)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
