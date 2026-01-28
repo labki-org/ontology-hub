@@ -9,17 +9,17 @@ See: .planning/PROJECT.md (updated 2026-01-27)
 
 ## Current Position
 
-Phase: 30 of 32 ✓
-Plan: 03 of 03 complete
-Status: Phase 30 verified (13/13 must-haves)
-Last activity: 2026-01-28 — Phase 30 complete and verified
+Phase: 31 of 32
+Plan: 01 of 03 complete
+Status: In progress
+Last activity: 2026-01-28 — Completed 31-01-PLAN.md (Dashboard schema and form)
 
 Progress: [████████████████████░░░       ] 80% (8/10 phases in v1.1.0)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 103 (20 v1.0 + 41 v2.0 + 24 v2.1 + 18 v1.1.0)
+- Total plans completed: 104 (20 v1.0 + 41 v2.0 + 24 v2.1 + 19 v1.1.0)
 
 **Summary by Milestone:**
 
@@ -84,6 +84,11 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - Resource category is clickable link navigating to category detail
 - Dynamic fields displayed in flat list with formatValue helper for type handling
 
+**Phase 31 decisions:**
+- Root page uses empty string name (matching backend validation)
+- Page 0 protected from deletion in DashboardForm (root page required)
+- Auto-generated page names use pattern page-{index}
+
 ### Pending Todos
 
 None.
@@ -95,6 +100,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-28
-Stopped at: Phase 30 complete (frontend detail components verified)
+Stopped at: Completed 31-01-PLAN.md (Dashboard schema and form)
 Resume file: None
-Next action: Begin Phase 31 (Frontend Create/Edit Forms)
+Next action: Execute 31-02-PLAN.md (Resource schema and form)
