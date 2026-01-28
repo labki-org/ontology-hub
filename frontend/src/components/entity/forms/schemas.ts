@@ -173,3 +173,26 @@ export const bundleSchema = z.object({
 })
 
 export type BundleFormData = z.infer<typeof bundleSchema>
+
+/**
+ * Dashboard page schema.
+ * Each page has a name (empty string for root page) and wikitext content.
+ */
+const dashboardPageSchema = z.object({
+  name: z.string(), // Empty string for root page
+  wikitext: z.string(),
+})
+
+/**
+ * Dashboard entity schema.
+ * Required: id, label, description, pages (at least one)
+ * Root page (empty name) should be included by default.
+ */
+export const dashboardSchema = z.object({
+  id: genericIdValidation,
+  label: z.string().min(1, 'Label is required'),
+  description: z.string().min(1, 'Description is required'),
+  pages: z.array(dashboardPageSchema).min(1, 'At least one page is required'),
+})
+
+export type DashboardFormData = z.infer<typeof dashboardSchema>
