@@ -8,7 +8,20 @@ A public platform for browsing, validating, and proposing changes to a shared La
 
 Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes, with zero platform accounts and strong validation feedback.
 
-## Current State: v2.1 Shipped
+## Current State: v1.1.0 Shipped
+
+**Shipped:** 2026-01-28
+**Codebase:** ~32,000 LOC (15,867 Python + 16,148 TypeScript)
+
+**v1.1.0 delivered:**
+- Dashboard entity type: documentation pages with wikitext content for modules/bundles
+- Resource entity type: pre-filled category content with dynamic fields
+- Transitive module auto-derivation: allowed_values.from_category → category → resources
+- Graph visualization with distinct node shapes (8 entity types total)
+- Full CRUD for Dashboard and Resource with specialized detail views and create forms
+- 24 integration tests covering derivation chain, validation, and PR submission
+
+## v2.1 Summary
 
 **Shipped:** 2026-01-25
 **Codebase:** ~36,360 LOC (17,134 Python + 19,226 TypeScript)
@@ -92,13 +105,15 @@ Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes,
 - ✓ Graph auto-updates on entity creation/deletion — v2.1
 - ✓ Auto-generated PR titles based on change content — v2.1
 
+**v1.1.0 Dashboard & Resource Entities:**
+- ✓ Dashboard entity type: documentation pages with wikitext content for modules/bundles — v1.1.0
+- ✓ Resource entity type: pre-filled category content with dynamic fields — v1.1.0
+- ✓ Auto-derivation chain: allowed_values.from_category → category → resources — v1.1.0
+- ✓ Full CRUD and graph visualization for Dashboard and Resource types — v1.1.0
+
 ### Active
 
-**v1.1.0 Dashboard & Resource Entities:**
-- [ ] Dashboard entity type: documentation pages with SMW queries for modules/bundles
-- [ ] Resource entity type: pre-written category content (like pre-filled forms)
-- [ ] Auto-derivation chain: allowed_values.from_category → category → resources
-- [ ] Full CRUD and graph visualization for new entity types
+(None — awaiting next milestone planning)
 
 ### Out of Scope
 
@@ -114,13 +129,15 @@ Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes,
 
 **Domain**: SemanticSchemas is a MediaWiki extension that auto-generates Forms and Templates from schema definitions. The extension exists at `/dev/SemanticSchemas` but currently lacks import/export. This platform becomes the canonical schema hub; the extension will be updated to export drafts here.
 
-**Entity types (6 total)**:
+**Entity types (8 total)**:
 - **Category**: Entity types with inheritance (parents), required/optional properties and subobjects
 - **Property**: Attributes with datatypes, cardinality, validation rules, parent hierarchy
 - **Subobject**: Reusable nested structures with their own properties
 - **Module**: Logical groupings of categories/properties/subobjects/templates with dependencies
 - **Bundle**: Curated collections of modules for deployment scenarios (renamed from Profile)
 - **Template**: Wikitext rendering templates for properties
+- **Dashboard**: Documentation pages with wikitext content, linked to modules/bundles
+- **Resource**: Pre-filled category content with dynamic fields based on category properties
 
 **Canonical repo format** (labki-schemas):
 - `categories/*.json` — entity types with JSON Schema validation
@@ -185,4 +202,4 @@ Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes,
 | Direct backend URL for OAuth | Matches GitHub app callback config, avoids Vite proxy redirect issues | ✓ Good |
 
 ---
-*Last updated: 2026-01-25 after v2.1 milestone*
+*Last updated: 2026-01-28 after v1.1.0 milestone*

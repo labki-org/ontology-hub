@@ -2,19 +2,19 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-01-27)
+See: .planning/PROJECT.md (updated 2026-01-28)
 
 **Core value:** Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes, with zero platform accounts and strong validation feedback.
-**Current focus:** v1.1.0 Dashboard & Resource Entities
+**Current focus:** Awaiting next milestone planning
 
 ## Current Position
 
-Phase: 32 of 32 (complete)
-Plan: 02 of 02 complete
-Status: Phase 32 complete - Integration Testing
-Last activity: 2026-01-28 - Completed 32-02-PLAN.md (E2E Derivation Chain Tests)
+Phase: 32 of 32 (all milestones complete)
+Plan: N/A
+Status: Ready for next milestone
+Last activity: 2026-01-28 — v1.1.0 milestone complete
 
-Progress: [██████████████████████████████] 100% (10/10 phases in v1.1.0)
+Progress: [██████████████████████████████] 100% (4 milestones shipped)
 
 ## Performance Metrics
 
@@ -35,66 +35,8 @@ Progress: [███████████████████████
 
 ### Decisions
 
-Decisions are logged in PROJECT.md Key Decisions table.
-
-**Phase 23 decisions:**
-- Page name pattern uses alternation `^$|^[A-Z][a-z]*(_[a-z]+)*$` to allow empty OR category ID
-- Mutual exclusivity for Allows_value_from_category uses JSON Schema `not` constraint
-
-**Phase 24 decisions:**
-- Resource.category_key stored as plain string (not FK) for ingest flexibility
-- Junction tables use composite primary keys matching BundleModule pattern
-- ondelete=RESTRICT on dashboard FK prevents accidental dashboard deletion while in use
-- ondelete=CASCADE on module/bundle FK auto-cleans junction rows when parent deleted
-
-**Phase 25 decisions:**
-- Resources use nested paths like templates (resources/Category/key.json)
-- Dashboard relationships resolved via lookup table pattern matching existing entities
-
-**Phase 26 decisions:**
-- Dynamic properties extraction uses reserved_keys blacklist instead of explicit allowlist
-
-**Phase 27 decisions:**
-- Derivation follows transitive chains until no new categories discovered or max_depth (10) reached
-- Check both Allows_value_from_category and allowed_values.from_category property formats
-- Include draft-created resources via category field check
-- Use .get("resources", []) for backwards compatibility with pre-Phase-27 derivation
-
-**Phase 28 decisions:**
-- Dashboard CREATE validation rejects empty pages array
-- Dashboard CREATE validation requires root page (name: '')
-- Resource RESERVED_KEYS: id, label, description, category, entity_key, source_path
-- Draft-created categories bypass materialized view for property lookup
-- SQLite tests use draft-created categories to bypass materialized view
-
-**Phase 29 decisions:**
-- Dashboard node: 70px size, red-300 fill, rounded rect (r=12)
-- Resource node: 45px size (compact), cyan-300 fill, small rect (r=4)
-- module_dashboard edge: red-600, long dash (8,4)
-- category_resource edge: cyan-600, short dash (3,3)
-- Dashboard graph nodes have empty modules list (modules reference dashboards via junction)
-- Resource graph nodes have empty modules list (resources belong to categories, not modules directly)
-- Edge types: module_dashboard for module->dashboard, category_resource for category->resource
-
-**Phase 30 decisions:**
-- Dashboard icon: LayoutDashboard from lucide-react
-- Resource icon: FileText from lucide-react
-- Templates moved from standalone section to Artifacts group
-- Dashboard pages use single-item accordion (one page open at a time)
-- Resource category is clickable link navigating to category detail
-- Dynamic fields displayed in flat list with formatValue helper for type handling
-
-**Phase 31 decisions:**
-- Root page uses empty string name (matching backend validation)
-- Page 0 protected from deletion in DashboardForm (root page required)
-- Auto-generated page names use pattern page-{index}
-- Dynamic fields fetched from category's properties array via useCategory hook
-- Category change resets dynamic_fields to empty object
-- Single-select category using EntityCombobox with array of one element
-
-**Phase 32 decisions:**
-- Resources use flattened paths in PR output (resources/{key}.json) matching existing PR builder pattern
-- E2E tests use draft-created categories with DraftChange.CREATE to bypass materialized view in SQLite
+All milestone decisions archived in PROJECT.md Key Decisions table.
+For v1.1.0 decisions, see `.planning/milestones/v1.1.0-ROADMAP.md`.
 
 ### Pending Todos
 
@@ -107,6 +49,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-28
-Stopped at: v1.1.0 milestone complete - all human verification passed
+Stopped at: v1.1.0 milestone archived
 Resume file: None
-Next action: Ready for next milestone planning
+Next action: `/gsd:new-milestone` to plan next milestone

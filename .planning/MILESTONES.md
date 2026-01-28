@@ -1,5 +1,31 @@
 # Project Milestones: Ontology Hub
 
+## v1.1.0 Dashboard & Resource Entities (Shipped: 2026-01-28)
+
+**Delivered:** Added Dashboard and Resource as first-class entity types with full CRUD, graph visualization, and transitive module derivation chain.
+
+**Phases completed:** 23-32 (22 plans total)
+
+**Key accomplishments:**
+- Dashboard and Resource entity types added across full platform stack (schema → DB → API → UI)
+- Transitive module derivation chain: allowed_values.from_category → category → resources
+- Graph visualization with distinct node shapes (document for Dashboard, form for Resource)
+- Detail pages with specialized views (pages accordion for Dashboards, category-linked dynamic fields for Resources)
+- Create/edit forms with category-driven field generation
+- 24 integration tests covering CRUD, validation, derivation, and PR submission
+
+**Stats:**
+- 117 files created/modified
+- ~32,000 lines of code (15,867 Python + 16,148 TypeScript)
+- 10 phases, 22 plans, 24 requirements
+- 2 days from start to ship (2026-01-27 → 2026-01-28)
+
+**Git range:** `facd9b4` → `095b977`
+
+**What's next:** Production deployment, user feedback, potential v1.2.0 with additional entity relationships
+
+---
+
 ## v2.1 Bug Fixes & UX Improvements (Shipped: 2026-01-25)
 
 **Delivered:** Fixed all entity detail loading, restored draft workflow (validate/submit PR), added inline editing with hover controls, change propagation visualization, and full entity CRUD within drafts.
