@@ -166,6 +166,8 @@ class IngestService:
         self._session.add_all(parsed.modules)
         self._session.add_all(parsed.bundles)
         self._session.add_all(parsed.templates)
+        self._session.add_all(parsed.dashboards)
+        self._session.add_all(parsed.resources)
 
         # Flush to generate UUIDs
         await self._session.flush()
