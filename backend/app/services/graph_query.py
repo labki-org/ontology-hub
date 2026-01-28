@@ -14,9 +14,12 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.models.v2 import (
     Category,
+    Dashboard,
     Module,
+    ModuleDashboard,
     ModuleEntity,
     Property,
+    Resource,
     Subobject,
     Template,
 )
@@ -80,6 +83,10 @@ class GraphQueryService:
             return await self._get_template_neighborhood(entity_key, depth)
         elif entity_type == "module":
             return await self._get_module_neighborhood(entity_key, depth)
+        elif entity_type == "dashboard":
+            return await self._get_dashboard_neighborhood(entity_key, depth)
+        elif entity_type == "resource":
+            return await self._get_resource_neighborhood(entity_key, depth)
         else:
             raise ValueError(f"Entity type '{entity_type}' not supported for graph queries")
 
@@ -755,6 +762,249 @@ class GraphQueryService:
         # Reuse the module graph which shows all entities in the module
         # Modules are displayed as hulls, not as nodes themselves
         return await self.get_module_graph(entity_key)
+
+    async def _get_dashboard_neighborhood(
+        self,
+        entity_key: str,
+        _depth: int,
+    ) -> GraphResponse:
+        """Get neighborhood graph for a dashboard.
+
+        Shows the dashboard as center node and modules that reference this dashboard.
+        Dashboards are connected to modules via the module_dashboard junction table.
+
+        Args:
+            entity_key: Dashboard entity key
+            _depth: Max traversal depth (not used for dashboards)
+
+        Returns:
+            GraphResponse with dashboard and connected module nodes
+        """
+        # Verify dashboard exists
+        dashboard_query = select(Dashboard).where(Dashboard.entity_key == entity_key)
+        result = await self.session.execute(dashboard_query)
+        dashboard = result.scalar_one_or_none()
+
+        if not dashboard:
+            # Check draft creates
+            draft_creates = await self.draft_overlay.get_draft_creates("dashboard")
+            draft_match = next(
+                (d for d in draft_creates if d.get("entity_key") == entity_key),
+                None,
+            )
+            if not draft_match:
+                raise ValueError(f"Dashboard '{entity_key}' not found")
+            # Return isolated draft node
+            return GraphResponse(
+                nodes=[
+                    GraphNode(
+                        id=entity_key,
+                        label=draft_match.get("label", entity_key),
+                        entity_type="dashboard",
+                        depth=0,
+                        modules=[],
+                        change_status="added",
+                    )
+                ],
+                edges=[],
+                has_cycles=False,
+            )
+
+        # Build nodes list
+        nodes: list[GraphNode] = []
+        edges: list[GraphEdge] = []
+
+        # Add dashboard as center node
+        effective = await self.draft_overlay.apply_overlay(dashboard, "dashboard", entity_key)
+        change_status = effective.get("_change_status") if effective else None
+
+        nodes.append(
+            GraphNode(
+                id=entity_key,
+                label=dashboard.label,
+                entity_type="dashboard",
+                depth=0,
+                modules=[],  # Dashboards don't have module membership themselves
+                change_status=change_status,
+            )
+        )
+
+        # Get modules that reference this dashboard via ModuleDashboard join
+        module_query = (
+            select(Module)
+            .join(ModuleDashboard, onclause=col(Module.id) == col(ModuleDashboard.module_id))
+            .where(ModuleDashboard.dashboard_id == dashboard.id)
+        )
+        result = await self.session.execute(module_query)
+        connected_modules = result.scalars().all()
+
+        module_keys = [m.entity_key for m in connected_modules]
+
+        # Add module nodes
+        for module in connected_modules:
+            module_effective = await self.draft_overlay.apply_overlay(
+                module, "module", module.entity_key
+            )
+            module_change_status = module_effective.get("_change_status") if module_effective else None
+
+            nodes.append(
+                GraphNode(
+                    id=module.entity_key,
+                    label=module.label,
+                    entity_type="module",
+                    depth=1,
+                    modules=[],  # Modules don't have module membership
+                    change_status=module_change_status,
+                )
+            )
+
+            # Add edge: module -> dashboard
+            edges.append(
+                GraphEdge(
+                    source=module.entity_key,
+                    target=entity_key,
+                    edge_type="module_dashboard",
+                )
+            )
+
+        return GraphResponse(nodes=nodes, edges=edges, has_cycles=False)
+
+    async def _get_resource_neighborhood(
+        self,
+        entity_key: str,
+        _depth: int,
+    ) -> GraphResponse:
+        """Get neighborhood graph for a resource.
+
+        Shows the resource as center node and its parent category.
+        Resources are linked to categories via the category_key field.
+
+        Args:
+            entity_key: Resource entity key
+            _depth: Max traversal depth (not used for resources)
+
+        Returns:
+            GraphResponse with resource and parent category node
+        """
+        # Verify resource exists
+        resource_query = select(Resource).where(Resource.entity_key == entity_key)
+        result = await self.session.execute(resource_query)
+        resource = result.scalar_one_or_none()
+
+        if not resource:
+            # Check draft creates
+            draft_creates = await self.draft_overlay.get_draft_creates("resource")
+            draft_match = next(
+                (r for r in draft_creates if r.get("entity_key") == entity_key),
+                None,
+            )
+            if not draft_match:
+                raise ValueError(f"Resource '{entity_key}' not found")
+            # Return isolated draft node (may include category if specified)
+            nodes: list[GraphNode] = [
+                GraphNode(
+                    id=entity_key,
+                    label=draft_match.get("label", entity_key),
+                    entity_type="resource",
+                    depth=0,
+                    modules=[],
+                    change_status="added",
+                )
+            ]
+            edges: list[GraphEdge] = []
+
+            # Check if draft resource has a category
+            draft_category_key = draft_match.get("category")
+            if draft_category_key:
+                # Try to find the category
+                cat_query = select(Category).where(Category.entity_key == draft_category_key)
+                cat_result = await self.session.execute(cat_query)
+                category = cat_result.scalar_one_or_none()
+
+                if category:
+                    cat_effective = await self.draft_overlay.apply_overlay(
+                        category, "category", draft_category_key
+                    )
+                    cat_change_status = cat_effective.get("_change_status") if cat_effective else None
+                    cat_module_membership = await self._get_module_membership(
+                        [draft_category_key], "category"
+                    )
+
+                    nodes.append(
+                        GraphNode(
+                            id=draft_category_key,
+                            label=category.label,
+                            entity_type="category",
+                            depth=1,
+                            modules=cat_module_membership.get(draft_category_key, []),
+                            change_status=cat_change_status,
+                        )
+                    )
+                    edges.append(
+                        GraphEdge(
+                            source=draft_category_key,
+                            target=entity_key,
+                            edge_type="category_resource",
+                        )
+                    )
+
+            return GraphResponse(nodes=nodes, edges=edges, has_cycles=False)
+
+        # Build nodes list
+        nodes_list: list[GraphNode] = []
+        edges_list: list[GraphEdge] = []
+
+        # Add resource as center node
+        effective = await self.draft_overlay.apply_overlay(resource, "resource", entity_key)
+        change_status = effective.get("_change_status") if effective else None
+
+        nodes_list.append(
+            GraphNode(
+                id=entity_key,
+                label=resource.label,
+                entity_type="resource",
+                depth=0,
+                modules=[],  # Resources don't have direct module membership
+                change_status=change_status,
+            )
+        )
+
+        # Get parent category via resource.category_key
+        if resource.category_key:
+            category_query = select(Category).where(Category.entity_key == resource.category_key)
+            result = await self.session.execute(category_query)
+            parent_category = result.scalar_one_or_none()
+
+            if parent_category:
+                cat_effective = await self.draft_overlay.apply_overlay(
+                    parent_category, "category", resource.category_key
+                )
+                cat_change_status = cat_effective.get("_change_status") if cat_effective else None
+                cat_module_membership = await self._get_module_membership(
+                    [resource.category_key], "category"
+                )
+
+                nodes_list.append(
+                    GraphNode(
+                        id=resource.category_key,
+                        label=parent_category.label,
+                        entity_type="category",
+                        depth=1,
+                        modules=cat_module_membership.get(resource.category_key, []),
+                        change_status=cat_change_status,
+                    )
+                )
+
+                # Add edge: category -> resource
+                edges_list.append(
+                    GraphEdge(
+                        source=resource.category_key,
+                        target=entity_key,
+                        edge_type="category_resource",
+                    )
+                )
+
+        return GraphResponse(nodes=nodes_list, edges=edges_list, has_cycles=False)
 
     async def get_full_ontology_graph(self) -> GraphResponse:
         """Get the full ontology graph with all entities (GRP-05).
