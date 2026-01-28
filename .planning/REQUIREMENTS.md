@@ -39,8 +39,8 @@ Requirements for Dashboard and Resource entity types milestone.
 
 ### Integration
 
-- [ ] **INTG-01**: Draft CRUD for dashboards and resources
-- [ ] **INTG-02**: Resource field validation against category properties
+- [x] **INTG-01**: Draft CRUD for dashboards and resources
+- [x] **INTG-02**: Resource field validation against category properties
 - [ ] **INTG-03**: PR submission includes dashboard/resource files
 - [ ] **INTG-04**: End-to-end derivation chain verified
 
@@ -77,8 +77,8 @@ Requirements for Dashboard and Resource entity types milestone.
 | DERV-02 | Phase 27 | Complete |
 | DERV-03 | Phase 27 | Complete |
 | DERV-04 | Phase 27 | Complete |
-| INTG-01 | Phase 28 | Pending |
-| INTG-02 | Phase 28 | Pending |
+| INTG-01 | Phase 28 | Complete |
+| INTG-02 | Phase 28 | Complete |
 | INTG-03 | Phase 32 | Pending |
 | INTG-04 | Phase 32 | Pending |
 
@@ -89,4 +89,4 @@ Requirements for Dashboard and Resource entity types milestone.
 
 ---
 *Requirements defined: 2026-01-27*
-*Last updated: 2026-01-28 after Phase 27 completion*
+*Last updated: 2026-01-28 after Phase 28 completion*

@@ -80,14 +80,15 @@ Plans:
 3. Derivation handles cycles without infinite loops
 4. Draft patches use "add" op per CLAUDE.md
 
-### Phase 28: Draft CRUD Support
+### Phase 28: Draft CRUD Support ✓
 **Goal**: Create/update/delete dashboards and resources in drafts
 **Requirements**: INTG-01, INTG-02
 **Plans:** 3 plans
 Plans:
-- [ ] 28-01-PLAN.md — Entity type registration and dashboard validation
-- [ ] 28-02-PLAN.md — Resource field validation against category properties
-- [ ] 28-03-PLAN.md — Integration tests for dashboard and resource CRUD
+- [x] 28-01-PLAN.md — Entity type registration and dashboard validation
+- [x] 28-02-PLAN.md — Resource field validation against category properties
+- [x] 28-03-PLAN.md — Integration tests for dashboard and resource CRUD
+**Status**: Complete (2026-01-28)
 **Success Criteria**:
 1. POST /drafts/{id}/changes creates dashboard/resource
 2. PATCH /drafts/{id}/changes/{key} updates with validation
@@ -143,9 +144,9 @@ Phases execute in numeric order: 1 -> 2 -> ... -> 32
 | v1.0 MVP | 1-7 | 20 | ✅ Complete | 2026-01-23 |
 | v2.0 Platform Rebuild | 8-15 | 41 | ✅ Complete | 2026-01-25 |
 | v2.1 Bug Fixes & UX | 16-22 | 24 | ✅ Complete | 2026-01-25 |
-| v1.1.0 Dashboard & Resource | 23-32 | 10+ | 🚧 In Progress | — |
+| v1.1.0 Dashboard & Resource | 23-32 | 11+ | 🚧 In Progress | — |
 
-**Total:** 93 plans completed across 27 phases + 5 remaining phases
+**Total:** 96 plans completed across 28 phases + 4 remaining phases
 
 ---
 *Roadmap created: 2026-01-23*
