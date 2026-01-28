@@ -163,7 +163,7 @@ async def auto_populate_module_derived(
 
     if not categories:
         # No categories to derive from - set empty derived arrays
-        derived: dict[str, list[str]] = {"properties": [], "subobjects": [], "templates": []}
+        derived: dict[str, list[str]] = {"properties": [], "subobjects": [], "templates": [], "resources": []}
     else:
         # Compute derived entities from categories
         derived = await compute_module_derived_entities(session, categories, draft_id=draft.id)
@@ -175,13 +175,14 @@ async def auto_populate_module_derived(
         replacement["properties"] = derived["properties"]
         replacement["subobjects"] = derived["subobjects"]
         replacement["templates"] = derived["templates"]
+        replacement["resources"] = derived.get("resources", [])
         change.replacement_json = replacement
     else:
         # For UPDATE: add/merge patch operations for derived arrays
         existing_patches: list[dict[str, Any]] = list(change.patch) if change.patch else []
 
         # Remove any existing patches for derived paths
-        derived_paths = {"/properties", "/subobjects", "/templates"}
+        derived_paths = {"/properties", "/subobjects", "/templates", "/resources"}
         filtered_patches = [p for p in existing_patches if p.get("path") not in derived_paths]
 
         # Add new patches for derived entities
@@ -193,6 +194,7 @@ async def auto_populate_module_derived(
             ("/properties", derived["properties"]),
             ("/subobjects", derived["subobjects"]),
             ("/templates", derived["templates"]),
+            ("/resources", derived.get("resources", [])),
         ]:
             filtered_patches.append({"op": "add", "path": path, "value": values})
 
