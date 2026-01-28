@@ -29,12 +29,14 @@ from app.models.v2 import (
     CategoryParent,
     CategoryProperty,
     CategorySubobject,
+    Dashboard,
     Module,
     ModuleDependency,
     ModuleEntity,
     OntologyVersion,
     OntologyVersionPublic,
     Property,
+    Resource,
     Subobject,
     SubobjectProperty,
     Template,
@@ -42,11 +44,14 @@ from app.models.v2 import (
 from app.schemas.entity import (
     BundleDetailResponse,
     CategoryDetailResponse,
+    DashboardDetailResponse,
+    DashboardPage,
     EntityListResponse,
     EntityWithStatus,
     ModuleDetailResponse,
     PropertyDetailResponse,
     PropertyProvenance,
+    ResourceDetailResponse,
     SubobjectDetailResponse,
     SubobjectPropertyInfo,
     SubobjectProvenance,
@@ -1101,3 +1106,254 @@ async def get_bundle(
         change_status=effective.get("_change_status"),
         deleted=effective.get("_deleted", False),
     )
+
+
+# -----------------------------------------------------------------------------
+# Dashboard endpoints
+# -----------------------------------------------------------------------------
+
+
+@router.get("/dashboards", response_model=EntityListResponse)
+@limiter.limit(RATE_LIMITS["entity_list"])
+async def list_dashboards(
+    request: Request,
+    session: SessionDep,
+    draft_ctx: DraftContextDep,
+    cursor: str | None = Query(
+        None, description="Last entity_key from previous page for pagination"
+    ),
+    limit: int = Query(20, ge=1, le=100, description="Max items per page"),
+) -> EntityListResponse:
+    """List dashboards with cursor-based pagination and draft overlay.
+
+    Rate limited to 100/minute per IP.
+    """
+    query = select(Dashboard).order_by(Dashboard.entity_key)
+
+    if cursor:
+        query = query.where(Dashboard.entity_key > cursor)
+
+    query = query.limit(limit + 1)
+
+    result = await session.execute(query)
+    dashboards = list(result.scalars().all())
+
+    has_next = len(dashboards) > limit
+    if has_next:
+        dashboards = dashboards[:limit]
+
+    items: list[EntityWithStatus] = []
+    for dash in dashboards:
+        effective = await draft_ctx.apply_overlay(dash, "dashboard", dash.entity_key)
+        if effective:
+            items.append(EntityWithStatus.model_validate(effective))
+
+    draft_creates = await draft_ctx.get_draft_creates("dashboard")
+    for create in draft_creates:
+        items.append(EntityWithStatus.model_validate(create))
+
+    items.sort(key=lambda x: x.entity_key)
+    next_cursor = items[-1].entity_key if has_next and items else None
+
+    return EntityListResponse(
+        items=items,
+        next_cursor=next_cursor,
+        has_next=has_next,
+    )
+
+
+@router.get("/dashboards/{entity_key}", response_model=DashboardDetailResponse)
+@limiter.limit(RATE_LIMITS["entity_read"])
+async def get_dashboard(
+    request: Request,
+    entity_key: str,
+    session: SessionDep,
+    draft_ctx: DraftContextDep,
+) -> DashboardDetailResponse:
+    """Get dashboard detail with pages.
+
+    Rate limited to 200/minute per IP.
+    """
+    query = select(Dashboard).where(Dashboard.entity_key == entity_key)
+    result = await session.execute(query)
+    dashboard = result.scalar_one_or_none()
+
+    effective = await draft_ctx.apply_overlay(dashboard, "dashboard", entity_key)
+
+    if not effective:
+        raise HTTPException(status_code=404, detail="Dashboard not found")
+
+    # Extract pages from canonical_json (stored in effective after overlay)
+    pages_data = effective.get("pages", [])
+    pages = [
+        DashboardPage(name=p.get("name", ""), wikitext=p.get("wikitext", ""))
+        for p in pages_data
+    ]
+
+    return DashboardDetailResponse(
+        entity_key=effective.get("entity_key", entity_key),
+        label=effective.get("label", ""),
+        description=effective.get("description"),
+        pages=pages,
+        change_status=effective.get("_change_status"),
+        deleted=effective.get("_deleted", False),
+    )
+
+
+# -----------------------------------------------------------------------------
+# Resource endpoints
+# -----------------------------------------------------------------------------
+
+
+@router.get("/resources", response_model=EntityListResponse)
+@limiter.limit(RATE_LIMITS["entity_list"])
+async def list_resources(
+    request: Request,
+    session: SessionDep,
+    draft_ctx: DraftContextDep,
+    cursor: str | None = Query(
+        None, description="Last entity_key from previous page for pagination"
+    ),
+    limit: int = Query(20, ge=1, le=100, description="Max items per page"),
+    category: str | None = Query(None, description="Filter by category key"),
+) -> EntityListResponse:
+    """List resources with cursor-based pagination, optional category filter, and draft overlay.
+
+    Rate limited to 100/minute per IP.
+    """
+    query = select(Resource).order_by(Resource.entity_key)
+
+    if category:
+        query = query.where(Resource.category_key == category)
+    if cursor:
+        query = query.where(Resource.entity_key > cursor)
+
+    query = query.limit(limit + 1)
+
+    result = await session.execute(query)
+    resources = list(result.scalars().all())
+
+    has_next = len(resources) > limit
+    if has_next:
+        resources = resources[:limit]
+
+    items: list[EntityWithStatus] = []
+    for res in resources:
+        effective = await draft_ctx.apply_overlay(res, "resource", res.entity_key)
+        if effective:
+            items.append(EntityWithStatus.model_validate(effective))
+
+    # Include draft-created resources (filter by category if specified)
+    draft_creates = await draft_ctx.get_draft_creates("resource")
+    for create in draft_creates:
+        if category is None or create.get("category") == category:
+            items.append(EntityWithStatus.model_validate(create))
+
+    items.sort(key=lambda x: x.entity_key)
+    next_cursor = items[-1].entity_key if has_next and items else None
+
+    return EntityListResponse(
+        items=items,
+        next_cursor=next_cursor,
+        has_next=has_next,
+    )
+
+
+@router.get("/resources/{entity_key:path}", response_model=ResourceDetailResponse)
+@limiter.limit(RATE_LIMITS["entity_read"])
+async def get_resource(
+    request: Request,
+    entity_key: str,
+    session: SessionDep,
+    draft_ctx: DraftContextDep,
+) -> ResourceDetailResponse:
+    """Get resource detail with dynamic property fields.
+
+    Uses path converter for entity_key to support hierarchical keys like "Person/John_doe".
+
+    Rate limited to 200/minute per IP.
+    """
+    query = select(Resource).where(Resource.entity_key == entity_key)
+    result = await session.execute(query)
+    resource = result.scalar_one_or_none()
+
+    effective = await draft_ctx.apply_overlay(resource, "resource", entity_key)
+
+    if not effective:
+        raise HTTPException(status_code=404, detail="Resource not found")
+
+    # Extract dynamic properties (everything except reserved keys)
+    reserved_keys = {
+        "id",
+        "entity_key",
+        "label",
+        "description",
+        "category",
+        "source_path",
+        "_change_status",
+        "_deleted",
+        "_patch_error",
+    }
+    properties = {k: v for k, v in effective.items() if k not in reserved_keys}
+
+    return ResourceDetailResponse(
+        entity_key=effective.get("entity_key", entity_key),
+        label=effective.get("label", ""),
+        description=effective.get("description"),
+        category_key=effective.get("category", ""),
+        properties=properties,
+        change_status=effective.get("_change_status"),
+        deleted=effective.get("_deleted", False),
+    )
+
+
+@router.get("/categories/{entity_key}/resources", response_model=list[EntityWithStatus])
+@limiter.limit(RATE_LIMITS["entity_read"])
+async def get_category_resources(
+    request: Request,
+    entity_key: str,
+    session: SessionDep,
+    draft_ctx: DraftContextDep,
+) -> list[EntityWithStatus]:
+    """Get resources belonging to a category.
+
+    Returns list of resources that have this category_key, with draft change status.
+
+    Rate limited to 200/minute per IP.
+    """
+    # Verify category exists
+    cat_query = select(Category).where(Category.entity_key == entity_key)
+    cat_result = await session.execute(cat_query)
+    category = cat_result.scalar_one_or_none()
+
+    if not category:
+        # Check if draft-created category
+        effective = await draft_ctx.apply_overlay(None, "category", entity_key)
+        if not effective:
+            raise HTTPException(status_code=404, detail="Category not found")
+
+    # Query resources for this category
+    query = (
+        select(Resource)
+        .where(Resource.category_key == entity_key)
+        .order_by(Resource.entity_key)
+    )
+    result = await session.execute(query)
+    resources = result.scalars().all()
+
+    # Apply draft overlay to each resource
+    items: list[EntityWithStatus] = []
+    for res in resources:
+        effective = await draft_ctx.apply_overlay(res, "resource", res.entity_key)
+        if effective:
+            items.append(EntityWithStatus.model_validate(effective))
+
+    # Include draft-created resources for this category
+    draft_creates = await draft_ctx.get_draft_creates("resource")
+    for create in draft_creates:
+        if create.get("category") == entity_key:
+            items.append(EntityWithStatus.model_validate(create))
+
+    items.sort(key=lambda x: x.entity_key)
+
+    return items
