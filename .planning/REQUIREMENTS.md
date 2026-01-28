@@ -57,7 +57,7 @@ Requirements for Dashboard and Resource entity types milestone.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | DASH-01 | Phase 23 | Complete |
-| DASH-02 | Phase 24 | Pending |
+| DASH-02 | Phase 24 | Complete |
 | DASH-03 | Phase 25 | Pending |
 | DASH-04 | Phase 26 | Pending |
 | DASH-05 | Phase 29 | Pending |
@@ -66,7 +66,7 @@ Requirements for Dashboard and Resource entity types milestone.
 | DASH-08 | Phase 23 | Complete |
 | DASH-09 | Phase 23 | Complete |
 | RSRC-01 | Phase 23 | Complete |
-| RSRC-02 | Phase 24 | Pending |
+| RSRC-02 | Phase 24 | Complete |
 | RSRC-03 | Phase 25 | Pending |
 | RSRC-04 | Phase 26 | Pending |
 | RSRC-05 | Phase 26 | Pending |

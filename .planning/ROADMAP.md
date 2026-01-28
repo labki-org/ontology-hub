@@ -22,13 +22,14 @@ Plans:
 3. Modules and bundles schema accepts `dashboards` array field
 4. Example entities pass schema validation
 
-### Phase 24: Database Schema
+### Phase 24: Database Schema ✓
 **Goal**: Add tables for Dashboard and Resource entities
 **Requirements**: DASH-02, RSRC-02
 **Plans:** 2 plans
 Plans:
-- [ ] 24-01-PLAN.md — Create Dashboard/Resource models, junction tables, enum updates
-- [ ] 24-02-PLAN.md — Alembic migration and database verification
+- [x] 24-01-PLAN.md — Create Dashboard/Resource models, junction tables, enum updates
+- [x] 24-02-PLAN.md — Alembic migration and database verification
+**Status**: Complete (2026-01-28)
 **Success Criteria**:
 1. Dashboard table exists with pages JSONB column
 2. Resource table exists with category_key foreign key
@@ -123,9 +124,9 @@ Phases execute in numeric order: 1 -> 2 -> ... -> 32
 | v1.0 MVP | 1-7 | 20 | ✅ Complete | 2026-01-23 |
 | v2.0 Platform Rebuild | 8-15 | 41 | ✅ Complete | 2026-01-25 |
 | v2.1 Bug Fixes & UX | 16-22 | 24 | ✅ Complete | 2026-01-25 |
-| v1.1.0 Dashboard & Resource | 23-32 | 3+ | 🚧 In Progress | — |
+| v1.1.0 Dashboard & Resource | 23-32 | 4+ | 🚧 In Progress | — |
 
-**Total:** 86 plans completed across 23 phases + 9 remaining phases
+**Total:** 88 plans completed across 24 phases + 8 remaining phases
 
 ---
 *Roadmap created: 2026-01-23*
