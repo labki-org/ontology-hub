@@ -55,7 +55,7 @@ const initialState = {
   showProperties: false,
   showSubobjects: false,
   showTemplates: false,
-  edgeTypeFilter: new Set<string>(['parent', 'property', 'subobject', 'subobject_property']),
+  edgeTypeFilter: new Set<string>(['parent', 'property', 'subobject', 'subobject_property', 'module_dashboard', 'category_resource']),
   layoutAlgorithm: 'radial' as LayoutAlgorithm,
   layoutDirection: 'TB' as LayoutDirection,
 }
@@ -147,7 +147,7 @@ export const useGraphStore = create<GraphState>()(
         state.showProperties = false
         state.showSubobjects = false
         state.showTemplates = false
-        state.edgeTypeFilter = new Set<string>(['parent', 'property', 'subobject', 'subobject_property'])
+        state.edgeTypeFilter = new Set<string>(['parent', 'property', 'subobject', 'subobject_property', 'module_dashboard', 'category_resource'])
         state.layoutAlgorithm = 'radial'
         state.layoutDirection = 'TB'
       })
