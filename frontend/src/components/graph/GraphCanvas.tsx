@@ -64,7 +64,7 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
   const entityKey = propEntityKey ?? selectedEntityKey
 
   // Graph visualization supports all entity types except bundles
-  const GRAPH_SUPPORTED_TYPES = new Set(['category', 'property', 'subobject', 'template', 'module'])
+  const GRAPH_SUPPORTED_TYPES = new Set(['category', 'property', 'subobject', 'template', 'module', 'dashboard', 'resource'])
   const isGraphSupported = GRAPH_SUPPORTED_TYPES.has(selectedEntityType)
 
   // Fetch the full ontology graph (once, not per entity)
@@ -392,6 +392,10 @@ function getEdgeColor(edgeType: string): string {
       return '#7c3aed' // violet-600 (more saturated)
     case 'subobject_property':
       return '#0d9488' // teal-600 (more saturated)
+    case 'module_dashboard':
+      return '#dc2626' // red-600 - matches dashboard color
+    case 'category_resource':
+      return '#0891b2' // cyan-600 - matches resource color
     default:
       return '#475569'
   }
@@ -407,6 +411,10 @@ function getEdgeStrokeDasharray(edgeType: string): string | undefined {
       return '2,2' // dotted
     case 'subobject_property':
       return '5,5' // dashed (like property edges)
+    case 'module_dashboard':
+      return '8,4' // long dash - distinct
+    case 'category_resource':
+      return '3,3' // short dash - distinct
     default:
       return undefined
   }
