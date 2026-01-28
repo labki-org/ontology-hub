@@ -17,9 +17,11 @@ from app.models.v2 import (
     Bundle,
     Category,
     ChangeType,
+    Dashboard,
     DraftChange,
     Module,
     Property,
+    Resource,
     Subobject,
     Template,
 )
@@ -35,6 +37,8 @@ ENTITY_MODELS = {
     "module": Module,
     "bundle": Bundle,
     "template": Template,
+    "dashboard": Dashboard,
+    "resource": Resource,
 }
 
 # Entity type to repo directory mapping
@@ -45,6 +49,8 @@ ENTITY_DIRS = {
     "module": "modules",
     "bundle": "bundles",
     "template": "templates",
+    "dashboard": "dashboards",
+    "resource": "resources",
 }
 
 
