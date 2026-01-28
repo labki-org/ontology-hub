@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-01-27)
 
 ## Current Position
 
-Phase: 25 of 32
+Phase: 25 of 32 ✓
 Plan: 02 of 02 complete
-Status: Phase 25 complete (ingest pipeline updated)
-Last activity: 2026-01-28 - Completed 25-02-PLAN.md
+Status: Phase 25 verified (9/9 must-haves)
+Last activity: 2026-01-28 — Phase 25 complete and verified
 
 Progress: [████████                      ] 25% (3/10 phases in v1.1.0)
 

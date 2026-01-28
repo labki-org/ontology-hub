@@ -37,13 +37,14 @@ Plans:
 4. EntityType enum includes DASHBOARD and RESOURCE
 5. Database reset and ingest succeeds
 
-### Phase 25: Backend Ingest Pipeline
+### Phase 25: Backend Ingest Pipeline ✓
 **Goal**: Parse and ingest Dashboard and Resource entities from repo
 **Requirements**: DASH-03, RSRC-03
 **Plans:** 2 plans
 Plans:
-- [ ] 25-01-PLAN.md — Extend EntityParser with parse_dashboard, parse_resource methods
-- [ ] 25-02-PLAN.md — Update ingest pipeline (github.py, ingest.py) for new entities
+- [x] 25-01-PLAN.md — Extend EntityParser with parse_dashboard, parse_resource methods
+- [x] 25-02-PLAN.md — Update ingest pipeline (github.py, ingest.py) for new entities
+**Status**: Complete (2026-01-28)
 **Success Criteria**:
 1. EntityParser handles dashboards/*.json files
 2. EntityParser handles resources/**/*.json with hierarchical paths
@@ -128,9 +129,9 @@ Phases execute in numeric order: 1 -> 2 -> ... -> 32
 | v1.0 MVP | 1-7 | 20 | ✅ Complete | 2026-01-23 |
 | v2.0 Platform Rebuild | 8-15 | 41 | ✅ Complete | 2026-01-25 |
 | v2.1 Bug Fixes & UX | 16-22 | 24 | ✅ Complete | 2026-01-25 |
-| v1.1.0 Dashboard & Resource | 23-32 | 4+ | 🚧 In Progress | — |
+| v1.1.0 Dashboard & Resource | 23-32 | 5+ | 🚧 In Progress | — |
 
-**Total:** 88 plans completed across 24 phases + 8 remaining phases
+**Total:** 90 plans completed across 25 phases + 7 remaining phases
 
 ---
 *Roadmap created: 2026-01-23*
