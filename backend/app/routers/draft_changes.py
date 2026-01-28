@@ -25,11 +25,13 @@ from app.models.v2 import (
     Bundle,
     Category,
     ChangeType,
+    Dashboard,
     Draft,
     DraftChange,
     DraftStatus,
     Module,
     Property,
+    Resource,
     Subobject,
     Template,
 )
@@ -40,6 +42,7 @@ from app.schemas.draft_change import (
 )
 from app.services.draft_workflow import auto_revert_if_validated
 from app.services.module_derived import compute_module_derived_entities
+from app.services.resource_validation import validate_resource_fields
 
 router = APIRouter(tags=["draft-changes"])
 
@@ -52,6 +55,8 @@ ENTITY_MODEL_MAP = {
     "module": Module,
     "bundle": Bundle,
     "template": Template,
+    "dashboard": Dashboard,
+    "resource": Resource,
 }
 
 
@@ -204,6 +209,34 @@ async def auto_populate_module_derived(
     await session.refresh(change)
 
 
+def validate_dashboard_create(replacement_json: dict | None) -> str | None:
+    """Validate dashboard creation JSON per CONTEXT.md decisions.
+
+    Requirements:
+    - Dashboard must have at least one page (cannot create empty)
+    - Dashboard must have a root page (name: "")
+
+    Args:
+        replacement_json: The dashboard JSON to validate
+
+    Returns:
+        Error message if invalid, None if valid
+    """
+    if not replacement_json:
+        return "Dashboard creation requires replacement_json"
+
+    pages = replacement_json.get("pages", [])
+    if not pages:
+        return "Dashboard must have at least one page"
+
+    # Check for root page (name: "")
+    has_root = any(isinstance(page, dict) and page.get("name") == "" for page in pages)
+    if not has_root:
+        return "Dashboard must have a root page (name: '')"
+
+    return None
+
+
 @router.get("/drafts/{token}/changes", response_model=DraftChangesListResponse)
 @limiter.limit(RATE_LIMITS["draft_read"])
 async def list_draft_changes(
@@ -327,6 +360,22 @@ async def add_draft_change(
                 f"'{change_in.entity_key}': entity already exists in canonical.",
             )
 
+    # Dashboard creation validation
+    if change_in.entity_type == "dashboard" and change_in.change_type == ChangeType.CREATE:
+        error = validate_dashboard_create(change_in.replacement_json)
+        if error:
+            raise HTTPException(status_code=400, detail=error)
+
+    # Resource creation validation
+    if change_in.entity_type == "resource" and change_in.change_type == ChangeType.CREATE:
+        error = await validate_resource_fields(
+            session,
+            change_in.replacement_json or {},
+            draft_id=draft.id,
+        )
+        if error:
+            raise HTTPException(status_code=400, detail=error)
+
     if existing_change and change_in.change_type == ChangeType.UPDATE:
         if existing_change.change_type == ChangeType.CREATE:
             # Updating a draft-created entity: apply patch to replacement_json
@@ -337,12 +386,21 @@ async def add_draft_change(
             try:
                 patch = jsonpatch.JsonPatch(change_in.patch or [])
                 updated_json = patch.apply(base_json)
-                existing_change.replacement_json = updated_json
             except jsonpatch.JsonPatchException as e:
                 raise HTTPException(
                     status_code=400,
                     detail=f"Failed to apply patch to draft-created entity: {e}",
                 ) from e
+            # Validate resource updates on draft-created resources
+            if change_in.entity_type == "resource":
+                error = await validate_resource_fields(
+                    session,
+                    updated_json,
+                    draft_id=draft.id,
+                )
+                if error:
+                    raise HTTPException(status_code=400, detail=error)
+            existing_change.replacement_json = updated_json
             change = existing_change
         else:
             # Updating a canonical entity: merge patches
@@ -354,6 +412,31 @@ async def add_draft_change(
             new_paths = {p.get("path") for p in new_patches}
             merged_patches = [p for p in existing_patches if p.get("path") not in new_paths]
             merged_patches.extend(new_patches)
+
+            # Validate resource updates on canonical resources
+            if change_in.entity_type == "resource":
+                import jsonpatch as jp
+
+                # Get canonical resource JSON
+                resource_query = select(Resource).where(
+                    Resource.entity_key == change_in.entity_key
+                )
+                resource_result = await session.execute(resource_query)
+                resource = resource_result.scalar_one_or_none()
+                if resource:
+                    try:
+                        patch = jp.JsonPatch(merged_patches)
+                        effective_json = patch.apply(resource.canonical_json.copy())
+                        error = await validate_resource_fields(
+                            session,
+                            effective_json,
+                            draft_id=draft.id,
+                        )
+                        if error:
+                            raise HTTPException(status_code=400, detail=error)
+                    except jp.JsonPatchException:
+                        # Patch application failed - this will be caught during apply
+                        pass
 
             existing_change.patch = merged_patches
             change = existing_change
@@ -388,6 +471,34 @@ async def add_draft_change(
         existing_change.replacement_json = change_in.replacement_json
         change = existing_change
     else:
+        # Validate resource UPDATE on canonical (first-time update, no existing change)
+        if (
+            change_in.entity_type == "resource"
+            and change_in.change_type == ChangeType.UPDATE
+        ):
+            import jsonpatch as jp
+
+            # Get canonical resource JSON
+            resource_query = select(Resource).where(
+                Resource.entity_key == change_in.entity_key
+            )
+            resource_result = await session.execute(resource_query)
+            resource = resource_result.scalar_one_or_none()
+            if resource:
+                try:
+                    patch = jp.JsonPatch(change_in.patch or [])
+                    effective_json = patch.apply(resource.canonical_json.copy())
+                    error = await validate_resource_fields(
+                        session,
+                        effective_json,
+                        draft_id=draft.id,
+                    )
+                    if error:
+                        raise HTTPException(status_code=400, detail=error)
+                except jp.JsonPatchException:
+                    # Patch application failed - this will be caught during apply
+                    pass
+
         # Create new change
         change = DraftChange(
             draft_id=draft.id,
