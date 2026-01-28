@@ -48,6 +48,8 @@ class ParsedEntities:
     modules: list[Module]
     bundles: list[Bundle]
     templates: list[Template]
+    dashboards: list[Dashboard]
+    resources: list[Resource]
     relationships: list[PendingRelationship]
 
     def entity_counts(self) -> dict[str, int]:
@@ -59,6 +61,8 @@ class ParsedEntities:
             "modules": len(self.modules),
             "bundles": len(self.bundles),
             "templates": len(self.templates),
+            "dashboards": len(self.dashboards),
+            "resources": len(self.resources),
             "relationships": len(self.relationships),
         }
 
