@@ -21,3 +21,5 @@ class EntityType(str, Enum):
     MODULE = "module"
     BUNDLE = "bundle"
     TEMPLATE = "template"
+    DASHBOARD = "dashboard"
+    RESOURCE = "resource"

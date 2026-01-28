@@ -107,3 +107,29 @@ class BundleModule(SQLModel, table=True):
 
     bundle_id: uuid.UUID = Field(foreign_key="bundles.id", primary_key=True)
     module_id: uuid.UUID = Field(foreign_key="modules_v2.id", primary_key=True)
+
+
+class ModuleDashboard(SQLModel, table=True):
+    """Module-to-dashboard relationship.
+
+    Represents: "module X includes dashboard Y"
+    CASCADE: Deleting module removes junction rows (dashboard survives).
+    RESTRICT: Cannot delete dashboard if any module references it.
+    """
+
+    __tablename__ = "module_dashboard"
+
+    module_id: uuid.UUID = Field(foreign_key="modules_v2.id", primary_key=True)
+    dashboard_id: uuid.UUID = Field(foreign_key="dashboards.id", primary_key=True)
+
+
+class BundleDashboard(SQLModel, table=True):
+    """Bundle-to-dashboard relationship.
+
+    Represents: "bundle X includes dashboard Y"
+    """
+
+    __tablename__ = "bundle_dashboard"
+
+    bundle_id: uuid.UUID = Field(foreign_key="bundles.id", primary_key=True)
+    dashboard_id: uuid.UUID = Field(foreign_key="dashboards.id", primary_key=True)
