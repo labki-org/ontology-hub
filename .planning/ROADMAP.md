@@ -142,6 +142,10 @@ Plans:
 ### Phase 32: Integration Testing
 **Goal**: Verify end-to-end functionality
 **Requirements**: INTG-03, INTG-04
+**Plans:** 2 plans
+Plans:
+- [ ] 32-01-PLAN.md — PR builder extension and file structure tests
+- [ ] 32-02-PLAN.md — E2E derivation chain test and regression verification
 **Success Criteria**:
 1. Dashboard/resource ingest works from real repo
 2. Full derivation chain (allowed_values → category → resources) works
@@ -161,9 +165,9 @@ Phases execute in numeric order: 1 -> 2 -> ... -> 32
 | v1.0 MVP | 1-7 | 20 | ✅ Complete | 2026-01-23 |
 | v2.0 Platform Rebuild | 8-15 | 41 | ✅ Complete | 2026-01-25 |
 | v2.1 Bug Fixes & UX | 16-22 | 24 | ✅ Complete | 2026-01-25 |
-| v1.1.0 Dashboard & Resource | 23-32 | 20+ | 🚧 In Progress | — |
+| v1.1.0 Dashboard & Resource | 23-32 | 22 | 🚧 In Progress | — |
 
-**Total:** 105 plans completed across 31 phases + 1 remaining phase
+**Total:** 105 plans completed across 31 phases + 2 remaining plans
 
 ---
 *Roadmap created: 2026-01-23*
