@@ -203,8 +203,8 @@ async def _get_effective_property_json(
         canonical_json: dict = deepcopy(prop.canonical_json)
         try:
             patch = jsonpatch.JsonPatch(draft_change.patch or [])
-            result: dict = patch.apply(canonical_json)
-            return result
+            patched: dict = patch.apply(canonical_json)
+            return patched
         except jsonpatch.JsonPatchException:
             return canonical_json
 
