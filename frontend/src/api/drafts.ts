@@ -222,6 +222,8 @@ export function useCreateEntityChange(token: string | undefined) {
       queryClient.invalidateQueries({ queryKey: ['v2', 'templates'] })
       queryClient.invalidateQueries({ queryKey: ['v2', 'modules'] })
       queryClient.invalidateQueries({ queryKey: ['v2', 'bundles'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'dashboards'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'resources'] })
       // Invalidate graph queries to refresh graph view
       queryClient.invalidateQueries({ queryKey: ['graph'] })
     },
@@ -231,7 +233,7 @@ export function useCreateEntityChange(token: string | undefined) {
 // Entity deletion types and hooks
 
 export interface DeleteEntityParams {
-  entityType: 'category' | 'property' | 'subobject' | 'template' | 'module' | 'bundle'
+  entityType: 'category' | 'property' | 'subobject' | 'template' | 'module' | 'bundle' | 'dashboard' | 'resource'
   entityKey: string
 }
 
@@ -273,6 +275,8 @@ export function useDeleteEntityChange(token: string | undefined) {
       queryClient.invalidateQueries({ queryKey: ['v2', 'templates'] })
       queryClient.invalidateQueries({ queryKey: ['v2', 'modules'] })
       queryClient.invalidateQueries({ queryKey: ['v2', 'bundles'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'dashboards'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'resources'] })
       // Invalidate graph queries to refresh graph view
       queryClient.invalidateQueries({ queryKey: ['graph'] })
     },
@@ -309,6 +313,8 @@ export function useUndoDeleteChange(token: string | undefined) {
       queryClient.invalidateQueries({ queryKey: ['v2', 'templates'] })
       queryClient.invalidateQueries({ queryKey: ['v2', 'modules'] })
       queryClient.invalidateQueries({ queryKey: ['v2', 'bundles'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'dashboards'] })
+      queryClient.invalidateQueries({ queryKey: ['v2', 'resources'] })
       // Invalidate graph queries to refresh graph view
       queryClient.invalidateQueries({ queryKey: ['graph'] })
     },

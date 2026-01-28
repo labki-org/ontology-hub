@@ -5,7 +5,6 @@ import { FormField } from './FormField'
 import { EntityCombobox } from './EntityCombobox'
 import { RelationshipChips } from './RelationshipChips'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { useCategories, useCategory } from '@/api/entities'
@@ -25,15 +24,18 @@ interface ResourceFormProps {
 }
 
 /**
- * Resource creation form with ID, Label, Description, Category selection, and dynamic fields.
+ * Resource creation form with ID, Category selection, and dynamic fields.
  *
  * Features:
  * - Validates on blur (per CONTEXT.md)
  * - Create button disabled until form is valid
- * - ID field validates for generic entity pattern
- * - Category selection at top drives dynamic fields
+ * - ID field validates for generic entity pattern (becomes wiki page title)
+ * - Category selection drives dynamic fields
  * - Dynamic fields populated from selected category's properties
  * - Category change resets dynamic fields
+ *
+ * Note: Resources don't have separate label/description - just ID (wiki title)
+ * and category-driven fields.
  *
  * @example
  * ```tsx
@@ -64,8 +66,6 @@ export function ResourceForm({
     mode: 'onBlur',
     defaultValues: {
       id: initialData?.id ?? '',
-      label: initialData?.label ?? '',
-      description: initialData?.description ?? '',
       category_key: initialData?.category_key ?? '',
       dynamic_fields: initialData?.dynamic_fields ?? {},
     },
@@ -73,6 +73,7 @@ export function ResourceForm({
 
   const { isValid } = form.formState
   const selectedCategory = form.watch('category_key')
+  const dynamicFields = form.watch('dynamic_fields')
 
   // Fetch category detail for dynamic fields when category is selected
   const { data: categoryData } = useCategory(selectedCategory, draftId)
@@ -138,7 +139,7 @@ export function ResourceForm({
                     {prop.is_required && <span className="text-red-600">*</span>}
                   </Label>
                   <Input
-                    value={String(form.watch(`dynamic_fields.${prop.entity_key}`) ?? '')}
+                    value={dynamicFields?.[prop.entity_key] ?? ''}
                     onChange={(e) => handleDynamicFieldChange(prop.entity_key, e.target.value)}
                     placeholder={`Enter ${prop.label}...`}
                   />
@@ -161,7 +162,7 @@ export function ResourceForm({
 
       <FormField
         name="id"
-        label="ID"
+        label="ID (Wiki Page Title)"
         required
         control={form.control}
         description="Page title format: starts uppercase, underscores between words"
@@ -169,37 +170,8 @@ export function ResourceForm({
           <Input
             {...field}
             id="id"
-            placeholder="My_resource"
+            placeholder="My_Resource"
             autoComplete="off"
-          />
-        )}
-      />
-
-      <FormField
-        name="label"
-        label="Label"
-        required
-        control={form.control}
-        render={(field) => (
-          <Input
-            {...field}
-            id="label"
-            placeholder="Resource Name"
-            autoComplete="off"
-          />
-        )}
-      />
-
-      <FormField
-        name="description"
-        label="Description"
-        control={form.control}
-        render={(field) => (
-          <Textarea
-            {...field}
-            id="description"
-            placeholder="A brief description of this resource..."
-            rows={3}
           />
         )}
       />

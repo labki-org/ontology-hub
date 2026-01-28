@@ -154,6 +154,8 @@ async def build_effective_entities(
         "module": {},
         "bundle": {},
         "template": {},
+        "dashboard": {},
+        "resource": {},
     }
 
     # Load all canonical entities
