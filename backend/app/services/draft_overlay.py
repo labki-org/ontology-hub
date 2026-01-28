@@ -216,6 +216,10 @@ class DraftOverlayService:
                 # Normalize: use entity_key from change record (authoritative)
                 # Frontend may send 'id' but we need 'entity_key' for EntityWithStatus
                 entity["entity_key"] = change.entity_key
+                # Ensure label is present (required by EntityWithStatus)
+                # Resources don't have a separate label, so use id as label
+                if "label" not in entity:
+                    entity["label"] = entity.get("id", change.entity_key)
                 creates.append(entity)
 
         return creates
