@@ -83,6 +83,11 @@ Plans:
 ### Phase 28: Draft CRUD Support
 **Goal**: Create/update/delete dashboards and resources in drafts
 **Requirements**: INTG-01, INTG-02
+**Plans:** 3 plans
+Plans:
+- [ ] 28-01-PLAN.md — Entity type registration and dashboard validation
+- [ ] 28-02-PLAN.md — Resource field validation against category properties
+- [ ] 28-03-PLAN.md — Integration tests for dashboard and resource CRUD
 **Success Criteria**:
 1. POST /drafts/{id}/changes creates dashboard/resource
 2. PATCH /drafts/{id}/changes/{key} updates with validation
