@@ -17,6 +17,8 @@ const NODE_SIZES: Record<string, number> = {
   subobject: 60,
   property: 50,
   template: 50,
+  dashboard: 70,   // Similar to category - structural entity
+  resource: 45,    // Compact - data instances
 }
 
 // Fill colors (muted/pastel palette)
@@ -25,6 +27,8 @@ const ENTITY_COLORS: Record<string, string> = {
   property: '#86efac', // green-300
   subobject: '#c4b5fd', // violet-300
   template: '#fcd34d', // amber-300
+  dashboard: '#fca5a5', // red-300 - warm, distinct
+  resource: '#a5f3fc', // cyan-300 - cool, compact
 }
 
 // Border colors
@@ -33,6 +37,8 @@ const ENTITY_BORDER_COLORS: Record<string, string> = {
   property: '#22c55e', // green-500
   subobject: '#8b5cf6', // violet-500
   template: '#f59e0b', // amber-500
+  dashboard: '#ef4444', // red-500
+  resource: '#06b6d4', // cyan-500
 }
 
 // Change status glow colors (used for filter: drop-shadow)
@@ -129,6 +135,10 @@ function getNodePath(entityType: string): string {
       return hexagonPath(size)
     case 'template':
       return circlePath(size)
+    case 'dashboard':
+      return roundedRectPath(size, 12) // Rounded rect like category, larger radius
+    case 'resource':
+      return roundedRectPath(size, 4)  // Small rect, subtle rounding
     default:
       return roundedRectPath(size, 4)
   }
