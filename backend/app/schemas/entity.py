@@ -5,7 +5,7 @@ both canonical data and draft overlay contexts. All entities in
 draft context include change_status metadata.
 """
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -271,3 +271,53 @@ class EntityListResponse(BaseModel):
         description="Entity key to use for fetching next page (None if no more)",
     )
     has_next: bool = Field(description="Whether more results exist after this page")
+
+
+class DashboardPage(BaseModel):
+    """Dashboard page with wikitext content."""
+
+    name: str = Field(description="Page name (empty string for root page)")
+    wikitext: str = Field(description="MediaWiki wikitext content")
+
+
+class DashboardDetailResponse(BaseModel):
+    """Detailed dashboard response with pages array."""
+
+    entity_key: str
+    label: str
+    description: str | None = None
+    pages: list[DashboardPage] = Field(
+        default_factory=list, description="Dashboard pages with wikitext content"
+    )
+    change_status: ChangeStatus | None = Field(
+        default=None,
+        validation_alias="_change_status",
+        description="Draft change status",
+    )
+    deleted: bool = Field(
+        default=False, validation_alias="_deleted", description="Deleted in draft"
+    )
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class ResourceDetailResponse(BaseModel):
+    """Detailed resource response with dynamic properties."""
+
+    entity_key: str
+    label: str
+    description: str | None = None
+    category_key: str = Field(description="Category this resource belongs to")
+    properties: dict[str, Any] = Field(
+        default_factory=dict, description="Dynamic property values"
+    )
+    change_status: ChangeStatus | None = Field(
+        default=None,
+        validation_alias="_change_status",
+        description="Draft change status",
+    )
+    deleted: bool = Field(
+        default=False, validation_alias="_deleted", description="Deleted in draft"
+    )
+
+    model_config = ConfigDict(populate_by_name=True)
