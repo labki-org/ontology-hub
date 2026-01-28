@@ -118,7 +118,7 @@ export function ResourceDetail({
     if (resource?.category_key) {
       setSelectedEntity(resource.category_key, 'category')
     }
-  }, [resource?.category_key, setSelectedEntity])
+  }, [resource, setSelectedEntity])
 
   if (isLoading) {
     return (
