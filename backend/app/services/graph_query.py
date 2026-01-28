@@ -1009,9 +1009,9 @@ class GraphQueryService:
     async def get_full_ontology_graph(self) -> GraphResponse:
         """Get the full ontology graph with all entities (GRP-05).
 
-        Returns all categories, properties, subobjects, and templates with their
-        relationships. Bundles are excluded. Modules are represented via hull
-        membership on nodes.
+        Returns all categories, properties, subobjects, templates, dashboards,
+        and resources with their relationships. Bundles are excluded. Modules
+        are represented via hull membership on nodes.
 
         Returns:
             GraphResponse with all entities and relationships
@@ -1199,6 +1199,125 @@ class GraphQueryService:
                         change_status=change_status,
                     )
                 )
+
+        # Get all dashboards
+        dashboards_query = select(Dashboard)
+        result = await self.session.execute(dashboards_query)
+        dashboards = result.scalars().all()
+
+        dashboard_keys = [d.entity_key for d in dashboards]
+
+        if dashboard_keys:
+            for dashboard in dashboards:
+                effective = await self.draft_overlay.apply_overlay(
+                    dashboard, "dashboard", dashboard.entity_key
+                )
+                change_status = effective.get("_change_status") if effective else None
+
+                nodes.append(
+                    GraphNode(
+                        id=dashboard.entity_key,
+                        label=dashboard.label,
+                        entity_type="dashboard",
+                        depth=None,
+                        modules=[],  # Dashboards don't have direct module membership
+                        change_status=change_status,
+                    )
+                )
+
+            # Get module -> dashboard edges via ModuleDashboard join
+            dashboard_edge_query = text("""
+                SELECT m.entity_key as module_key, d.entity_key as dashboard_key
+                FROM module_dashboard md
+                JOIN modules_v2 m ON m.id = md.module_id
+                JOIN dashboards d ON d.id = md.dashboard_id
+            """)
+            result = await self.session.execute(dashboard_edge_query)
+            for row in result.fetchall():
+                edges.append(
+                    GraphEdge(
+                        source=row.module_key,
+                        target=row.dashboard_key,
+                        edge_type="module_dashboard",
+                    )
+                )
+
+        # Add draft-created dashboards
+        draft_dashboard_creates = await self.draft_overlay.get_draft_creates("dashboard")
+        for draft_dashboard in draft_dashboard_creates:
+            draft_key = draft_dashboard.get("entity_key")
+            if draft_key and not any(n.id == draft_key for n in nodes):
+                nodes.append(
+                    GraphNode(
+                        id=draft_key,
+                        label=draft_dashboard.get("label", draft_key),
+                        entity_type="dashboard",
+                        depth=None,
+                        modules=[],
+                        change_status="added",
+                    )
+                )
+
+        # Get all resources
+        resources_query = select(Resource)
+        result = await self.session.execute(resources_query)
+        resources = result.scalars().all()
+
+        resource_keys = [r.entity_key for r in resources]
+
+        if resource_keys:
+            for resource in resources:
+                effective = await self.draft_overlay.apply_overlay(
+                    resource, "resource", resource.entity_key
+                )
+                change_status = effective.get("_change_status") if effective else None
+
+                nodes.append(
+                    GraphNode(
+                        id=resource.entity_key,
+                        label=resource.label,
+                        entity_type="resource",
+                        depth=None,
+                        modules=[],  # Resources don't have direct module membership
+                        change_status=change_status,
+                    )
+                )
+
+                # Add edge: category -> resource (if category exists in graph)
+                if resource.category_key and any(n.id == resource.category_key for n in nodes):
+                    edges.append(
+                        GraphEdge(
+                            source=resource.category_key,
+                            target=resource.entity_key,
+                            edge_type="category_resource",
+                        )
+                    )
+
+        # Add draft-created resources
+        draft_resource_creates = await self.draft_overlay.get_draft_creates("resource")
+        for draft_resource in draft_resource_creates:
+            draft_key = draft_resource.get("entity_key")
+            if draft_key and not any(n.id == draft_key for n in nodes):
+                nodes.append(
+                    GraphNode(
+                        id=draft_key,
+                        label=draft_resource.get("label", draft_key),
+                        entity_type="resource",
+                        depth=None,
+                        modules=[],
+                        change_status="added",
+                    )
+                )
+                # Add edge to category if specified
+                draft_category = draft_resource.get("category")
+                if draft_category and any(n.id == draft_category for n in nodes):
+                    edges.append(
+                        GraphEdge(
+                            source=draft_category,
+                            target=draft_key,
+                            edge_type="category_resource",
+                        )
+                    )
 
         # Check for cycles in category hierarchy
         has_cycles = await self._check_cycles_in_subgraph(category_keys) if category_keys else False
