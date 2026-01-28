@@ -115,7 +115,7 @@ Plans:
 **Requirements**: DASH-06, RSRC-07
 **Plans:** 3 plans
 Plans:
-- [ ] 30-01-PLAN.md — Add Dashboard and Resource API hooks
+- [x] 30-01-PLAN.md — Add Dashboard and Resource API hooks
 - [ ] 30-02-PLAN.md — Create DashboardDetail and ResourceDetail components
 - [ ] 30-03-PLAN.md — Add Artifacts section to Sidebar
 **Success Criteria**:
@@ -157,7 +157,7 @@ Phases execute in numeric order: 1 -> 2 -> ... -> 32
 | v2.1 Bug Fixes & UX | 16-22 | 24 | ✅ Complete | 2026-01-25 |
 | v1.1.0 Dashboard & Resource | 23-32 | 17+ | 🚧 In Progress | — |
 
-**Total:** 99 plans completed across 29 phases + 3 remaining phases
+**Total:** 100 plans completed across 30 phases + 3 remaining phases
 
 ---
 *Roadmap created: 2026-01-23*
