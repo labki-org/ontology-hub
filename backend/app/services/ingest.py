@@ -138,6 +138,8 @@ class IngestService:
         await self._session.execute(delete(ModuleDependency))
         await self._session.execute(delete(ModuleEntity))
         await self._session.execute(delete(BundleModule))
+        await self._session.execute(delete(ModuleDashboard))
+        await self._session.execute(delete(BundleDashboard))
         await self._session.execute(delete(SubobjectProperty))
         await self._session.execute(delete(CategorySubobject))
         await self._session.execute(delete(CategoryProperty))
@@ -145,6 +147,8 @@ class IngestService:
 
         # 2. Delete entities (order doesn't matter after relationships cleared)
         await self._session.execute(delete(Template))
+        await self._session.execute(delete(Resource))
+        await self._session.execute(delete(Dashboard))
         await self._session.execute(delete(Bundle))
         await self._session.execute(delete(Module))
         await self._session.execute(delete(Subobject))
