@@ -80,6 +80,9 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - Dashboard icon: LayoutDashboard from lucide-react
 - Resource icon: FileText from lucide-react
 - Templates moved from standalone section to Artifacts group
+- Dashboard pages use single-item accordion (one page open at a time)
+- Resource category is clickable link navigating to category detail
+- Dynamic fields displayed in flat list with formatValue helper for type handling
 
 ### Pending Todos
 
