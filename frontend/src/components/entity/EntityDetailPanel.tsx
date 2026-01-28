@@ -5,6 +5,8 @@ import { SubobjectDetail } from './detail/SubobjectDetail'
 import { ModuleDetail } from './detail/ModuleDetail'
 import { BundleDetail } from './detail/BundleDetail'
 import { TemplateDetail } from './detail/TemplateDetail'
+import { DashboardDetail } from './detail/DashboardDetail'
+import { ResourceDetail } from './detail/ResourceDetail'
 
 interface EntityDetailPanelProps {
   entityKey: string | null
@@ -66,6 +68,10 @@ export function EntityDetailPanel({
         return <BundleDetail {...props} />
       case 'template':
         return <TemplateDetail {...props} />
+      case 'dashboard':
+        return <DashboardDetail {...props} />
+      case 'resource':
+        return <ResourceDetail {...props} />
       default:
         return (
           <div className="p-6 text-center text-muted-foreground">
