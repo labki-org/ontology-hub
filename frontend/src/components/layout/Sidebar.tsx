@@ -306,7 +306,10 @@ export function Sidebar() {
       // Transform data for resource entities
       // Backend expects: { id, category, ...dynamic_fields }
       // Form sends: { id, category_key, dynamic_fields: {...} }
+      // Resource entity_key format: "{category}/{id}" (hierarchical path)
       let transformedData = data
+      let entityKey = data.id as string
+
       if (createModalEntityType === 'resource') {
         const { category_key, dynamic_fields, ...rest } = data as {
           category_key?: string
@@ -318,16 +321,18 @@ export function Sidebar() {
           category: category_key,
           ...(dynamic_fields || {}),
         }
+        // Resource entity_key is "{category}/{id}"
+        entityKey = `${category_key}/${data.id}`
       }
 
       await createEntity.mutateAsync({
         entityType: createModalEntityType,
-        entityKey: data.id as string,
+        entityKey,
         data: transformedData,
       })
       closeCreateModal()
       // Select the newly created entity in the graph
-      setSelectedEntity(data.id as string, createModalEntityType)
+      setSelectedEntity(entityKey, createModalEntityType)
     } catch (error) {
       // Error handling - form should show error via mutation state
       console.error('Failed to create entity:', error)

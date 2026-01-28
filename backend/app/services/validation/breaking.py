@@ -213,6 +213,40 @@ async def detect_breaking_changes_v2(
                 )
             )
 
+    # Check dashboard changes (additions only - no breaking change detection needed)
+    for entity_key, dash_json in effective_entities.get("dashboard", {}).items():
+        if dash_json.get("_deleted"):
+            continue
+        if dash_json.get("_change_status") == "added":
+            results.append(
+                ValidationResultV2(
+                    entity_type="dashboard",
+                    entity_key=entity_key,
+                    field_path=None,
+                    code="ENTITY_ADDED",
+                    message=f"New dashboard '{entity_key}' added",
+                    severity="info",
+                    suggested_semver="minor",
+                )
+            )
+
+    # Check resource changes (additions only - no breaking change detection needed)
+    for entity_key, res_json in effective_entities.get("resource", {}).items():
+        if res_json.get("_deleted"):
+            continue
+        if res_json.get("_change_status") == "added":
+            results.append(
+                ValidationResultV2(
+                    entity_type="resource",
+                    entity_key=entity_key,
+                    field_path=None,
+                    code="ENTITY_ADDED",
+                    message=f"New resource '{entity_key}' added",
+                    severity="info",
+                    suggested_semver="minor",
+                )
+            )
+
     return results
 
 
