@@ -40,6 +40,10 @@ Plans:
 ### Phase 25: Backend Ingest Pipeline
 **Goal**: Parse and ingest Dashboard and Resource entities from repo
 **Requirements**: DASH-03, RSRC-03
+**Plans:** 2 plans
+Plans:
+- [ ] 25-01-PLAN.md — Extend EntityParser with parse_dashboard, parse_resource methods
+- [ ] 25-02-PLAN.md — Update ingest pipeline (github.py, ingest.py) for new entities
 **Success Criteria**:
 1. EntityParser handles dashboards/*.json files
 2. EntityParser handles resources/**/*.json with hierarchical paths
