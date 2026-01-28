@@ -125,13 +125,14 @@ Plans:
 3. Edit mode enables inline editing
 4. Navigation from graph/sidebar works
 
-### Phase 31: Frontend Create/Edit Forms
+### Phase 31: Frontend Create/Edit Forms ✓
 **Goal**: Forms for creating new dashboards and resources
 **Requirements**: DASH-07, RSRC-08
 **Plans:** 2 plans
 Plans:
-- [ ] 31-01-PLAN.md — Add dashboard schema and create DashboardForm with page management
-- [ ] 31-02-PLAN.md — Add resource schema, create ResourceForm, integrate forms into Sidebar
+- [x] 31-01-PLAN.md — Add dashboard schema and create DashboardForm with page management
+- [x] 31-02-PLAN.md — Add resource schema, create ResourceForm, integrate forms into Sidebar
+**Status**: Complete (2026-01-28)
 **Success Criteria**:
 1. DashboardForm supports page management and wikitext editing
 2. ResourceForm renders category-driven fields dynamically
@@ -162,7 +163,7 @@ Phases execute in numeric order: 1 -> 2 -> ... -> 32
 | v2.1 Bug Fixes & UX | 16-22 | 24 | ✅ Complete | 2026-01-25 |
 | v1.1.0 Dashboard & Resource | 23-32 | 20+ | 🚧 In Progress | — |
 
-**Total:** 103 plans completed across 30 phases + 2 remaining phases
+**Total:** 105 plans completed across 31 phases + 1 remaining phase
 
 ---
 *Roadmap created: 2026-01-23*
