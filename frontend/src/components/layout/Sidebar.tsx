@@ -303,10 +303,27 @@ export function Sidebar() {
     if (!createModalEntityType) return
 
     try {
+      // Transform data for resource entities
+      // Backend expects: { id, category, ...dynamic_fields }
+      // Form sends: { id, category_key, dynamic_fields: {...} }
+      let transformedData = data
+      if (createModalEntityType === 'resource') {
+        const { category_key, dynamic_fields, ...rest } = data as {
+          category_key?: string
+          dynamic_fields?: Record<string, string>
+          [key: string]: unknown
+        }
+        transformedData = {
+          ...rest,
+          category: category_key,
+          ...(dynamic_fields || {}),
+        }
+      }
+
       await createEntity.mutateAsync({
         entityType: createModalEntityType,
         entityKey: data.id as string,
-        data,
+        data: transformedData,
       })
       closeCreateModal()
       // Select the newly created entity in the graph
