@@ -23,9 +23,10 @@ import { Button } from '@/components/ui/button'
  *
  * URL structure:
  * - /browse - canonical browse, no entity selected
- * - /browse?entity=Person - canonical browse with Person selected
- * - /browse?draft_id=abc123 - draft mode
- * - /browse?draft_id=abc123&entity=Person - draft mode with entity selected
+ * - /browse?entity=Person&entity_type=category - canonical browse with Person category selected
+ * - /browse?entity=Has_website&entity_type=property - property selected
+ * - /browse?draft_token=abc123 - draft mode
+ * - /browse?draft_token=abc123&entity=Person&entity_type=category - draft mode with entity selected
  */
 export function BrowsePage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -49,6 +50,7 @@ export function BrowsePage() {
   // Extract URL parameters
   const draftToken = searchParams.get('draft_token') || undefined
   const entityFromUrl = searchParams.get('entity')
+  const entityTypeFromUrl = searchParams.get('entity_type') || 'category'
 
   // V2 draft data and validation
   const draftV2 = useDraftV2(draftToken)
@@ -64,10 +66,10 @@ export function BrowsePage() {
   // Sync URL entity param to graphStore ONLY on initial mount
   useEffect(() => {
     if (!initialSyncDone.current && entityFromUrl) {
-      setSelectedEntity(entityFromUrl, 'category')
+      setSelectedEntity(entityFromUrl, entityTypeFromUrl)
       initialSyncDone.current = true
     }
-  }, [entityFromUrl, setSelectedEntity])
+  }, [entityFromUrl, entityTypeFromUrl, setSelectedEntity])
 
   // Sync graphStore selection to URL when it changes (one-way: store → URL)
   useEffect(() => {
@@ -77,20 +79,23 @@ export function BrowsePage() {
     }
 
     const currentEntity = searchParams.get('entity')
-    if (selectedEntityKey !== currentEntity) {
+    const currentEntityType = searchParams.get('entity_type')
+    if (selectedEntityKey !== currentEntity || selectedEntityType !== currentEntityType) {
       setSearchParams(
         (prev) => {
           if (selectedEntityKey) {
             prev.set('entity', selectedEntityKey)
+            prev.set('entity_type', selectedEntityType)
           } else {
             prev.delete('entity')
+            prev.delete('entity_type')
           }
           return prev
         },
         { replace: true }
       )
     }
-  }, [selectedEntityKey, searchParams, setSearchParams, entityFromUrl])
+  }, [selectedEntityKey, selectedEntityType, searchParams, setSearchParams, entityFromUrl])
 
   // Close detail panel
   const handleCloseDetail = () => {
