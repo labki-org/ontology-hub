@@ -314,6 +314,27 @@ class EntityParser:
                 )
             )
 
+        # Extract dashboard memberships
+        for dash_key in content.get("dashboards", []):
+            relationships.append(
+                PendingRelationship(
+                    type="module_dashboard",
+                    source_key=entity_key,
+                    target_key=dash_key,
+                )
+            )
+
+        # Extract resource memberships
+        for res_key in content.get("resources", []):
+            relationships.append(
+                PendingRelationship(
+                    type="module_entity",
+                    source_key=entity_key,
+                    target_key=res_key,
+                    extra={"entity_type": EntityType.RESOURCE},
+                )
+            )
+
         return module, relationships
 
     def parse_bundle(
