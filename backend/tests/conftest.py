@@ -40,6 +40,7 @@ async def test_engine():
         Subobject,
         Template,
     )
+    from app.models.v2 import Dashboard, Resource  # noqa: F401
 
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
