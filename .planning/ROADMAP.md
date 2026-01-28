@@ -113,6 +113,11 @@ Plans:
 ### Phase 30: Frontend Detail Components
 **Goal**: Entity detail pages for viewing/editing dashboards and resources
 **Requirements**: DASH-06, RSRC-07
+**Plans:** 3 plans
+Plans:
+- [ ] 30-01-PLAN.md — Add Dashboard and Resource API hooks
+- [ ] 30-02-PLAN.md — Create DashboardDetail and ResourceDetail components
+- [ ] 30-03-PLAN.md — Add Artifacts section to Sidebar
 **Success Criteria**:
 1. DashboardDetail shows pages in accordion/tabs
 2. ResourceDetail shows dynamic fields from category
@@ -150,7 +155,7 @@ Phases execute in numeric order: 1 -> 2 -> ... -> 32
 | v1.0 MVP | 1-7 | 20 | ✅ Complete | 2026-01-23 |
 | v2.0 Platform Rebuild | 8-15 | 41 | ✅ Complete | 2026-01-25 |
 | v2.1 Bug Fixes & UX | 16-22 | 24 | ✅ Complete | 2026-01-25 |
-| v1.1.0 Dashboard & Resource | 23-32 | 14+ | 🚧 In Progress | — |
+| v1.1.0 Dashboard & Resource | 23-32 | 17+ | 🚧 In Progress | — |
 
 **Total:** 99 plans completed across 29 phases + 3 remaining phases
 
