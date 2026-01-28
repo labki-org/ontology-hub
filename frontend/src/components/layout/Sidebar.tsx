@@ -38,6 +38,8 @@ import { SubobjectForm } from '@/components/entity/forms/SubobjectForm'
 import { TemplateForm } from '@/components/entity/forms/TemplateForm'
 import { ModuleForm } from '@/components/entity/forms/ModuleForm'
 import { BundleForm } from '@/components/entity/forms/BundleForm'
+import { DashboardForm } from '@/components/entity/forms/DashboardForm'
+import { ResourceForm } from '@/components/entity/forms/ResourceForm'
 
 interface EntitySectionProps {
   title: string
@@ -639,6 +641,22 @@ export function Sidebar() {
               handleCreateRelatedEntity(type, id, 'Modules')
             }
             setOnNestedEntityCreated={setOnNestedEntityCreated}
+          />
+        )}
+        {createModalEntityType === 'dashboard' && (
+          <DashboardForm
+            onSubmit={handleCreateSubmit}
+            onCancel={closeCreateModal}
+            isSubmitting={createEntity.isPending}
+            draftId={draftId}
+          />
+        )}
+        {createModalEntityType === 'resource' && (
+          <ResourceForm
+            onSubmit={handleCreateSubmit}
+            onCancel={closeCreateModal}
+            isSubmitting={createEntity.isPending}
+            draftId={draftId}
           />
         )}
       </CreateEntityModal>
