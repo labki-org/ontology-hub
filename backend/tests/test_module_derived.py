@@ -382,6 +382,75 @@ class TestComputeModuleDerivedEntities:
 
         assert "provenance" not in result
 
+    @pytest.mark.asyncio
+    async def test_transitive_derivation(self):
+        """Follows category refs through properties - full transitive chain.
+
+        Setup:
+        - Category A has property P1
+        - P1 has Allows_value_from_category: "CategoryB"
+        - Category B has property P2 and resource R1
+
+        Derivation from ["CategoryA"] should include:
+        - P1 (from A directly)
+        - P2 (from B transitively via P1's Allows_value_from_category)
+        - R1 (resource from B transitively)
+
+        This test mocks the helper functions directly to avoid complex SQL mocking.
+        """
+        from app.services import module_derived
+        from app.services.module_derived import compute_module_derived_entities
+
+        mock_session = AsyncMock()
+
+        # Mock empty draft changes query
+        mock_draft_result = MagicMock()
+        mock_draft_result.scalars.return_value.all.return_value = []
+        mock_session.execute.return_value = mock_draft_result
+
+        # Define test data
+        # CategoryA has PropP1, CategoryB has PropP2
+        # PropP1 references CategoryB via Allows_value_from_category
+        # CategoryB has ResourceR1
+
+        async def mock_get_category_members(session, cat_key, draft_changes):
+            if cat_key == "CategoryA":
+                return ({"PropP1"}, set())  # properties, subobjects
+            elif cat_key == "CategoryB":
+                return ({"PropP2"}, set())
+            return (set(), set())
+
+        async def mock_extract_category_refs(session, prop_keys, draft_changes):
+            # PropP1 references CategoryB
+            if "PropP1" in prop_keys:
+                return {"CategoryB"}
+            return set()
+
+        async def mock_get_category_resources(session, cat_key, draft_changes):
+            if cat_key == "CategoryB":
+                return {"ResourceR1"}
+            return set()
+
+        async def mock_get_templates(session, prop_keys, draft_changes):
+            return set()
+
+        # Patch the helper functions
+        with patch.object(module_derived, "_get_category_members", side_effect=mock_get_category_members):
+            with patch.object(module_derived, "_extract_category_refs_from_properties", side_effect=mock_extract_category_refs):
+                with patch.object(module_derived, "_get_category_resources", side_effect=mock_get_category_resources):
+                    with patch.object(module_derived, "_get_templates_from_properties", side_effect=mock_get_templates):
+                        result = await compute_module_derived_entities(
+                            mock_session, ["CategoryA"], None, max_depth=10
+                        )
+
+        # Verify transitive derivation worked:
+        # - P1 should be included (from A directly)
+        # - P2 should be included (from B transitively via P1's Allows_value_from_category)
+        # - R1 should be included (resource from B transitively)
+        assert "PropP1" in result["properties"], "P1 should be derived from category A"
+        assert "PropP2" in result["properties"], "P2 should be derived from category B (transitive)"
+        assert "ResourceR1" in result["resources"], "R1 should be derived from category B (transitive)"
+
 
 class TestGetEffectivePropertyJson:
     """Test _get_effective_property_json helper for draft-aware resolution."""
