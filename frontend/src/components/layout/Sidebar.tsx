@@ -45,7 +45,7 @@ interface EntitySectionProps {
   entities: EntityWithStatus[]
   isLoading: boolean
   searchTerm: string
-  entityType: 'category' | 'property' | 'subobject' | 'template' | 'module' | 'bundle'
+  entityType: 'category' | 'property' | 'subobject' | 'template' | 'module' | 'bundle' | 'dashboard' | 'resource'
   isDraftMode: boolean
   onAddNew?: () => void
   onDelete?: (entityKey: string, entityLabel: string) => void
@@ -347,7 +347,7 @@ export function Sidebar() {
 
   // Handle entity deletion with dependency checking
   const handleDelete = async (
-    entityType: 'category' | 'property' | 'subobject' | 'template' | 'module' | 'bundle',
+    entityType: 'category' | 'property' | 'subobject' | 'template' | 'module' | 'bundle' | 'dashboard' | 'resource',
     entityKey: string,
     entityLabel: string
   ) => {
@@ -533,8 +533,37 @@ export function Sidebar() {
 
         <div className="h-px bg-border my-2" />
 
-        {/* Templates section */}
-        <div>
+        {/* Artifacts group */}
+        <div className="mb-2">
+          <div className="px-2 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            Artifacts
+          </div>
+          <EntitySection
+            title="Dashboards"
+            icon={LayoutDashboard}
+            entities={dashboards}
+            isLoading={dashboardsLoading}
+            searchTerm={debouncedSearchTerm}
+            entityType="dashboard"
+            isDraftMode={isDraftMode}
+            onAddNew={() => openCreateModal('dashboard')}
+            onDelete={(key, label) => handleDelete('dashboard', key, label)}
+            onUndoDelete={handleUndoDelete}
+            deletedEntityChanges={deletedEntityChanges}
+          />
+          <EntitySection
+            title="Resources"
+            icon={FileText}
+            entities={resources}
+            isLoading={resourcesLoading}
+            searchTerm={debouncedSearchTerm}
+            entityType="resource"
+            isDraftMode={isDraftMode}
+            onAddNew={() => openCreateModal('resource')}
+            onDelete={(key, label) => handleDelete('resource', key, label)}
+            onUndoDelete={handleUndoDelete}
+            deletedEntityChanges={deletedEntityChanges}
+          />
           <EntitySection
             title="Templates"
             icon={FileCode}
