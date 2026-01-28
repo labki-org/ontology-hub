@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-01-27)
 Phase: 29 of 32 (Frontend Graph Visualization)
 Plan: 02 of 03 complete
 Status: In progress
-Last activity: 2026-01-28 — Completed 29-02-PLAN.md
+Last activity: 2026-01-28 — Completed 29-01-PLAN.md (backend graph query extensions)
 
 Progress: [███████████████░░             ] 62% (6.2/10 phases in v1.1.0)
 
@@ -72,6 +72,9 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - Resource node: 45px size (compact), cyan-300 fill, small rect (r=4)
 - module_dashboard edge: red-600, long dash (8,4)
 - category_resource edge: cyan-600, short dash (3,3)
+- Dashboard graph nodes have empty modules list (modules reference dashboards via junction)
+- Resource graph nodes have empty modules list (resources belong to categories, not modules directly)
+- Edge types: module_dashboard for module->dashboard, category_resource for category->resource
 
 ### Pending Todos
 
@@ -84,6 +87,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-28
-Stopped at: Completed 29-02-PLAN.md (frontend node types)
+Stopped at: Completed 29-01-PLAN.md (backend graph query extensions)
 Resume file: None
-Next action: Continue Phase 29 with 29-03-PLAN.md (backend graph queries)
+Next action: Continue Phase 29 with 29-03-PLAN.md (frontend integration)
