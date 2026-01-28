@@ -10,16 +10,16 @@ See: .planning/PROJECT.md (updated 2026-01-27)
 ## Current Position
 
 Phase: 31 of 32
-Plan: 01 of 03 complete
+Plan: 02 of 03 complete
 Status: In progress
-Last activity: 2026-01-28 — Completed 31-01-PLAN.md (Dashboard schema and form)
+Last activity: 2026-01-28 — Completed 31-02-PLAN.md (Resource schema and form)
 
-Progress: [████████████████████░░░       ] 80% (8/10 phases in v1.1.0)
+Progress: [█████████████████████░░       ] 82% (8/10 phases in v1.1.0)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 104 (20 v1.0 + 41 v2.0 + 24 v2.1 + 19 v1.1.0)
+- Total plans completed: 105 (20 v1.0 + 41 v2.0 + 24 v2.1 + 20 v1.1.0)
 
 **Summary by Milestone:**
 
@@ -28,8 +28,8 @@ Progress: [████████████████████░░░
 | v1.0 MVP | 1-7 | 20 | 2 days |
 | v2.0 Platform Rebuild | 8-15 | 41 | 2 days |
 | v2.1 Bug Fixes & UX | 16-22 | 24 | 5 days |
-| v1.1.0 Dashboard & Resource | 23-32 | 18 | In Progress |
-| **Total** | 32 | 103+ | - |
+| v1.1.0 Dashboard & Resource | 23-32 | 20 | In Progress |
+| **Total** | 32 | 105 | - |
 
 ## Accumulated Context
 
@@ -88,6 +88,9 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - Root page uses empty string name (matching backend validation)
 - Page 0 protected from deletion in DashboardForm (root page required)
 - Auto-generated page names use pattern page-{index}
+- Dynamic fields fetched from category's properties array via useCategory hook
+- Category change resets dynamic_fields to empty object
+- Single-select category using EntityCombobox with array of one element
 
 ### Pending Todos
 
@@ -100,6 +103,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-28
-Stopped at: Completed 31-01-PLAN.md (Dashboard schema and form)
+Stopped at: Completed 31-02-PLAN.md (Resource schema and form)
 Resume file: None
-Next action: Execute 31-02-PLAN.md (Resource schema and form)
+Next action: Execute 31-03-PLAN.md (Edit form integration)
