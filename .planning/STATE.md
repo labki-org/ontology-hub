@@ -10,16 +10,16 @@ See: .planning/PROJECT.md (updated 2026-01-27)
 ## Current Position
 
 Phase: 27 of 32
-Plan: 01 of 02 complete
-Status: Phase 27 in progress (derivation algorithm complete)
-Last activity: 2026-01-28 - Completed 27-01-PLAN.md (transitive derivation algorithm)
+Plan: 02 of 02 complete
+Status: Phase 27 complete (module auto-derivation extension)
+Last activity: 2026-01-28 - Completed 27-02-PLAN.md (integration and testing)
 
-Progress: [██████████░                   ] 45% (5/10 phases started in v1.1.0)
+Progress: [██████████░                   ] 46% (Phase 27 complete, v1.1.0 ongoing)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 92 (20 v1.0 + 41 v2.0 + 24 v2.1 + 7 v1.1.0)
+- Total plans completed: 93 (20 v1.0 + 41 v2.0 + 24 v2.1 + 8 v1.1.0)
 
 **Summary by Milestone:**
 
@@ -28,8 +28,8 @@ Progress: [██████████░                   ] 45% (5/10 phase
 | v1.0 MVP | 1-7 | 20 | 2 days |
 | v2.0 Platform Rebuild | 8-15 | 41 | 2 days |
 | v2.1 Bug Fixes & UX | 16-22 | 24 | 5 days |
-| v1.1.0 Dashboard & Resource | 23-32 | 7 | In Progress |
-| **Total** | 32 | 92+ | - |
+| v1.1.0 Dashboard & Resource | 23-32 | 8 | In Progress |
+| **Total** | 32 | 93+ | - |
 
 ## Accumulated Context
 
@@ -58,6 +58,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - Derivation follows transitive chains until no new categories discovered or max_depth (10) reached
 - Check both Allows_value_from_category and allowed_values.from_category property formats
 - Include draft-created resources via category field check
+- Use .get("resources", []) for backwards compatibility with pre-Phase-27 derivation
 
 ### Pending Todos
 
@@ -70,6 +71,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-28
-Stopped at: Completed 27-01-PLAN.md (transitive derivation algorithm)
+Stopped at: Completed 27-02-PLAN.md (integration and testing)
 Resume file: None
-Next action: Execute 27-02-PLAN.md (integration and testing)
+Next action: Start Phase 28 (frontend module builder) or continue with v1.1.0 roadmap
