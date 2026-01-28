@@ -12,6 +12,9 @@
 ### Phase 23: Ontology Schema Updates
 **Goal**: Define JSON schemas and repo structure for Dashboard and Resource entities in labki-ontology
 **Requirements**: DASH-01, DASH-08, DASH-09, RSRC-01
+**Plans:** 1 plan
+Plans:
+- [ ] 23-01-PLAN.md — Fix entity-index, update dashboard/properties schemas, verify validation
 **Success Criteria**:
 1. `dashboards/_schema.json` validates dashboard structure with pages array
 2. `resources/_schema.json` validates resources with additionalProperties:true
@@ -115,7 +118,7 @@ Phases execute in numeric order: 1 -> 2 -> ... -> 32
 | v1.0 MVP | 1-7 | 20 | ✅ Complete | 2026-01-23 |
 | v2.0 Platform Rebuild | 8-15 | 41 | ✅ Complete | 2026-01-25 |
 | v2.1 Bug Fixes & UX | 16-22 | 24 | ✅ Complete | 2026-01-25 |
-| v1.1.0 Dashboard & Resource | 23-32 | — | 🚧 In Progress | — |
+| v1.1.0 Dashboard & Resource | 23-32 | 1+ | 🚧 In Progress | — |
 
 **Total:** 85 plans completed across 22 phases + 10 new phases
 
