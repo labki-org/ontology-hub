@@ -200,14 +200,15 @@ async def _get_effective_property_json(
 
     # Handle draft-updated property
     if draft_change and draft_change.change_type == ChangeType.UPDATE:
-        canonical_json = deepcopy(prop.canonical_json)
+        canonical_json: dict = deepcopy(prop.canonical_json)
         try:
             patch = jsonpatch.JsonPatch(draft_change.patch or [])
-            return patch.apply(canonical_json)
+            result: dict = patch.apply(canonical_json)
+            return result
         except jsonpatch.JsonPatchException:
             return canonical_json
 
-    return prop.canonical_json
+    return dict(prop.canonical_json)
 
 
 async def _extract_category_refs_from_properties(

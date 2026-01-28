@@ -168,7 +168,7 @@ async def auto_populate_module_derived(
 
     if not categories:
         # No categories to derive from - set empty derived arrays
-        derived: dict[str, list[str]] = {
+        derived: dict[str, list[str] | dict[str, str]] = {
             "properties": [],
             "subobjects": [],
             "templates": [],
