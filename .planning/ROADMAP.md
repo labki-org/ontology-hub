@@ -95,14 +95,15 @@ Plans:
 3. DELETE /drafts/{id}/changes/{key} removes from draft
 4. Resource fields validated against category properties
 
-### Phase 29: Frontend Graph Visualization
+### Phase 29: Frontend Graph Visualization ✓
 **Goal**: Render Dashboard and Resource nodes in graph view
 **Requirements**: DASH-05, RSRC-06
 **Plans:** 3 plans
 Plans:
-- [ ] 29-01-PLAN.md — Backend graph query extension for Dashboard/Resource
-- [ ] 29-02-PLAN.md — Frontend node shapes, colors, and edge styling
-- [ ] 29-03-PLAN.md — Edge type filtering in GraphControls
+- [x] 29-01-PLAN.md — Backend graph query extension for Dashboard/Resource
+- [x] 29-02-PLAN.md — Frontend node shapes, colors, and edge styling
+- [x] 29-03-PLAN.md — Edge type filtering in GraphControls
+**Status**: Complete (2026-01-28)
 **Success Criteria**:
 1. Dashboard nodes render as document shape (page with fold)
 2. Resource nodes render as form shape (small rect)
@@ -151,7 +152,7 @@ Phases execute in numeric order: 1 -> 2 -> ... -> 32
 | v2.1 Bug Fixes & UX | 16-22 | 24 | ✅ Complete | 2026-01-25 |
 | v1.1.0 Dashboard & Resource | 23-32 | 14+ | 🚧 In Progress | — |
 
-**Total:** 96 plans completed across 28 phases + 4 remaining phases
+**Total:** 99 plans completed across 29 phases + 3 remaining phases
 
 ---
 *Roadmap created: 2026-01-23*
