@@ -9,17 +9,17 @@ See: .planning/PROJECT.md (updated 2026-01-27)
 
 ## Current Position
 
-Phase: 26 of 32 ✓
-Plan: 01 of 01 complete
-Status: Phase 26 verified (6/6 must-haves)
-Last activity: 2026-01-28 — Phase 26 complete and verified
+Phase: 27 of 32
+Plan: 01 of 02 complete
+Status: Phase 27 in progress (derivation algorithm complete)
+Last activity: 2026-01-28 - Completed 27-01-PLAN.md (transitive derivation algorithm)
 
-Progress: [██████████                    ] 40% (4/10 phases in v1.1.0)
+Progress: [██████████░                   ] 45% (5/10 phases started in v1.1.0)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 91 (20 v1.0 + 41 v2.0 + 24 v2.1 + 6 v1.1.0)
+- Total plans completed: 92 (20 v1.0 + 41 v2.0 + 24 v2.1 + 7 v1.1.0)
 
 **Summary by Milestone:**
 
@@ -28,8 +28,8 @@ Progress: [██████████                    ] 40% (4/10 phases 
 | v1.0 MVP | 1-7 | 20 | 2 days |
 | v2.0 Platform Rebuild | 8-15 | 41 | 2 days |
 | v2.1 Bug Fixes & UX | 16-22 | 24 | 5 days |
-| v1.1.0 Dashboard & Resource | 23-32 | 6 | In Progress |
-| **Total** | 32 | 91+ | - |
+| v1.1.0 Dashboard & Resource | 23-32 | 7 | In Progress |
+| **Total** | 32 | 92+ | - |
 
 ## Accumulated Context
 
@@ -54,6 +54,11 @@ Decisions are logged in PROJECT.md Key Decisions table.
 **Phase 26 decisions:**
 - Dynamic properties extraction uses reserved_keys blacklist instead of explicit allowlist
 
+**Phase 27 decisions:**
+- Derivation follows transitive chains until no new categories discovered or max_depth (10) reached
+- Check both Allows_value_from_category and allowed_values.from_category property formats
+- Include draft-created resources via category field check
+
 ### Pending Todos
 
 None.
@@ -65,6 +70,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-28
-Stopped at: Phase 26 complete (API endpoints verified)
+Stopped at: Completed 27-01-PLAN.md (transitive derivation algorithm)
 Resume file: None
-Next action: Begin Phase 27 (Module auto-derivation extension)
+Next action: Execute 27-02-PLAN.md (integration and testing)
