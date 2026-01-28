@@ -14,7 +14,7 @@ from app.models.v2 import ChangeType
 
 # Valid entity types for draft changes
 VALID_ENTITY_TYPES = frozenset(
-    {"category", "property", "subobject", "module", "bundle", "template"}
+    {"category", "property", "subobject", "module", "bundle", "template", "dashboard", "resource"}
 )
 
 # Valid JSON Patch operations (RFC 6902)
