@@ -9,17 +9,17 @@ See: .planning/PROJECT.md (updated 2026-01-27)
 
 ## Current Position
 
-Phase: 28 of 32
-Plan: 02 of 03 complete
-Status: In progress
-Last activity: 2026-01-28 — Completed 28-02-PLAN.md
+Phase: 28 of 32 complete
+Plan: 03 of 03 complete
+Status: Phase complete
+Last activity: 2026-01-28 - Completed 28-03-PLAN.md (integration tests)
 
-Progress: [█████████████░░               ] 57% (5.7/10 phases in v1.1.0)
+Progress: [██████████████░░              ] 60% (6/10 phases in v1.1.0)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 95 (20 v1.0 + 41 v2.0 + 24 v2.1 + 10 v1.1.0)
+- Total plans completed: 96 (20 v1.0 + 41 v2.0 + 24 v2.1 + 11 v1.1.0)
 
 **Summary by Milestone:**
 
@@ -28,8 +28,8 @@ Progress: [█████████████░░               ] 57% (5.
 | v1.0 MVP | 1-7 | 20 | 2 days |
 | v2.0 Platform Rebuild | 8-15 | 41 | 2 days |
 | v2.1 Bug Fixes & UX | 16-22 | 24 | 5 days |
-| v1.1.0 Dashboard & Resource | 23-32 | 10 | In Progress |
-| **Total** | 32 | 95+ | - |
+| v1.1.0 Dashboard & Resource | 23-32 | 11 | In Progress |
+| **Total** | 32 | 96+ | - |
 
 ## Accumulated Context
 
@@ -65,6 +65,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - Dashboard CREATE validation requires root page (name: '')
 - Resource RESERVED_KEYS: id, label, description, category, entity_key, source_path
 - Draft-created categories bypass materialized view for property lookup
+- SQLite tests use draft-created categories to bypass materialized view
 
 ### Pending Todos
 
@@ -77,6 +78,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-28
-Stopped at: Completed 28-02-PLAN.md (resource field validation)
+Stopped at: Completed 28-03-PLAN.md (integration tests)
 Resume file: None
-Next action: Continue with 28-03-PLAN.md (page/tab validation)
+Next action: Continue with Phase 29 (Resource CRUD UI)
