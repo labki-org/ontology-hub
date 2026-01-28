@@ -44,6 +44,8 @@ ENTITY_DIRECTORIES = {
     "modules": "modules/_schema.json",
     "bundles": "bundles/_schema.json",
     "templates": "templates/_schema.json",
+    "dashboards": "dashboards/_schema.json",
+    "resources": "resources/_schema.json",
 }
 
 
