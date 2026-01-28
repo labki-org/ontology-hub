@@ -372,6 +372,16 @@ class EntityParser:
                 )
             )
 
+        # Extract dashboard memberships
+        for dash_key in content.get("dashboards", []):
+            relationships.append(
+                PendingRelationship(
+                    type="bundle_dashboard",
+                    source_key=entity_key,
+                    target_key=dash_key,
+                )
+            )
+
         return bundle, relationships
 
     def parse_template(self, content: dict, source_path: str) -> Template:
