@@ -160,3 +160,35 @@ export function usePropertyUsedBy(entityKey: string, draftId?: string) {
     enabled: !!entityKey,
   })
 }
+
+// Dashboard and Resource hooks
+
+export function useDashboards(cursor?: string, limit?: number, draftId?: string) {
+  return useQuery({
+    queryKey: ['v2', 'dashboards', { cursor, limit, draftId }],
+    queryFn: () => fetchEntitiesV2('dashboards', cursor, limit, draftId),
+  })
+}
+
+export function useDashboard(entityKey: string, draftId?: string) {
+  return useQuery({
+    queryKey: ['v2', 'dashboard', entityKey, { draftId }],
+    queryFn: () => fetchEntityV2('dashboards', entityKey, draftId),
+    enabled: !!entityKey,
+  })
+}
+
+export function useResources(cursor?: string, limit?: number, draftId?: string) {
+  return useQuery({
+    queryKey: ['v2', 'resources', { cursor, limit, draftId }],
+    queryFn: () => fetchEntitiesV2('resources', cursor, limit, draftId),
+  })
+}
+
+export function useResource(entityKey: string, draftId?: string) {
+  return useQuery({
+    queryKey: ['v2', 'resource', entityKey, { draftId }],
+    queryFn: () => fetchEntityV2('resources', entityKey, draftId),
+    enabled: !!entityKey,
+  })
+}
