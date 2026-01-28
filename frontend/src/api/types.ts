@@ -142,6 +142,33 @@ export interface TemplateDetailV2 {
   deleted?: boolean
 }
 
+// Dashboard page (used in DashboardDetailV2)
+export interface DashboardPage {
+  name: string
+  wikitext: string
+}
+
+// Dashboard detail
+export interface DashboardDetailV2 {
+  entity_key: string
+  label: string
+  description?: string | null
+  pages: DashboardPage[]
+  change_status?: 'added' | 'modified' | 'deleted' | 'unchanged'
+  deleted?: boolean
+}
+
+// Resource detail
+export interface ResourceDetailV2 {
+  entity_key: string
+  label: string
+  description?: string | null
+  category_key: string
+  dynamic_fields: Record<string, unknown>
+  change_status?: 'added' | 'modified' | 'deleted' | 'unchanged'
+  deleted?: boolean
+}
+
 // Union type for any entity detail
 export type EntityDetailV2 =
   | CategoryDetailV2
@@ -150,3 +177,5 @@ export type EntityDetailV2 =
   | ModuleDetailV2
   | BundleDetailV2
   | TemplateDetailV2
+  | DashboardDetailV2
+  | ResourceDetailV2
