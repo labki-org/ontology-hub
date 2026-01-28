@@ -94,7 +94,11 @@ Enable wiki admins to go from local schema edit to GitHub PR in under 5 minutes,
 
 ### Active
 
-(None — planning next milestone)
+**v1.1.0 Dashboard & Resource Entities:**
+- [ ] Dashboard entity type: documentation pages with SMW queries for modules/bundles
+- [ ] Resource entity type: pre-written category content (like pre-filled forms)
+- [ ] Auto-derivation chain: allowed_values.from_category → category → resources
+- [ ] Full CRUD and graph visualization for new entity types
 
 ### Out of Scope
 
