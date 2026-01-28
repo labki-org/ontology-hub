@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { ChevronRight, Boxes, Tag, Package, Layers, Archive, FileCode, Plus, Trash2 } from 'lucide-react'
+import { ChevronRight, Boxes, Tag, Package, Layers, Archive, FileCode, LayoutDashboard, FileText, Plus, Trash2 } from 'lucide-react'
 import {
   Collapsible,
   CollapsibleContent,
@@ -17,6 +17,8 @@ import {
   useModules,
   useBundles,
   useTemplates,
+  useDashboards,
+  useResources,
   useOntologyVersion,
 } from '@/api/entities'
 import { useDraftV2, useCreateEntityChange, useDeleteEntityChange, useUndoDeleteChange, useDraftChanges } from '@/api/drafts'
@@ -272,6 +274,16 @@ export function Sidebar() {
     undefined,
     draftId
   )
+  const { data: dashboardsData, isLoading: dashboardsLoading } = useDashboards(
+    undefined,
+    undefined,
+    draftId
+  )
+  const { data: resourcesData, isLoading: resourcesLoading } = useResources(
+    undefined,
+    undefined,
+    draftId
+  )
 
   const { data: versionInfo } = useOntologyVersion()
 
@@ -281,6 +293,8 @@ export function Sidebar() {
   const modules = modulesData?.items || []
   const bundles = bundlesData?.items || []
   const templates = templatesData?.items || []
+  const dashboards = dashboardsData?.items || []
+  const resources = resourcesData?.items || []
 
   // Handle entity creation form submission
   const handleCreateSubmit = async (data: Record<string, unknown>) => {
