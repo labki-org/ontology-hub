@@ -208,7 +208,7 @@ export type DashboardFormData = z.infer<typeof dashboardSchema>
 export const resourceSchema = z.object({
   id: genericIdValidation,
   category_key: z.string().min(1, 'Category is required'),
-  dynamic_fields: z.record(z.string()).default({}),
+  dynamic_fields: z.object({}).passthrough().optional().default({}),
 })
 
 export type ResourceFormData = z.infer<typeof resourceSchema>
