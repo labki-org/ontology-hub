@@ -168,7 +168,12 @@ async def auto_populate_module_derived(
 
     if not categories:
         # No categories to derive from - set empty derived arrays
-        derived: dict[str, list[str]] = {"properties": [], "subobjects": [], "templates": [], "resources": []}
+        derived: dict[str, list[str]] = {
+            "properties": [],
+            "subobjects": [],
+            "templates": [],
+            "resources": [],
+        }
     else:
         # Compute derived entities from categories
         derived = await compute_module_derived_entities(session, categories, draft_id=draft.id)
@@ -418,9 +423,7 @@ async def add_draft_change(
                 import jsonpatch as jp
 
                 # Get canonical resource JSON
-                resource_query = select(Resource).where(
-                    Resource.entity_key == change_in.entity_key
-                )
+                resource_query = select(Resource).where(Resource.entity_key == change_in.entity_key)
                 resource_result = await session.execute(resource_query)
                 resource = resource_result.scalar_one_or_none()
                 if resource:
@@ -472,16 +475,11 @@ async def add_draft_change(
         change = existing_change
     else:
         # Validate resource UPDATE on canonical (first-time update, no existing change)
-        if (
-            change_in.entity_type == "resource"
-            and change_in.change_type == ChangeType.UPDATE
-        ):
+        if change_in.entity_type == "resource" and change_in.change_type == ChangeType.UPDATE:
             import jsonpatch as jp
 
             # Get canonical resource JSON
-            resource_query = select(Resource).where(
-                Resource.entity_key == change_in.entity_key
-            )
+            resource_query = select(Resource).where(Resource.entity_key == change_in.entity_key)
             resource_result = await session.execute(resource_query)
             resource = resource_result.scalar_one_or_none()
             if resource:

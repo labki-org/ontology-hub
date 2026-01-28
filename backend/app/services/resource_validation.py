@@ -97,9 +97,7 @@ async def get_canonical_category_exists(
     Returns:
         True if category exists, False otherwise
     """
-    result = await session.execute(
-        select(Category).where(Category.entity_key == category_key)
-    )
+    result = await session.execute(select(Category).where(Category.entity_key == category_key))
     return result.scalar_one_or_none() is not None
 
 
@@ -162,9 +160,7 @@ async def validate_resource_fields(
         return f"Category '{category_key}' does not exist"
 
     # 3. Get effective properties for the category
-    valid_properties = await get_category_effective_properties(
-        session, category_key, draft_id
-    )
+    valid_properties = await get_category_effective_properties(session, category_key, draft_id)
 
     # 4. Check all non-reserved fields are valid properties
     provided_fields = set(resource_json.keys()) - RESERVED_KEYS

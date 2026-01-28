@@ -66,9 +66,7 @@ class TestExtractCategoryRefsFromProperties:
         mock_result.scalar_one_or_none.return_value = mock_property
         mock_session.execute.return_value = mock_result
 
-        result = await _extract_category_refs_from_properties(
-            mock_session, {"Has_protocol"}, {}
-        )
+        result = await _extract_category_refs_from_properties(mock_session, {"Has_protocol"}, {})
 
         assert "SOP" in result
 
@@ -97,9 +95,11 @@ class TestExtractCategoryRefsFromProperties:
             return mock_result
 
         # Session returns appropriate property based on query
-        mock_session.execute = AsyncMock(side_effect=lambda q: make_mock_result(
-            next((k for k in props_data if k in str(q)), None)
-        ))
+        mock_session.execute = AsyncMock(
+            side_effect=lambda q: make_mock_result(
+                next((k for k in props_data if k in str(q)), None)
+            )
+        )
 
         # For this test, we need to simulate the actual function behavior
         # Since _extract_category_refs_from_properties calls _get_effective_property_json
@@ -137,9 +137,7 @@ class TestExtractCategoryRefsFromProperties:
         mock_result.scalar_one_or_none.return_value = mock_property
         mock_session.execute.return_value = mock_result
 
-        result = await _extract_category_refs_from_properties(
-            mock_session, {"Has_status"}, {}
-        )
+        result = await _extract_category_refs_from_properties(mock_session, {"Has_status"}, {})
 
         # No categories should be extracted since allowed_values is an array
         assert len(result) == 0
@@ -316,7 +314,11 @@ class TestComputeModuleDerivedEntities:
             if "categories" in query_str and "entity_key" in query_str:
                 # Category lookup - return None to indicate not found in canonical
                 mock_result.scalar_one_or_none.return_value = None
-            elif "category_property_effective" in query_str or "category_subobject" in query_str or "Resource" in query_str:
+            elif (
+                "category_property_effective" in query_str
+                or "category_subobject" in query_str
+                or "Resource" in query_str
+            ):
                 mock_result.fetchall.return_value = []
             else:
                 mock_result.fetchall.return_value = []
@@ -432,10 +434,20 @@ class TestComputeModuleDerivedEntities:
 
         # Patch the helper functions
         with (
-            patch.object(module_derived, "_get_category_members", side_effect=mock_get_category_members),
-            patch.object(module_derived, "_extract_category_refs_from_properties", side_effect=mock_extract_category_refs),
-            patch.object(module_derived, "_get_category_resources", side_effect=mock_get_category_resources),
-            patch.object(module_derived, "_get_templates_from_properties", side_effect=mock_get_templates),
+            patch.object(
+                module_derived, "_get_category_members", side_effect=mock_get_category_members
+            ),
+            patch.object(
+                module_derived,
+                "_extract_category_refs_from_properties",
+                side_effect=mock_extract_category_refs,
+            ),
+            patch.object(
+                module_derived, "_get_category_resources", side_effect=mock_get_category_resources
+            ),
+            patch.object(
+                module_derived, "_get_templates_from_properties", side_effect=mock_get_templates
+            ),
         ):
             result = await compute_module_derived_entities(
                 mock_session, ["CategoryA"], None, max_depth=10
@@ -447,7 +459,9 @@ class TestComputeModuleDerivedEntities:
         # - R1 should be included (resource from B transitively)
         assert "PropP1" in result["properties"], "P1 should be derived from category A"
         assert "PropP2" in result["properties"], "P2 should be derived from category B (transitive)"
-        assert "ResourceR1" in result["resources"], "R1 should be derived from category B (transitive)"
+        assert "ResourceR1" in result["resources"], (
+            "R1 should be derived from category B (transitive)"
+        )
 
 
 class TestGetEffectivePropertyJson:
@@ -470,9 +484,7 @@ class TestGetEffectivePropertyJson:
 
         draft_changes = {"property:NewProp": draft_change}
 
-        result = await _get_effective_property_json(
-            mock_session, "NewProp", draft_changes
-        )
+        result = await _get_effective_property_json(mock_session, "NewProp", draft_changes)
 
         assert result is not None
         assert result["name"] == "New Property"
@@ -503,9 +515,7 @@ class TestGetEffectivePropertyJson:
 
         draft_changes = {"property:ExistingProp": draft_change}
 
-        result = await _get_effective_property_json(
-            mock_session, "ExistingProp", draft_changes
-        )
+        result = await _get_effective_property_json(mock_session, "ExistingProp", draft_changes)
 
         assert result is not None
         assert result["name"] == "Original"
@@ -526,9 +536,7 @@ class TestGetEffectivePropertyJson:
         mock_result.scalar_one_or_none.return_value = mock_property
         mock_session.execute.return_value = mock_result
 
-        result = await _get_effective_property_json(
-            mock_session, "CanonicalProp", {}
-        )
+        result = await _get_effective_property_json(mock_session, "CanonicalProp", {})
 
         assert result is not None
         assert result["name"] == "Canonical"
@@ -544,9 +552,7 @@ class TestGetEffectivePropertyJson:
         mock_result.scalar_one_or_none.return_value = None
         mock_session.execute.return_value = mock_result
 
-        result = await _get_effective_property_json(
-            mock_session, "NonExistentProp", {}
-        )
+        result = await _get_effective_property_json(mock_session, "NonExistentProp", {})
 
         assert result is None
 
@@ -573,9 +579,7 @@ class TestDerivationChainE2E:
     """
 
     @pytest.mark.asyncio
-    async def test_derivation_chain_includes_referenced_category_resources(
-        self, test_session
-    ):
+    async def test_derivation_chain_includes_referenced_category_resources(self, test_session):
         """Full derivation chain: category -> property -> referenced category -> resources.
 
         Setup:
@@ -667,25 +671,20 @@ class TestDerivationChainE2E:
 
         # Now derive from CategoryA using the draft
         result = await compute_module_derived_entities(
-            test_session,
-            ["CategoryA"],
-            draft_id=draft.id,
-            max_depth=10
+            test_session, ["CategoryA"], draft_id=draft.id, max_depth=10
         )
 
         # Verify the chain worked:
         # 1. PropRef should be in properties (from CategoryA directly)
-        assert "PropRef" in result["properties"], \
-            "PropRef should be derived from CategoryA"
+        assert "PropRef" in result["properties"], "PropRef should be derived from CategoryA"
 
         # 2. ResourceInB should be in resources (from CategoryB, which was pulled in via PropRef)
-        assert "ResourceInB" in result["resources"], \
+        assert "ResourceInB" in result["resources"], (
             "ResourceInB should be derived transitively via PropRef -> CategoryB"
+        )
 
     @pytest.mark.asyncio
-    async def test_derivation_with_allowed_values_from_category_format(
-        self, test_session
-    ):
+    async def test_derivation_with_allowed_values_from_category_format(self, test_session):
         """Test derivation with nested allowed_values.from_category format.
 
         Setup:
@@ -771,21 +770,17 @@ class TestDerivationChainE2E:
 
         # Derive from CategoryX using draft
         result = await compute_module_derived_entities(
-            test_session,
-            ["CategoryX"],
-            draft_id=draft.id,
-            max_depth=10
+            test_session, ["CategoryX"], draft_id=draft.id, max_depth=10
         )
 
         # Verify nested format works
         assert "PropNested" in result["properties"]
-        assert "ResourceInY" in result["resources"], \
+        assert "ResourceInY" in result["resources"], (
             "Resource should be derived via allowed_values.from_category format"
+        )
 
     @pytest.mark.asyncio
-    async def test_derivation_with_multiple_resources_per_category(
-        self, test_session
-    ):
+    async def test_derivation_with_multiple_resources_per_category(self, test_session):
         """Test derivation includes all resources from referenced category."""
         import secrets
         from datetime import datetime, timedelta
@@ -864,10 +859,7 @@ class TestDerivationChainE2E:
         await test_session.commit()
 
         result = await compute_module_derived_entities(
-            test_session,
-            ["CategoryEntry"],
-            draft_id=draft.id,
-            max_depth=10
+            test_session, ["CategoryEntry"], draft_id=draft.id, max_depth=10
         )
 
         # All 3 resources should be included

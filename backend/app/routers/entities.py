@@ -1186,8 +1186,7 @@ async def get_dashboard(
     # Extract pages from canonical_json (stored in effective after overlay)
     pages_data = effective.get("pages", [])
     pages = [
-        DashboardPage(name=p.get("name", ""), wikitext=p.get("wikitext", ""))
-        for p in pages_data
+        DashboardPage(name=p.get("name", ""), wikitext=p.get("wikitext", "")) for p in pages_data
     ]
 
     return DashboardDetailResponse(
@@ -1334,9 +1333,7 @@ async def get_category_resources(
 
     # Query resources for this category
     query = (
-        select(Resource)
-        .where(Resource.category_key == entity_key)
-        .order_by(Resource.entity_key)
+        select(Resource).where(Resource.category_key == entity_key).order_by(Resource.entity_key)
     )
     result = await session.execute(query)
     resources = result.scalars().all()

@@ -845,7 +845,9 @@ class GraphQueryService:
             module_effective = await self.draft_overlay.apply_overlay(
                 module, "module", module.entity_key
             )
-            module_change_status = module_effective.get("_change_status") if module_effective else None
+            module_change_status = (
+                module_effective.get("_change_status") if module_effective else None
+            )
 
             nodes.append(
                 GraphNode(
@@ -925,7 +927,9 @@ class GraphQueryService:
                     cat_effective = await self.draft_overlay.apply_overlay(
                         category, "category", draft_category_key
                     )
-                    cat_change_status = cat_effective.get("_change_status") if cat_effective else None
+                    cat_change_status = (
+                        cat_effective.get("_change_status") if cat_effective else None
+                    )
                     cat_module_membership = await self._get_module_membership(
                         [draft_category_key], "category"
                     )

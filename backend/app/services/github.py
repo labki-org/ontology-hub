@@ -18,7 +18,16 @@ logger = logging.getLogger(__name__)
 
 # Directories containing entity JSON files (v2.0)
 ENTITY_DIRECTORIES = frozenset(
-    {"categories", "properties", "subobjects", "modules", "bundles", "templates", "dashboards", "resources"}
+    {
+        "categories",
+        "properties",
+        "subobjects",
+        "modules",
+        "bundles",
+        "templates",
+        "dashboards",
+        "resources",
+    }
 )
 
 

@@ -71,9 +71,7 @@ def upgrade() -> None:
         sa.Column("dashboard_id", sa.UUID(), nullable=False),
         sa.PrimaryKeyConstraint("module_id", "dashboard_id"),
         sa.ForeignKeyConstraint(["module_id"], ["modules_v2.id"], ondelete="CASCADE"),
-        sa.ForeignKeyConstraint(
-            ["dashboard_id"], ["dashboards.id"], ondelete="RESTRICT"
-        ),
+        sa.ForeignKeyConstraint(["dashboard_id"], ["dashboards.id"], ondelete="RESTRICT"),
     )
 
     # bundle_dashboard - bundle references dashboard
@@ -83,9 +81,7 @@ def upgrade() -> None:
         sa.Column("dashboard_id", sa.UUID(), nullable=False),
         sa.PrimaryKeyConstraint("bundle_id", "dashboard_id"),
         sa.ForeignKeyConstraint(["bundle_id"], ["bundles.id"], ondelete="CASCADE"),
-        sa.ForeignKeyConstraint(
-            ["dashboard_id"], ["dashboards.id"], ondelete="RESTRICT"
-        ),
+        sa.ForeignKeyConstraint(["dashboard_id"], ["dashboards.id"], ondelete="RESTRICT"),
     )
 
 

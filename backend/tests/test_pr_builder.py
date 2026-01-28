@@ -61,7 +61,7 @@ async def seeded_dashboard(test_session: AsyncSession) -> Dashboard:
             "id": "Existing_Dashboard",
             "pages": [
                 {"name": "", "tabs": [{"title": "Main"}]},
-            ]
+            ],
         },
     )
     test_session.add(dashboard)
@@ -109,10 +109,7 @@ class TestDashboardPRFiles:
             change_type=ChangeType.CREATE,
             entity_type="dashboard",
             entity_key="New_Dashboard",
-            replacement_json={
-                "id": "New_Dashboard",
-                "pages": [{"name": "", "tabs": []}]
-            },
+            replacement_json={"id": "New_Dashboard", "pages": [{"name": "", "tabs": []}]},
         )
         test_session.add(change)
         await test_session.commit()
@@ -130,7 +127,10 @@ class TestDashboardPRFiles:
 
     @pytest.mark.asyncio
     async def test_dashboard_update_applies_patch(
-        self, test_session: AsyncSession, test_draft: Draft, seeded_dashboard: Dashboard  # noqa: ARG002
+        self,
+        test_session: AsyncSession,
+        test_draft: Draft,
+        seeded_dashboard: Dashboard,  # noqa: ARG002
     ):
         """Dashboard UPDATE applies patch to canonical and produces file."""
         change = DraftChange(
@@ -138,9 +138,7 @@ class TestDashboardPRFiles:
             change_type=ChangeType.UPDATE,
             entity_type="dashboard",
             entity_key="Existing_Dashboard",
-            patch=[
-                {"op": "add", "path": "/pages/-", "value": {"name": "NewPage", "tabs": []}}
-            ],
+            patch=[{"op": "add", "path": "/pages/-", "value": {"name": "NewPage", "tabs": []}}],
         )
         test_session.add(change)
         await test_session.commit()
@@ -157,7 +155,10 @@ class TestDashboardPRFiles:
 
     @pytest.mark.asyncio
     async def test_dashboard_delete_produces_deletion_marker(
-        self, test_session: AsyncSession, test_draft: Draft, seeded_dashboard: Dashboard  # noqa: ARG002
+        self,
+        test_session: AsyncSession,
+        test_draft: Draft,
+        seeded_dashboard: Dashboard,  # noqa: ARG002
     ):
         """Dashboard DELETE produces file deletion marker."""
         change = DraftChange(
@@ -215,7 +216,10 @@ class TestResourcePRFiles:
 
     @pytest.mark.asyncio
     async def test_resource_update_applies_patch(
-        self, test_session: AsyncSession, test_draft: Draft, seeded_resource: Resource  # noqa: ARG002
+        self,
+        test_session: AsyncSession,
+        test_draft: Draft,
+        seeded_resource: Resource,  # noqa: ARG002
     ):
         """Resource UPDATE applies patch to canonical and produces file."""
         change = DraftChange(
@@ -223,9 +227,7 @@ class TestResourcePRFiles:
             change_type=ChangeType.UPDATE,
             entity_type="resource",
             entity_key="Equipment/Lab_Microscope",
-            patch=[
-                {"op": "add", "path": "/Has_serial_number", "value": "SN-12345"}
-            ],
+            patch=[{"op": "add", "path": "/Has_serial_number", "value": "SN-12345"}],
         )
         test_session.add(change)
         await test_session.commit()
@@ -241,7 +243,10 @@ class TestResourcePRFiles:
 
     @pytest.mark.asyncio
     async def test_resource_delete_produces_deletion_marker(
-        self, test_session: AsyncSession, test_draft: Draft, seeded_resource: Resource  # noqa: ARG002
+        self,
+        test_session: AsyncSession,
+        test_draft: Draft,
+        seeded_resource: Resource,  # noqa: ARG002
     ):
         """Resource DELETE produces file deletion marker."""
         change = DraftChange(
