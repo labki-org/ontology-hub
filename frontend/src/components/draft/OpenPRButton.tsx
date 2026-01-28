@@ -33,8 +33,8 @@ export function OpenPRButton({
   const handleClick = () => {
     if (isDisabled) return
 
-    // Redirect directly to backend OAuth endpoint (bypass Vite proxy for correct Host header)
-    window.location.href = `http://localhost:8080/api/v1/oauth/github/login?draft_token=${draftToken}`
+    // Redirect to backend OAuth endpoint using current origin (works in both dev and production)
+    window.location.href = `${window.location.origin}/api/v1/oauth/github/login?draft_token=${draftToken}`
   }
 
   return (

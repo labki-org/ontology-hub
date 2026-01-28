@@ -35,10 +35,9 @@ export function ConfirmSubmit({
       params.set('suggested_semver', suggestedSemver)
     }
 
-    // Redirect to GitHub OAuth login endpoint (direct to backend, not through Vite proxy)
-    // This ensures the OAuth callback URL matches what's registered in GitHub OAuth app
+    // Redirect to GitHub OAuth login endpoint using current origin
     // Backend will handle PR creation in the OAuth callback
-    window.location.href = `http://localhost:8080/api/v1/oauth/github/login?${params.toString()}`
+    window.location.href = `${window.location.origin}/api/v1/oauth/github/login?${params.toString()}`
   }
 
   return (
