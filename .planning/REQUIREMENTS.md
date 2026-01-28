@@ -32,10 +32,10 @@ Requirements for Dashboard and Resource entity types milestone.
 
 ### Auto-Derivation Chain
 
-- [ ] **DERV-01**: Properties with allowed_values.from_category auto-include referenced category
-- [ ] **DERV-02**: Categories in module auto-include their resources
-- [ ] **DERV-03**: Derivation chain handles cycles with visited sets
-- [ ] **DERV-04**: Draft patches use "add" op for derived arrays
+- [x] **DERV-01**: Properties with allowed_values.from_category auto-include referenced category
+- [x] **DERV-02**: Categories in module auto-include their resources
+- [x] **DERV-03**: Derivation chain handles cycles with visited sets
+- [x] **DERV-04**: Draft patches use "add" op for derived arrays
 
 ### Integration
 
@@ -73,10 +73,10 @@ Requirements for Dashboard and Resource entity types milestone.
 | RSRC-06 | Phase 29 | Pending |
 | RSRC-07 | Phase 30 | Pending |
 | RSRC-08 | Phase 31 | Pending |
-| DERV-01 | Phase 27 | Pending |
-| DERV-02 | Phase 27 | Pending |
-| DERV-03 | Phase 27 | Pending |
-| DERV-04 | Phase 27 | Pending |
+| DERV-01 | Phase 27 | Complete |
+| DERV-02 | Phase 27 | Complete |
+| DERV-03 | Phase 27 | Complete |
+| DERV-04 | Phase 27 | Complete |
 | INTG-01 | Phase 28 | Pending |
 | INTG-02 | Phase 28 | Pending |
 | INTG-03 | Phase 32 | Pending |
@@ -89,4 +89,4 @@ Requirements for Dashboard and Resource entity types milestone.
 
 ---
 *Requirements defined: 2026-01-27*
-*Last updated: 2026-01-28 after Phase 26 completion*
+*Last updated: 2026-01-28 after Phase 27 completion*

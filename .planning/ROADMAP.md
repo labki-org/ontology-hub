@@ -66,13 +66,14 @@ Plans:
 5. GET /categories/{key}/resources returns resources for category
 6. Draft overlay applies to new entity endpoints
 
-### Phase 27: Module Auto-Derivation Extension
+### Phase 27: Module Auto-Derivation Extension ✓
 **Goal**: Extend derivation to include categories from allowed_values and resources from categories
 **Requirements**: DERV-01, DERV-02, DERV-03, DERV-04
 **Plans:** 2 plans
 Plans:
-- [ ] 27-01-PLAN.md — Implement transitive derivation algorithm in module_derived.py
-- [ ] 27-02-PLAN.md — Integrate with draft system and add unit tests
+- [x] 27-01-PLAN.md — Implement transitive derivation algorithm in module_derived.py
+- [x] 27-02-PLAN.md — Integrate with draft system and add unit tests
+**Status**: Complete (2026-01-28)
 **Success Criteria**:
 1. Property with `allowed_values: {"from_category": "X"}` derives category X into module
 2. Categories in module derive their resources into module
@@ -137,9 +138,9 @@ Phases execute in numeric order: 1 -> 2 -> ... -> 32
 | v1.0 MVP | 1-7 | 20 | ✅ Complete | 2026-01-23 |
 | v2.0 Platform Rebuild | 8-15 | 41 | ✅ Complete | 2026-01-25 |
 | v2.1 Bug Fixes & UX | 16-22 | 24 | ✅ Complete | 2026-01-25 |
-| v1.1.0 Dashboard & Resource | 23-32 | 8+ | 🚧 In Progress | — |
+| v1.1.0 Dashboard & Resource | 23-32 | 10+ | 🚧 In Progress | — |
 
-**Total:** 91 plans completed across 26 phases + 6 remaining phases
+**Total:** 93 plans completed across 27 phases + 5 remaining phases
 
 ---
 *Roadmap created: 2026-01-23*
