@@ -128,6 +128,10 @@ Plans:
 ### Phase 31: Frontend Create/Edit Forms
 **Goal**: Forms for creating new dashboards and resources
 **Requirements**: DASH-07, RSRC-08
+**Plans:** 2 plans
+Plans:
+- [ ] 31-01-PLAN.md — Add dashboard schema and create DashboardForm with page management
+- [ ] 31-02-PLAN.md — Add resource schema, create ResourceForm, integrate forms into Sidebar
 **Success Criteria**:
 1. DashboardForm supports page management and wikitext editing
 2. ResourceForm renders category-driven fields dynamically
