@@ -163,6 +163,28 @@ export function GraphControls({ onResetLayout, isSimulating }: GraphControlsProp
                   />
                   <span className="text-xs">Subobject Props</span>
                 </label>
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <Checkbox
+                    id="edge-module-dashboard"
+                    checked={edgeTypeFilter.has('module_dashboard')}
+                    onCheckedChange={(checked) =>
+                      handleEdgeTypeToggle('module_dashboard', checked as boolean)
+                    }
+                    className="h-3.5 w-3.5"
+                  />
+                  <span className="text-xs">Dashboards</span>
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <Checkbox
+                    id="edge-category-resource"
+                    checked={edgeTypeFilter.has('category_resource')}
+                    onCheckedChange={(checked) =>
+                      handleEdgeTypeToggle('category_resource', checked as boolean)
+                    }
+                    className="h-3.5 w-3.5"
+                  />
+                  <span className="text-xs">Resources</span>
+                </label>
               </div>
             </div>
           </div>
