@@ -198,6 +198,10 @@ class IngestService:
             b.entity_key: b.id
             for b in (await self._session.execute(select(Bundle))).scalars().all()
         }
+        dashboards = {
+            d.entity_key: d.id
+            for d in (await self._session.execute(select(Dashboard))).scalars().all()
+        }
 
         for rel in pending:
             if rel.type == "category_parent":
@@ -309,6 +313,36 @@ class IngestService:
                 else:
                     self._warnings.append(
                         f"Unresolved bundle_module: {rel.source_key} -> {rel.target_key}"
+                    )
+
+            elif rel.type == "module_dashboard":
+                module_id = modules.get(rel.source_key)
+                dashboard_id = dashboards.get(rel.target_key)
+                if module_id and dashboard_id:
+                    self._session.add(
+                        ModuleDashboard(
+                            module_id=module_id,
+                            dashboard_id=dashboard_id,
+                        )
+                    )
+                else:
+                    self._warnings.append(
+                        f"Unresolved module_dashboard: {rel.source_key} -> {rel.target_key}"
+                    )
+
+            elif rel.type == "bundle_dashboard":
+                bundle_id = bundles.get(rel.source_key)
+                dashboard_id = dashboards.get(rel.target_key)
+                if bundle_id and dashboard_id:
+                    self._session.add(
+                        BundleDashboard(
+                            bundle_id=bundle_id,
+                            dashboard_id=dashboard_id,
+                        )
+                    )
+                else:
+                    self._warnings.append(
+                        f"Unresolved bundle_dashboard: {rel.source_key} -> {rel.target_key}"
                     )
 
     async def refresh_mat_view(self) -> None:
