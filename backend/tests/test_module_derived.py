@@ -551,3 +551,325 @@ class TestGetEffectivePropertyJson:
         )
 
         assert result is None
+
+
+# ============================================================================
+# End-to-End Derivation Chain Tests
+# ============================================================================
+
+
+class TestDerivationChainE2E:
+    """End-to-end tests for derivation chain with database fixtures.
+
+    These tests verify INTG-04: full derivation chain works:
+    - Category A has property P1
+    - P1 has Allows_value_from_category: "CategoryB"
+    - Category B has resources R1, R2
+
+    Derivation from [CategoryA] should produce:
+    - properties: [P1, P2] (P1 from A, P2 from B)
+    - resources: [R1, R2] (from B via P1's reference)
+
+    Note: Tests use draft-created categories to bypass materialized view
+    (category_property_effective) which doesn't exist in SQLite test db.
+    """
+
+    @pytest.mark.asyncio
+    async def test_derivation_chain_includes_referenced_category_resources(
+        self, test_session
+    ):
+        """Full derivation chain: category -> property -> referenced category -> resources.
+
+        Setup:
+        - CategoryA with required_properties: ["PropRef"]
+        - PropRef with Allows_value_from_category: "CategoryB"
+        - CategoryB (no properties)
+        - ResourceInB belonging to CategoryB
+
+        Expected result from compute_module_derived_entities(["CategoryA"]):
+        - properties: ["PropRef"]
+        - resources: ["ResourceInB"] (derived from CategoryB which was pulled in via PropRef)
+        """
+        import secrets
+        from datetime import datetime, timedelta, timezone
+        from app.services.module_derived import compute_module_derived_entities
+        from app.models.v2 import Draft, DraftChange, DraftSource, ChangeType, Property, Resource
+
+        # Create a draft to hold our draft-created categories
+        # This bypasses the materialized view which doesn't exist in SQLite
+        draft = Draft(
+            capability_hash=secrets.token_hex(32),
+            base_commit_sha="abc123",
+            source=DraftSource.HUB_UI,
+            title="E2E Test Draft",
+            description="Testing derivation chain",
+            expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
+        )
+        test_session.add(draft)
+        await test_session.commit()
+        await test_session.refresh(draft)
+
+        # Create CategoryB as draft-created (bypasses materialized view)
+        cat_b_change = DraftChange(
+            draft_id=draft.id,
+            entity_type="category",
+            entity_key="CategoryB",
+            change_type=ChangeType.CREATE,
+            replacement_json={
+                "name": "CategoryB",
+                "required_properties": [],
+                "optional_properties": [],
+            },
+        )
+        test_session.add(cat_b_change)
+
+        # Create CategoryA as draft-created with PropRef as required property
+        cat_a_change = DraftChange(
+            draft_id=draft.id,
+            entity_type="category",
+            entity_key="CategoryA",
+            change_type=ChangeType.CREATE,
+            replacement_json={
+                "name": "CategoryA",
+                "required_properties": ["PropRef"],
+                "optional_properties": [],
+            },
+        )
+        test_session.add(cat_a_change)
+
+        # Create property that references CategoryB (canonical, not draft)
+        prop_ref = Property(
+            entity_key="PropRef",
+            source_path="properties/PropRef.json",
+            label="Property with reference",
+            canonical_json={
+                "name": "PropRef",
+                "type": "page",
+                "Allows_value_from_category": "CategoryB",
+            },
+        )
+        test_session.add(prop_ref)
+
+        # Create resource belonging to CategoryB (canonical)
+        resource_in_b = Resource(
+            entity_key="ResourceInB",
+            source_path="resources/CategoryB/ResourceInB.json",
+            label="Resource in B",
+            category_key="CategoryB",
+            canonical_json={
+                "id": "ResourceInB",
+                "category": "CategoryB",
+                "label": "Resource in B",
+            },
+        )
+        test_session.add(resource_in_b)
+
+        await test_session.commit()
+
+        # Now derive from CategoryA using the draft
+        result = await compute_module_derived_entities(
+            test_session,
+            ["CategoryA"],
+            draft_id=draft.id,
+            max_depth=10
+        )
+
+        # Verify the chain worked:
+        # 1. PropRef should be in properties (from CategoryA directly)
+        assert "PropRef" in result["properties"], \
+            "PropRef should be derived from CategoryA"
+
+        # 2. ResourceInB should be in resources (from CategoryB, which was pulled in via PropRef)
+        assert "ResourceInB" in result["resources"], \
+            "ResourceInB should be derived transitively via PropRef -> CategoryB"
+
+    @pytest.mark.asyncio
+    async def test_derivation_with_allowed_values_from_category_format(
+        self, test_session
+    ):
+        """Test derivation with nested allowed_values.from_category format.
+
+        Setup:
+        - CategoryX with required_properties: ["PropNested"]
+        - PropNested with allowed_values: {"from_category": "CategoryY"}
+        - CategoryY with resource ResourceInY
+        """
+        import secrets
+        from datetime import datetime, timedelta, timezone
+        from app.services.module_derived import compute_module_derived_entities
+        from app.models.v2 import Draft, DraftChange, DraftSource, ChangeType, Property, Resource
+
+        # Create draft for draft-created categories
+        draft = Draft(
+            capability_hash=secrets.token_hex(32),
+            base_commit_sha="abc123",
+            source=DraftSource.HUB_UI,
+            title="E2E Test Draft 2",
+            description="Testing nested format",
+            expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
+        )
+        test_session.add(draft)
+        await test_session.commit()
+        await test_session.refresh(draft)
+
+        # Create CategoryY as draft-created
+        cat_y_change = DraftChange(
+            draft_id=draft.id,
+            entity_type="category",
+            entity_key="CategoryY",
+            change_type=ChangeType.CREATE,
+            replacement_json={
+                "name": "CategoryY",
+                "required_properties": [],
+                "optional_properties": [],
+            },
+        )
+        test_session.add(cat_y_change)
+
+        # Create CategoryX as draft-created
+        cat_x_change = DraftChange(
+            draft_id=draft.id,
+            entity_type="category",
+            entity_key="CategoryX",
+            change_type=ChangeType.CREATE,
+            replacement_json={
+                "name": "CategoryX",
+                "required_properties": ["PropNested"],
+                "optional_properties": [],
+            },
+        )
+        test_session.add(cat_x_change)
+
+        # Create property with nested format (canonical)
+        prop_nested = Property(
+            entity_key="PropNested",
+            source_path="properties/PropNested.json",
+            label="Property with nested allowed_values",
+            canonical_json={
+                "name": "PropNested",
+                "type": "page",
+                "allowed_values": {"from_category": "CategoryY"},
+            },
+        )
+        test_session.add(prop_nested)
+
+        # Create resource in CategoryY (canonical)
+        resource_in_y = Resource(
+            entity_key="ResourceInY",
+            source_path="resources/CategoryY/ResourceInY.json",
+            label="Resource in Y",
+            category_key="CategoryY",
+            canonical_json={
+                "id": "ResourceInY",
+                "category": "CategoryY",
+                "label": "Resource in Y",
+            },
+        )
+        test_session.add(resource_in_y)
+
+        await test_session.commit()
+
+        # Derive from CategoryX using draft
+        result = await compute_module_derived_entities(
+            test_session,
+            ["CategoryX"],
+            draft_id=draft.id,
+            max_depth=10
+        )
+
+        # Verify nested format works
+        assert "PropNested" in result["properties"]
+        assert "ResourceInY" in result["resources"], \
+            "Resource should be derived via allowed_values.from_category format"
+
+    @pytest.mark.asyncio
+    async def test_derivation_with_multiple_resources_per_category(
+        self, test_session
+    ):
+        """Test derivation includes all resources from referenced category."""
+        import secrets
+        from datetime import datetime, timedelta, timezone
+        from app.services.module_derived import compute_module_derived_entities
+        from app.models.v2 import Draft, DraftChange, DraftSource, ChangeType, Property, Resource
+
+        # Create draft for draft-created categories
+        draft = Draft(
+            capability_hash=secrets.token_hex(32),
+            base_commit_sha="abc123",
+            source=DraftSource.HUB_UI,
+            title="E2E Test Draft 3",
+            description="Testing multiple resources",
+            expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
+        )
+        test_session.add(draft)
+        await test_session.commit()
+        await test_session.refresh(draft)
+
+        # Create CategoryManyRes as draft-created
+        cat_many_change = DraftChange(
+            draft_id=draft.id,
+            entity_type="category",
+            entity_key="CategoryManyRes",
+            change_type=ChangeType.CREATE,
+            replacement_json={
+                "name": "CategoryManyRes",
+                "required_properties": [],
+                "optional_properties": [],
+            },
+        )
+        test_session.add(cat_many_change)
+
+        # Create CategoryEntry as draft-created
+        cat_entry_change = DraftChange(
+            draft_id=draft.id,
+            entity_type="category",
+            entity_key="CategoryEntry",
+            change_type=ChangeType.CREATE,
+            replacement_json={
+                "name": "CategoryEntry",
+                "required_properties": ["PropToMany"],
+                "optional_properties": [],
+            },
+        )
+        test_session.add(cat_entry_change)
+
+        # Create property referencing CategoryManyRes (canonical)
+        prop = Property(
+            entity_key="PropToMany",
+            source_path="properties/PropToMany.json",
+            label="Property to many",
+            canonical_json={
+                "name": "PropToMany",
+                "Allows_value_from_category": "CategoryManyRes",
+            },
+        )
+        test_session.add(prop)
+
+        # Create multiple resources in CategoryManyRes (canonical)
+        for i in range(3):
+            res = Resource(
+                entity_key=f"Resource{i}",
+                source_path=f"resources/CategoryManyRes/Resource{i}.json",
+                label=f"Resource {i}",
+                category_key="CategoryManyRes",
+                canonical_json={
+                    "id": f"Resource{i}",
+                    "category": "CategoryManyRes",
+                    "label": f"Resource {i}",
+                },
+            )
+            test_session.add(res)
+
+        await test_session.commit()
+
+        result = await compute_module_derived_entities(
+            test_session,
+            ["CategoryEntry"],
+            draft_id=draft.id,
+            max_depth=10
+        )
+
+        # All 3 resources should be included
+        assert "Resource0" in result["resources"]
+        assert "Resource1" in result["resources"]
+        assert "Resource2" in result["resources"]
