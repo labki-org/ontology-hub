@@ -24,7 +24,7 @@ enableMapSet()
  * - Change tracking for direct edits and transitive effects
  */
 /** Entity types that can be created */
-export type CreateModalEntityType = 'category' | 'property' | 'subobject' | 'template' | 'module' | 'bundle'
+export type CreateModalEntityType = 'category' | 'property' | 'subobject' | 'template' | 'module' | 'bundle' | 'dashboard' | 'resource'
 
 interface DraftStoreState {
   // Draft context
