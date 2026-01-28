@@ -11,7 +11,7 @@ from pydantic import BaseModel
 class ValidationResultV2(BaseModel):
     """Single validation finding for v2 draft validation."""
 
-    entity_type: Literal["category", "property", "subobject", "module", "bundle", "template"]
+    entity_type: Literal["category", "property", "subobject", "module", "bundle", "template", "dashboard", "resource"]
     entity_key: str  # v2 uses entity_key (not entity_id)
     field_path: str | None = None  # JSON path like "/parents/0" or "label"
     code: (
