@@ -9,17 +9,17 @@ See: .planning/PROJECT.md (updated 2026-01-27)
 
 ## Current Position
 
-Phase: 24 of 32 ✓
+Phase: 25 of 32
 Plan: 02 of 02 complete
-Status: Phase 24 verified (8/8 must-haves)
-Last activity: 2026-01-28 — Phase 24 complete and verified
+Status: Phase 25 complete (ingest pipeline updated)
+Last activity: 2026-01-28 - Completed 25-02-PLAN.md
 
-Progress: [██████                        ] 20% (2/10 phases in v1.1.0)
+Progress: [████████                      ] 25% (3/10 phases in v1.1.0)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 88 (20 v1.0 + 41 v2.0 + 24 v2.1 + 3 v1.1.0)
+- Total plans completed: 90 (20 v1.0 + 41 v2.0 + 24 v2.1 + 5 v1.1.0)
 
 **Summary by Milestone:**
 
@@ -28,8 +28,8 @@ Progress: [██████                        ] 20% (2/10 phases in v1.1.
 | v1.0 MVP | 1-7 | 20 | 2 days |
 | v2.0 Platform Rebuild | 8-15 | 41 | 2 days |
 | v2.1 Bug Fixes & UX | 16-22 | 24 | 5 days |
-| v1.1.0 Dashboard & Resource | 23-32 | 3 | In Progress |
-| **Total** | 32 | 88+ | - |
+| v1.1.0 Dashboard & Resource | 23-32 | 5 | In Progress |
+| **Total** | 32 | 90+ | - |
 
 ## Accumulated Context
 
@@ -47,6 +47,10 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - ondelete=RESTRICT on dashboard FK prevents accidental dashboard deletion while in use
 - ondelete=CASCADE on module/bundle FK auto-cleans junction rows when parent deleted
 
+**Phase 25 decisions:**
+- Resources use nested paths like templates (resources/Category/key.json)
+- Dashboard relationships resolved via lookup table pattern matching existing entities
+
 ### Pending Todos
 
 None.
@@ -58,6 +62,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-28
-Stopped at: Completed 24-02-PLAN.md (Alembic migration complete)
+Stopped at: Completed 25-02-PLAN.md (ingest service complete)
 Resume file: None
-Next action: Begin Phase 25 (ingest parsers for Dashboard/Resource)
+Next action: Begin Phase 26 (CRUD endpoints for Dashboard/Resource)
