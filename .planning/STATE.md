@@ -9,17 +9,17 @@ See: .planning/PROJECT.md (updated 2026-01-27)
 
 ## Current Position
 
-Phase: 28 of 32 ✓
-Plan: 03 of 03 complete
-Status: Phase 28 verified (13/13 must-haves)
-Last activity: 2026-01-28 — Phase 28 complete and verified
+Phase: 29 of 32 (Frontend Graph Visualization)
+Plan: 02 of 03 complete
+Status: In progress
+Last activity: 2026-01-28 — Completed 29-02-PLAN.md
 
-Progress: [██████████████░░              ] 60% (6/10 phases in v1.1.0)
+Progress: [███████████████░░             ] 62% (6.2/10 phases in v1.1.0)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 96 (20 v1.0 + 41 v2.0 + 24 v2.1 + 11 v1.1.0)
+- Total plans completed: 97 (20 v1.0 + 41 v2.0 + 24 v2.1 + 12 v1.1.0)
 
 **Summary by Milestone:**
 
@@ -28,7 +28,7 @@ Progress: [██████████████░░              ] 60% (
 | v1.0 MVP | 1-7 | 20 | 2 days |
 | v2.0 Platform Rebuild | 8-15 | 41 | 2 days |
 | v2.1 Bug Fixes & UX | 16-22 | 24 | 5 days |
-| v1.1.0 Dashboard & Resource | 23-32 | 11 | In Progress |
+| v1.1.0 Dashboard & Resource | 23-32 | 12 | In Progress |
 | **Total** | 32 | 96+ | - |
 
 ## Accumulated Context
@@ -67,6 +67,12 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - Draft-created categories bypass materialized view for property lookup
 - SQLite tests use draft-created categories to bypass materialized view
 
+**Phase 29 decisions:**
+- Dashboard node: 70px size, red-300 fill, rounded rect (r=12)
+- Resource node: 45px size (compact), cyan-300 fill, small rect (r=4)
+- module_dashboard edge: red-600, long dash (8,4)
+- category_resource edge: cyan-600, short dash (3,3)
+
 ### Pending Todos
 
 None.
@@ -78,6 +84,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-28
-Stopped at: Phase 28 complete (draft CRUD support verified)
+Stopped at: Completed 29-02-PLAN.md (frontend node types)
 Resume file: None
-Next action: Begin Phase 29 (Frontend Graph Visualization)
+Next action: Continue Phase 29 with 29-03-PLAN.md (backend graph queries)
