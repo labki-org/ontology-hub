@@ -374,6 +374,51 @@ class EntityParser:
             canonical_json=content,
         )
 
+    def parse_dashboard(self, content: dict, source_path: str) -> Dashboard:
+        """Parse dashboard JSON into model instance.
+
+        Args:
+            content: Parsed JSON content from dashboard file
+            source_path: Original file path, e.g., "dashboards/Core_overview.json"
+
+        Returns:
+            Dashboard instance (no relationships extracted - module/bundle declares dashboard membership)
+        """
+        entity_key = content["id"]
+
+        return Dashboard(
+            entity_key=entity_key,
+            source_path=source_path,
+            label=content.get("label", entity_key),
+            description=content.get("description"),
+            canonical_json=content,  # Contains 'pages' array with wikitext
+        )
+
+    def parse_resource(self, content: dict, source_path: str) -> Resource:
+        """Parse resource JSON into model instance.
+
+        Args:
+            content: Parsed JSON content from resource file
+            source_path: Original file path, e.g., "resources/Person/John_doe.json"
+
+        Returns:
+            Resource instance (category_key extracted from content)
+
+        Note:
+            Resource entity_key includes category prefix for uniqueness
+            (e.g., "Person/John_doe" from resources/Person/John_doe.json)
+        """
+        entity_key = content["id"]  # Already includes category: "Person/John_doe"
+
+        return Resource(
+            entity_key=entity_key,
+            source_path=source_path,
+            label=content.get("label", entity_key),
+            description=content.get("description"),
+            category_key=content.get("category"),  # "Person"
+            canonical_json=content,  # Includes additional properties
+        )
+
     def parse_all(self, files: dict[str, list[tuple[str, dict]]]) -> ParsedEntities:
         """Parse all entity files from a repository.
 
