@@ -10,6 +10,7 @@ from app.models.v2.bundle import Bundle, BundleBase, BundlePublic
 
 # Entity models
 from app.models.v2.category import Category, CategoryBase, CategoryPublic
+from app.models.v2.dashboard import Dashboard, DashboardBase, DashboardPublic
 
 # Materialized view
 from app.models.v2.category_property_effective import (
@@ -41,13 +42,16 @@ from app.models.v2.ontology_version import (
     OntologyVersionPublic,
 )
 from app.models.v2.property import Property, PropertyBase, PropertyPublic
+from app.models.v2.resource import Resource, ResourceBase, ResourcePublic
 
 # Relationship tables
 from app.models.v2.relationships import (
+    BundleDashboard,
     BundleModule,
     CategoryParent,
     CategoryProperty,
     CategorySubobject,
+    ModuleDashboard,
     ModuleDependency,
     ModuleEntity,
     SubobjectProperty,
@@ -90,6 +94,14 @@ __all__ = [
     "Template",
     "TemplateBase",
     "TemplatePublic",
+    # Dashboard
+    "Dashboard",
+    "DashboardBase",
+    "DashboardPublic",
+    # Resource
+    "Resource",
+    "ResourceBase",
+    "ResourcePublic",
     # Relationship tables
     "CategoryParent",
     "CategoryProperty",
@@ -98,6 +110,8 @@ __all__ = [
     "ModuleEntity",
     "ModuleDependency",
     "BundleModule",
+    "ModuleDashboard",
+    "BundleDashboard",
     # Materialized view
     "CategoryPropertyEffective",
     "CATEGORY_PROPERTY_EFFECTIVE_SQL",
