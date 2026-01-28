@@ -10,7 +10,6 @@ from app.models.v2.bundle import Bundle, BundleBase, BundlePublic
 
 # Entity models
 from app.models.v2.category import Category, CategoryBase, CategoryPublic
-from app.models.v2.dashboard import Dashboard, DashboardBase, DashboardPublic
 
 # Materialized view
 from app.models.v2.category_property_effective import (
@@ -21,6 +20,7 @@ from app.models.v2.category_property_effective import (
     CategoryPropertyEffective,
     refresh_category_property_effective,
 )
+from app.models.v2.dashboard import Dashboard, DashboardBase, DashboardPublic
 
 # Draft models
 from app.models.v2.draft import (
@@ -42,7 +42,6 @@ from app.models.v2.ontology_version import (
     OntologyVersionPublic,
 )
 from app.models.v2.property import Property, PropertyBase, PropertyPublic
-from app.models.v2.resource import Resource, ResourceBase, ResourcePublic
 
 # Relationship tables
 from app.models.v2.relationships import (
@@ -56,6 +55,7 @@ from app.models.v2.relationships import (
     ModuleEntity,
     SubobjectProperty,
 )
+from app.models.v2.resource import Resource, ResourceBase, ResourcePublic
 from app.models.v2.subobject import Subobject, SubobjectBase, SubobjectPublic
 from app.models.v2.template import Template, TemplateBase, TemplatePublic
 

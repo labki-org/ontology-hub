@@ -838,7 +838,7 @@ class GraphQueryService:
         result = await self.session.execute(module_query)
         connected_modules = result.scalars().all()
 
-        module_keys = [m.entity_key for m in connected_modules]
+        [m.entity_key for m in connected_modules]
 
         # Add module nodes
         for module in connected_modules:

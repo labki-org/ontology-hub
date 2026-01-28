@@ -8,9 +8,10 @@ Tests verify:
 - Cycle handling
 """
 
-import pytest
+from datetime import UTC
 from unittest.mock import AsyncMock, MagicMock, patch
-from uuid import uuid4
+
+import pytest
 
 from app.models.v2 import ChangeType, DraftChange, Property, Resource
 
@@ -74,7 +75,6 @@ class TestExtractCategoryRefsFromProperties:
     @pytest.mark.asyncio
     async def test_extracts_both_formats(self):
         """Handles both category reference formats."""
-        from app.services.module_derived import _extract_category_refs_from_properties
 
         mock_session = AsyncMock()
 
@@ -106,7 +106,7 @@ class TestExtractCategoryRefsFromProperties:
         # which queries by property_key, we mock at that level
 
         result = set()
-        for prop_key, json_data in props_data.items():
+        for _prop_key, json_data in props_data.items():
             # Check format 1
             if "Allows_value_from_category" in json_data:
                 result.add(json_data["Allows_value_from_category"])
@@ -316,11 +316,7 @@ class TestComputeModuleDerivedEntities:
             if "categories" in query_str and "entity_key" in query_str:
                 # Category lookup - return None to indicate not found in canonical
                 mock_result.scalar_one_or_none.return_value = None
-            elif "category_property_effective" in query_str:
-                mock_result.fetchall.return_value = []
-            elif "category_subobject" in query_str:
-                mock_result.fetchall.return_value = []
-            elif "Resource" in query_str:
+            elif "category_property_effective" in query_str or "category_subobject" in query_str or "Resource" in query_str:
                 mock_result.fetchall.return_value = []
             else:
                 mock_result.fetchall.return_value = []
@@ -435,13 +431,15 @@ class TestComputeModuleDerivedEntities:
             return set()
 
         # Patch the helper functions
-        with patch.object(module_derived, "_get_category_members", side_effect=mock_get_category_members):
-            with patch.object(module_derived, "_extract_category_refs_from_properties", side_effect=mock_extract_category_refs):
-                with patch.object(module_derived, "_get_category_resources", side_effect=mock_get_category_resources):
-                    with patch.object(module_derived, "_get_templates_from_properties", side_effect=mock_get_templates):
-                        result = await compute_module_derived_entities(
-                            mock_session, ["CategoryA"], None, max_depth=10
-                        )
+        with (
+            patch.object(module_derived, "_get_category_members", side_effect=mock_get_category_members),
+            patch.object(module_derived, "_extract_category_refs_from_properties", side_effect=mock_extract_category_refs),
+            patch.object(module_derived, "_get_category_resources", side_effect=mock_get_category_resources),
+            patch.object(module_derived, "_get_templates_from_properties", side_effect=mock_get_templates),
+        ):
+            result = await compute_module_derived_entities(
+                mock_session, ["CategoryA"], None, max_depth=10
+            )
 
         # Verify transitive derivation worked:
         # - P1 should be included (from A directly)
@@ -591,9 +589,10 @@ class TestDerivationChainE2E:
         - resources: ["ResourceInB"] (derived from CategoryB which was pulled in via PropRef)
         """
         import secrets
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
+
+        from app.models.v2 import ChangeType, Draft, DraftChange, DraftSource, Property
         from app.services.module_derived import compute_module_derived_entities
-        from app.models.v2 import Draft, DraftChange, DraftSource, ChangeType, Property, Resource
 
         # Create a draft to hold our draft-created categories
         # This bypasses the materialized view which doesn't exist in SQLite
@@ -603,7 +602,7 @@ class TestDerivationChainE2E:
             source=DraftSource.HUB_UI,
             title="E2E Test Draft",
             description="Testing derivation chain",
-            expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
+            expires_at=datetime.now(UTC) + timedelta(hours=1),
         )
         test_session.add(draft)
         await test_session.commit()
@@ -695,9 +694,10 @@ class TestDerivationChainE2E:
         - CategoryY with resource ResourceInY
         """
         import secrets
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
+
+        from app.models.v2 import ChangeType, Draft, DraftChange, DraftSource, Property
         from app.services.module_derived import compute_module_derived_entities
-        from app.models.v2 import Draft, DraftChange, DraftSource, ChangeType, Property, Resource
 
         # Create draft for draft-created categories
         draft = Draft(
@@ -706,7 +706,7 @@ class TestDerivationChainE2E:
             source=DraftSource.HUB_UI,
             title="E2E Test Draft 2",
             description="Testing nested format",
-            expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
+            expires_at=datetime.now(UTC) + timedelta(hours=1),
         )
         test_session.add(draft)
         await test_session.commit()
@@ -788,9 +788,10 @@ class TestDerivationChainE2E:
     ):
         """Test derivation includes all resources from referenced category."""
         import secrets
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
+
+        from app.models.v2 import ChangeType, Draft, DraftChange, DraftSource, Property
         from app.services.module_derived import compute_module_derived_entities
-        from app.models.v2 import Draft, DraftChange, DraftSource, ChangeType, Property, Resource
 
         # Create draft for draft-created categories
         draft = Draft(
@@ -799,7 +800,7 @@ class TestDerivationChainE2E:
             source=DraftSource.HUB_UI,
             title="E2E Test Draft 3",
             description="Testing multiple resources",
-            expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
+            expires_at=datetime.now(UTC) + timedelta(hours=1),
         )
         test_session.add(draft)
         await test_session.commit()

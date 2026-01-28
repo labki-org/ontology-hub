@@ -115,8 +115,6 @@ async def compute_module_derived_entities(
 
             # Record provenance for properties/subobjects
             if track_provenance:
-                is_manual = cat_key in category_keys
-                reason = "manual (from module.categories)" if is_manual else f"derived from category {cat_key}"
                 for prop_key in new_props:
                     if prop_key not in provenance:
                         provenance[f"property:{prop_key}"] = f"derived from category {cat_key}"

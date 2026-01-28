@@ -10,12 +10,11 @@ Note: Some resource tests that require the category_property_effective materiali
 are skipped when running on SQLite (test environment). These tests pass on PostgreSQL.
 """
 
-import pytest
-import pytest_asyncio
 from datetime import datetime, timedelta
 
+import pytest
+import pytest_asyncio
 from httpx import AsyncClient
-from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.dependencies.capability import generate_capability_token, hash_token
@@ -23,13 +22,11 @@ from app.models.v2 import (
     Category,
     Dashboard,
     Draft,
-    DraftChange,
     DraftSource,
     DraftStatus,
     Property,
     Resource,
 )
-
 
 # ============================================================================
 # Fixtures
@@ -264,7 +261,7 @@ class TestDashboardUpdate:
 
     @pytest.mark.asyncio
     async def test_update_dashboard_patch_pages_succeeds(
-        self, client: AsyncClient, test_draft: tuple[Draft, str], seeded_dashboard: Dashboard
+        self, client: AsyncClient, test_draft: tuple[Draft, str], seeded_dashboard: Dashboard  # noqa: ARG002
     ):
         """UPDATE dashboard with valid patch returns success."""
         draft, token = test_draft
@@ -298,7 +295,7 @@ class TestDashboardDelete:
 
     @pytest.mark.asyncio
     async def test_delete_canonical_dashboard_succeeds(
-        self, client: AsyncClient, test_draft: tuple[Draft, str], seeded_dashboard: Dashboard
+        self, client: AsyncClient, test_draft: tuple[Draft, str], seeded_dashboard: Dashboard  # noqa: ARG002
     ):
         """DELETE canonical dashboard creates DELETE change."""
         draft, token = test_draft
@@ -428,7 +425,7 @@ class TestResourceDelete:
 
     @pytest.mark.asyncio
     async def test_delete_canonical_resource_succeeds(
-        self, client: AsyncClient, test_draft: tuple[Draft, str], seeded_resource: Resource
+        self, client: AsyncClient, test_draft: tuple[Draft, str], seeded_resource: Resource  # noqa: ARG002
     ):
         """DELETE canonical resource creates DELETE change."""
         draft, token = test_draft

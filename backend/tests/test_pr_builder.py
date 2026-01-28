@@ -7,11 +7,10 @@ Tests verify:
 """
 
 import json
+from datetime import datetime, timedelta
 
 import pytest
 import pytest_asyncio
-from datetime import datetime, timedelta
-
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.dependencies.capability import generate_capability_token, hash_token
@@ -25,7 +24,6 @@ from app.models.v2 import (
     Resource,
 )
 from app.services.pr_builder import build_files_from_draft_v2
-
 
 # ============================================================================
 # Fixtures
@@ -132,7 +130,7 @@ class TestDashboardPRFiles:
 
     @pytest.mark.asyncio
     async def test_dashboard_update_applies_patch(
-        self, test_session: AsyncSession, test_draft: Draft, seeded_dashboard: Dashboard
+        self, test_session: AsyncSession, test_draft: Draft, seeded_dashboard: Dashboard  # noqa: ARG002
     ):
         """Dashboard UPDATE applies patch to canonical and produces file."""
         change = DraftChange(
@@ -159,7 +157,7 @@ class TestDashboardPRFiles:
 
     @pytest.mark.asyncio
     async def test_dashboard_delete_produces_deletion_marker(
-        self, test_session: AsyncSession, test_draft: Draft, seeded_dashboard: Dashboard
+        self, test_session: AsyncSession, test_draft: Draft, seeded_dashboard: Dashboard  # noqa: ARG002
     ):
         """Dashboard DELETE produces file deletion marker."""
         change = DraftChange(
@@ -217,7 +215,7 @@ class TestResourcePRFiles:
 
     @pytest.mark.asyncio
     async def test_resource_update_applies_patch(
-        self, test_session: AsyncSession, test_draft: Draft, seeded_resource: Resource
+        self, test_session: AsyncSession, test_draft: Draft, seeded_resource: Resource  # noqa: ARG002
     ):
         """Resource UPDATE applies patch to canonical and produces file."""
         change = DraftChange(
@@ -243,7 +241,7 @@ class TestResourcePRFiles:
 
     @pytest.mark.asyncio
     async def test_resource_delete_produces_deletion_marker(
-        self, test_session: AsyncSession, test_draft: Draft, seeded_resource: Resource
+        self, test_session: AsyncSession, test_draft: Draft, seeded_resource: Resource  # noqa: ARG002
     ):
         """Resource DELETE produces file deletion marker."""
         change = DraftChange(

@@ -11,26 +11,26 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.models.v2 import (
     # Entities
     Bundle,
-    Category,
-    Dashboard,
-    Module,
-    Property,
-    Resource,
-    Subobject,
-    Template,
     # Relationships
     BundleDashboard,
     BundleModule,
+    Category,
     CategoryParent,
     CategoryProperty,
     CategorySubobject,
+    Dashboard,
+    # Version tracking
+    IngestStatus,
+    Module,
     ModuleDashboard,
     ModuleDependency,
     ModuleEntity,
-    SubobjectProperty,
-    # Version tracking
-    IngestStatus,
     OntologyVersion,
+    Property,
+    Resource,
+    Subobject,
+    SubobjectProperty,
+    Template,
     # Mat view refresh
     refresh_category_property_effective,
 )
