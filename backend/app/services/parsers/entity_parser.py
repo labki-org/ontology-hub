@@ -9,9 +9,11 @@ from dataclasses import dataclass, field
 from app.models.v2 import (
     Bundle,
     Category,
+    Dashboard,
     EntityType,
     Module,
     Property,
+    Resource,
     Subobject,
     Template,
 )
