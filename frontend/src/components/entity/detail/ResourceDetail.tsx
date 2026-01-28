@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+import React, { useEffect, useState, useCallback, useRef } from 'react'
 import { useResource } from '@/api/entities'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useGraphStore } from '@/stores/graphStore'
@@ -20,7 +20,7 @@ interface ResourceDetailProps {
  * Format a dynamic field value for display.
  * Handles strings, numbers, arrays, objects, and null/undefined.
  */
-function formatValue(value: unknown): string | JSX.Element {
+function formatValue(value: unknown): string | React.ReactNode {
   if (value === null || value === undefined) {
     return <span className="italic text-muted-foreground">Not set</span>
   }

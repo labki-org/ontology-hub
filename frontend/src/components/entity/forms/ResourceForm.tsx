@@ -139,7 +139,7 @@ export function ResourceForm({
                     {prop.is_required && <span className="text-red-600">*</span>}
                   </Label>
                   <Input
-                    value={dynamicFields?.[prop.entity_key] ?? ''}
+                    value={String(dynamicFields?.[prop.entity_key] ?? '')}
                     onChange={(e) => handleDynamicFieldChange(prop.entity_key, e.target.value)}
                     placeholder={`Enter ${prop.label}...`}
                   />

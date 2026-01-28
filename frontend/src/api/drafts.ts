@@ -178,7 +178,7 @@ export function useCreateDraft() {
 // Entity creation types and hooks
 
 export interface CreateEntityParams {
-  entityType: 'category' | 'property' | 'subobject' | 'template' | 'module' | 'bundle'
+  entityType: 'category' | 'property' | 'subobject' | 'template' | 'module' | 'bundle' | 'dashboard' | 'resource'
   entityKey: string
   data: Record<string, unknown>
 }
