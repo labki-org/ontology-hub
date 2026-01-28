@@ -470,6 +470,8 @@ class EntityParser:
         modules: list[Module] = []
         bundles: list[Bundle] = []
         templates: list[Template] = []
+        dashboards: list[Dashboard] = []
+        resources: list[Resource] = []
         relationships: list[PendingRelationship] = []
 
         # Parse categories
@@ -506,6 +508,16 @@ class EntityParser:
             template = self.parse_template(content, path)
             templates.append(template)
 
+        # Parse dashboards
+        for path, content in files.get("dashboards", []):
+            dashboard = self.parse_dashboard(content, path)
+            dashboards.append(dashboard)
+
+        # Parse resources
+        for path, content in files.get("resources", []):
+            resource = self.parse_resource(content, path)
+            resources.append(resource)
+
         return ParsedEntities(
             categories=categories,
             properties=properties,
@@ -513,5 +525,7 @@ class EntityParser:
             modules=modules,
             bundles=bundles,
             templates=templates,
+            dashboards=dashboards,
+            resources=resources,
             relationships=relationships,
         )
