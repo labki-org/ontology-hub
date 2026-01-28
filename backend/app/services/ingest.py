@@ -115,8 +115,9 @@ class IngestService:
 
             # Only process files directly in entity directories (e.g., "bundles/Default.json")
             # Skip nested files like "bundles/Default/versions/1.0.0.json"
-            # Exception: templates allow nested paths (e.g., templates/Property/Page.json)
-            if len(parts) != 2 and directory != "templates":
+            # Exception: templates and resources allow nested paths
+            # (e.g., templates/Property/Page.json, resources/Person/John_doe.json)
+            if len(parts) != 2 and directory not in ("templates", "resources"):
                 continue
 
             try:
