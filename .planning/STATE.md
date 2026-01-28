@@ -10,16 +10,16 @@ See: .planning/PROJECT.md (updated 2026-01-27)
 ## Current Position
 
 Phase: 28 of 32
-Plan: 01 of 03 complete
+Plan: 02 of 03 complete
 Status: In progress
-Last activity: 2026-01-28 — Completed 28-01-PLAN.md
+Last activity: 2026-01-28 — Completed 28-02-PLAN.md
 
-Progress: [█████████████░░               ] 53% (5.3/10 phases in v1.1.0)
+Progress: [█████████████░░               ] 57% (5.7/10 phases in v1.1.0)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 94 (20 v1.0 + 41 v2.0 + 24 v2.1 + 9 v1.1.0)
+- Total plans completed: 95 (20 v1.0 + 41 v2.0 + 24 v2.1 + 10 v1.1.0)
 
 **Summary by Milestone:**
 
@@ -28,8 +28,8 @@ Progress: [█████████████░░               ] 53% (5.
 | v1.0 MVP | 1-7 | 20 | 2 days |
 | v2.0 Platform Rebuild | 8-15 | 41 | 2 days |
 | v2.1 Bug Fixes & UX | 16-22 | 24 | 5 days |
-| v1.1.0 Dashboard & Resource | 23-32 | 9 | In Progress |
-| **Total** | 32 | 94+ | - |
+| v1.1.0 Dashboard & Resource | 23-32 | 10 | In Progress |
+| **Total** | 32 | 95+ | - |
 
 ## Accumulated Context
 
@@ -63,6 +63,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 **Phase 28 decisions:**
 - Dashboard CREATE validation rejects empty pages array
 - Dashboard CREATE validation requires root page (name: '')
+- Resource RESERVED_KEYS: id, label, description, category, entity_key, source_path
+- Draft-created categories bypass materialized view for property lookup
 
 ### Pending Todos
 
@@ -75,6 +77,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-28
-Stopped at: Completed 28-01-PLAN.md (entity type registration)
+Stopped at: Completed 28-02-PLAN.md (resource field validation)
 Resume file: None
-Next action: Continue with 28-02-PLAN.md (resource field validation refinement)
+Next action: Continue with 28-03-PLAN.md (page/tab validation)
