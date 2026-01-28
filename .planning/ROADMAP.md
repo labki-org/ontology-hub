@@ -54,6 +54,9 @@ Plans:
 ### Phase 26: Backend API Endpoints
 **Goal**: List and detail endpoints for new entities
 **Requirements**: DASH-04, RSRC-04, RSRC-05
+**Plans:** 1 plan
+Plans:
+- [ ] 26-01-PLAN.md — Add response schemas and 5 endpoints for Dashboard/Resource
 **Success Criteria**:
 1. GET /dashboards returns list of dashboards
 2. GET /dashboards/{key} returns dashboard with pages
