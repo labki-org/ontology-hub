@@ -51,12 +51,13 @@ Plans:
 3. Webhook triggers populate dashboard and resource tables
 4. Relationship tables populated for module_dashboard, bundle_dashboard
 
-### Phase 26: Backend API Endpoints
+### Phase 26: Backend API Endpoints ✓
 **Goal**: List and detail endpoints for new entities
 **Requirements**: DASH-04, RSRC-04, RSRC-05
 **Plans:** 1 plan
 Plans:
-- [ ] 26-01-PLAN.md — Add response schemas and 5 endpoints for Dashboard/Resource
+- [x] 26-01-PLAN.md — Add response schemas and 5 endpoints for Dashboard/Resource
+**Status**: Complete (2026-01-28)
 **Success Criteria**:
 1. GET /dashboards returns list of dashboards
 2. GET /dashboards/{key} returns dashboard with pages
@@ -132,9 +133,9 @@ Phases execute in numeric order: 1 -> 2 -> ... -> 32
 | v1.0 MVP | 1-7 | 20 | ✅ Complete | 2026-01-23 |
 | v2.0 Platform Rebuild | 8-15 | 41 | ✅ Complete | 2026-01-25 |
 | v2.1 Bug Fixes & UX | 16-22 | 24 | ✅ Complete | 2026-01-25 |
-| v1.1.0 Dashboard & Resource | 23-32 | 5+ | 🚧 In Progress | — |
+| v1.1.0 Dashboard & Resource | 23-32 | 6+ | 🚧 In Progress | — |
 
-**Total:** 90 plans completed across 25 phases + 7 remaining phases
+**Total:** 91 plans completed across 26 phases + 6 remaining phases
 
 ---
 *Roadmap created: 2026-01-23*
