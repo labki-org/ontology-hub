@@ -102,8 +102,8 @@ async def github_login(
     if suggested_semver:
         request.session["pending_suggested_semver"] = suggested_semver
 
-    # Build callback URL
-    redirect_uri = request.url_for("github_callback")
+    # Build callback URL using configured BACKEND_URL (handles Docker port mapping)
+    redirect_uri = f"{settings.BACKEND_URL}/api/v1/oauth/github/callback"
 
     # Redirect to GitHub authorization
     return await oauth.github.authorize_redirect(request, redirect_uri)

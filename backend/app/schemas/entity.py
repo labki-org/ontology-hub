@@ -308,7 +308,7 @@ class ResourceDetailResponse(BaseModel):
     label: str
     description: str | None = None
     category_key: str = Field(description="Category this resource belongs to")
-    properties: dict[str, Any] = Field(
+    dynamic_fields: dict[str, Any] = Field(
         default_factory=dict, description="Dynamic property values"
     )
     change_status: ChangeStatus | None = Field(

@@ -2,10 +2,10 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { useResource } from '@/api/entities'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useGraphStore } from '@/stores/graphStore'
-import { EntityHeader } from '../sections/EntityHeader'
 import { AccordionSection } from '../sections/AccordionSection'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Badge } from '@/components/ui/badge'
 import { VisualChangeMarker } from '../form/VisualChangeMarker'
 import type { ResourceDetailV2 } from '@/api/types'
 
@@ -38,13 +38,12 @@ function formatValue(value: unknown): string | JSX.Element {
 
 /**
  * Resource detail view with:
- * - Header (name, label, description)
- * - Category shown as clickable link
+ * - Simple header (entity key + category link)
  * - Dynamic fields displayed in flat list
  * - Simple text input for field editing in draft mode
  *
- * Per CONTEXT.md: Flat list layout, category as header link.
- * Field validation deferred to Phase 31 (create/edit forms).
+ * Resources are data instances - they have an ID, category, and dynamic fields.
+ * Unlike schema entities, they don't have label/description fields.
  */
 export function ResourceDetail({
   entityKey,
@@ -60,14 +59,10 @@ export function ResourceDetail({
 
   // Track original values for change detection
   const [originalValues, setOriginalValues] = useState<{
-    label?: string
-    description?: string
     dynamic_fields?: Record<string, unknown>
   }>({})
 
-  // Local editable state
-  const [editedLabel, setEditedLabel] = useState('')
-  const [editedDescription, setEditedDescription] = useState('')
+  // Local editable state - only dynamic fields (resources don't have label/description)
   const [editedDynamicFields, setEditedDynamicFields] = useState<Record<string, unknown>>({})
 
   // Track which entity we've initialized original values for (prevent reset on refetch)
@@ -90,13 +85,9 @@ export function ResourceDetail({
       // Only reset edited values and original values for a NEW entity
       // (not on refetch after auto-save)
       if (isNewEntity) {
-        setEditedLabel(resource.label)
-        setEditedDescription(resource.description || '')
         setEditedDynamicFields(resource.dynamic_fields || {})
 
         setOriginalValues({
-          label: resource.label,
-          description: resource.description || '',
           dynamic_fields: resource.dynamic_fields || {},
         })
 
@@ -106,24 +97,7 @@ export function ResourceDetail({
   }, [resource, entityKey])
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  // Change handlers - use 'add' instead of 'replace' for robustness
-  // (add works whether field exists or not in canonical_json)
-  const handleLabelChange = useCallback(
-    (value: string) => {
-      setEditedLabel(value)
-      if (draftToken) saveChange([{ op: 'add', path: '/label', value }])
-    },
-    [draftToken, saveChange]
-  )
-
-  const handleDescriptionChange = useCallback(
-    (value: string) => {
-      setEditedDescription(value)
-      if (draftToken) saveChange([{ op: 'add', path: '/description', value }])
-    },
-    [draftToken, saveChange]
-  )
-
+  // Change handler for dynamic fields - use 'add' instead of 'replace' for robustness
   const handleDynamicFieldChange = useCallback(
     (fieldKey: string, value: string) => {
       setEditedDynamicFields((prev) => ({
@@ -167,6 +141,9 @@ export function ResourceDetail({
     )
   }
 
+  // Extract the resource ID from entity_key (format: "category/id")
+  const resourceId = entityKey.includes('/') ? entityKey.split('/').pop() : entityKey
+
   // Get dynamic field entries
   const fieldEntries = Object.entries(editedDynamicFields)
 
@@ -177,6 +154,32 @@ export function ResourceDetail({
     return JSON.stringify(original) !== JSON.stringify(current)
   }
 
+  // Change status badge
+  const statusBadge = resource.change_status && resource.change_status !== 'unchanged' && (
+    <Badge
+      variant={
+        resource.change_status === 'added'
+          ? 'default'
+          : resource.change_status === 'modified'
+          ? 'secondary'
+          : 'destructive'
+      }
+      className={
+        resource.change_status === 'added'
+          ? 'bg-green-500 hover:bg-green-600'
+          : resource.change_status === 'modified'
+          ? 'bg-yellow-500 hover:bg-yellow-600'
+          : ''
+      }
+    >
+      {resource.change_status === 'added'
+        ? '+ Added'
+        : resource.change_status === 'modified'
+        ? '~ Modified'
+        : '- Deleted'}
+    </Badge>
+  )
+
   return (
     <div className="p-6 space-y-6">
       {isSaving && (
@@ -185,29 +188,28 @@ export function ResourceDetail({
         </div>
       )}
 
-      {/* Header */}
-      <EntityHeader
-        entityKey={entityKey}
-        label={editedLabel}
-        description={editedDescription}
-        entityType="resource"
-        changeStatus={resource.change_status}
-        isEditing={isEditing}
-        originalLabel={originalValues.label}
-        originalDescription={originalValues.description}
-        onLabelChange={handleLabelChange}
-        onDescriptionChange={handleDescriptionChange}
-      />
+      {/* Simple Header - Resources don't have label/description */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <Badge variant="outline" className="capitalize">
+            resource
+          </Badge>
+          {statusBadge}
+        </div>
 
-      {/* Category Link - per CONTEXT.md: shown as header link */}
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-muted-foreground">Category:</span>
-        <button
-          onClick={handleCategoryClick}
-          className="text-primary hover:underline font-medium text-sm"
-        >
-          {resource.category_key}
-        </button>
+        {/* Resource ID as title */}
+        <h2 className="text-2xl font-bold">{resourceId}</h2>
+
+        {/* Category Link - prominent placement */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Category:</span>
+          <button
+            onClick={handleCategoryClick}
+            className="text-primary hover:underline font-medium"
+          >
+            {resource.category_key}
+          </button>
+        </div>
       </div>
 
       {/* Dynamic Fields Section */}
@@ -215,18 +217,19 @@ export function ResourceDetail({
         id="fields"
         title="Properties"
         count={fieldEntries.length}
+        defaultOpen
       >
         {fieldEntries.length === 0 ? (
           <p className="text-sm text-muted-foreground italic">
             No properties defined
           </p>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {fieldEntries.map(([key, value]) => (
-              <div key={key} className="flex flex-col">
-                <span className="text-sm font-medium text-muted-foreground">
+              <div key={key} className="space-y-1">
+                <label className="text-sm font-medium text-muted-foreground">
                   {key}
-                </span>
+                </label>
                 {isEditing ? (
                   <VisualChangeMarker
                     status={isFieldModified(key) ? 'modified' : 'unchanged'}
@@ -235,7 +238,6 @@ export function ResourceDetail({
                     <Input
                       value={String(value ?? '')}
                       onChange={(e) => handleDynamicFieldChange(key, e.target.value)}
-                      className="mt-1"
                       placeholder={`Enter ${key}...`}
                     />
                   </VisualChangeMarker>
@@ -244,9 +246,9 @@ export function ResourceDetail({
                     status={isFieldModified(key) ? 'modified' : 'unchanged'}
                     originalValue={String(originalValues.dynamic_fields?.[key] ?? '')}
                   >
-                    <span className="text-sm">
+                    <div className="text-sm py-2">
                       {formatValue(value)}
-                    </span>
+                    </div>
                   </VisualChangeMarker>
                 )}
               </div>

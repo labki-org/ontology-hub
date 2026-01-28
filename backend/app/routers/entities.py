@@ -1282,7 +1282,7 @@ async def get_resource(
     if not effective:
         raise HTTPException(status_code=404, detail="Resource not found")
 
-    # Extract dynamic properties (everything except reserved keys)
+    # Extract dynamic fields (everything except reserved keys)
     reserved_keys = {
         "id",
         "entity_key",
@@ -1294,14 +1294,14 @@ async def get_resource(
         "_deleted",
         "_patch_error",
     }
-    properties = {k: v for k, v in effective.items() if k not in reserved_keys}
+    dynamic_fields = {k: v for k, v in effective.items() if k not in reserved_keys}
 
     return ResourceDetailResponse(
         entity_key=effective.get("entity_key", entity_key),
         label=effective.get("label", ""),
         description=effective.get("description"),
         category_key=effective.get("category", ""),
-        properties=properties,
+        dynamic_fields=dynamic_fields,
         change_status=effective.get("_change_status"),
         deleted=effective.get("_deleted", False),
     )

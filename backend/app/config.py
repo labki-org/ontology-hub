@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     GITHUB_CLIENT_SECRET: str | None = None
     SESSION_SECRET: str = "dev-secret-key-replace-in-production-with-random-32-byte-hex"
     FRONTEND_URL: str = "http://localhost:5173"
+    BACKEND_URL: str = "http://localhost:8080"  # External URL for OAuth callbacks
 
     @property
     def github_repo(self) -> str:
