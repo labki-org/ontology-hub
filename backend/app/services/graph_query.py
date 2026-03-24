@@ -1116,6 +1116,22 @@ class GraphQueryService:
                     )
                 )
 
+        # Add draft-created properties
+        draft_property_creates = await self.draft_overlay.get_draft_creates("property")
+        for draft_prop in draft_property_creates:
+            draft_key = draft_prop.get("entity_key")
+            if draft_key and not any(n.id == draft_key for n in nodes):
+                nodes.append(
+                    GraphNode(
+                        id=draft_key,
+                        label=draft_prop.get("label", draft_key),
+                        entity_type="property",
+                        depth=None,
+                        modules=[],
+                        change_status="added",
+                    )
+                )
+
         # Get all subobjects
         subobjects_query = select(Subobject)
         result = await self.session.execute(subobjects_query)
@@ -1176,6 +1192,22 @@ class GraphQueryService:
                 )
             )
 
+        # Add draft-created subobjects
+        draft_subobject_creates = await self.draft_overlay.get_draft_creates("subobject")
+        for draft_sub in draft_subobject_creates:
+            draft_key = draft_sub.get("entity_key")
+            if draft_key and not any(n.id == draft_key for n in nodes):
+                nodes.append(
+                    GraphNode(
+                        id=draft_key,
+                        label=draft_sub.get("label", draft_key),
+                        entity_type="subobject",
+                        depth=None,
+                        modules=[],
+                        change_status="added",
+                    )
+                )
+
         # Get all templates
         templates_query = select(Template)
         result = await self.session.execute(templates_query)
@@ -1202,6 +1234,22 @@ class GraphQueryService:
                         depth=None,
                         modules=template_module_membership.get(template.entity_key, []),
                         change_status=change_status,
+                    )
+                )
+
+        # Add draft-created templates
+        draft_template_creates = await self.draft_overlay.get_draft_creates("template")
+        for draft_tmpl in draft_template_creates:
+            draft_key = draft_tmpl.get("entity_key")
+            if draft_key and not any(n.id == draft_key for n in nodes):
+                nodes.append(
+                    GraphNode(
+                        id=draft_key,
+                        label=draft_tmpl.get("label", draft_key),
+                        entity_type="template",
+                        depth=None,
+                        modules=[],
+                        change_status="added",
                     )
                 )
 
