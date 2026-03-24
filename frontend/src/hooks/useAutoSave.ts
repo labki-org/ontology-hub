@@ -51,6 +51,8 @@ export function useAutoSave({
       useDraftStore.getState().clearValidation()
       // Also invalidate draft changes list to show updated change count
       queryClient.invalidateQueries({ queryKey: ['v2', 'draft-changes'] })
+      // Invalidate graph queries to refresh edge change_status indicators
+      queryClient.invalidateQueries({ queryKey: ['graph'] })
 
       // Track this entity as edited for change propagation visualization
       // Uses current graph data if available (empty if graph not loaded)
