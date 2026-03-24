@@ -140,7 +140,7 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
           source: edge.source,
           target: edge.target,
           type: 'default',
-          animated: isAddedEdge, // Animated moving dashes for added edges
+          animated: isDraftEdge, // Animated moving dashes for draft edges
           markerEnd: {
             type: MarkerType.ArrowClosed,
             width: 15,
