@@ -111,7 +111,9 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
           ? edge.source === hoveredNodeId || edge.target === hoveredNodeId
           : false
 
-        const isDraftEdge = edge.change_status === 'added' || edge.change_status === 'modified'
+        const isAddedEdge = edge.change_status === 'added' || edge.change_status === 'modified'
+        const isDeletedEdge = edge.change_status === 'deleted'
+        const isDraftEdge = isAddedEdge || isDeletedEdge
 
         // Calculate opacity and stroke width based on hover state
         let opacity = 0.7
@@ -125,8 +127,12 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
           }
         }
 
-        // Draft edges: green color, animated dashes
-        const edgeColor = isDraftEdge ? '#22c55e' : getEdgeColor(edge.edge_type)
+        // Draft edges: green for added, red for deleted, animated
+        const edgeColor = isAddedEdge
+          ? '#22c55e'
+          : isDeletedEdge
+          ? '#ef4444'
+          : getEdgeColor(edge.edge_type)
         const dasharray = isDraftEdge ? '6,4' : getEdgeStrokeDasharray(edge.edge_type)
 
         return {
@@ -134,7 +140,7 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
           source: edge.source,
           target: edge.target,
           type: 'default',
-          animated: isDraftEdge, // React Flow animated edge (moving dashes)
+          animated: isAddedEdge, // Animated moving dashes for added edges
           markerEnd: {
             type: MarkerType.ArrowClosed,
             width: 15,
@@ -145,7 +151,7 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
             stroke: edgeColor,
             strokeWidth: isDraftEdge ? 2 : strokeWidth,
             strokeDasharray: dasharray,
-            opacity,
+            opacity: isDeletedEdge ? 0.5 : opacity,
             transition: 'opacity 0.2s ease, stroke-width 0.2s ease',
           },
           data: {
