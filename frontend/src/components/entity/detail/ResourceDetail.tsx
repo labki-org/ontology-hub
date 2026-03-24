@@ -26,6 +26,7 @@ interface MergedProperty {
  * If a property appears in multiple categories, it is required if any category requires it.
  */
 function mergePropertiesFromCategories(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- useQueries return type is complex
   queries: ReturnType<typeof useQueries<any>>
 ): MergedProperty[] {
   const propMap = new Map<string, MergedProperty>()
@@ -250,28 +251,19 @@ export function ResourceDetail({
   const areCategoriesModified =
     JSON.stringify(editedCategories) !== JSON.stringify(originalValues.category_keys)
 
-  const statusBadge = resource.change_status && resource.change_status !== 'unchanged' && (
-    <Badge
-      variant={
-        resource.change_status === 'added'
-          ? 'default'
-          : resource.change_status === 'modified'
-          ? 'secondary'
-          : 'destructive'
-      }
-      className={
-        resource.change_status === 'added'
-          ? 'bg-green-500 hover:bg-green-600'
-          : resource.change_status === 'modified'
-          ? 'bg-yellow-500 hover:bg-yellow-600'
-          : ''
-      }
-    >
-      {resource.change_status === 'added'
-        ? '+ Added'
-        : resource.change_status === 'modified'
-        ? '~ Modified'
-        : '- Deleted'}
+  const statusConfig: Record<string, { variant: 'default' | 'secondary' | 'destructive'; className: string; label: string }> = {
+    added: { variant: 'default', className: 'bg-green-500 hover:bg-green-600', label: '+ Added' },
+    modified: { variant: 'secondary', className: 'bg-yellow-500 hover:bg-yellow-600', label: '~ Modified' },
+    deleted: { variant: 'destructive', className: '', label: '- Deleted' },
+  }
+
+  const status = resource.change_status && resource.change_status !== 'unchanged'
+    ? statusConfig[resource.change_status]
+    : null
+
+  const statusBadge = status && (
+    <Badge variant={status.variant} className={status.className}>
+      {status.label}
     </Badge>
   )
 
@@ -361,73 +353,61 @@ export function ResourceDetail({
       </AccordionSection>
 
       {/* Properties Section — driven by category schema */}
-      {(() => {
-        const properties = mergedProperties
-        const filledCount = properties.filter(
+      <AccordionSection
+        id="fields"
+        title="Properties"
+        count={mergedProperties.filter(
           (p) => editedDynamicFields[p.entity_key] !== undefined && editedDynamicFields[p.entity_key] !== ''
-        ).length
-
-        return (
-          <AccordionSection
-            id="fields"
-            title="Properties"
-            count={filledCount}
-            defaultOpen
-          >
-            {properties.length === 0 ? (
-              <p className="text-sm text-muted-foreground italic">
-                {editedCategories.length === 0
-                  ? 'No categories assigned — add a category to see available properties'
-                  : 'No properties defined for the selected categories'}
-              </p>
-            ) : (
-              <div className="space-y-4">
-                {properties.map((prop) => {
-                  const value = editedDynamicFields[prop.entity_key]
-                  return (
-                    <div key={prop.entity_key} className="space-y-1">
-                      <label className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
-                        {prop.label}
-                        {prop.is_required && (
-                          <span className="text-red-500 text-xs">required</span>
-                        )}
-                        {prop.source_categories.length > 1 && (
-                          <span className="text-xs text-muted-foreground/60">
-                            (from {prop.source_categories.join(', ')})
-                          </span>
-                        )}
-                      </label>
-                      {isEditing ? (
-                        <VisualChangeMarker
-                          status={isFieldModified(prop.entity_key) ? 'modified' : 'unchanged'}
-                          originalValue={String(originalValues.dynamic_fields?.[prop.entity_key] ?? '')}
-                        >
-                          <Input
-                            value={String(value ?? '')}
-                            onChange={(e) =>
-                              handleDynamicFieldChange(prop.entity_key, e.target.value)
-                            }
-                            placeholder={`Enter ${prop.label}...`}
-                          />
-                        </VisualChangeMarker>
-                      ) : (
-                        <VisualChangeMarker
-                          status={isFieldModified(prop.entity_key) ? 'modified' : 'unchanged'}
-                          originalValue={String(originalValues.dynamic_fields?.[prop.entity_key] ?? '')}
-                        >
-                          <div className="text-sm py-2">
-                            {formatValue(value)}
-                          </div>
-                        </VisualChangeMarker>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </AccordionSection>
-        )
-      })()}
+        ).length}
+        defaultOpen
+      >
+        {mergedProperties.length === 0 ? (
+          <p className="text-sm text-muted-foreground italic">
+            {editedCategories.length === 0
+              ? 'No categories assigned — add a category to see available properties'
+              : 'No properties defined for the selected categories'}
+          </p>
+        ) : (
+          <div className="space-y-4">
+            {mergedProperties.map((prop) => {
+              const value = editedDynamicFields[prop.entity_key]
+              return (
+                <div key={prop.entity_key} className="space-y-1">
+                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+                    {prop.label}
+                    {prop.is_required && (
+                      <span className="text-red-500 text-xs">required</span>
+                    )}
+                    {prop.source_categories.length > 1 && (
+                      <span className="text-xs text-muted-foreground/60">
+                        (from {prop.source_categories.join(', ')})
+                      </span>
+                    )}
+                  </label>
+                  <VisualChangeMarker
+                    status={isFieldModified(prop.entity_key) ? 'modified' : 'unchanged'}
+                    originalValue={String(originalValues.dynamic_fields?.[prop.entity_key] ?? '')}
+                  >
+                    {isEditing ? (
+                      <Input
+                        value={String(value ?? '')}
+                        onChange={(e) =>
+                          handleDynamicFieldChange(prop.entity_key, e.target.value)
+                        }
+                        placeholder={`Enter ${prop.label}...`}
+                      />
+                    ) : (
+                      <div className="text-sm py-2">
+                        {formatValue(value)}
+                      </div>
+                    )}
+                  </VisualChangeMarker>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </AccordionSection>
 
       {/* Wikitext Body Content */}
       <AccordionSection

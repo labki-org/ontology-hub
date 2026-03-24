@@ -1153,20 +1153,7 @@ class GraphQueryService:
                         effective_prop_edges.add((cat.entity_key, prop_key))
 
         # Add draft-created properties
-        draft_property_creates = await self.draft_overlay.get_draft_creates("property")
-        for draft_prop in draft_property_creates:
-            draft_key = draft_prop.get("entity_key")
-            if draft_key and not any(n.id == draft_key for n in nodes):
-                nodes.append(
-                    GraphNode(
-                        id=draft_key,
-                        label=draft_prop.get("label", draft_key),
-                        entity_type="property",
-                        depth=None,
-                        modules=[],
-                        change_status="added",
-                    )
-                )
+        await self._add_draft_created_nodes("property", nodes)
 
         # Get all subobjects
         subobjects_query = select(Subobject)
@@ -1233,20 +1220,7 @@ class GraphQueryService:
             )
 
         # Add draft-created subobjects
-        draft_subobject_creates = await self.draft_overlay.get_draft_creates("subobject")
-        for draft_sub in draft_subobject_creates:
-            draft_key = draft_sub.get("entity_key")
-            if draft_key and not any(n.id == draft_key for n in nodes):
-                nodes.append(
-                    GraphNode(
-                        id=draft_key,
-                        label=draft_sub.get("label", draft_key),
-                        entity_type="subobject",
-                        depth=None,
-                        modules=[],
-                        change_status="added",
-                    )
-                )
+        await self._add_draft_created_nodes("subobject", nodes)
 
         # Get all templates
         templates_query = select(Template)
@@ -1278,20 +1252,7 @@ class GraphQueryService:
                 )
 
         # Add draft-created templates
-        draft_template_creates = await self.draft_overlay.get_draft_creates("template")
-        for draft_tmpl in draft_template_creates:
-            draft_key = draft_tmpl.get("entity_key")
-            if draft_key and not any(n.id == draft_key for n in nodes):
-                nodes.append(
-                    GraphNode(
-                        id=draft_key,
-                        label=draft_tmpl.get("label", draft_key),
-                        entity_type="template",
-                        depth=None,
-                        modules=[],
-                        change_status="added",
-                    )
-                )
+        await self._add_draft_created_nodes("template", nodes)
 
         # Get all dashboards
         dashboards_query = select(Dashboard)
@@ -1324,20 +1285,7 @@ class GraphQueryService:
             # queries where the module IS included as a node.
 
         # Add draft-created dashboards
-        draft_dashboard_creates = await self.draft_overlay.get_draft_creates("dashboard")
-        for draft_dashboard in draft_dashboard_creates:
-            draft_key = draft_dashboard.get("entity_key")
-            if draft_key and not any(n.id == draft_key for n in nodes):
-                nodes.append(
-                    GraphNode(
-                        id=draft_key,
-                        label=draft_dashboard.get("label", draft_key),
-                        entity_type="dashboard",
-                        depth=None,
-                        modules=[],
-                        change_status="added",
-                    )
-                )
+        await self._add_draft_created_nodes("dashboard", nodes)
 
         # Get all resources
         resources_query = select(Resource)
@@ -1375,73 +1323,43 @@ class GraphQueryService:
                             )
                         )
 
-        # Add draft-created resources
+        # Add draft-created resources (nodes + category edges)
         draft_resource_creates = await self.draft_overlay.get_draft_creates("resource")
+        await self._add_draft_created_nodes("resource", nodes)
+        # Add category->resource edges for draft-created resources
+        existing_node_ids = {n.id for n in nodes}
         for draft_resource in draft_resource_creates:
             draft_key = draft_resource.get("entity_key")
-            if draft_key and not any(n.id == draft_key for n in nodes):
-                nodes.append(
-                    GraphNode(
-                        id=draft_key,
-                        label=draft_resource.get("label", draft_key),
-                        entity_type="resource",
-                        depth=None,
-                        modules=[],
-                        change_status="added",
-                    )
-                )
-                # Add edges to categories
-                draft_categories = draft_resource.get("categories") or []
-                if not draft_categories and draft_resource.get("category"):
-                    draft_categories = [draft_resource["category"]]
-                all_node_ids = {n.id for n in nodes}
-                for cat_key in draft_categories:
-                    if cat_key in all_node_ids:
-                        edges.append(
-                            GraphEdge(
-                                source=cat_key,
-                                target=draft_key,
-                                edge_type="category_resource",
-                                change_status="added",
-                            )
+            if not draft_key:
+                continue
+            draft_categories = draft_resource.get("categories") or []
+            if not draft_categories and draft_resource.get("category"):
+                draft_categories = [draft_resource["category"]]
+            for cat_key in draft_categories:
+                if cat_key in existing_node_ids:
+                    edges.append(
+                        GraphEdge(
+                            source=cat_key,
+                            target=draft_key,
+                            edge_type="category_resource",
+                            change_status="added",
                         )
+                    )
 
         # ── Deferred edge emission ──
         # Now that ALL nodes (canonical + draft) are in the list, emit
         # effective edges with node-existence filtering and change_status.
         all_node_ids = {n.id for n in nodes}
 
-        # Property edges (canonical categories — effective vs canonical diff)
-        for edge_pair in effective_prop_edges:
-            if edge_pair[1] in all_node_ids:
-                is_new = edge_pair not in canonical_prop_edges
-                edges.append(GraphEdge(
-                    source=edge_pair[0], target=edge_pair[1],
-                    edge_type="property",
-                    change_status="added" if is_new else None,
-                ))
-        for edge_pair in canonical_prop_edges:
-            if edge_pair not in effective_prop_edges:
-                edges.append(GraphEdge(
-                    source=edge_pair[0], target=edge_pair[1],
-                    edge_type="property", change_status="deleted",
-                ))
+        # Property edges (effective vs canonical diff)
+        self._emit_diff_edges(
+            effective_prop_edges, canonical_prop_edges, "property", all_node_ids, edges
+        )
 
-        # Subobject edges (canonical categories — effective vs canonical diff)
-        for edge_pair in effective_sub_edges:
-            if edge_pair[1] in all_node_ids:
-                is_new = edge_pair not in canonical_sub_edges
-                edges.append(GraphEdge(
-                    source=edge_pair[0], target=edge_pair[1],
-                    edge_type="subobject",
-                    change_status="added" if is_new else None,
-                ))
-        for edge_pair in canonical_sub_edges:
-            if edge_pair not in effective_sub_edges:
-                edges.append(GraphEdge(
-                    source=edge_pair[0], target=edge_pair[1],
-                    edge_type="subobject", change_status="deleted",
-                ))
+        # Subobject edges (effective vs canonical diff)
+        self._emit_diff_edges(
+            effective_sub_edges, canonical_sub_edges, "subobject", all_node_ids, edges
+        )
         for draft_cat in draft_cat_creates:
             draft_key = draft_cat.get("entity_key")
             if not draft_key:

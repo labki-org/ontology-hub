@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from app.services.parsers.wikitext_parser import to_page_name, NAMESPACE_TO_ENTITY_TYPE
+from app.services.parsers.wikitext_parser import NAMESPACE_TO_ENTITY_TYPE, to_page_name
 
 # Reverse mapping: entity type -> namespace constant
 ENTITY_TYPE_TO_NAMESPACE: dict[str, str] = {
@@ -218,19 +218,19 @@ def generate_module_vocab_json(
 # ─── Dispatch by entity type ────────────────────────────────────────────────
 
 _GENERATORS: dict[str, Any] = {
-    "categories": generate_category_wikitext,
-    "properties": generate_property_wikitext,
-    "subobjects": generate_subobject_wikitext,
-    "templates": generate_template_wikitext,
-    "resources": generate_resource_wikitext,
+    "category": generate_category_wikitext,
+    "property": generate_property_wikitext,
+    "subobject": generate_subobject_wikitext,
+    "template": generate_template_wikitext,
+    "resource": generate_resource_wikitext,
 }
 
 
 def generate_wikitext(entity_json: dict[str, Any], entity_type: str) -> str:
-    """Generate wikitext for an entity, dispatching by plural entity_type key.
+    """Generate wikitext for an entity, dispatching by singular entity_type key.
 
-    Uses plural keys (e.g. "categories", "properties") consistent with
-    _WIKITEXT_PARSERS in wikitext_parser.py and ENTITY_DIRECTORIES in ingest.py.
+    Accepts singular keys (e.g. "category", "property") matching the
+    entity_type values used by DraftChange and the PR builder.
 
     For dashboards, use generate_dashboard_page_wikitext() directly.
     For modules, use generate_module_vocab_json().

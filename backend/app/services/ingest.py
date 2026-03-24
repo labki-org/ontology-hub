@@ -40,7 +40,6 @@ from app.services.parsers.wikitext_parser import (
     parse_module_vocab,
     parse_wikitext,
 )
-from app.services.validators import SchemaValidator
 
 logger = logging.getLogger(__name__)
 
@@ -471,7 +470,7 @@ async def sync_repository_v2(
     # Wikitext files are already parsed into structured dicts by the loader.
     # JSON Schema validation is no longer needed since the source format is wikitext.
     validation_errors: list[str] = []
-    for entity_type, files_list in entity_files.items():
+    for _entity_type, files_list in entity_files.items():
         for path, content in files_list:
             if not content.get("id"):
                 validation_errors.append(f"{path}: missing 'id' field")
