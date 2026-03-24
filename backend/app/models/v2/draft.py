@@ -7,14 +7,14 @@ and auto-rebase when canonical changes.
 
 import uuid
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from sqlalchemy import JSON, Column
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, SQLModel
 
 
-class DraftStatus(str, Enum):
+class DraftStatus(StrEnum):
     """Workflow status for a draft proposal."""
 
     DRAFT = "draft"  # Initial state, being edited
@@ -24,7 +24,7 @@ class DraftStatus(str, Enum):
     REJECTED = "rejected"  # PR closed without merge
 
 
-class ChangeType(str, Enum):
+class ChangeType(StrEnum):
     """Type of change in a draft."""
 
     CREATE = "create"  # New entity
@@ -32,7 +32,7 @@ class ChangeType(str, Enum):
     DELETE = "delete"  # Remove entity
 
 
-class DraftSource(str, Enum):
+class DraftSource(StrEnum):
     """Origin of the draft proposal."""
 
     HUB_UI = "hub_ui"  # Created via Ontology Hub web interface
