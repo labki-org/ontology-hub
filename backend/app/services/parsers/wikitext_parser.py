@@ -22,13 +22,9 @@ NAMESPACE_TO_ENTITY_TYPE: dict[str, str] = {
     "NS_ONTOLOGY_RESOURCE": "resources",
 }
 
-# Regex for [[Property::Value]] annotations
 _ANNOTATION_RE = re.compile(r"^\[\[([^:\[\]]+)::(.+)\]\]$")
-
-# Regex for [[Category:Name]] outside annotation blocks
 _CATEGORY_RE = re.compile(r"^\[\[Category:([^\]]+)\]\]$")
 
-# Marker lines
 _START_MARKER = "<!-- OntologySync Start -->"
 _END_MARKER = "<!-- OntologySync End -->"
 
@@ -50,27 +46,39 @@ def _strip_namespace(value: str, expected_ns: str) -> str:
     return to_entity_key(stripped)
 
 
-def extract_annotations(wikitext: str) -> dict[str, list[str]]:
-    """Extract semantic annotations from within OntologySync Start/End markers.
+def _iter_lines_by_block(
+    wikitext: str,
+) -> list[tuple[str, bool]]:
+    """Classify each trimmed line as inside or outside the annotation block.
 
-    Returns a dict mapping property names to lists of values.
+    Returns (trimmed_line, inside_block) pairs, excluding the marker lines.
     """
-    annotations: dict[str, list[str]] = {}
+    result: list[tuple[str, bool]] = []
     in_block = False
 
     for line in wikitext.split("\n"):
         trimmed = line.strip()
-
         if trimmed == _START_MARKER:
             in_block = True
             continue
         if trimmed == _END_MARKER:
             in_block = False
             continue
+        result.append((trimmed, in_block))
 
+    return result
+
+
+def extract_annotations(wikitext: str) -> dict[str, list[str]]:
+    """Extract semantic annotations from within OntologySync Start/End markers.
+
+    Returns a dict mapping property names to lists of values.
+    """
+    annotations: dict[str, list[str]] = {}
+
+    for trimmed, in_block in _iter_lines_by_block(wikitext):
         if not in_block:
             continue
-
         match = _ANNOTATION_RE.match(trimmed)
         if match:
             prop, value = match.group(1), match.group(2)
@@ -82,19 +90,10 @@ def extract_annotations(wikitext: str) -> dict[str, list[str]]:
 def extract_categories(wikitext: str) -> list[str]:
     """Extract [[Category:X]] markers outside the annotation block."""
     categories: list[str] = []
-    in_block = False
 
-    for line in wikitext.split("\n"):
-        trimmed = line.strip()
-        if trimmed == _START_MARKER:
-            in_block = True
-            continue
-        if trimmed == _END_MARKER:
-            in_block = False
-            continue
+    for trimmed, in_block in _iter_lines_by_block(wikitext):
         if in_block:
             continue
-
         match = _CATEGORY_RE.match(trimmed)
         if match:
             categories.append(match.group(1))
@@ -246,34 +245,30 @@ def parse_dashboard_page(wikitext: str, page_name: str) -> dict[str, str]:
 
 
 def _extract_body(wikitext: str) -> str:
-    """Extract free-form body content from a wikitext file.
+    """Extract free-form body content after the annotation block and category markers.
 
-    Returns everything after the annotation block and category markers,
-    stripping leading/trailing whitespace.
+    Needs raw line indices (unlike extract_annotations/extract_categories),
+    so it tracks block state inline rather than using _iter_lines_by_block.
     """
     lines = wikitext.split("\n")
-    # Find the last structural line (end marker or [[Category:...]])
     last_structural = -1
     in_block = False
+
     for i, line in enumerate(lines):
         trimmed = line.strip()
         if trimmed == _START_MARKER:
             in_block = True
-        if trimmed == _END_MARKER:
+            last_structural = i
+        elif trimmed == _END_MARKER:
             in_block = False
             last_structural = i
-            continue
-        if in_block:
-            last_structural = i
-            continue
-        if _CATEGORY_RE.match(trimmed):
+        elif in_block or _CATEGORY_RE.match(trimmed):
             last_structural = i
 
     if last_structural < 0 or last_structural >= len(lines) - 1:
         return ""
 
-    body = "\n".join(lines[last_structural + 1 :]).strip()
-    return body
+    return "\n".join(lines[last_structural + 1 :]).strip()
 
 
 def parse_resource_wikitext(wikitext: str, entity_key: str) -> dict[str, Any]:

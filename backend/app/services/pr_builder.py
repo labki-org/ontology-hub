@@ -29,13 +29,9 @@ from app.models.v2 import (
 # Import validation report type
 from app.schemas.validation import DraftValidationReportV2
 from app.services.generators.wikitext_generator import (
-    generate_category_wikitext,
     generate_dashboard_page_wikitext,
     generate_module_vocab_json,
-    generate_property_wikitext,
-    generate_resource_wikitext,
-    generate_subobject_wikitext,
-    generate_template_wikitext,
+    generate_wikitext,
 )
 
 # Entity type to table model mapping
@@ -108,16 +104,6 @@ def _clean_entity_json(entity_json: dict) -> dict:
     return result
 
 
-# Wikitext generators by entity type
-_WIKITEXT_GENERATORS = {
-    "category": generate_category_wikitext,
-    "property": generate_property_wikitext,
-    "subobject": generate_subobject_wikitext,
-    "template": generate_template_wikitext,
-    "resource": generate_resource_wikitext,
-}
-
-
 def serialize_for_repo(entity_json: dict, entity_type: str) -> str:
     """Convert effective entity JSON to repository file content.
 
@@ -125,11 +111,6 @@ def serialize_for_repo(entity_json: dict, entity_type: str) -> str:
     and plain JSON for bundles.
     """
     cleaned = _clean_entity_json(entity_json)
-
-    # Wikitext entity types
-    generator = _WIKITEXT_GENERATORS.get(entity_type)
-    if generator:
-        return generator(cleaned)
 
     # Module -> vocab.json
     if entity_type == "module":
@@ -146,8 +127,8 @@ def serialize_for_repo(entity_json: dict, entity_type: str) -> str:
         root = next((p for p in pages if p.get("name") == ""), None)
         return generate_dashboard_page_wikitext(root["wikitext"] if root else "")
 
-    # Fallback: JSON
-    return json.dumps(cleaned, indent=2) + "\n"
+    # Wikitext entity types (category, property, subobject, template, resource)
+    return generate_wikitext(cleaned, entity_type)
 
 
 async def build_files_from_draft_v2(

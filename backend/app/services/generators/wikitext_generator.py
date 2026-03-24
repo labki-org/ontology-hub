@@ -187,23 +187,14 @@ def generate_module_vocab_json(
     The entity dict should contain the standard module fields (id, version, label,
     description, dependencies) plus entity arrays (categories, properties, etc.).
     """
-    entity_arrays = {
-        "categories": ("categories", "NS_CATEGORY"),
-        "properties": ("properties", "SMW_NS_PROPERTY"),
-        "subobjects": ("subobjects", "NS_SUBOBJECT"),
-        "templates": ("templates", "NS_TEMPLATE"),
-        "dashboards": ("dashboards", "NS_ONTOLOGY_DASHBOARD"),
-        "resources": ("resources", "NS_ONTOLOGY_RESOURCE"),
-    }
-
     import_entries = []
-    for etype, (directory, namespace) in entity_arrays.items():
+    for etype, namespace in ENTITY_TYPE_TO_NAMESPACE.items():
         for key in entity.get(etype, []):
             import_entries.append(
                 {
                     "page": to_page_name(key),
                     "namespace": namespace,
-                    "contents": {"importFrom": f"{directory}/{key}.wikitext"},
+                    "contents": {"importFrom": f"{etype}/{key}.wikitext"},
                     "options": {"replaceable": True},
                 }
             )
@@ -227,16 +218,19 @@ def generate_module_vocab_json(
 # ─── Dispatch by entity type ────────────────────────────────────────────────
 
 _GENERATORS: dict[str, Any] = {
-    "category": generate_category_wikitext,
-    "property": generate_property_wikitext,
-    "subobject": generate_subobject_wikitext,
-    "template": generate_template_wikitext,
-    "resource": generate_resource_wikitext,
+    "categories": generate_category_wikitext,
+    "properties": generate_property_wikitext,
+    "subobjects": generate_subobject_wikitext,
+    "templates": generate_template_wikitext,
+    "resources": generate_resource_wikitext,
 }
 
 
 def generate_wikitext(entity_json: dict[str, Any], entity_type: str) -> str:
-    """Generate wikitext for an entity, dispatching by type.
+    """Generate wikitext for an entity, dispatching by plural entity_type key.
+
+    Uses plural keys (e.g. "categories", "properties") consistent with
+    _WIKITEXT_PARSERS in wikitext_parser.py and ENTITY_DIRECTORIES in ingest.py.
 
     For dashboards, use generate_dashboard_page_wikitext() directly.
     For modules, use generate_module_vocab_json().

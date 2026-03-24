@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { VisualChangeMarker } from '../form/VisualChangeMarker'
-import type { ResourceDetailV2, CategoryDetailV2, PropertyProvenance } from '@/api/types'
+import type { ResourceDetailV2, CategoryDetailV2 } from '@/api/types'
 
 /** Merged property info from multiple categories */
 interface MergedProperty {
@@ -19,6 +19,42 @@ interface MergedProperty {
   label: string
   is_required: boolean
   source_categories: string[]
+}
+
+/**
+ * Merge properties from category detail queries into a deduplicated, sorted list.
+ * If a property appears in multiple categories, it is required if any category requires it.
+ */
+function mergePropertiesFromCategories(
+  queries: ReturnType<typeof useQueries<any>>
+): MergedProperty[] {
+  const propMap = new Map<string, MergedProperty>()
+
+  for (const query of queries) {
+    const catDetail = query.data as CategoryDetailV2 | undefined
+    if (!catDetail?.properties) continue
+
+    for (const prop of catDetail.properties) {
+      const existing = propMap.get(prop.entity_key)
+      if (existing) {
+        if (prop.is_required) existing.is_required = true
+        existing.source_categories.push(catDetail.entity_key)
+      } else {
+        propMap.set(prop.entity_key, {
+          entity_key: prop.entity_key,
+          label: prop.label,
+          is_required: prop.is_required,
+          source_categories: [catDetail.entity_key],
+        })
+      }
+    }
+  }
+
+  return Array.from(propMap.values()).sort((a, b) => {
+    // Required first, then alphabetical
+    if (a.is_required !== b.is_required) return a.is_required ? -1 : 1
+    return a.label.localeCompare(b.label)
+  })
 }
 
 interface ResourceDetailProps {
@@ -65,47 +101,6 @@ export function ResourceDetail({
     label: c.label,
   }))
 
-  // Fetch category details for all selected categories (for property schema)
-  const categoryQueries = useQueries({
-    queries: (resource?.category_keys || []).map((catKey) => ({
-      queryKey: ['v2', 'category', catKey, { draftId }],
-      queryFn: () => apiFetch(`/categories/${catKey}${draftId ? `?draft_id=${draftId}` : ''}`, { v2: true }) as Promise<CategoryDetailV2>,
-      enabled: !!catKey,
-    })),
-  })
-
-  // Merge properties from all categories into a unified list
-  const mergedProperties = useMemo((): MergedProperty[] => {
-    const propMap = new Map<string, MergedProperty>()
-
-    for (const query of categoryQueries) {
-      const catDetail = query.data as CategoryDetailV2 | undefined
-      if (!catDetail?.properties) continue
-
-      for (const prop of catDetail.properties) {
-        const existing = propMap.get(prop.entity_key)
-        if (existing) {
-          // If any category requires it, it's required
-          if (prop.is_required) existing.is_required = true
-          existing.source_categories.push(catDetail.entity_key)
-        } else {
-          propMap.set(prop.entity_key, {
-            entity_key: prop.entity_key,
-            label: prop.label,
-            is_required: prop.is_required,
-            source_categories: [catDetail.entity_key],
-          })
-        }
-      }
-    }
-
-    return Array.from(propMap.values()).sort((a, b) => {
-      // Required first, then alphabetical
-      if (a.is_required !== b.is_required) return a.is_required ? -1 : 1
-      return a.label.localeCompare(b.label)
-    })
-  }, [categoryQueries])
-
   // Track original values for change detection
   const [originalValues, setOriginalValues] = useState<{
     category_keys?: string[]
@@ -117,44 +112,22 @@ export function ResourceDetail({
   const [editedCategories, setEditedCategories] = useState<string[]>([])
   const [editedDynamicFields, setEditedDynamicFields] = useState<Record<string, unknown>>({})
   const [editedWikitext, setEditedWikitext] = useState<string>('')
-  // Also track categories in queries (re-fetch when editedCategories changes for editing)
-  const editedCategoryQueries = useQueries({
-    queries: editedCategories.map((catKey) => ({
+
+  // Use edited categories in edit mode, canonical keys in read mode.
+  // Single useQueries call avoids redundant hook overhead and merge logic.
+  const activeCategoryKeys = isEditing ? editedCategories : (resource?.category_keys || [])
+  const activeCategoryQueries = useQueries({
+    queries: activeCategoryKeys.map((catKey) => ({
       queryKey: ['v2', 'category', catKey, { draftId }],
       queryFn: () => apiFetch(`/categories/${catKey}${draftId ? `?draft_id=${draftId}` : ''}`, { v2: true }) as Promise<CategoryDetailV2>,
       enabled: !!catKey,
     })),
   })
 
-  // Merge properties from edited categories (for edit mode)
-  const editedMergedProperties = useMemo((): MergedProperty[] => {
-    const propMap = new Map<string, MergedProperty>()
-
-    for (const query of editedCategoryQueries) {
-      const catDetail = query.data as CategoryDetailV2 | undefined
-      if (!catDetail?.properties) continue
-
-      for (const prop of catDetail.properties) {
-        const existing = propMap.get(prop.entity_key)
-        if (existing) {
-          if (prop.is_required) existing.is_required = true
-          existing.source_categories.push(catDetail.entity_key)
-        } else {
-          propMap.set(prop.entity_key, {
-            entity_key: prop.entity_key,
-            label: prop.label,
-            is_required: prop.is_required,
-            source_categories: [catDetail.entity_key],
-          })
-        }
-      }
-    }
-
-    return Array.from(propMap.values()).sort((a, b) => {
-      if (a.is_required !== b.is_required) return a.is_required ? -1 : 1
-      return a.label.localeCompare(b.label)
-    })
-  }, [editedCategoryQueries])
+  const mergedProperties = useMemo(
+    () => mergePropertiesFromCategories(activeCategoryQueries),
+    [activeCategoryQueries]
+  )
 
   const initializedEntityRef = useRef<string | null>(null)
 
@@ -389,8 +362,7 @@ export function ResourceDetail({
 
       {/* Properties Section — driven by category schema */}
       {(() => {
-        // Use edited properties in edit mode, canonical in read mode
-        const properties = isEditing ? editedMergedProperties : mergedProperties
+        const properties = mergedProperties
         const filledCount = properties.filter(
           (p) => editedDynamicFields[p.entity_key] !== undefined && editedDynamicFields[p.entity_key] !== ''
         ).length

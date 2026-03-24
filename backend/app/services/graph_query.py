@@ -220,15 +220,18 @@ class GraphQueryService:
         # Batch load module membership
         module_membership = await self._get_module_membership(entity_keys, "category")
 
+        # Batch load canonical categories (avoids N+1 individual queries)
+        row_entity_keys = [row.entity_key for row in rows]
+        categories_query = select(Category).where(col(Category.entity_key).in_(row_entity_keys))
+        cat_result = await self.session.execute(categories_query)
+        categories_by_key = {c.entity_key: c for c in cat_result.scalars().all()}
+
         # Build nodes with draft overlay applied
         nodes: list[GraphNode] = []
         has_cycles = False
 
         for row in rows:
-            # Get canonical category for overlay
-            cat_query = select(Category).where(Category.entity_key == row.entity_key)
-            cat_result = await self.session.execute(cat_query)
-            category = cat_result.scalar_one_or_none()
+            category = categories_by_key.get(row.entity_key)
 
             # Apply draft overlay to get effective data with change_status
             effective = await self.draft_overlay.apply_overlay(category, "category", row.entity_key)
@@ -838,8 +841,6 @@ class GraphQueryService:
         result = await self.session.execute(module_query)
         connected_modules = result.scalars().all()
 
-        [m.entity_key for m in connected_modules]
-
         # Add module nodes
         for module in connected_modules:
             module_effective = await self.draft_overlay.apply_overlay(
@@ -1035,8 +1036,15 @@ class GraphQueryService:
         if category_keys:
             cat_module_membership = await self._get_module_membership(category_keys, "category")
 
+            # Compute draft overlay once per category (avoids 4x repeated calls)
+            category_overlays: dict[str, dict | None] = {}
             for cat in categories:
-                effective = await self.draft_overlay.apply_overlay(cat, "category", cat.entity_key)
+                category_overlays[cat.entity_key] = await self.draft_overlay.apply_overlay(
+                    cat, "category", cat.entity_key
+                )
+
+            for cat in categories:
+                effective = category_overlays[cat.entity_key]
                 change_status = effective.get("_change_status") if effective else None
 
                 nodes.append(
@@ -1056,12 +1064,10 @@ class GraphQueryService:
             for pe in parent_edge_list:
                 canonical_parent_edges.add((pe.source, pe.target))
 
-            # Compute effective parent edges from draft overlays
+            # Compute effective parent edges from cached overlays
             effective_parent_edges: set[tuple[str, str]] = set()
             for cat in categories:
-                effective = await self.draft_overlay.apply_overlay(
-                    cat, "category", cat.entity_key
-                )
+                effective = category_overlays[cat.entity_key]
                 if effective:
                     for parent_key in effective.get("parents", []):
                         if parent_key in category_keys or any(
@@ -1092,19 +1098,7 @@ class GraphQueryService:
 
         # Add draft-created categories (nodes only — edges computed later with full node set)
         draft_cat_creates = await self.draft_overlay.get_draft_creates("category")
-        for draft_cat in draft_cat_creates:
-            draft_key = draft_cat.get("entity_key")
-            if draft_key and not any(n.id == draft_key for n in nodes):
-                nodes.append(
-                    GraphNode(
-                        id=draft_key,
-                        label=draft_cat.get("label", draft_key),
-                        entity_type="category",
-                        depth=None,
-                        modules=[],
-                        change_status="added",
-                    )
-                )
+        await self._add_draft_created_nodes("category", nodes)
 
         # Get all properties
         properties_query = select(Property)
@@ -1146,13 +1140,11 @@ class GraphQueryService:
             for row in result.fetchall():
                 canonical_prop_edges.add((row.category_key, row.property_key))
 
-            # Compute effective edges from draft overlays (no node filter — deferred to end)
+            # Compute effective edges from cached category overlays
             effective_prop_edges: set[tuple[str, str]] = set()
 
             for cat in categories:
-                effective = await self.draft_overlay.apply_overlay(
-                    cat, "category", cat.entity_key
-                )
+                effective = category_overlays[cat.entity_key]
                 if effective:
                     for prop_key in (
                         effective.get("required_properties", [])
@@ -1215,7 +1207,7 @@ class GraphQueryService:
 
         effective_sub_edges: set[tuple[str, str]] = set()
         for cat in categories:
-            effective = await self.draft_overlay.apply_overlay(cat, "category", cat.entity_key)
+            effective = category_overlays[cat.entity_key]
             if effective:
                 for sub_key in (
                     effective.get("required_subobjects", [])
@@ -1701,6 +1693,57 @@ class GraphQueryService:
             for row in rows
         ]
 
+    async def _add_draft_created_nodes(
+        self,
+        entity_type: str,
+        nodes: list[GraphNode],
+    ) -> None:
+        """Append draft-created entities as 'added' nodes, skipping duplicates."""
+        draft_creates = await self.draft_overlay.get_draft_creates(entity_type)
+        existing_ids = {n.id for n in nodes}
+        for draft in draft_creates:
+            draft_key = draft.get("entity_key")
+            if draft_key and draft_key not in existing_ids:
+                existing_ids.add(draft_key)
+                nodes.append(
+                    GraphNode(
+                        id=draft_key,
+                        label=draft.get("label", draft_key),
+                        entity_type=entity_type,
+                        depth=None,
+                        modules=[],
+                        change_status="added",
+                    )
+                )
+
+    @staticmethod
+    def _emit_diff_edges(
+        effective: set[tuple[str, str]],
+        canonical: set[tuple[str, str]],
+        edge_type: str,
+        all_node_ids: set[str],
+        edges: list[GraphEdge],
+    ) -> None:
+        """Emit edges that differ between effective and canonical state.
+
+        Adds edges with change_status='added' for new effective edges and
+        change_status='deleted' for canonical edges removed in draft.
+        """
+        for source, target in effective:
+            if target in all_node_ids:
+                is_new = (source, target) not in canonical
+                edges.append(GraphEdge(
+                    source=source, target=target,
+                    edge_type=edge_type,
+                    change_status="added" if is_new else None,
+                ))
+        for source, target in canonical:
+            if (source, target) not in effective:
+                edges.append(GraphEdge(
+                    source=source, target=target,
+                    edge_type=edge_type, change_status="deleted",
+                ))
+
     async def _check_cycles_in_subgraph(
         self,
         entity_keys: list[str],
@@ -1778,6 +1821,11 @@ class GraphQueryService:
         # Batch load module membership for properties
         property_module_membership = await self._get_module_membership(property_keys, "property")
 
+        # Batch load canonical properties (avoids N+1 individual queries)
+        props_query = select(Property).where(col(Property.entity_key).in_(property_keys))
+        props_result = await self.session.execute(props_query)
+        properties_by_key = {p.entity_key: p for p in props_result.scalars().all()}
+
         # Build property nodes with draft overlay
         nodes: list[GraphNode] = []
         seen_properties: set[str] = set()
@@ -1787,10 +1835,7 @@ class GraphQueryService:
                 continue
             seen_properties.add(row.entity_key)
 
-            # Get canonical property for overlay
-            prop_query = select(Property).where(Property.entity_key == row.entity_key)
-            prop_result = await self.session.execute(prop_query)
-            prop = prop_result.scalar_one_or_none()
+            prop = properties_by_key.get(row.entity_key)
 
             # Apply draft overlay to get effective data with change_status
             effective = await self.draft_overlay.apply_overlay(prop, "property", row.entity_key)

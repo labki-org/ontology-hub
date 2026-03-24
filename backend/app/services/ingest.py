@@ -37,13 +37,8 @@ from app.models.v2 import (
 from app.services.github import GitHubClient
 from app.services.parsers import EntityParser, ParsedEntities, PendingRelationship
 from app.services.parsers.wikitext_parser import (
-    parse_category_wikitext,
-    parse_dashboard_page,
     parse_module_vocab,
-    parse_property_wikitext,
-    parse_resource_wikitext,
-    parse_subobject_wikitext,
-    parse_template_wikitext,
+    parse_wikitext,
 )
 from app.services.validators import SchemaValidator
 
@@ -62,15 +57,6 @@ ENTITY_DIRECTORIES: dict[str, str] = {
     "templates": "wikitext",
     "dashboards": "wikitext",
     "resources": "wikitext",
-}
-
-# Wikitext parser dispatch by entity type
-_WIKITEXT_PARSERS = {
-    "categories": parse_category_wikitext,
-    "properties": parse_property_wikitext,
-    "subobjects": parse_subobject_wikitext,
-    "templates": parse_template_wikitext,
-    "resources": parse_resource_wikitext,
 }
 
 
@@ -155,10 +141,8 @@ class IngestService:
                         continue
 
                     # Parse wikitext to structured dict
-                    parser = _WIKITEXT_PARSERS.get(directory)
-                    if parser:
-                        content = parser(raw, entity_key)
-                        files[directory].append((path, content))
+                    content = parse_wikitext(raw, directory, entity_key)
+                    files[directory].append((path, content))
                 except Exception as e:
                     self._warnings.append(f"Failed to load {path}: {e}")
 
