@@ -41,6 +41,9 @@ class GraphEdge(BaseModel):
     source: str = Field(description="Source entity key (child)")
     target: str = Field(description="Target entity key (parent)")
     edge_type: str = Field(default="parent", description="Edge type: parent, property, etc.")
+    change_status: Literal["added", "modified", "deleted", "unchanged"] | None = Field(
+        default=None, description="Draft change status for edges involving draft entities"
+    )
 
 
 class GraphResponse(BaseModel):

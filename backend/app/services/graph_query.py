@@ -1070,9 +1070,32 @@ class GraphQueryService:
                     )
                 )
                 # Add parent edges for draft categories
-                parents = draft_cat.get("parents", [])
-                for parent_key in parents:
-                    edges.append(GraphEdge(source=draft_key, target=parent_key, edge_type="parent"))
+                for parent_key in draft_cat.get("parents", []):
+                    edges.append(GraphEdge(
+                        source=draft_key, target=parent_key,
+                        edge_type="parent", change_status="added",
+                    ))
+                # Add property edges for draft categories
+                all_node_ids = {n.id for n in nodes}
+                for prop_key in (
+                    draft_cat.get("required_properties", [])
+                    + draft_cat.get("optional_properties", [])
+                ):
+                    if prop_key in all_node_ids:
+                        edges.append(GraphEdge(
+                            source=draft_key, target=prop_key,
+                            edge_type="property", change_status="added",
+                        ))
+                # Add subobject edges for draft categories
+                for sub_key in (
+                    draft_cat.get("required_subobjects", [])
+                    + draft_cat.get("optional_subobjects", [])
+                ):
+                    if sub_key in all_node_ids:
+                        edges.append(GraphEdge(
+                            source=draft_key, target=sub_key,
+                            edge_type="subobject", change_status="added",
+                        ))
 
         # Get all properties
         properties_query = select(Property)
@@ -1350,16 +1373,21 @@ class GraphQueryService:
                         change_status="added",
                     )
                 )
-                # Add edge to category if specified
-                draft_category = draft_resource.get("category")
-                if draft_category and any(n.id == draft_category for n in nodes):
-                    edges.append(
-                        GraphEdge(
-                            source=draft_category,
-                            target=draft_key,
-                            edge_type="category_resource",
+                # Add edges to categories
+                draft_categories = draft_resource.get("categories") or []
+                if not draft_categories and draft_resource.get("category"):
+                    draft_categories = [draft_resource["category"]]
+                all_node_ids = {n.id for n in nodes}
+                for cat_key in draft_categories:
+                    if cat_key in all_node_ids:
+                        edges.append(
+                            GraphEdge(
+                                source=cat_key,
+                                target=draft_key,
+                                edge_type="category_resource",
+                                change_status="added",
+                            )
                         )
-                    )
 
         # Check for cycles in category hierarchy
         has_cycles = await self._check_cycles_in_subgraph(category_keys) if category_keys else False

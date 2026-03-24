@@ -60,6 +60,7 @@ export interface GraphEdge {
   source: string
   target: string
   edge_type: string
+  change_status?: 'added' | 'modified' | 'deleted' | 'unchanged' | null
 }
 
 export interface GraphResponse {

@@ -111,8 +111,10 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
           ? edge.source === hoveredNodeId || edge.target === hoveredNodeId
           : false
 
+        const isDraftEdge = edge.change_status === 'added' || edge.change_status === 'modified'
+
         // Calculate opacity and stroke width based on hover state
-        let opacity = 0.7 // Default opacity
+        let opacity = 0.7
         let strokeWidth = 1.5
         if (hoveredNodeId) {
           if (isConnectedToHovered) {
@@ -123,26 +125,32 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
           }
         }
 
+        // Draft edges: green color, animated dashes
+        const edgeColor = isDraftEdge ? '#22c55e' : getEdgeColor(edge.edge_type)
+        const dasharray = isDraftEdge ? '6,4' : getEdgeStrokeDasharray(edge.edge_type)
+
         return {
           id: `e${index}-${edge.source}-${edge.target}`,
           source: edge.source,
           target: edge.target,
-          type: 'default', // 'default' is bezier curve in React Flow
+          type: 'default',
+          animated: isDraftEdge, // React Flow animated edge (moving dashes)
           markerEnd: {
             type: MarkerType.ArrowClosed,
             width: 15,
             height: 15,
-            color: getEdgeColor(edge.edge_type),
+            color: edgeColor,
           },
           style: {
-            stroke: getEdgeColor(edge.edge_type),
-            strokeWidth,
-            strokeDasharray: getEdgeStrokeDasharray(edge.edge_type),
+            stroke: edgeColor,
+            strokeWidth: isDraftEdge ? 2 : strokeWidth,
+            strokeDasharray: dasharray,
             opacity,
             transition: 'opacity 0.2s ease, stroke-width 0.2s ease',
           },
           data: {
             edge_type: edge.edge_type,
+            change_status: edge.change_status,
           },
         }
       })
