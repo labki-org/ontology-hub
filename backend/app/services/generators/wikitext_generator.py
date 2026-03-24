@@ -148,7 +148,7 @@ def generate_resource_wikitext(entity: dict[str, Any]) -> str:
         lines.append(f"[[Display label::{entity['label']}]]")
 
     # Dynamic property fields
-    metadata_keys = {"id", "label", "description", "category"}
+    metadata_keys = {"id", "label", "description", "category", "categories"}
     for key, value in entity.items():
         if key in metadata_keys:
             continue
@@ -161,7 +161,11 @@ def generate_resource_wikitext(entity: dict[str, Any]) -> str:
 
     lines.append("<!-- OntologySync End -->")
 
-    if entity.get("category"):
+    # Category memberships (supports multiple)
+    for cat in entity.get("categories", []):
+        lines.append(f"[[Category:{to_page_name(cat)}]]")
+    # Backwards compat: singular "category" field
+    if not entity.get("categories") and entity.get("category"):
         lines.append(f"[[Category:{to_page_name(entity['category'])}]]")
     lines.append("[[Category:OntologySync-managed-resource]]")
 

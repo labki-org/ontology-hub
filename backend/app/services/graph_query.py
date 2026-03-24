@@ -915,10 +915,12 @@ class GraphQueryService:
             ]
             edges: list[GraphEdge] = []
 
-            # Check if draft resource has a category
-            draft_category_key = draft_match.get("category")
-            if draft_category_key:
-                # Try to find the category
+            # Check if draft resource has categories
+            draft_categories = draft_match.get("categories") or []
+            if not draft_categories and draft_match.get("category"):
+                draft_categories = [draft_match["category"]]
+
+            for draft_category_key in draft_categories:
                 cat_query = select(Category).where(Category.entity_key == draft_category_key)
                 cat_result = await self.session.execute(cat_query)
                 category = cat_result.scalar_one_or_none()
@@ -973,36 +975,35 @@ class GraphQueryService:
             )
         )
 
-        # Get parent category via resource.category_key
-        if resource.category_key:
-            category_query = select(Category).where(Category.entity_key == resource.category_key)
+        # Get parent categories via resource.category_keys
+        for cat_key in resource.category_keys:
+            category_query = select(Category).where(Category.entity_key == cat_key)
             result = await self.session.execute(category_query)
             parent_category = result.scalar_one_or_none()
 
             if parent_category:
                 cat_effective = await self.draft_overlay.apply_overlay(
-                    parent_category, "category", resource.category_key
+                    parent_category, "category", cat_key
                 )
                 cat_change_status = cat_effective.get("_change_status") if cat_effective else None
                 cat_module_membership = await self._get_module_membership(
-                    [resource.category_key], "category"
+                    [cat_key], "category"
                 )
 
                 nodes_list.append(
                     GraphNode(
-                        id=resource.category_key,
+                        id=cat_key,
                         label=parent_category.label,
                         entity_type="category",
                         depth=1,
-                        modules=cat_module_membership.get(resource.category_key, []),
+                        modules=cat_module_membership.get(cat_key, []),
                         change_status=cat_change_status,
                     )
                 )
 
-                # Add edge: category -> resource
                 edges_list.append(
                     GraphEdge(
-                        source=resource.category_key,
+                        source=cat_key,
                         target=entity_key,
                         edge_type="category_resource",
                     )
@@ -1275,15 +1276,16 @@ class GraphQueryService:
                     )
                 )
 
-                # Add edge: category -> resource (if category exists in graph)
-                if resource.category_key and any(n.id == resource.category_key for n in nodes):
-                    edges.append(
-                        GraphEdge(
-                            source=resource.category_key,
-                            target=resource.entity_key,
-                            edge_type="category_resource",
+                # Add edges: category -> resource (for each category in graph)
+                for cat_key in resource.category_keys:
+                    if any(n.id == cat_key for n in nodes):
+                        edges.append(
+                            GraphEdge(
+                                source=cat_key,
+                                target=resource.entity_key,
+                                edge_type="category_resource",
+                            )
                         )
-                    )
 
         # Add draft-created resources
         draft_resource_creates = await self.draft_overlay.get_draft_creates("resource")

@@ -1223,7 +1223,7 @@ async def list_resources(
     query = select(Resource).order_by(Resource.entity_key)
 
     if category:
-        query = query.where(Resource.category_key == category)
+        query = query.where(Resource.category_keys.contains([category]))
     if cursor:
         query = query.where(Resource.entity_key > cursor)
 
@@ -1245,7 +1245,7 @@ async def list_resources(
     # Include draft-created resources (filter by category if specified)
     draft_creates = await draft_ctx.get_draft_creates("resource")
     for create in draft_creates:
-        if category is None or create.get("category") == category:
+        if category is None or category in (create.get("categories") or [create.get("category")]):
             items.append(EntityWithStatus.model_validate(create))
 
     items.sort(key=lambda x: x.entity_key)
@@ -1288,6 +1288,7 @@ async def get_resource(
         "label",
         "description",
         "category",
+        "categories",
         "source_path",
         "_change_status",
         "_deleted",
@@ -1295,11 +1296,16 @@ async def get_resource(
     }
     dynamic_fields = {k: v for k, v in effective.items() if k not in reserved_keys}
 
+    # Support both "categories" (list) and legacy "category" (string)
+    categories = effective.get("categories", [])
+    if not categories and effective.get("category"):
+        categories = [effective["category"]]
+
     return ResourceDetailResponse(
         entity_key=effective.get("entity_key", entity_key),
         label=effective.get("label", ""),
         description=effective.get("description"),
-        category_key=effective.get("category", ""),
+        category_keys=categories,
         dynamic_fields=dynamic_fields,
         change_status=effective.get("_change_status"),
         deleted=effective.get("_deleted", False),
@@ -1331,9 +1337,9 @@ async def get_category_resources(
         if not effective:
             raise HTTPException(status_code=404, detail="Category not found")
 
-    # Query resources for this category
+    # Query resources that include this category (ARRAY contains)
     query = (
-        select(Resource).where(Resource.category_key == entity_key).order_by(Resource.entity_key)
+        select(Resource).where(Resource.category_keys.contains([entity_key])).order_by(Resource.entity_key)
     )
     result = await session.execute(query)
     resources = result.scalars().all()
@@ -1348,7 +1354,8 @@ async def get_category_resources(
     # Include draft-created resources for this category
     draft_creates = await draft_ctx.get_draft_creates("resource")
     for create in draft_creates:
-        if create.get("category") == entity_key:
+        cats = create.get("categories") or [create.get("category")]
+        if entity_key in (cats or []):
             items.append(EntityWithStatus.model_validate(create))
 
     items.sort(key=lambda x: x.entity_key)

@@ -658,7 +658,7 @@ class TestDerivationChainE2E:
             entity_key="ResourceInB",
             source_path="resources/CategoryB/ResourceInB.json",
             label="Resource in B",
-            category_key="CategoryB",
+            category_keys=["CategoryB"],
             canonical_json={
                 "id": "ResourceInB",
                 "category": "CategoryB",
@@ -757,7 +757,7 @@ class TestDerivationChainE2E:
             entity_key="ResourceInY",
             source_path="resources/CategoryY/ResourceInY.json",
             label="Resource in Y",
-            category_key="CategoryY",
+            category_keys=["CategoryY"],
             canonical_json={
                 "id": "ResourceInY",
                 "category": "CategoryY",
@@ -847,7 +847,7 @@ class TestDerivationChainE2E:
                 entity_key=f"Resource{i}",
                 source_path=f"resources/CategoryManyRes/Resource{i}.json",
                 label=f"Resource {i}",
-                category_key="CategoryManyRes",
+                category_keys=["CategoryManyRes"],
                 canonical_json={
                     "id": f"Resource{i}",
                     "category": "CategoryManyRes",

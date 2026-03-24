@@ -445,13 +445,18 @@ class EntityParser:
         """
         entity_key = content["id"]  # Already includes category: "Person/John_doe"
 
+        # Support both "categories" (list) and legacy "category" (single string)
+        categories = content.get("categories", [])
+        if not categories and content.get("category"):
+            categories = [content["category"]]
+
         return Resource(
             entity_key=entity_key,
             source_path=source_path,
             label=content.get("label", entity_key),
             description=content.get("description"),
-            category_key=content.get("category"),  # "Person"
-            canonical_json=content,  # Includes additional properties
+            category_keys=categories,
+            canonical_json=content,
         )
 
     def parse_all(self, files: dict[str, list[tuple[str, dict]]]) -> ParsedEntities:

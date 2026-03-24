@@ -163,7 +163,7 @@ export interface ResourceDetailV2 {
   entity_key: string
   label: string
   description?: string | null
-  category_key: string
+  category_keys: string[]
   dynamic_fields: Record<string, unknown>
   change_status?: 'added' | 'modified' | 'deleted' | 'unchanged'
   deleted?: boolean

@@ -196,7 +196,7 @@ class TestParseResource:
 [[Category:OntologySync-managed-resource]]"""
 
         result = parse_resource_wikitext(wikitext, "Person/John_doe")
-        assert result["category"] == "Person"
+        assert result["categories"] == ["Person"]
         assert result["Has_name"] == "John Doe"
         assert result["Has_email"] == "john@example.com"
 
@@ -316,16 +316,30 @@ class TestResourceRoundTrip:
             "id": "Person/John_doe",
             "label": "John Doe",
             "description": "Example",
-            "category": "Person",
+            "categories": ["Person"],
             "Has_name": "John Doe",
             "Has_email": "john@example.com",
         }
         wikitext = generate_resource_wikitext(original)
         parsed = parse_resource_wikitext(wikitext, "Person/John_doe")
 
-        assert parsed["category"] == "Person"
+        assert parsed["categories"] == ["Person"]
         assert parsed["Has_name"] == "John Doe"
         assert parsed["Has_email"] == "john@example.com"
+
+    def test_multi_category_round_trip(self):
+        original = {
+            "id": "Lab/Microscope_1",
+            "label": "Microscope 1",
+            "description": "A microscope",
+            "categories": ["Equipment", "Lab_item"],
+            "Has_name": "Microscope 1",
+        }
+        wikitext = generate_resource_wikitext(original)
+        parsed = parse_resource_wikitext(wikitext, "Lab/Microscope_1")
+
+        assert set(parsed["categories"]) == {"Equipment", "Lab_item"}
+        assert parsed["Has_name"] == "Microscope 1"
 
 
 class TestModuleVocabRoundTrip:

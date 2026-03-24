@@ -66,26 +66,24 @@ export function ResourceForm({
     mode: 'onBlur',
     defaultValues: {
       id: initialData?.id ?? '',
-      category_key: initialData?.category_key ?? '',
+      category_keys: initialData?.category_keys ?? [],
       dynamic_fields: initialData?.dynamic_fields ?? {},
     },
   })
 
   const { isValid } = form.formState
-  const selectedCategory = form.watch('category_key')
+  const selectedCategories = form.watch('category_keys')
   const dynamicFields = form.watch('dynamic_fields')
 
-  // Fetch category detail for dynamic fields when category is selected
-  const { data: categoryData } = useCategory(selectedCategory, draftId)
+  // Fetch category detail for the first selected category (for dynamic fields)
+  const primaryCategory = selectedCategories[0] || ''
+  const { data: categoryData } = useCategory(primaryCategory, draftId)
   const categoryDetail = categoryData as CategoryDetailV2 | undefined
 
-  // Handle category change - resets dynamic fields
+  // Handle category change
   const handleCategoryChange = (keys: string[]) => {
-    const newCategory = keys[0] || ''
-    if (newCategory !== form.getValues('category_key')) {
-      form.setValue('category_key', newCategory)
-      form.setValue('dynamic_fields', {}) // Reset fields on category change
-    }
+    form.setValue('category_keys', keys)
+    form.setValue('dynamic_fields', {}) // Reset fields on category change
   }
 
   // Handle dynamic field value change
@@ -102,30 +100,32 @@ export function ResourceForm({
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-      {/* Category selection at top */}
+      {/* Category selection at top (multi-select) */}
       <div className="space-y-2">
         <Label className="flex items-center gap-1">
-          Category
+          Categories
           <span className="text-red-600">*</span>
         </Label>
         <EntityCombobox
           entityType="category"
           availableEntities={availableCategories}
-          selectedKeys={selectedCategory ? [selectedCategory] : []}
+          selectedKeys={selectedCategories}
           onChange={handleCategoryChange}
-          placeholder="Select category..."
+          placeholder="Select categories..."
         />
-        {selectedCategory && (
+        {selectedCategories.length > 0 && (
           <RelationshipChips
-            values={[selectedCategory]}
-            onRemove={() => handleCategoryChange([])}
+            values={selectedCategories}
+            onRemove={(key) =>
+              handleCategoryChange(selectedCategories.filter((k) => k !== key))
+            }
             getLabel={getCategoryLabel}
           />
         )}
       </div>
 
       {/* Dynamic fields section - appears after category selected */}
-      {selectedCategory && (
+      {selectedCategories.length > 0 && (
         <div className="space-y-3 p-3 border rounded-md bg-muted/30">
           <Label className="text-sm font-medium text-muted-foreground">
             Category Fields
@@ -154,7 +154,7 @@ export function ResourceForm({
         </div>
       )}
 
-      {!selectedCategory && (
+      {selectedCategories.length === 0 && (
         <p className="text-sm text-muted-foreground italic">
           Select a category to see available fields.
         </p>

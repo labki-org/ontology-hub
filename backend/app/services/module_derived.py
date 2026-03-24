@@ -272,8 +272,8 @@ async def _get_category_resources(
     """
     resources: set[str] = set()
 
-    # Query canonical resources
-    query = select(Resource.entity_key).where(Resource.category_key == category_key)
+    # Query canonical resources (ARRAY contains)
+    query = select(Resource.entity_key).where(Resource.category_keys.contains([category_key]))
     result = await session.execute(query)
     for row in result.fetchall():
         resources.add(row[0])
@@ -282,9 +282,8 @@ async def _get_category_resources(
     for key, change in draft_changes.items():
         if key.startswith("resource:") and change.change_type == ChangeType.CREATE:
             replacement = change.replacement_json or {}
-            # Resources store category_key in the "category" field of canonical_json
-            # or directly in the resource model's category_key field
-            if replacement.get("category") == category_key:
+            cats = replacement.get("categories") or [replacement.get("category")]
+            if category_key in (cats or []):
                 resource_key = key.split(":", 1)[1]
                 resources.add(resource_key)
 

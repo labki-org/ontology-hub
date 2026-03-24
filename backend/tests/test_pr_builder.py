@@ -78,7 +78,7 @@ async def seeded_resource(test_session: AsyncSession) -> Resource:
         entity_key="Equipment/Lab_Microscope",
         source_path="resources/Equipment/Lab_Microscope.wikitext",
         label="Lab Microscope",
-        category_key="Equipment",
+        category_keys=["Equipment"],
         canonical_json={
             "id": "Equipment/Lab_Microscope",
             "category": "Equipment",

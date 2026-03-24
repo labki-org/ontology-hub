@@ -114,11 +114,12 @@ export function ResourceDetail({
   )
 
   // Navigate to category detail
-  const handleCategoryClick = useCallback(() => {
-    if (resource?.category_key) {
-      setSelectedEntity(resource.category_key, 'category')
-    }
-  }, [resource, setSelectedEntity])
+  const handleCategoryClick = useCallback(
+    (categoryKey: string) => {
+      setSelectedEntity(categoryKey, 'category')
+    },
+    [setSelectedEntity]
+  )
 
   if (isLoading) {
     return (
@@ -200,15 +201,24 @@ export function ResourceDetail({
         {/* Resource ID as title */}
         <h2 className="text-2xl font-bold">{resourceId}</h2>
 
-        {/* Category Link - prominent placement */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Category:</span>
-          <button
-            onClick={handleCategoryClick}
-            className="text-primary hover:underline font-medium"
-          >
-            {resource.category_key}
-          </button>
+        {/* Category Links - prominent placement */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-sm text-muted-foreground">
+            {resource.category_keys.length === 1 ? 'Category:' : 'Categories:'}
+          </span>
+          {resource.category_keys.map((catKey, i) => (
+            <span key={catKey}>
+              <button
+                onClick={() => handleCategoryClick(catKey)}
+                className="text-primary hover:underline font-medium"
+              >
+                {catKey}
+              </button>
+              {i < resource.category_keys.length - 1 && (
+                <span className="text-muted-foreground">,</span>
+              )}
+            </span>
+          ))}
         </div>
       </div>
 

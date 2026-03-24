@@ -250,16 +250,16 @@ def parse_resource_wikitext(wikitext: str, entity_key: str) -> dict[str, Any]:
     ann = extract_annotations(wikitext)
     categories = extract_categories(wikitext)
 
-    # Find the content category (non-management)
-    category = next(
-        (c for c in categories if not c.startswith("OntologySync-managed")), ""
-    )
+    # Find all content categories (non-management)
+    content_categories = [
+        to_entity_key(c) for c in categories if not c.startswith("OntologySync-managed")
+    ]
 
     result: dict[str, Any] = {
         "id": entity_key,
         "label": _first(ann, "Display label", to_page_name(entity_key.split("/")[-1])),
         "description": _first(ann, "Has description", ""),
-        "category": to_entity_key(category) if category else "",
+        "categories": content_categories,
     }
 
     # Add dynamic property fields
