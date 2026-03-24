@@ -82,8 +82,8 @@ export function ResourceForm({
 
   // Handle category change
   const handleCategoryChange = (keys: string[]) => {
-    form.setValue('category_keys', keys)
-    form.setValue('dynamic_fields', {}) // Reset fields on category change
+    form.setValue('category_keys', keys, { shouldValidate: true })
+    form.setValue('dynamic_fields', {})
   }
 
   // Handle dynamic field value change
