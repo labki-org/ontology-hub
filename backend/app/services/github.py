@@ -115,13 +115,17 @@ class GitHubClient:
                 len(data.get("tree", [])),
             )
 
-        # Filter for .json files in target directories
+        # Filter for entity files (.wikitext, .vocab.json, .json) in target directories
         return [
             entry
             for entry in data.get("tree", [])
             if entry.get("type") == "blob"
-            and entry.get("path", "").endswith(".json")
             and entry.get("path", "").split("/")[0] in ENTITY_DIRECTORIES
+            and (
+                entry.get("path", "").endswith(".wikitext")
+                or entry.get("path", "").endswith(".vocab.json")
+                or entry.get("path", "").endswith(".json")
+            )
         ]
 
     async def get_file_content(
@@ -146,6 +150,28 @@ class GitHubClient:
         content_str = content_bytes.decode("utf-8")
 
         return cast(dict[str, Any], json.loads(content_str))
+
+    async def get_file_content_raw(
+        self, owner: str, repo: str, path: str, ref: str = "main"
+    ) -> str:
+        """Fetch and decode a file from GitHub as raw text.
+
+        Used for .wikitext files that aren't JSON.
+
+        Args:
+            owner: Repository owner
+            repo: Repository name
+            path: File path within repository
+            ref: Git ref (branch, tag, or commit SHA)
+
+        Returns:
+            Raw text content of the file
+        """
+        url = f"/repos/{owner}/{repo}/contents/{path}"
+        data = await self._request("GET", url, params={"ref": ref})
+
+        content_bytes = base64.b64decode(data["content"])
+        return content_bytes.decode("utf-8")
 
     async def get_latest_commit_sha(self, owner: str, repo: str, branch: str = "main") -> str:
         """Get the SHA of the latest commit on a branch.

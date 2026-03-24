@@ -1,0 +1,237 @@
+"""Generate OntologySync wikitext files from structured entity dicts.
+
+This is the inverse of wikitext_parser.py. Given a dict in the same format
+as the DB's canonical_json, it produces wikitext with semantic annotations.
+
+Used by the PR builder to generate wikitext files for GitHub PRs.
+"""
+
+from __future__ import annotations
+
+import json
+from typing import Any
+
+from app.services.parsers.wikitext_parser import to_page_name, NAMESPACE_TO_ENTITY_TYPE
+
+# Reverse mapping: entity type -> namespace constant
+ENTITY_TYPE_TO_NAMESPACE: dict[str, str] = {
+    v: k for k, v in NAMESPACE_TO_ENTITY_TYPE.items()
+}
+
+
+def _with_ns(entity_key: str, ns: str) -> str:
+    """Add a namespace prefix to an entity key for wikitext annotations."""
+    return f"{ns}:{to_page_name(entity_key)}"
+
+
+# ─── Entity-specific generators ─────────────────────────────────────────────
+
+
+def generate_category_wikitext(entity: dict[str, Any]) -> str:
+    """Generate wikitext for a category entity."""
+    lines = ["<!-- OntologySync Start -->"]
+
+    if entity.get("description"):
+        lines.append(f"[[Has description::{entity['description']}]]")
+    if entity.get("label") and entity["label"] != to_page_name(entity.get("id", "")):
+        lines.append(f"[[Display label::{entity['label']}]]")
+
+    for parent in entity.get("parents", []):
+        lines.append(f"[[Has parent category::{_with_ns(parent, 'Category')}]]")
+    for prop in entity.get("required_properties", []):
+        lines.append(f"[[Has required property::{_with_ns(prop, 'Property')}]]")
+    for prop in entity.get("optional_properties", []):
+        lines.append(f"[[Has optional property::{_with_ns(prop, 'Property')}]]")
+    for sub in entity.get("required_subobjects", []):
+        lines.append(f"[[Has required subobject::{_with_ns(sub, 'Subobject')}]]")
+    for sub in entity.get("optional_subobjects", []):
+        lines.append(f"[[Has optional subobject::{_with_ns(sub, 'Subobject')}]]")
+
+    lines.append("<!-- OntologySync End -->")
+    lines.append("[[Category:OntologySync-managed]]")
+
+    return "\n".join(lines) + "\n"
+
+
+def generate_property_wikitext(entity: dict[str, Any]) -> str:
+    """Generate wikitext for a property entity."""
+    lines = ["<!-- OntologySync Start -->"]
+
+    lines.append(f"[[Has type::{entity.get('datatype', '')}]]")
+
+    if entity.get("description"):
+        lines.append(f"[[Has description::{entity['description']}]]")
+    if entity.get("label") and entity["label"] != to_page_name(entity.get("id", "")):
+        lines.append(f"[[Display label::{entity['label']}]]")
+
+    if entity.get("cardinality") == "multiple":
+        lines.append("[[Allows multiple values::true]]")
+
+    if isinstance(entity.get("allowed_values"), list):
+        for value in entity["allowed_values"]:
+            lines.append(f"[[Allows value::{value}]]")
+
+    if entity.get("Allows_value_from_category"):
+        lines.append(
+            f"[[Allows value from category::{_with_ns(entity['Allows_value_from_category'], 'Category')}]]"
+        )
+
+    if entity.get("allowed_pattern"):
+        lines.append(f"[[Allows pattern::{entity['allowed_pattern']}]]")
+
+    if entity.get("allowed_value_list"):
+        lines.append(f"[[Allows value list::{entity['allowed_value_list']}]]")
+
+    if entity.get("display_units"):
+        for unit in entity["display_units"]:
+            lines.append(f"[[Display units::{unit}]]")
+
+    if entity.get("display_precision") is not None:
+        lines.append(f"[[Display precision::{entity['display_precision']}]]")
+
+    if entity.get("unique_values") is True:
+        lines.append("[[Has unique values::true]]")
+
+    if entity.get("has_display_template"):
+        lines.append(
+            f"[[Has template::{_with_ns(entity['has_display_template'], 'Template')}]]"
+        )
+
+    if entity.get("parent_property"):
+        lines.append(
+            f"[[Subproperty of::{_with_ns(entity['parent_property'], 'Property')}]]"
+        )
+
+    lines.append("<!-- OntologySync End -->")
+    lines.append("[[Category:OntologySync-managed-property]]")
+
+    return "\n".join(lines) + "\n"
+
+
+def generate_subobject_wikitext(entity: dict[str, Any]) -> str:
+    """Generate wikitext for a subobject entity."""
+    lines = ["<!-- OntologySync Start -->"]
+
+    if entity.get("description"):
+        lines.append(f"[[Has description::{entity['description']}]]")
+    if entity.get("label") and entity["label"] != to_page_name(entity.get("id", "")):
+        lines.append(f"[[Display label::{entity['label']}]]")
+
+    for prop in entity.get("required_properties", []):
+        lines.append(f"[[Has required property::{_with_ns(prop, 'Property')}]]")
+    for prop in entity.get("optional_properties", []):
+        lines.append(f"[[Has optional property::{_with_ns(prop, 'Property')}]]")
+
+    lines.append("<!-- OntologySync End -->")
+    lines.append("[[Category:OntologySync-managed-subobject]]")
+
+    return "\n".join(lines) + "\n"
+
+
+def generate_template_wikitext(entity: dict[str, Any]) -> str:
+    """Generate wikitext for a template. Templates are raw wikitext content."""
+    return (entity.get("wikitext", "") or "") + "\n"
+
+
+def generate_dashboard_page_wikitext(wikitext_content: str) -> str:
+    """Generate wikitext for a dashboard page. Dashboards are pure wikitext."""
+    return (wikitext_content or "") + "\n"
+
+
+def generate_resource_wikitext(entity: dict[str, Any]) -> str:
+    """Generate wikitext for a resource entity."""
+    lines = ["<!-- OntologySync Start -->"]
+
+    if entity.get("description"):
+        lines.append(f"[[Has description::{entity['description']}]]")
+    if entity.get("label"):
+        lines.append(f"[[Display label::{entity['label']}]]")
+
+    # Dynamic property fields
+    metadata_keys = {"id", "label", "description", "category"}
+    for key, value in entity.items():
+        if key in metadata_keys:
+            continue
+        page_name = to_page_name(key)
+        if isinstance(value, list):
+            for v in value:
+                lines.append(f"[[{page_name}::{v}]]")
+        else:
+            lines.append(f"[[{page_name}::{value}]]")
+
+    lines.append("<!-- OntologySync End -->")
+
+    if entity.get("category"):
+        lines.append(f"[[Category:{to_page_name(entity['category'])}]]")
+    lines.append("[[Category:OntologySync-managed-resource]]")
+
+    return "\n".join(lines) + "\n"
+
+
+def generate_module_vocab_json(
+    entity: dict[str, Any],
+    ontology_version: str = "",
+) -> str:
+    """Generate a module vocab.json string from a structured module dict.
+
+    The entity dict should contain the standard module fields (id, version, label,
+    description, dependencies) plus entity arrays (categories, properties, etc.).
+    """
+    entity_arrays = {
+        "categories": ("categories", "NS_CATEGORY"),
+        "properties": ("properties", "SMW_NS_PROPERTY"),
+        "subobjects": ("subobjects", "NS_SUBOBJECT"),
+        "templates": ("templates", "NS_TEMPLATE"),
+        "dashboards": ("dashboards", "NS_ONTOLOGY_DASHBOARD"),
+        "resources": ("resources", "NS_ONTOLOGY_RESOURCE"),
+    }
+
+    import_entries = []
+    for etype, (directory, namespace) in entity_arrays.items():
+        for key in entity.get(etype, []):
+            import_entries.append(
+                {
+                    "page": to_page_name(key),
+                    "namespace": namespace,
+                    "contents": {"importFrom": f"{directory}/{key}.wikitext"},
+                    "options": {"replaceable": True},
+                }
+            )
+
+    vocab = {
+        "description": entity.get("description", ""),
+        "id": entity.get("id", ""),
+        "version": entity.get("version", ""),
+        "label": entity.get("label", entity.get("id", "")),
+        "dependencies": entity.get("dependencies", []),
+        "import": import_entries,
+        "meta": {
+            "version": "1",
+            "ontologyVersion": ontology_version,
+        },
+    }
+
+    return json.dumps(vocab, indent=2) + "\n"
+
+
+# ─── Dispatch by entity type ────────────────────────────────────────────────
+
+_GENERATORS: dict[str, Any] = {
+    "category": generate_category_wikitext,
+    "property": generate_property_wikitext,
+    "subobject": generate_subobject_wikitext,
+    "template": generate_template_wikitext,
+    "resource": generate_resource_wikitext,
+}
+
+
+def generate_wikitext(entity_json: dict[str, Any], entity_type: str) -> str:
+    """Generate wikitext for an entity, dispatching by type.
+
+    For dashboards, use generate_dashboard_page_wikitext() directly.
+    For modules, use generate_module_vocab_json().
+    """
+    generator = _GENERATORS.get(entity_type)
+    if not generator:
+        raise ValueError(f"Unknown entity type for wikitext generation: {entity_type}")
+    return generator(entity_json)
