@@ -120,7 +120,7 @@ export function useHybridLayout(
     setIsRunning(true)
 
     const simulation = simulationRef.current
-    simulation.alpha(0.5).restart()
+    simulation.alpha(0.3).restart()
 
     // Update nodes on each tick during animated restart
     simulation.on('tick', () => {
@@ -296,7 +296,8 @@ function applyForceLayout(nodes: Node[], edges: Edge[]): Node[] {
     .force('collide', forceCollide(collisionRadius))
     .force('x', forceX(0).strength(0.05))
     .force('y', forceY(0).strength(0.05))
-    .alphaDecay(0.05)
+    .alphaDecay(0.08)
+    .velocityDecay(0.55)
     .stop()
 
   // Run simulation to completion
@@ -426,7 +427,8 @@ function applyHybridLayout(
     // Constrain nodes toward their dagre-assigned positions
     .force('targetX', forceX((d: any) => d.targetX).strength(xStrength))
     .force('targetY', forceY((d: any) => d.targetY).strength(yStrength))
-    .alphaDecay(0.03)
+    .alphaDecay(0.08)       // Faster cooling (default 0.0228)
+    .velocityDecay(0.55)    // More friction to reduce sliding (default 0.4)
     .stop()
 
   simulationRef.current = simulation
@@ -678,7 +680,8 @@ function applyRadialLayout(
       (d: any) => nodePositions.get(d.id)?.radius ?? 0,
       0, 0
     ).strength(0.4))
-    .alphaDecay(0.025) // Slower decay for better convergence
+    .alphaDecay(0.06)       // Faster cooling for snappier settling
+    .velocityDecay(0.55)    // More friction to reduce sliding
     .stop()
 
   simulationRef.current = simulation
