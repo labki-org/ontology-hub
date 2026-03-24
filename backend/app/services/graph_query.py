@@ -1229,22 +1229,10 @@ class GraphQueryService:
                     )
                 )
 
-            # Get module -> dashboard edges via ModuleDashboard join
-            dashboard_edge_query = text("""
-                SELECT m.entity_key as module_key, d.entity_key as dashboard_key
-                FROM module_dashboard md
-                JOIN modules_v2 m ON m.id = md.module_id
-                JOIN dashboards d ON d.id = md.dashboard_id
-            """)
-            result = await self.session.execute(dashboard_edge_query)
-            for row in result.fetchall():
-                edges.append(
-                    GraphEdge(
-                        source=row.module_key,
-                        target=row.dashboard_key,
-                        edge_type="module_dashboard",
-                    )
-                )
+            # Note: module_dashboard edges are skipped in the full graph because
+            # modules are not graph nodes (they're represented as hull overlays).
+            # These edges are only emitted in module-scoped or dashboard-neighborhood
+            # queries where the module IS included as a node.
 
         # Add draft-created dashboards
         draft_dashboard_creates = await self.draft_overlay.get_draft_creates("dashboard")
