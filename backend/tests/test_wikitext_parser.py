@@ -2,8 +2,13 @@
 
 import json
 
-import pytest
-
+from app.services.generators.wikitext_generator import (
+    generate_category_wikitext,
+    generate_module_vocab_json,
+    generate_property_wikitext,
+    generate_resource_wikitext,
+    generate_subobject_wikitext,
+)
 from app.services.parsers.wikitext_parser import (
     extract_annotations,
     extract_categories,
@@ -15,14 +20,6 @@ from app.services.parsers.wikitext_parser import (
     parse_template_wikitext,
     to_entity_key,
     to_page_name,
-)
-from app.services.generators.wikitext_generator import (
-    generate_category_wikitext,
-    generate_module_vocab_json,
-    generate_property_wikitext,
-    generate_resource_wikitext,
-    generate_subobject_wikitext,
-    generate_template_wikitext,
 )
 
 
