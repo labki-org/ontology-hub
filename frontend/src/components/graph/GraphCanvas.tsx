@@ -223,7 +223,7 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
     const x = availableCenterX - nodeX * zoom
     const y = availableCenterY - nodeY * zoom
 
-    setViewport({ x, y, zoom }, { duration: animate ? 300 : 0 })
+    setViewport({ x, y, zoom }, { duration: animate ? 100 : 0 })
   }, [nodes, detailPanelOpen, viewport.zoom, setViewport])
 
   // Helper to fit entire graph with offset for detail panel
