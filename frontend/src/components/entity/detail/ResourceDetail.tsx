@@ -1,8 +1,10 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react'
-import { useResource } from '@/api/entities'
+import { useResource, useCategories } from '@/api/entities'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useGraphStore } from '@/stores/graphStore'
 import { AccordionSection } from '../sections/AccordionSection'
+import { EntityCombobox } from '../forms/EntityCombobox'
+import { RelationshipChips } from '../forms/RelationshipChips'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
@@ -18,7 +20,6 @@ interface ResourceDetailProps {
 
 /**
  * Format a dynamic field value for display.
- * Handles strings, numbers, arrays, objects, and null/undefined.
  */
 function formatValue(value: unknown): string | React.ReactNode {
   if (value === null || value === undefined) {
@@ -36,15 +37,6 @@ function formatValue(value: unknown): string | React.ReactNode {
   return String(value)
 }
 
-/**
- * Resource detail view with:
- * - Simple header (entity key + category link)
- * - Dynamic fields displayed in flat list
- * - Simple text input for field editing in draft mode
- *
- * Resources are data instances - they have an ID, category, and dynamic fields.
- * Unlike schema entities, they don't have label/description fields.
- */
 export function ResourceDetail({
   entityKey,
   draftId,
@@ -54,21 +46,27 @@ export function ResourceDetail({
   const { data, isLoading, error } = useResource(entityKey, draftId)
   const setSelectedEntity = useGraphStore((s) => s.setSelectedEntity)
 
-  // Cast to ResourceDetailV2
   const resource = data as ResourceDetailV2 | undefined
+
+  // Fetch available categories for the combobox
+  const { data: categoriesData } = useCategories(undefined, undefined, draftId)
+  const availableCategories = (categoriesData?.items || []).map((c) => ({
+    key: c.entity_key,
+    label: c.label,
+  }))
 
   // Track original values for change detection
   const [originalValues, setOriginalValues] = useState<{
+    category_keys?: string[]
     dynamic_fields?: Record<string, unknown>
   }>({})
 
-  // Local editable state - only dynamic fields (resources don't have label/description)
+  // Local editable state
+  const [editedCategories, setEditedCategories] = useState<string[]>([])
   const [editedDynamicFields, setEditedDynamicFields] = useState<Record<string, unknown>>({})
 
-  // Track which entity we've initialized original values for (prevent reset on refetch)
   const initializedEntityRef = useRef<string | null>(null)
 
-  // Auto-save hook
   const { saveChange, isSaving } = useAutoSave({
     draftToken: draftToken || '',
     entityType: 'resource',
@@ -76,18 +74,18 @@ export function ResourceDetail({
     debounceMs: 500,
   })
 
-  // Initialize state when resource loads for a new entity (not on refetch)
+  // Initialize state when resource loads for a new entity
   /* eslint-disable react-hooks/set-state-in-effect -- Valid sync with external data */
   useEffect(() => {
     if (resource) {
       const isNewEntity = initializedEntityRef.current !== entityKey
 
-      // Only reset edited values and original values for a NEW entity
-      // (not on refetch after auto-save)
       if (isNewEntity) {
+        setEditedCategories(resource.category_keys || [])
         setEditedDynamicFields(resource.dynamic_fields || {})
 
         setOriginalValues({
+          category_keys: resource.category_keys || [],
           dynamic_fields: resource.dynamic_fields || {},
         })
 
@@ -97,7 +95,30 @@ export function ResourceDetail({
   }, [resource, entityKey])
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  // Change handler for dynamic fields - use 'add' instead of 'replace' for robustness
+  // Category change handlers
+  const handleAddCategory = useCallback(
+    (categoryKey: string) => {
+      const updated = [...editedCategories, categoryKey]
+      setEditedCategories(updated)
+      if (draftToken) {
+        saveChange([{ op: 'add', path: '/categories', value: updated }])
+      }
+    },
+    [draftToken, saveChange, editedCategories]
+  )
+
+  const handleRemoveCategory = useCallback(
+    (categoryKey: string) => {
+      const updated = editedCategories.filter((k) => k !== categoryKey)
+      setEditedCategories(updated)
+      if (draftToken) {
+        saveChange([{ op: 'add', path: '/categories', value: updated }])
+      }
+    },
+    [draftToken, saveChange, editedCategories]
+  )
+
+  // Dynamic field change handler
   const handleDynamicFieldChange = useCallback(
     (fieldKey: string, value: string) => {
       setEditedDynamicFields((prev) => ({
@@ -105,7 +126,6 @@ export function ResourceDetail({
         [fieldKey]: value,
       }))
       if (draftToken) {
-        // Update the dynamic_fields object with the new value
         const updatedFields = { ...editedDynamicFields, [fieldKey]: value }
         saveChange([{ op: 'add', path: '/dynamic_fields', value: updatedFields }])
       }
@@ -142,20 +162,18 @@ export function ResourceDetail({
     )
   }
 
-  // Extract the resource ID from entity_key (format: "category/id")
   const resourceId = entityKey.includes('/') ? entityKey.split('/').pop() : entityKey
-
-  // Get dynamic field entries
   const fieldEntries = Object.entries(editedDynamicFields)
 
-  // Check if a specific field was modified
   const isFieldModified = (fieldKey: string): boolean => {
     const original = originalValues.dynamic_fields?.[fieldKey]
     const current = editedDynamicFields[fieldKey]
     return JSON.stringify(original) !== JSON.stringify(current)
   }
 
-  // Change status badge
+  const areCategoriesModified =
+    JSON.stringify(editedCategories) !== JSON.stringify(originalValues.category_keys)
+
   const statusBadge = resource.change_status && resource.change_status !== 'unchanged' && (
     <Badge
       variant={
@@ -189,7 +207,7 @@ export function ResourceDetail({
         </div>
       )}
 
-      {/* Simple Header - Resources don't have label/description */}
+      {/* Header */}
       <div className="space-y-4">
         <div className="flex items-center gap-3">
           <Badge variant="outline" className="capitalize">
@@ -198,29 +216,73 @@ export function ResourceDetail({
           {statusBadge}
         </div>
 
-        {/* Resource ID as title */}
         <h2 className="text-2xl font-bold">{resourceId}</h2>
-
-        {/* Category Links - prominent placement */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm text-muted-foreground">
-            {resource.category_keys.length === 1 ? 'Category:' : 'Categories:'}
-          </span>
-          {resource.category_keys.map((catKey, i) => (
-            <span key={catKey}>
-              <button
-                onClick={() => handleCategoryClick(catKey)}
-                className="text-primary hover:underline font-medium"
-              >
-                {catKey}
-              </button>
-              {i < resource.category_keys.length - 1 && (
-                <span className="text-muted-foreground">,</span>
-              )}
-            </span>
-          ))}
-        </div>
       </div>
+
+      {/* Categories Section */}
+      <AccordionSection
+        id="categories"
+        title="Categories"
+        count={editedCategories.length}
+        defaultOpen
+      >
+        <VisualChangeMarker
+          status={areCategoriesModified ? 'modified' : 'unchanged'}
+          originalValue={originalValues.category_keys?.join(', ') ?? ''}
+        >
+          <div className="space-y-3">
+            {/* Category chips — clickable to navigate, removable in edit mode */}
+            <RelationshipChips
+              values={editedCategories}
+              onRemove={handleRemoveCategory}
+              disabled={!isEditing}
+              getLabel={(key) => {
+                const cat = availableCategories.find((c) => c.key === key)
+                return cat?.label || key
+              }}
+            />
+
+            {/* Empty state */}
+            {editedCategories.length === 0 && !isEditing && (
+              <p className="text-sm text-muted-foreground italic">
+                No categories assigned
+              </p>
+            )}
+
+            {/* Add category combobox in edit mode */}
+            {isEditing && (
+              <EntityCombobox
+                entityType="category"
+                availableEntities={availableCategories.filter(
+                  (c) => !editedCategories.includes(c.key)
+                )}
+                selectedKeys={[]}
+                onChange={(keys) => {
+                  if (keys.length > 0) {
+                    handleAddCategory(keys[0])
+                  }
+                }}
+                placeholder="Add category..."
+              />
+            )}
+
+            {/* Clickable links (read-only mode) */}
+            {!isEditing && editedCategories.length > 0 && (
+              <div className="flex gap-2 flex-wrap">
+                {editedCategories.map((catKey) => (
+                  <button
+                    key={catKey}
+                    onClick={() => handleCategoryClick(catKey)}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    View {catKey}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </VisualChangeMarker>
+      </AccordionSection>
 
       {/* Dynamic Fields Section */}
       <AccordionSection
