@@ -15,7 +15,7 @@ from app.models.v2 import Category, ChangeType, DraftChange
 # Reserved keys that are NOT property fields
 # These are either structural fields (id, label, description, category)
 # or internal fields (entity_key, source_path)
-RESERVED_KEYS = frozenset({"id", "label", "description", "category", "categories", "entity_key", "source_path"})
+RESERVED_KEYS = frozenset({"id", "label", "description", "category", "categories", "wikitext", "entity_key", "source_path"})
 
 
 async def get_category_effective_properties(

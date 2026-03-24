@@ -314,6 +314,9 @@ class ResourceDetailResponse(BaseModel):
     dynamic_fields: dict[str, Any] = Field(
         default_factory=dict, description="Dynamic property values"
     )
+    wikitext: str = Field(
+        default="", description="Free-form wikitext body content for the resource page"
+    )
     change_status: ChangeStatus | None = Field(
         default=None,
         validation_alias="_change_status",

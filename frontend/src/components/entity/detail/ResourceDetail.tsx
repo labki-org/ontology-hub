@@ -110,11 +110,13 @@ export function ResourceDetail({
   const [originalValues, setOriginalValues] = useState<{
     category_keys?: string[]
     dynamic_fields?: Record<string, unknown>
+    wikitext?: string
   }>({})
 
   // Local editable state
   const [editedCategories, setEditedCategories] = useState<string[]>([])
   const [editedDynamicFields, setEditedDynamicFields] = useState<Record<string, unknown>>({})
+  const [editedWikitext, setEditedWikitext] = useState<string>('')
   // Also track categories in queries (re-fetch when editedCategories changes for editing)
   const editedCategoryQueries = useQueries({
     queries: editedCategories.map((catKey) => ({
@@ -172,10 +174,12 @@ export function ResourceDetail({
       if (isNewEntity) {
         setEditedCategories(resource.category_keys || [])
         setEditedDynamicFields(resource.dynamic_fields || {})
+        setEditedWikitext(resource.wikitext || '')
 
         setOriginalValues({
           category_keys: resource.category_keys || [],
           dynamic_fields: resource.dynamic_fields || {},
+          wikitext: resource.wikitext || '',
         })
 
         initializedEntityRef.current = entityKey
@@ -220,6 +224,17 @@ export function ResourceDetail({
       }
     },
     [draftToken, saveChange, editedDynamicFields]
+  )
+
+  // Wikitext change handler
+  const handleWikitextChange = useCallback(
+    (value: string) => {
+      setEditedWikitext(value)
+      if (draftToken) {
+        saveChange([{ op: 'add', path: '/wikitext', value }])
+      }
+    },
+    [draftToken, saveChange]
   )
 
   // Navigate to category detail
@@ -441,6 +456,37 @@ export function ResourceDetail({
           </AccordionSection>
         )
       })()}
+
+      {/* Wikitext Body Content */}
+      <AccordionSection
+        id="wikitext"
+        title="Page Content"
+        count={editedWikitext ? 1 : 0}
+        defaultOpen={!!editedWikitext || isEditing}
+      >
+        <VisualChangeMarker
+          status={editedWikitext !== (originalValues.wikitext || '') ? 'modified' : 'unchanged'}
+          originalValue={originalValues.wikitext || ''}
+        >
+          {isEditing ? (
+            <textarea
+              value={editedWikitext}
+              onChange={(e) => handleWikitextChange(e.target.value)}
+              placeholder="Enter wikitext content for this resource page..."
+              className="w-full min-h-[200px] p-3 text-sm font-mono border rounded-md bg-background resize-y focus:outline-none focus:ring-2 focus:ring-ring"
+              spellCheck={false}
+            />
+          ) : editedWikitext ? (
+            <pre className="text-sm p-3 bg-muted rounded-md whitespace-pre-wrap font-mono overflow-x-auto">
+              {editedWikitext}
+            </pre>
+          ) : (
+            <p className="text-sm text-muted-foreground italic">
+              No page content defined
+            </p>
+          )}
+        </VisualChangeMarker>
+      </AccordionSection>
     </div>
   )
 }

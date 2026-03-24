@@ -1289,6 +1289,7 @@ async def get_resource(
         "description",
         "category",
         "categories",
+        "wikitext",
         "source_path",
         "_change_status",
         "_deleted",
@@ -1307,6 +1308,7 @@ async def get_resource(
         description=effective.get("description"),
         category_keys=categories,
         dynamic_fields=dynamic_fields,
+        wikitext=effective.get("wikitext", ""),
         change_status=effective.get("_change_status"),
         deleted=effective.get("_deleted", False),
     )

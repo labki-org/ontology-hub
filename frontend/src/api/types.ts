@@ -166,6 +166,7 @@ export interface ResourceDetailV2 {
   description?: string | null
   category_keys: string[]
   dynamic_fields: Record<string, unknown>
+  wikitext?: string
   change_status?: 'added' | 'modified' | 'deleted' | 'unchanged'
   deleted?: boolean
 }

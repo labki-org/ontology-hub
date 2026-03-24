@@ -245,6 +245,37 @@ def parse_dashboard_page(wikitext: str, page_name: str) -> dict[str, str]:
     }
 
 
+def _extract_body(wikitext: str) -> str:
+    """Extract free-form body content from a wikitext file.
+
+    Returns everything after the annotation block and category markers,
+    stripping leading/trailing whitespace.
+    """
+    lines = wikitext.split("\n")
+    # Find the last structural line (end marker or [[Category:...]])
+    last_structural = -1
+    in_block = False
+    for i, line in enumerate(lines):
+        trimmed = line.strip()
+        if trimmed == _START_MARKER:
+            in_block = True
+        if trimmed == _END_MARKER:
+            in_block = False
+            last_structural = i
+            continue
+        if in_block:
+            last_structural = i
+            continue
+        if _CATEGORY_RE.match(trimmed):
+            last_structural = i
+
+    if last_structural < 0 or last_structural >= len(lines) - 1:
+        return ""
+
+    body = "\n".join(lines[last_structural + 1 :]).strip()
+    return body
+
+
 def parse_resource_wikitext(wikitext: str, entity_key: str) -> dict[str, Any]:
     """Parse resource wikitext into dict matching the JSON format."""
     ann = extract_annotations(wikitext)
@@ -269,6 +300,11 @@ def parse_resource_wikitext(wikitext: str, entity_key: str) -> dict[str, Any]:
             continue
         key = to_entity_key(prop)
         result[key] = values[0] if len(values) == 1 else values
+
+    # Extract free-form body content
+    body = _extract_body(wikitext)
+    if body:
+        result["wikitext"] = body
 
     return result
 
