@@ -57,11 +57,12 @@ export function useHybridLayout(
 
   const { algorithm, direction } = options
 
-  // Memoize the layout computation to avoid unnecessary recalculations
-  const layoutKey = useMemo(
-    () => `${initialNodes.map(n => n.id).join(',')}-${edges.map(e => `${e.source}-${e.target}`).join(',')}-${algorithm}-${direction}`,
-    [initialNodes, edges, algorithm, direction]
-  )
+  // Memoize the layout computation to avoid unnecessary recalculations.
+  // Only recompute layout when the structural graph changes (node/edge identity),
+  // NOT when metadata like change_status updates.
+  const nodeIds = useMemo(() => initialNodes.map(n => n.id).sort().join(','), [initialNodes])
+  const edgeIds = useMemo(() => edges.map(e => `${e.source}-${e.target}`).sort().join(','), [edges])
+  const layoutKey = `${nodeIds}-${edgeIds}-${algorithm}-${direction}`
 
   /* eslint-disable react-hooks/set-state-in-effect -- Valid sync with layout computation */
   useEffect(() => {
@@ -120,7 +121,7 @@ export function useHybridLayout(
     setIsRunning(true)
 
     const simulation = simulationRef.current
-    simulation.alpha(0.3).restart()
+    simulation.alpha(0.5).restart()
 
     // Update nodes on each tick during animated restart
     simulation.on('tick', () => {
@@ -296,8 +297,7 @@ function applyForceLayout(nodes: Node[], edges: Edge[]): Node[] {
     .force('collide', forceCollide(collisionRadius))
     .force('x', forceX(0).strength(0.05))
     .force('y', forceY(0).strength(0.05))
-    .alphaDecay(0.08)
-    .velocityDecay(0.55)
+    .alphaDecay(0.05)
     .stop()
 
   // Run simulation to completion
@@ -427,8 +427,7 @@ function applyHybridLayout(
     // Constrain nodes toward their dagre-assigned positions
     .force('targetX', forceX((d: any) => d.targetX).strength(xStrength))
     .force('targetY', forceY((d: any) => d.targetY).strength(yStrength))
-    .alphaDecay(0.08)       // Faster cooling (default 0.0228)
-    .velocityDecay(0.55)    // More friction to reduce sliding (default 0.4)
+    .alphaDecay(0.03)
     .stop()
 
   simulationRef.current = simulation
@@ -680,8 +679,7 @@ function applyRadialLayout(
       (d: any) => nodePositions.get(d.id)?.radius ?? 0,
       0, 0
     ).strength(0.4))
-    .alphaDecay(0.06)       // Faster cooling for snappier settling
-    .velocityDecay(0.55)    // More friction to reduce sliding
+    .alphaDecay(0.025)
     .stop()
 
   simulationRef.current = simulation
