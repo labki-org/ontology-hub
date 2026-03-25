@@ -30,13 +30,15 @@ export function useAutoSave({
     onSuccess: () => {
       // Invalidate draft query to refresh status (auto-reverts from validated to draft)
       queryClient.invalidateQueries({ queryKey: ['v2', 'draft', draftToken] })
-      // Invalidate entity queries to refresh with new draft overlay
+      // Invalidate and refetch entity queries to refresh with new draft overlay
       queryClient.invalidateQueries({
         queryKey: ['v2', entityType, entityKey],
       })
-      // Force immediate refetch (invalidation alone may not trigger re-render)
-      queryClient.refetchQueries({
-        queryKey: ['v2', entityType, entityKey],
+      // Force immediate refetch of ALL v2 queries for this entity
+      // This ensures computed fields (like module closure) are up to date
+      void queryClient.refetchQueries({
+        queryKey: ['v2', entityType],
+        type: 'active',
       })
       // Also invalidate list queries for this entity type (sidebar refresh)
       // Handle irregular plural forms
