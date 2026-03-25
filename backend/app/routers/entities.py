@@ -821,9 +821,9 @@ async def get_module(
     change_status = effective.get("_change_status")
 
     # Check if effective JSON has draft-modified entity arrays
-    # canonical_json uses: categories, properties, subobjects, templates
     has_draft_entities = change_status in ("modified", "added") and any(
-        key in effective for key in ("categories", "properties", "subobjects", "templates")
+        key in effective
+        for key in ("categories", "properties", "subobjects", "templates", "dashboards", "resources")
     )
 
     if has_draft_entities:
@@ -838,6 +838,10 @@ async def get_module(
             entities["subobject"] = effective.get("subobjects", [])
         if "templates" in effective:
             entities["template"] = effective.get("templates", [])
+        if "dashboards" in effective:
+            entities["dashboard"] = effective.get("dashboards", [])
+        if "resources" in effective:
+            entities["resource"] = effective.get("resources", [])
 
         # Compute closure using draft-modified categories
         closure = (
