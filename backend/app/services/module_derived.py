@@ -14,11 +14,10 @@ Phase 27 Extension:
 - Cycle-safe: uses visited set pattern with max_depth cap
 """
 
+import json
 import uuid
 from copy import deepcopy
 from typing import Any
-
-import json
 
 import jsonpatch
 from sqlalchemy import text

@@ -6,7 +6,6 @@ and extracts relationships for separate relationship tables.
 
 from dataclasses import dataclass, field
 
-from app.services.resource_validation import get_entity_categories
 from app.models.v2 import (
     Bundle,
     Category,
@@ -18,6 +17,7 @@ from app.models.v2 import (
     Subobject,
     Template,
 )
+from app.services.resource_validation import get_entity_categories
 
 
 @dataclass
