@@ -143,7 +143,9 @@ async def detect_breaking_changes_v2(
         if entity_key in canonical_modules:
             # Existing module - check for breaking changes
             canonical_mod = canonical_modules[entity_key]
-            results.extend(_check_module_breaking_changes(entity_key, canonical_mod, mod_json))
+            results.extend(
+                await _check_module_breaking_changes(entity_key, canonical_mod, mod_json, session)
+            )
             results.extend(_check_metadata_changes("module", entity_key, canonical_mod, mod_json))
         else:
             # New module added (minor change)
@@ -476,37 +478,78 @@ def _check_metadata_changes(
     return results
 
 
-def _check_module_breaking_changes(
+async def _check_module_breaking_changes(
     entity_key: str,
     canonical: dict[str, Any],
     effective: dict[str, Any],
+    session: AsyncSession,
 ) -> list[ValidationResultV2]:
     """Check module for breaking changes (category/dependency removals).
 
     Only validates manual fields (categories, dependencies).
     Derived fields (properties, subobjects, templates) are auto-computed
-    from categories and shouldn't generate separate warnings.
+    from categories. A category removal is only breaking if it actually
+    changes the module's derived capabilities.
+
+    We recompute derived entities for both category sets rather than comparing
+    stored values, because canonical stored derived fields may be stale.
     """
+    from app.services.module_derived import compute_module_derived_entities
+
     results: list[ValidationResultV2] = []
 
-    # Check for removed categories (breaking)
     old_categories = set(canonical.get("categories", []))
     new_categories = set(effective.get("categories", []))
 
     removed_categories = old_categories - new_categories
-    for removed_cat in removed_categories:
-        results.append(
-            ValidationResultV2(
-                entity_type="module",
-                entity_key=entity_key,
-                field_path="/categories",
-                code="CATEGORY_REMOVED",
-                message=f"Category '{removed_cat}' removed from module - this is a breaking change",
-                severity="warning",
-                suggested_semver="major",
-                old_value=removed_cat,
-            )
+    added_categories = new_categories - old_categories
+
+    # Only recompute if categories actually changed
+    if removed_categories:
+        # Recompute derived entities for both category sets to compare
+        # actual capabilities rather than potentially stale stored values.
+        canonical_derived = await compute_module_derived_entities(
+            session, sorted(old_categories)
         )
+        effective_derived = await compute_module_derived_entities(
+            session, sorted(new_categories)
+        )
+
+        derived_keys = ("properties", "subobjects", "templates", "resources")
+        derived_changed = any(
+            canonical_derived.get(k, []) != effective_derived.get(k, [])
+            for k in derived_keys
+        )
+
+        for removed_cat in removed_categories:
+            if derived_changed:
+                results.append(
+                    ValidationResultV2(
+                        entity_type="module",
+                        entity_key=entity_key,
+                        field_path="/categories",
+                        code="CATEGORY_REMOVED",
+                        message=f"Category '{removed_cat}' removed from module - this is a breaking change",
+                        severity="warning",
+                        suggested_semver="major",
+                        old_value=removed_cat,
+                    )
+                )
+            else:
+                # Category removed but derived entities are identical (e.g.
+                # remaining categories inherit from the removed one).
+                results.append(
+                    ValidationResultV2(
+                        entity_type="module",
+                        entity_key=entity_key,
+                        field_path="/categories",
+                        code="CATEGORY_REMOVED",
+                        message=f"Category '{removed_cat}' removed from module (derived entities unchanged)",
+                        severity="info",
+                        suggested_semver="patch",
+                        old_value=removed_cat,
+                    )
+                )
 
     # Check for added categories (minor)
     added_categories = new_categories - old_categories
