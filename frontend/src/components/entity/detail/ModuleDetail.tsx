@@ -609,7 +609,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
         id="closure"
         title="Category Closure"
         count={moduleDetail.closure?.length || 0}
-        defaultOpen={false}
+        defaultOpen={true}
       >
         <div className="space-y-2">
           <p className="text-sm text-muted-foreground">
