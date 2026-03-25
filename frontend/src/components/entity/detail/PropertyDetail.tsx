@@ -840,7 +840,7 @@ export function PropertyDetail({
       </AccordionSection>
 
       {/* Module membership */}
-      <MembershipSection modules={[]} bundles={[]} />
+      <MembershipSection modules={property.modules || []} bundles={property.bundles || []} />
     </div>
   )
 }

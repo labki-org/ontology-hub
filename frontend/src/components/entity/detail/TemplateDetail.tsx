@@ -189,8 +189,7 @@ export function TemplateDetail({
         )}
       </AccordionSection>
 
-      {/* Module membership - TODO: needs API */}
-      <MembershipSection modules={[]} bundles={[]} />
+      <MembershipSection modules={template.modules || []} bundles={template.bundles || []} />
     </div>
   )
 }

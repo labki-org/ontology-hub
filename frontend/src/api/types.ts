@@ -36,6 +36,8 @@ export interface CategoryDetailV2 {
   parents: string[]
   properties: PropertyProvenance[]
   subobjects: SubobjectProvenance[]
+  modules?: string[]
+  bundles?: string[]
   change_status?: 'added' | 'modified' | 'deleted' | 'unchanged'
   deleted?: boolean
   patch_error?: string
@@ -86,6 +88,8 @@ export interface PropertyDetailV2 {
   // Constraints and relationships
   unique_values: boolean
   has_display_template?: string | null
+  modules?: string[]
+  bundles?: string[]
   change_status?: 'added' | 'modified' | 'deleted' | 'unchanged'
   deleted?: boolean
 }
@@ -104,6 +108,8 @@ export interface SubobjectDetailV2 {
   description?: string | null
   required_properties: SubobjectPropertyInfo[]
   optional_properties: SubobjectPropertyInfo[]
+  modules?: string[]
+  bundles?: string[]
   change_status?: 'added' | 'modified' | 'deleted' | 'unchanged'
   deleted?: boolean
 }
@@ -139,6 +145,8 @@ export interface TemplateDetailV2 {
   label: string
   description?: string | null
   wikitext?: string  // Template content
+  modules?: string[]
+  bundles?: string[]
   change_status?: 'added' | 'modified' | 'deleted' | 'unchanged'
   deleted?: boolean
 }
@@ -155,6 +163,8 @@ export interface DashboardDetailV2 {
   label: string
   description?: string | null
   pages: DashboardPage[]
+  modules?: string[]
+  bundles?: string[]
   change_status?: 'added' | 'modified' | 'deleted' | 'unchanged'
   deleted?: boolean
 }
@@ -167,6 +177,8 @@ export interface ResourceDetailV2 {
   category_keys: string[]
   dynamic_fields: Record<string, unknown>
   wikitext?: string
+  modules?: string[]
+  bundles?: string[]
   change_status?: 'added' | 'modified' | 'deleted' | 'unchanged'
   deleted?: boolean
 }

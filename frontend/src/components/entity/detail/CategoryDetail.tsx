@@ -860,7 +860,7 @@ export function CategoryDetail({
       </AccordionSection>
 
       {/* Membership */}
-      <MembershipSection modules={[]} bundles={[]} />
+      <MembershipSection modules={category.modules || []} bundles={category.bundles || []} />
     </div>
   )
 }

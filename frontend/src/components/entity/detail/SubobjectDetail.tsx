@@ -387,8 +387,7 @@ export function SubobjectDetail({
         </p>
       </AccordionSection>
 
-      {/* Module membership - TODO: needs API */}
-      <MembershipSection modules={[]} bundles={[]} />
+      <MembershipSection modules={subobject.modules || []} bundles={subobject.bundles || []} />
     </div>
   )
 }

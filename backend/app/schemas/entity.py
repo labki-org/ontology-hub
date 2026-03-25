@@ -81,6 +81,12 @@ class CategoryDetailResponse(BaseModel):
         default_factory=list,
         description="Subobjects assigned to this category (required + optional)",
     )
+    modules: list[str] = Field(
+        default_factory=list, description="Module entity keys containing this category"
+    )
+    bundles: list[str] = Field(
+        default_factory=list, description="Bundle entity keys (via module membership)"
+    )
     change_status: ChangeStatus | None = Field(
         default=None,
         validation_alias="_change_status",
@@ -131,6 +137,12 @@ class PropertyDetailResponse(BaseModel):
     has_display_template: str | None = Field(
         default=None, description="Template entity key for custom rendering"
     )
+    modules: list[str] = Field(
+        default_factory=list, description="Module entity keys containing this property"
+    )
+    bundles: list[str] = Field(
+        default_factory=list, description="Bundle entity keys (via module membership)"
+    )
     change_status: ChangeStatus | None = Field(
         default=None,
         validation_alias="_change_status",
@@ -163,6 +175,12 @@ class SubobjectDetailResponse(BaseModel):
     optional_properties: list[SubobjectPropertyInfo] = Field(
         default_factory=list, description="Optional property assignments"
     )
+    modules: list[str] = Field(
+        default_factory=list, description="Module entity keys containing this subobject"
+    )
+    bundles: list[str] = Field(
+        default_factory=list, description="Bundle entity keys (via module membership)"
+    )
     change_status: ChangeStatus | None = Field(
         default=None,
         validation_alias="_change_status",
@@ -183,6 +201,12 @@ class TemplateDetailResponse(BaseModel):
     description: str | None = None
     wikitext: str | None = Field(default=None, description="Template wikitext content")
     property_key: str | None = Field(default=None, description="Associated property entity key")
+    modules: list[str] = Field(
+        default_factory=list, description="Module entity keys containing this template"
+    )
+    bundles: list[str] = Field(
+        default_factory=list, description="Bundle entity keys (via module membership)"
+    )
     change_status: ChangeStatus | None = Field(
         default=None,
         validation_alias="_change_status",
@@ -289,6 +313,12 @@ class DashboardDetailResponse(BaseModel):
     pages: list[DashboardPage] = Field(
         default_factory=list, description="Dashboard pages with wikitext content"
     )
+    modules: list[str] = Field(
+        default_factory=list, description="Module entity keys containing this dashboard"
+    )
+    bundles: list[str] = Field(
+        default_factory=list, description="Bundle entity keys (via module membership)"
+    )
     change_status: ChangeStatus | None = Field(
         default=None,
         validation_alias="_change_status",
@@ -316,6 +346,12 @@ class ResourceDetailResponse(BaseModel):
     )
     wikitext: str = Field(
         default="", description="Free-form wikitext body content for the resource page"
+    )
+    modules: list[str] = Field(
+        default_factory=list, description="Module entity keys containing this resource"
+    )
+    bundles: list[str] = Field(
+        default_factory=list, description="Bundle entity keys (via module membership)"
     )
     change_status: ChangeStatus | None = Field(
         default=None,
