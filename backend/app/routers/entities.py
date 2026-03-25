@@ -1223,7 +1223,7 @@ async def list_resources(
     query = select(Resource).order_by(Resource.entity_key)
 
     if category:
-        query = query.where(Resource.category_keys.contains([category]))  # type: ignore[union-attr]
+        query = query.where(Resource.category_keys.contains([category]))  # type: ignore[attr-defined]
     if cursor:
         query = query.where(Resource.entity_key > cursor)
 
@@ -1342,7 +1342,7 @@ async def get_category_resources(
     # Query resources that include this category (ARRAY contains)
     query = (
         select(Resource)
-        .where(Resource.category_keys.contains([entity_key]))  # type: ignore[union-attr]
+        .where(Resource.category_keys.contains([entity_key]))  # type: ignore[attr-defined]
         .order_by(Resource.entity_key)
     )
     result = await session.execute(query)
