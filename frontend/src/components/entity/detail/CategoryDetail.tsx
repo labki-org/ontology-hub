@@ -704,14 +704,15 @@ export function CategoryDetail({
               <h4 className="text-sm font-semibold text-foreground/50 italic">Inherited</h4>
               <div className="pl-2 flex flex-wrap gap-1.5">
                 {inheritedProps.map((prop) => (
-                  <button
+                  <Badge
                     key={prop.entity_key}
+                    variant="outline"
+                    className="cursor-pointer border-dashed text-foreground/60 hover:bg-accent hover:text-foreground transition-all"
                     onClick={() => setSelectedEntity(prop.entity_key, 'property')}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 text-sm rounded-full border border-dashed border-border/50 text-foreground/60 opacity-80 hover:opacity-100 hover:bg-accent hover:text-foreground transition-all"
                   >
                     {prop.label}
-                    <span className="text-[10px] text-muted-foreground/50">{prop.source_category}</span>
-                  </button>
+                    <span className="text-[10px] text-muted-foreground/50 ml-1">{prop.source_category}</span>
+                  </Badge>
                 ))}
               </div>
             </div>
