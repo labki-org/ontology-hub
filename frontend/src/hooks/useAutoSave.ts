@@ -78,9 +78,11 @@ export function useAutoSave({
       timeoutRef.current = setTimeout(() => {
         // Check if this is still the latest request
         if (currentRequestId !== requestIdRef.current) {
+          console.log('[useAutoSave] skipping stale request', currentRequestId, 'vs', requestIdRef.current)
           return // Stale request, skip
         }
 
+        console.log('[useAutoSave] mutating:', entityType, entityKey, 'patch:', JSON.stringify(patch).slice(0, 100))
         mutation.mutate({
           change_type: 'update',
           entity_type: entityType,

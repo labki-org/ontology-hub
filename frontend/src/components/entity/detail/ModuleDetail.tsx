@@ -112,8 +112,15 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
     entityKey,
     debounceMs: 500,
     onSuccess: () => {
-      // Explicit refetch to pick up server-computed closure and auto-derived entities
-      setTimeout(() => refetchModule(), 100)
+      console.log('[ModuleDetail] onSuccess fired, refetching module...')
+      refetchModule().then((result) => {
+        const data = result.data as ModuleDetailV2 | undefined
+        console.log('[ModuleDetail] refetch complete:', {
+          categories: data?.entities?.category,
+          closure: data?.closure,
+          changeStatus: data?.change_status,
+        })
+      })
     },
   })
 
@@ -183,9 +190,13 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
   const handleRemoveCategory = useCallback(
     (categoryKey: string) => {
       const newCategories = editedCategories.filter((k) => k !== categoryKey)
+      console.log('[ModuleDetail] removeCategory:', categoryKey, '-> new list:', newCategories)
       setEditedCategories(newCategories)
       if (draftToken) {
+        console.log('[ModuleDetail] calling saveChange with categories:', newCategories)
         saveChange([{ op: 'add', path: '/categories', value: newCategories }])
+      } else {
+        console.log('[ModuleDetail] NO draftToken, save skipped!')
       }
     },
     [editedCategories, draftToken, saveChange]
