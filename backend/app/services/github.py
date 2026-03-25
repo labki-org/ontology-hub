@@ -128,9 +128,7 @@ class GitHubClient:
             )
         ]
 
-    async def _fetch_file_text(
-        self, owner: str, repo: str, path: str, ref: str = "main"
-    ) -> str:
+    async def _fetch_file_text(self, owner: str, repo: str, path: str, ref: str = "main") -> str:
         """Fetch and decode a file from GitHub as UTF-8 text."""
         url = f"/repos/{owner}/{repo}/contents/{path}"
         data = await self._request("GET", url, params={"ref": ref})

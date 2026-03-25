@@ -186,7 +186,9 @@ async def build_files_from_draft_v2(
             if change.replacement_json:
                 content = serialize_for_repo(change.replacement_json, change.entity_type)
                 files.append({"path": file_path, "content": content})
-                _append_dashboard_subpages(files, entity_dir, entity_key, ext, change.replacement_json)
+                _append_dashboard_subpages(
+                    files, entity_dir, entity_key, ext, change.replacement_json
+                )
 
         elif change.change_type == ChangeType.UPDATE:
             canonical = await get_canonical_json(session, change.entity_type, change.entity_key)

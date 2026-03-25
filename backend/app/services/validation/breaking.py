@@ -508,17 +508,12 @@ async def _check_module_breaking_changes(
     if removed_categories:
         # Recompute derived entities for both category sets to compare
         # actual capabilities rather than potentially stale stored values.
-        canonical_derived = await compute_module_derived_entities(
-            session, sorted(old_categories)
-        )
-        effective_derived = await compute_module_derived_entities(
-            session, sorted(new_categories)
-        )
+        canonical_derived = await compute_module_derived_entities(session, sorted(old_categories))
+        effective_derived = await compute_module_derived_entities(session, sorted(new_categories))
 
         derived_keys = ("properties", "subobjects", "templates", "resources")
         derived_changed = any(
-            canonical_derived.get(k, []) != effective_derived.get(k, [])
-            for k in derived_keys
+            canonical_derived.get(k, []) != effective_derived.get(k, []) for k in derived_keys
         )
 
         for removed_cat in removed_categories:
