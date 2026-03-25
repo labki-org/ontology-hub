@@ -84,8 +84,8 @@ async def _get_entity_membership(
     transitively: entity → ModuleEntity → Module → BundleModule → Bundle.
     """
     # Module membership: which modules contain this entity
-    module_query = (  # type: ignore[var-annotated]
-        select(col(Module.entity_key).label("module_key"))
+    module_query = (
+        select(col(Module.entity_key).label("module_key"))  # type: ignore[var-annotated]
         .join(ModuleEntity, col(ModuleEntity.module_id) == col(Module.id))
         .where(
             ModuleEntity.entity_key == entity_key,
@@ -98,8 +98,8 @@ async def _get_entity_membership(
     # Bundle membership: which bundles contain those modules
     bundle_keys: list[str] = []
     if module_keys:
-        bundle_query = (  # type: ignore[var-annotated]
-            select(col(Bundle.entity_key).label("bundle_key"))
+        bundle_query = (
+            select(col(Bundle.entity_key).label("bundle_key"))  # type: ignore[var-annotated]
             .join(BundleModule, col(BundleModule.bundle_id) == col(Bundle.id))
             .join(Module, col(Module.id) == col(BundleModule.module_id))
             .where(col(Module.entity_key).in_(module_keys))
