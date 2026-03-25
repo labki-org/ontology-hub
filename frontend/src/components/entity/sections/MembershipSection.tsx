@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge'
 import { useGraphStore } from '@/stores/graphStore'
 import { AccordionSection } from './AccordionSection'
+import { SubsectionHeader } from './SubsectionHeader'
 
 interface MembershipSectionProps {
   modules?: string[]
@@ -36,7 +37,7 @@ export function MembershipSection({ modules = [], bundles = [] }: MembershipSect
       <div className="space-y-4">
         {modules.length > 0 && (
           <div className="space-y-1.5">
-            <h4 className="text-sm font-semibold text-foreground/70">Modules</h4>
+            <SubsectionHeader>Modules</SubsectionHeader>
             <div className="pl-2 flex flex-wrap gap-1.5">
               {modules.map((moduleKey) => (
                 <Badge
@@ -54,7 +55,7 @@ export function MembershipSection({ modules = [], bundles = [] }: MembershipSect
 
         {bundles.length > 0 && (
           <div className="space-y-1.5">
-            <h4 className="text-sm font-semibold text-foreground/70">Bundles</h4>
+            <SubsectionHeader>Bundles</SubsectionHeader>
             <div className="pl-2 flex flex-wrap gap-1.5">
               {bundles.map((bundleKey) => (
                 <Badge

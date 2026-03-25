@@ -20,6 +20,7 @@ import { RelationshipChips } from '../forms/RelationshipChips'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Sparkles, Users } from 'lucide-react'
+import { SaveIndicator } from '../sections/SaveIndicator'
 
 interface ModuleDetailProps {
   entityKey: string
@@ -306,11 +307,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
   return (
     <div className="px-4 py-3">
       {/* Saving indicator */}
-      {isSaving && (
-        <div className="fixed top-4 right-4 bg-primary text-primary-foreground px-3 py-1 rounded text-sm z-50">
-          Saving...
-        </div>
-      )}
+      <SaveIndicator isSaving={isSaving} />
 
       {/* Deleted marker */}
       {isDeleted && (
@@ -376,7 +373,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
 
           {/* Empty state */}
           {editedCategories.length === 0 && !isEditing && (
-            <p className="text-sm text-muted-foreground italic">No categories in module</p>
+            <p className="text-xs text-muted-foreground/60">No categories in module</p>
           )}
 
           {/* Add category via combobox in edit mode */}
@@ -441,7 +438,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
 
           {/* Empty state */}
           {editedDependencies.length === 0 && !isEditing && (
-            <p className="text-sm text-muted-foreground italic">No module dependencies</p>
+            <p className="text-xs text-muted-foreground/60">No module dependencies</p>
           )}
 
           {/* Add dependency via combobox in edit mode */}
@@ -489,7 +486,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
           />
 
           {editedDashboards.length === 0 && !isEditing && (
-            <p className="text-sm text-muted-foreground italic">No dashboards</p>
+            <p className="text-xs text-muted-foreground/60">No dashboards</p>
           )}
 
           {isEditing && (
@@ -548,7 +545,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
                 )}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground italic pl-4">No properties</p>
+              <p className="text-xs text-muted-foreground/60 pl-4">No properties</p>
             )}
           </div>
 
@@ -567,7 +564,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
                 )}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground italic pl-4">No subobjects</p>
+              <p className="text-xs text-muted-foreground/60 pl-4">No subobjects</p>
             )}
           </div>
 
@@ -586,7 +583,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
                 )}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground italic pl-4">No templates</p>
+              <p className="text-xs text-muted-foreground/60 pl-4">No templates</p>
             )}
           </div>
 
@@ -605,7 +602,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
                 )}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground italic pl-4">No resources</p>
+              <p className="text-xs text-muted-foreground/60 pl-4">No resources</p>
             )}
           </div>
         </div>
@@ -630,7 +627,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
               )}
             </div>
           ) : (
-            <div className="text-sm text-muted-foreground italic">
+            <div className="text-xs text-muted-foreground/60">
               No transitive dependencies
             </div>
           )}

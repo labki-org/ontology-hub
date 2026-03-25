@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { VisualChangeMarker } from '../form/VisualChangeMarker'
+import { SaveIndicator } from '../sections/SaveIndicator'
 import type { ResourceDetailV2, CategoryDetailV2 } from '@/api/types'
 
 /** Merged property info from multiple categories */
@@ -268,11 +269,7 @@ export function ResourceDetail({
 
   return (
     <div className="px-4 py-3">
-      {isSaving && (
-        <div className="fixed top-4 right-4 bg-primary text-primary-foreground px-3 py-1 rounded text-sm">
-          Saving...
-        </div>
-      )}
+      <SaveIndicator isSaving={isSaving} />
 
       {/* Header */}
       <div className="space-y-4">
@@ -312,7 +309,7 @@ export function ResourceDetail({
 
             {/* Empty state */}
             {editedCategories.length === 0 && !isEditing && (
-              <p className="text-sm text-muted-foreground italic">
+              <p className="text-xs text-muted-foreground/60">
                 No categories assigned
               </p>
             )}
@@ -363,7 +360,7 @@ export function ResourceDetail({
         colorHint="property"
       >
         {mergedProperties.length === 0 ? (
-          <p className="text-sm text-muted-foreground italic">
+          <p className="text-xs text-muted-foreground/60">
             {editedCategories.length === 0
               ? 'No categories assigned — add a category to see available properties'
               : 'No properties defined for the selected categories'}
@@ -434,7 +431,7 @@ export function ResourceDetail({
               {editedWikitext}
             </pre>
           ) : (
-            <p className="text-sm text-muted-foreground italic">
+            <p className="text-xs text-muted-foreground/60">
               No page content defined
             </p>
           )}

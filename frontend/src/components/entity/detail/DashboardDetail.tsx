@@ -12,6 +12,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
 import { VisualChangeMarker } from '../form/VisualChangeMarker'
+import { SaveIndicator } from '../sections/SaveIndicator'
 import type { DashboardDetailV2, DashboardPage } from '@/api/types'
 
 interface DashboardDetailProps {
@@ -159,11 +160,7 @@ export function DashboardDetail({
 
   return (
     <div className="px-4 py-3">
-      {isSaving && (
-        <div className="fixed top-4 right-4 bg-primary text-primary-foreground px-3 py-1 rounded text-sm">
-          Saving...
-        </div>
-      )}
+      <SaveIndicator isSaving={isSaving} />
 
       {/* Header */}
       <EntityHeader
@@ -187,7 +184,7 @@ export function DashboardDetail({
         colorHint="dashboard"
       >
         {editedPages.length === 0 ? (
-          <p className="text-sm text-muted-foreground italic">
+          <p className="text-xs text-muted-foreground/60">
             No pages defined
           </p>
         ) : (
@@ -225,7 +222,7 @@ export function DashboardDetail({
                               {page.wikitext}
                             </pre>
                           ) : (
-                            <p className="text-sm text-muted-foreground italic">
+                            <p className="text-xs text-muted-foreground/60">
                               No wikitext content
                             </p>
                           )}

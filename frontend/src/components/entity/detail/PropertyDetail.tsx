@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { VisualChangeMarker } from '../form/VisualChangeMarker'
+import { SaveIndicator } from '../sections/SaveIndicator'
 import {
   Select,
   SelectContent,
@@ -352,11 +353,7 @@ export function PropertyDetail({
 
   return (
     <div className="px-4 py-3">
-      {isSaving && (
-        <div className="fixed top-4 right-4 bg-primary text-primary-foreground px-3 py-1 rounded text-sm z-50">
-          Saving...
-        </div>
-      )}
+      <SaveIndicator isSaving={isSaving} />
 
       {/* Header */}
       <EntityHeader
@@ -537,7 +534,7 @@ export function PropertyDetail({
                     </div>
                   )}
                   {!isEditing && editedAllowedValues.length === 0 && (
-                    <p className="text-sm text-muted-foreground italic">No allowed values specified</p>
+                    <p className="text-xs text-muted-foreground/60">No allowed values specified</p>
                   )}
                 </div>
               </VisualChangeMarker>
@@ -564,7 +561,7 @@ export function PropertyDetail({
                     {editedAllowedPattern}
                   </code>
                 ) : (
-                  <p className="text-sm text-muted-foreground italic">No pattern specified</p>
+                  <p className="text-xs text-muted-foreground/60">No pattern specified</p>
                 )}
               </VisualChangeMarker>
             </div>
@@ -587,7 +584,7 @@ export function PropertyDetail({
                 ) : editedAllowedValueList ? (
                   <span className="text-sm">{editedAllowedValueList}</span>
                 ) : (
-                  <p className="text-sm text-muted-foreground italic">No value list specified</p>
+                  <p className="text-xs text-muted-foreground/60">No value list specified</p>
                 )}
               </VisualChangeMarker>
             </div>
@@ -651,7 +648,7 @@ export function PropertyDetail({
                     </div>
                   )}
                   {!isEditing && editedDisplayUnits.length === 0 && (
-                    <p className="text-sm text-muted-foreground italic">No display units specified</p>
+                    <p className="text-xs text-muted-foreground/60">No display units specified</p>
                   )}
                 </div>
               </VisualChangeMarker>
@@ -678,7 +675,7 @@ export function PropertyDetail({
                 ) : editedDisplayPrecision !== null ? (
                   <span className="text-sm">{editedDisplayPrecision} decimal places</span>
                 ) : (
-                  <p className="text-sm text-muted-foreground italic">No precision specified</p>
+                  <p className="text-xs text-muted-foreground/60">No precision specified</p>
                 )}
               </VisualChangeMarker>
             </div>
@@ -711,7 +708,7 @@ export function PropertyDetail({
                   ) : editedUniqueValues ? (
                     <span className="text-sm">Values must be unique across all pages</span>
                   ) : (
-                    <span className="text-sm text-muted-foreground italic">Values do not need to be unique</span>
+                    <span className="text-xs text-muted-foreground/60">Values do not need to be unique</span>
                   )}
                 </div>
               </VisualChangeMarker>
@@ -785,7 +782,7 @@ export function PropertyDetail({
                     Add template
                   </Button>
                 ) : (
-                  <p className="text-sm text-muted-foreground italic">No display template</p>
+                  <p className="text-xs text-muted-foreground/60">No display template</p>
                 )}
               </VisualChangeMarker>
             </div>
@@ -836,7 +833,7 @@ export function PropertyDetail({
             ))}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground italic">
+          <p className="text-xs text-muted-foreground/60">
             No categories use this property
           </p>
         )}

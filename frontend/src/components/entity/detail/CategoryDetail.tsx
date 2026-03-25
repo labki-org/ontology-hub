@@ -5,6 +5,8 @@ import { useGraphStore } from '@/stores/graphStore'
 import { useDraftStore } from '@/stores/draftStore'
 import { EntityHeader } from '../sections/EntityHeader'
 import { AccordionSection } from '../sections/AccordionSection'
+import { SubsectionHeader } from '../sections/SubsectionHeader'
+import { SaveIndicator } from '../sections/SaveIndicator'
 import { MembershipSection } from '../sections/MembershipSection'
 import { DeletedItemBadge } from '../form/DeletedItemBadge'
 import { EntityCombobox } from '../forms/EntityCombobox'
@@ -440,12 +442,7 @@ export function CategoryDetail({
 
   return (
     <div className="px-4 py-3">
-      {/* Saving indicator */}
-      {isSaving && (
-        <div className="fixed top-4 right-4 bg-primary text-primary-foreground px-3 py-1 rounded text-sm">
-          Saving...
-        </div>
-      )}
+      <SaveIndicator isSaving={isSaving} />
 
       {/* Transitive effect indicator */}
       {isTransitivelyAffected && (
@@ -585,7 +582,7 @@ export function CategoryDetail({
           {/* Required — hidden when empty in read mode */}
           {(activeRequiredProps.length > 0 || deletedRequiredProperties.size > 0 || isEditing) && (
             <div className="space-y-1.5">
-              <h4 className="text-sm font-semibold text-foreground/70">Required</h4>
+              <SubsectionHeader>Required</SubsectionHeader>
               <div className="pl-2">
                 <RelationshipChips
                   values={activeRequiredProps}
@@ -643,7 +640,7 @@ export function CategoryDetail({
           {/* Optional — hidden when empty in read mode */}
           {(activeOptionalProps.length > 0 || deletedOptionalProperties.size > 0 || isEditing) && (
             <div className="space-y-1.5">
-              <h4 className="text-sm font-semibold text-foreground/70">Optional</h4>
+              <SubsectionHeader>Optional</SubsectionHeader>
               <div className="pl-2">
                 <RelationshipChips
                   values={activeOptionalProps}
@@ -701,7 +698,7 @@ export function CategoryDetail({
           {/* Inherited — visually distinct: dashed outline chips, lower opacity */}
           {inheritedProps.length > 0 && (
             <div className="space-y-1.5 pt-3 border-t border-dashed">
-              <h4 className="text-sm font-semibold text-foreground/50 italic">Inherited</h4>
+              <SubsectionHeader className="italic">Inherited</SubsectionHeader>
               <div className="pl-2 flex flex-wrap gap-1.5">
                 {inheritedProps.map((prop) => (
                   <Badge
@@ -740,7 +737,7 @@ export function CategoryDetail({
           {/* Required — hidden when empty in read mode */}
           {(activeRequiredSubs.length > 0 || deletedRequiredSubobjects.size > 0 || isEditing) && (
             <div className="space-y-1.5">
-              <h4 className="text-sm font-semibold text-foreground/70">Required</h4>
+              <SubsectionHeader>Required</SubsectionHeader>
               <div className="pl-2">
                 <RelationshipChips
                   values={activeRequiredSubs}
@@ -798,7 +795,7 @@ export function CategoryDetail({
           {/* Optional — hidden when empty in read mode */}
           {(activeOptionalSubs.length > 0 || deletedOptionalSubobjects.size > 0 || isEditing) && (
             <div className="space-y-1.5">
-              <h4 className="text-sm font-semibold text-foreground/70">Optional</h4>
+              <SubsectionHeader>Optional</SubsectionHeader>
               <div className="pl-2">
                 <RelationshipChips
                   values={activeOptionalSubs}

@@ -93,7 +93,7 @@ export function PropertiesSection({
               {directProperties.map(renderProperty)}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground italic">
+            <p className="text-xs text-muted-foreground/60">
               No direct properties
             </p>
           )}

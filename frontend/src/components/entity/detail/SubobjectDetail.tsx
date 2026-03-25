@@ -4,6 +4,8 @@ import { useAutoSave } from '@/hooks/useAutoSave'
 import { useDraftStore } from '@/stores/draftStore'
 import { EntityHeader } from '../sections/EntityHeader'
 import { AccordionSection } from '../sections/AccordionSection'
+import { SubsectionHeader } from '../sections/SubsectionHeader'
+import { SaveIndicator } from '../sections/SaveIndicator'
 import { MembershipSection } from '../sections/MembershipSection'
 import { DeletedItemBadge } from '../form/DeletedItemBadge'
 import { EntityCombobox } from '../forms/EntityCombobox'
@@ -236,11 +238,7 @@ export function SubobjectDetail({
 
   return (
     <div className="px-4 py-3">
-      {isSaving && (
-        <div className="fixed top-4 right-4 bg-primary text-primary-foreground px-3 py-1 rounded text-sm">
-          Saving...
-        </div>
-      )}
+      <SaveIndicator isSaving={isSaving} />
 
       <EntityHeader
         entityKey={entityKey}
@@ -265,7 +263,7 @@ export function SubobjectDetail({
         <div className="space-y-4">
           {(activeRequiredProps.length > 0 || deletedRequiredProperties.size > 0 || isEditing) && (
             <div className="space-y-1.5">
-              <h4 className="text-sm font-semibold text-foreground/70">Required</h4>
+              <SubsectionHeader>Required</SubsectionHeader>
               <div className="pl-2">
                 <RelationshipChips
                   values={activeRequiredProps}
@@ -322,7 +320,7 @@ export function SubobjectDetail({
 
           {(activeOptionalProps.length > 0 || deletedOptionalProperties.size > 0 || isEditing) && (
             <div className="space-y-1.5">
-              <h4 className="text-sm font-semibold text-foreground/70">Optional</h4>
+              <SubsectionHeader>Optional</SubsectionHeader>
               <div className="pl-2">
                 <RelationshipChips
                   values={activeOptionalProps}

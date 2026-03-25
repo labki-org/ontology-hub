@@ -10,6 +10,7 @@ import { EntityCombobox } from '../forms/EntityCombobox'
 import { RelationshipChips } from '../forms/RelationshipChips'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import { SaveIndicator } from '../sections/SaveIndicator'
 
 interface BundleDetailProps {
   entityKey: string
@@ -163,11 +164,7 @@ export function BundleDetail({ entityKey, draftId, draftToken, isEditing }: Bund
   return (
     <div className="px-4 py-3">
       {/* Saving indicator */}
-      {isSaving && (
-        <div className="fixed top-4 right-4 bg-primary text-primary-foreground px-3 py-1 rounded text-sm z-50">
-          Saving...
-        </div>
-      )}
+      <SaveIndicator isSaving={isSaving} />
 
       {/* Deleted marker */}
       {isDeleted && (
@@ -224,7 +221,7 @@ export function BundleDetail({ entityKey, draftId, draftToken, isEditing }: Bund
 
           {/* Empty state */}
           {editedModules.length === 0 && !isEditing && (
-            <p className="text-sm text-muted-foreground italic">No modules in bundle</p>
+            <p className="text-xs text-muted-foreground/60">No modules in bundle</p>
           )}
 
           {/* Add module via combobox in edit mode */}
@@ -316,7 +313,7 @@ export function BundleDetail({ entityKey, draftId, draftToken, isEditing }: Bund
               )}
             </div>
           ) : (
-            <div className="text-sm text-muted-foreground italic">
+            <div className="text-xs text-muted-foreground/60">
               No modules in closure
             </div>
           )}

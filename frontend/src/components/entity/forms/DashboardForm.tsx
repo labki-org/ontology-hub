@@ -178,7 +178,7 @@ export function DashboardForm({
         </div>
 
         {pages.length === 0 ? (
-          <p className="text-sm text-muted-foreground italic">
+          <p className="text-xs text-muted-foreground/60">
             No pages defined. At least one page is required.
           </p>
         ) : (

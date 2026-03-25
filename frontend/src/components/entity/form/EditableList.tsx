@@ -44,7 +44,7 @@ export function EditableList({
   }
 
   if (items.length === 0 && !isEditing) {
-    return <p className="text-sm text-muted-foreground italic">{emptyMessage}</p>
+    return <p className="text-xs text-muted-foreground/60">{emptyMessage}</p>
   }
 
   return (
