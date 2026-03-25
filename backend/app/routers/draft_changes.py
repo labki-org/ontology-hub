@@ -210,8 +210,7 @@ async def auto_populate_module_derived(
 
         change.patch = filtered_patches  # type: ignore[assignment]
 
-    await session.commit()
-    await session.refresh(change)
+    # No commit here — caller commits after auto_populate_module_derived
 
 
 def validate_dashboard_create(replacement_json: dict | None) -> str | None:
@@ -512,25 +511,23 @@ async def add_draft_change(
     draft.modified_at = datetime.utcnow()
     session.add(draft)
 
-    await session.commit()
-    await session.refresh(change)
-
-    # Auto-populate derived entities for module changes
+    # Auto-populate derived entities for module changes BEFORE committing,
+    # so the entire operation (change + derived entities) is atomic.
     if change_in.entity_type == "module" and change_in.change_type in (
         ChangeType.CREATE,
         ChangeType.UPDATE,
     ):
-        # For CREATE: always compute derived entities
-        # For UPDATE: check if categories were modified (add, remove, or replace)
         should_populate = change_in.change_type == ChangeType.CREATE
         if change_in.change_type == ChangeType.UPDATE:
-            # Check for any patch operation affecting /categories or /categories/*
             should_populate = any(
                 op.get("path", "").startswith("/categories") for op in (change_in.patch or [])
             )
 
         if should_populate:
             await auto_populate_module_derived(session, draft, change)
+
+    await session.commit()
+    await session.refresh(change)
 
     return DraftChangeResponse.model_validate(change)
 

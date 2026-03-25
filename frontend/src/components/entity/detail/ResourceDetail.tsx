@@ -112,6 +112,8 @@ export function ResourceDetail({
   // Local editable state
   const [editedCategories, setEditedCategories] = useState<string[]>([])
   const [editedDynamicFields, setEditedDynamicFields] = useState<Record<string, unknown>>({})
+  const editedDynamicFieldsRef = useRef<Record<string, unknown>>({})
+  editedDynamicFieldsRef.current = editedDynamicFields
   const [editedWikitext, setEditedWikitext] = useState<string>('')
 
   // Use edited categories in edit mode, canonical keys in read mode.
@@ -188,16 +190,13 @@ export function ResourceDetail({
   // Dynamic field change handler
   const handleDynamicFieldChange = useCallback(
     (fieldKey: string, value: string) => {
-      setEditedDynamicFields((prev) => ({
-        ...prev,
-        [fieldKey]: value,
-      }))
+      const updatedFields = { ...editedDynamicFieldsRef.current, [fieldKey]: value }
+      setEditedDynamicFields(updatedFields)
       if (draftToken) {
-        const updatedFields = { ...editedDynamicFields, [fieldKey]: value }
         saveChange([{ op: 'add', path: '/dynamic_fields', value: updatedFields }])
       }
     },
-    [draftToken, saveChange, editedDynamicFields]
+    [draftToken, saveChange]
   )
 
   // Wikitext change handler
