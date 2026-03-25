@@ -137,7 +137,7 @@ export function TemplateDetail({
   const isWikitextModified = editedWikitext !== originalValues.wikitext
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="px-4 py-3">
       {isSaving && (
         <div className="fixed top-4 right-4 bg-primary text-primary-foreground px-3 py-1 rounded text-sm">
           Saving...
@@ -159,7 +159,7 @@ export function TemplateDetail({
       />
 
       {/* Wikitext Content */}
-      <AccordionSection id="wikitext" title="Wikitext Content">
+      <AccordionSection id="wikitext" title="Wikitext Content" colorHint="template">
         {isEditing ? (
           <VisualChangeMarker
             status={isWikitextModified ? 'modified' : 'unchanged'}

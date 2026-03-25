@@ -1,5 +1,7 @@
 import { X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
+import { getEntityColors, type EntityType } from '@/lib/entityColors'
 
 interface RelationshipChipsProps {
   /** Array of selected entity keys */
@@ -10,40 +12,36 @@ interface RelationshipChipsProps {
   disabled?: boolean
   /** Optional function to resolve display label from key */
   getLabel?: (key: string) => string
+  /** Entity type for semantic chip coloring */
+  colorHint?: EntityType
 }
 
 /**
  * Displays selected relationships as removable chips/badges.
- *
- * Features:
- * - X button to remove relationships (per CONTEXT: not hover trash icon)
- * - Optional label resolver for custom display
- * - Disabled state hides remove buttons
- *
- * @example
- * ```tsx
- * <RelationshipChips
- *   values={['parent-category-1', 'parent-category-2']}
- *   onRemove={(key) => removeParent(key)}
- *   getLabel={(key) => categoriesMap[key]?.label || key}
- * />
- * ```
+ * When colorHint is provided, chips use semantic colors matching the entity type.
  */
 export function RelationshipChips({
   values,
   onRemove,
   disabled,
   getLabel,
+  colorHint,
 }: RelationshipChipsProps) {
   if (values.length === 0) return null
 
+  const colors = getEntityColors(colorHint)
+  const hasSemanticColor = colorHint && colors.chipBg
+
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-1.5">
       {values.map((value) => (
         <Badge
           key={value}
-          variant="secondary"
-          className="flex items-center gap-1 pr-1"
+          variant={hasSemanticColor ? 'outline' : 'secondary'}
+          className={cn(
+            'flex items-center gap-1 pr-1',
+            hasSemanticColor && `${colors.chipBg} ${colors.chipText} ${colors.chipBorder}`
+          )}
         >
           <span>{getLabel ? getLabel(value) : value}</span>
           {!disabled && (

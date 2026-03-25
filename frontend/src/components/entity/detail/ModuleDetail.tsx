@@ -304,7 +304,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="px-4 py-3">
       {/* Saving indicator */}
       {isSaving && (
         <div className="fixed top-4 right-4 bg-primary text-primary-foreground px-3 py-1 rounded text-sm z-50">
@@ -357,6 +357,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
         }
         count={editedCategories.length}
         defaultOpen={true}
+        colorHint="category"
       >
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">
@@ -370,6 +371,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
             onRemove={handleRemoveCategory}
             disabled={!isEditing}
             getLabel={(key) => getLabel(key, availableCategories)}
+            colorHint="category"
           />
 
           {/* Empty state */}
@@ -421,6 +423,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
         }
         count={editedDependencies.length}
         defaultOpen={true}
+        colorHint="module"
       >
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">
@@ -433,6 +436,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
             onRemove={handleRemoveDependency}
             disabled={!isEditing}
             getLabel={(key) => getLabel(key, availableModules)}
+            colorHint="module"
           />
 
           {/* Empty state */}
@@ -464,6 +468,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
         id="dashboards"
         title="Dashboards"
         count={editedDashboards.length}
+        colorHint="dashboard"
       >
         <div className="space-y-3">
           {isDashboardsModified && (
@@ -480,6 +485,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
             onRemove={handleRemoveDashboard}
             disabled={!isEditing}
             getLabel={(key) => getLabel(key, availableDashboards)}
+            colorHint="dashboard"
           />
 
           {editedDashboards.length === 0 && !isEditing && (
@@ -529,7 +535,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
 
           {/* Properties */}
           <div className="space-y-2">
-            <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <h4 className="text-xs font-medium text-muted-foreground flex items-center gap-2">
               Properties
               <Badge variant="secondary" className="text-xs">
                 {derivedProperties.length}
@@ -548,7 +554,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
 
           {/* Subobjects */}
           <div className="space-y-2">
-            <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <h4 className="text-xs font-medium text-muted-foreground flex items-center gap-2">
               Subobjects
               <Badge variant="secondary" className="text-xs">
                 {derivedSubobjects.length}
@@ -567,7 +573,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
 
           {/* Templates */}
           <div className="space-y-2">
-            <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <h4 className="text-xs font-medium text-muted-foreground flex items-center gap-2">
               Templates
               <Badge variant="secondary" className="text-xs">
                 {derivedTemplates.length}
@@ -586,7 +592,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
 
           {/* Resources */}
           <div className="space-y-2">
-            <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <h4 className="text-xs font-medium text-muted-foreground flex items-center gap-2">
               Resources
               <Badge variant="secondary" className="text-xs">
                 {derivedResources.length}

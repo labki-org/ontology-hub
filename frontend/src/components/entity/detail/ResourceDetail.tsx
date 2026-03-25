@@ -267,7 +267,7 @@ export function ResourceDetail({
   )
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="px-4 py-3">
       {isSaving && (
         <div className="fixed top-4 right-4 bg-primary text-primary-foreground px-3 py-1 rounded text-sm">
           Saving...
@@ -292,6 +292,7 @@ export function ResourceDetail({
         title="Categories"
         count={editedCategories.length}
         defaultOpen
+        colorHint="category"
       >
         <VisualChangeMarker
           status={areCategoriesModified ? 'modified' : 'unchanged'}
@@ -359,6 +360,7 @@ export function ResourceDetail({
           (p) => editedDynamicFields[p.entity_key] !== undefined && editedDynamicFields[p.entity_key] !== ''
         ).length}
         defaultOpen
+        colorHint="property"
       >
         {mergedProperties.length === 0 ? (
           <p className="text-sm text-muted-foreground italic">
@@ -372,7 +374,7 @@ export function ResourceDetail({
               const value = editedDynamicFields[prop.entity_key]
               return (
                 <div key={prop.entity_key} className="space-y-1">
-                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+                  <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                     {prop.label}
                     {prop.is_required && (
                       <span className="text-red-500 text-xs">required</span>

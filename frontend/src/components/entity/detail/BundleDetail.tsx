@@ -161,7 +161,7 @@ export function BundleDetail({ entityKey, draftId, draftToken, isEditing }: Bund
     bundleDetail.closure?.filter((mod) => !directModules.has(mod)) || []
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="px-4 py-3">
       {/* Saving indicator */}
       {isSaving && (
         <div className="fixed top-4 right-4 bg-primary text-primary-foreground px-3 py-1 rounded text-sm z-50">
@@ -204,6 +204,7 @@ export function BundleDetail({ entityKey, draftId, draftToken, isEditing }: Bund
         title="Modules"
         count={editedModules.length}
         defaultOpen={true}
+        colorHint="module"
       >
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">

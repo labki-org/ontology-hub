@@ -66,41 +66,44 @@ export function EntityHeader({
   const labelChangeStatus = isLabelModified ? 'modified' : 'unchanged'
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <Badge variant="outline" className="capitalize">
+    <div className="pb-4 mb-2 border-b">
+      {/* Meta line */}
+      <div className="flex items-center gap-2 mb-1">
+        <Badge variant="outline" className="capitalize text-[11px] py-0">
           {entityType}
         </Badge>
-        <code className="text-sm text-muted-foreground">{entityKey}</code>
+        <code className="text-[11px] text-muted-foreground/60">{entityKey}</code>
         {statusBadge}
       </div>
 
-      {/* Label field - uses InlineEditField for hover-reveal editing */}
+      {/* Entity name — largest text in the panel, no "Label:" prefix */}
       <VisualChangeMarker
         status={labelChangeStatus}
         originalValue={originalLabel}
-        className="text-2xl font-bold"
+        className="text-xl font-bold leading-tight"
       >
         <InlineEditField
           value={label}
           onSave={onLabelChange || (() => {})}
           isEditable={isEditing && !!onLabelChange}
-          label="Label"
           placeholder="Enter label..."
         />
       </VisualChangeMarker>
 
-      {/* Description field - keeps EditableField for multiline support */}
-      <EditableField
-        value={description || ''}
-        originalValue={originalDescription}
-        onChange={onDescriptionChange || (() => {})}
-        onRevert={onRevertDescription}
-        isEditing={isEditing && !!onDescriptionChange}
-        multiline
-        label="Description"
-        placeholder="Enter description..."
-      />
+      {/* Description — plain text, no "Description:" prefix */}
+      {(description || isEditing) && (
+        <div className="mt-1">
+          <EditableField
+            value={description || ''}
+            originalValue={originalDescription}
+            onChange={onDescriptionChange || (() => {})}
+            onRevert={onRevertDescription}
+            isEditing={isEditing && !!onDescriptionChange}
+            multiline
+            placeholder="Enter description..."
+          />
+        </div>
+      )}
     </div>
   )
 }

@@ -18,8 +18,8 @@ export function MembershipSection({ modules = [], bundles = [] }: MembershipSect
 
   if (!hasContent) {
     return (
-      <AccordionSection id="membership" title="Membership" count={0} defaultOpen={false}>
-        <p className="text-sm text-muted-foreground italic">
+      <AccordionSection id="membership" title="Membership" defaultOpen={false}>
+        <p className="text-xs text-muted-foreground/60">
           Not assigned to any modules or bundles
         </p>
       </AccordionSection>
@@ -35,9 +35,9 @@ export function MembershipSection({ modules = [], bundles = [] }: MembershipSect
     >
       <div className="space-y-4">
         {modules.length > 0 && (
-          <div>
-            <h4 className="text-sm font-medium mb-2">Modules</h4>
-            <div className="flex flex-wrap gap-2">
+          <div className="space-y-1.5">
+            <h4 className="text-xs font-medium text-muted-foreground">Modules</h4>
+            <div className="pl-2 flex flex-wrap gap-1.5">
               {modules.map((moduleKey) => (
                 <Badge
                   key={moduleKey}
@@ -53,9 +53,9 @@ export function MembershipSection({ modules = [], bundles = [] }: MembershipSect
         )}
 
         {bundles.length > 0 && (
-          <div>
-            <h4 className="text-sm font-medium mb-2">Bundles</h4>
-            <div className="flex flex-wrap gap-2">
+          <div className="space-y-1.5">
+            <h4 className="text-xs font-medium text-muted-foreground">Bundles</h4>
+            <div className="pl-2 flex flex-wrap gap-1.5">
               {bundles.map((bundleKey) => (
                 <Badge
                   key={bundleKey}

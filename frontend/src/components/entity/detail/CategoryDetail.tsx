@@ -430,8 +430,16 @@ export function CategoryDetail({
     )
   }
 
+  // Computed visibility for sub-sections (hide empty in read mode)
+  const activeRequiredProps = editedRequiredProperties.filter((p) => !deletedRequiredProperties.has(p))
+  const activeOptionalProps = editedOptionalProperties.filter((p) => !deletedOptionalProperties.has(p))
+  const inheritedProps = (category.properties || []).filter((p) => p.is_inherited)
+  const activeRequiredSubs = editedRequiredSubobjects.filter((s) => !deletedRequiredSubobjects.has(s))
+  const activeOptionalSubs = editedOptionalSubobjects.filter((s) => !deletedOptionalSubobjects.has(s))
+  const activeParents = editedParents.filter((p) => !deletedParents.has(p))
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="px-4 py-3">
       {/* Saving indicator */}
       {isSaving && (
         <div className="fixed top-4 right-4 bg-primary text-primary-foreground px-3 py-1 rounded text-sm">
@@ -441,14 +449,14 @@ export function CategoryDetail({
 
       {/* Transitive effect indicator */}
       {isTransitivelyAffected && (
-        <div className="mb-4 p-2 rounded bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800">
-          <p className="text-sm text-blue-700 dark:text-blue-300">
+        <div className="mb-3 p-2 rounded bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800">
+          <p className="text-xs text-blue-700 dark:text-blue-300">
             This category may be affected by changes to a parent category.
           </p>
         </div>
       )}
 
-      {/* Header */}
+      {/* Header block — title + description, visually separated */}
       <EntityHeader
         entityKey={entityKey}
         label={editedLabel}
@@ -463,25 +471,25 @@ export function CategoryDetail({
         onRevertDescription={handleRevertDescription}
       />
 
-      {/* Parents section with EntityCombobox for adding and RelationshipChips for display */}
+      {/* Parents */}
       <AccordionSection
         id="parents"
-        title="Parent Categories"
-        count={editedParents.filter((p) => !deletedParents.has(p)).length}
+        title="Parents"
+        count={activeParents.length}
+        colorHint="category"
       >
-        <div className="space-y-3">
-          {/* Current parents as chips */}
+        <div className="space-y-1.5">
           <RelationshipChips
-            values={editedParents.filter((p) => !deletedParents.has(p))}
+            values={activeParents}
             onRemove={handleDeleteParent}
             disabled={!isEditing}
+            colorHint="category"
             getLabel={(key) => {
               const cat = availableCategories.find((c) => c.key === key)
               return cat?.label || key
             }}
           />
 
-          {/* Soft-deleted parents with undo option */}
           {Array.from(deletedParents).map((parent) => (
             <DeletedItemBadge
               key={`deleted-${parent}`}
@@ -490,16 +498,10 @@ export function CategoryDetail({
             />
           ))}
 
-          {/* Empty state */}
-          {editedParents.filter((p) => !deletedParents.has(p)).length === 0 &&
-            deletedParents.size === 0 &&
-            !isEditing && (
-              <p className="text-sm text-muted-foreground italic">
-                No parent categories (root category)
-              </p>
-            )}
+          {activeParents.length === 0 && deletedParents.size === 0 && !isEditing && (
+            <p className="text-xs text-muted-foreground/60">None (root category)</p>
+          )}
 
-          {/* Add parent via combobox in edit mode */}
           {isEditing && (
             <EntityCombobox
               entityType="category"
@@ -513,11 +515,9 @@ export function CategoryDetail({
                 }
               }}
               onCreateNew={(id) => {
-                // Set callback to add created entity to parents
                 setOnNestedEntityCreated((newKey: string) => {
                   handleAddNewParent(newKey)
                 })
-                // Open nested modal with prefilled ID
                 openNestedCreateModal({
                   entityType: 'category',
                   prefilledId: id,
@@ -530,320 +530,338 @@ export function CategoryDetail({
         </div>
       </AccordionSection>
 
-      {/* Inheritance Chain section - shows parents with edit status */}
+      {/* Inheritance Chain — only when parents exist */}
       {category.parents && category.parents.length > 0 && (
         <AccordionSection
           id="inheritance-chain"
           title="Inheritance Chain"
-          count={category.parents.length}
           defaultOpen={false}
+          colorHint="category"
         >
-          <div className="space-y-1">
-            {category.parents.map((parentKey) => {
+          <div className="flex items-center flex-wrap gap-1">
+            {category.parents.map((parentKey, index) => {
               const isParentEdited = directEdits.has(parentKey)
+              const parentLabel = availableCategories.find((c) => c.key === parentKey)?.label || parentKey
               return (
-                <button
-                  key={parentKey}
-                  onClick={() => setSelectedEntity(parentKey, 'category')}
-                  className={cn(
-                    'w-full text-left px-2 py-1.5 text-sm rounded flex items-center gap-2',
-                    'hover:bg-sidebar-accent transition-colors',
-                    isParentEdited && 'bg-blue-100 dark:bg-blue-900/30 font-medium'
+                <span key={parentKey} className="inline-flex items-center gap-1">
+                  {index > 0 && (
+                    <span className="text-muted-foreground/40 mx-0.5">→</span>
                   )}
-                >
-                  <span className="flex-1 truncate">{parentKey}</span>
-                  {isParentEdited && (
-                    <Badge variant="secondary" className="text-xs bg-blue-200 dark:bg-blue-800">
-                      edited
-                    </Badge>
-                  )}
-                </button>
+                  <button
+                    onClick={() => setSelectedEntity(parentKey, 'category')}
+                    className={cn(
+                      'text-sm px-1.5 py-0.5 rounded hover:bg-accent transition-colors',
+                      isParentEdited && 'bg-blue-100 dark:bg-blue-900/30 font-medium'
+                    )}
+                  >
+                    {parentLabel}
+                    {isParentEdited && (
+                      <Badge variant="secondary" className="ml-1 text-[10px] px-1 py-0 h-4 bg-blue-200 dark:bg-blue-800">
+                        edited
+                      </Badge>
+                    )}
+                  </button>
+                </span>
               )
             })}
           </div>
           {category.parents.some((p) => directEdits.has(p)) && (
-            <p className="text-xs text-muted-foreground mt-2 px-2">
-              Edited ancestors may affect this category's inherited properties.
+            <p className="text-xs text-muted-foreground/60 mt-2">
+              Edited ancestors may affect inherited properties.
             </p>
           )}
         </AccordionSection>
       )}
 
-      {/* Properties Section - Editable */}
+      {/* Properties */}
       <AccordionSection
         id="properties"
         title="Properties"
-        count={
-          editedRequiredProperties.filter((p) => !deletedRequiredProperties.has(p)).length +
-          editedOptionalProperties.filter((p) => !deletedOptionalProperties.has(p)).length
-        }
+        count={activeRequiredProps.length + activeOptionalProps.length}
         defaultOpen
+        colorHint="property"
       >
         <div className="space-y-4">
-          {/* Required Properties */}
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium text-muted-foreground">Required Properties</h4>
-            <RelationshipChips
-              values={editedRequiredProperties.filter((p) => !deletedRequiredProperties.has(p))}
-              onRemove={handleDeleteRequiredProperty}
-              disabled={!isEditing}
-              getLabel={(key) => {
-                const prop = availableProperties.find((p) => p.key === key)
-                return prop?.label || key
-              }}
-            />
-            {/* Soft-deleted required properties */}
-            {Array.from(deletedRequiredProperties).map((propKey) => (
-              <DeletedItemBadge
-                key={`deleted-req-prop-${propKey}`}
-                label={availableProperties.find((p) => p.key === propKey)?.label || propKey}
-                onUndo={() => handleUndoDeleteRequiredProperty(propKey)}
-              />
-            ))}
-            {/* Empty state */}
-            {editedRequiredProperties.filter((p) => !deletedRequiredProperties.has(p)).length === 0 &&
-              deletedRequiredProperties.size === 0 &&
-              !isEditing && (
-                <p className="text-sm text-muted-foreground italic">No required properties</p>
-              )}
-            {/* Add required property in edit mode */}
-            {isEditing && (
-              <EntityCombobox
-                entityType="property"
-                availableEntities={availableProperties.filter(
-                  (p) =>
-                    !editedRequiredProperties.includes(p.key) &&
-                    !editedOptionalProperties.includes(p.key)
+          {/* Required — hidden when empty in read mode */}
+          {(activeRequiredProps.length > 0 || deletedRequiredProperties.size > 0 || isEditing) && (
+            <div className="space-y-1.5">
+              <h4 className="text-xs font-medium text-muted-foreground">Required</h4>
+              <div className="pl-2">
+                <RelationshipChips
+                  values={activeRequiredProps}
+                  onRemove={handleDeleteRequiredProperty}
+                  disabled={!isEditing}
+                  colorHint="property"
+                  getLabel={(key) => {
+                    const prop = availableProperties.find((p) => p.key === key)
+                    return prop?.label || key
+                  }}
+                />
+                {Array.from(deletedRequiredProperties).map((propKey) => (
+                  <DeletedItemBadge
+                    key={`deleted-req-prop-${propKey}`}
+                    label={availableProperties.find((p) => p.key === propKey)?.label || propKey}
+                    onUndo={() => handleUndoDeleteRequiredProperty(propKey)}
+                  />
+                ))}
+                {activeRequiredProps.length === 0 && deletedRequiredProperties.size === 0 && isEditing && (
+                  <p className="text-xs text-muted-foreground/60">None</p>
                 )}
-                selectedKeys={[]}
-                onChange={(keys) => {
-                  if (keys.length > 0) {
-                    handleAddRequiredProperty(keys[0])
-                  }
-                }}
-                onCreateNew={(id) => {
-                  setOnNestedEntityCreated((newKey: string) => {
-                    handleAddRequiredProperty(newKey)
-                  })
-                  openNestedCreateModal({
-                    entityType: 'property',
-                    prefilledId: id,
-                    parentContext: { entityType: 'category', fieldName: 'Required Properties' },
-                  })
-                }}
-                placeholder="Add required property..."
-              />
-            )}
-          </div>
-
-          {/* Optional Properties */}
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium text-muted-foreground">Optional Properties</h4>
-            <RelationshipChips
-              values={editedOptionalProperties.filter((p) => !deletedOptionalProperties.has(p))}
-              onRemove={handleDeleteOptionalProperty}
-              disabled={!isEditing}
-              getLabel={(key) => {
-                const prop = availableProperties.find((p) => p.key === key)
-                return prop?.label || key
-              }}
-            />
-            {/* Soft-deleted optional properties */}
-            {Array.from(deletedOptionalProperties).map((propKey) => (
-              <DeletedItemBadge
-                key={`deleted-opt-prop-${propKey}`}
-                label={availableProperties.find((p) => p.key === propKey)?.label || propKey}
-                onUndo={() => handleUndoDeleteOptionalProperty(propKey)}
-              />
-            ))}
-            {/* Empty state */}
-            {editedOptionalProperties.filter((p) => !deletedOptionalProperties.has(p)).length === 0 &&
-              deletedOptionalProperties.size === 0 &&
-              !isEditing && (
-                <p className="text-sm text-muted-foreground italic">No optional properties</p>
-              )}
-            {/* Add optional property in edit mode */}
-            {isEditing && (
-              <EntityCombobox
-                entityType="property"
-                availableEntities={availableProperties.filter(
-                  (p) =>
-                    !editedRequiredProperties.includes(p.key) &&
-                    !editedOptionalProperties.includes(p.key)
+                {isEditing && (
+                  <div className="mt-1.5">
+                    <EntityCombobox
+                      entityType="property"
+                      availableEntities={availableProperties.filter(
+                        (p) =>
+                          !editedRequiredProperties.includes(p.key) &&
+                          !editedOptionalProperties.includes(p.key)
+                      )}
+                      selectedKeys={[]}
+                      onChange={(keys) => {
+                        if (keys.length > 0) {
+                          handleAddRequiredProperty(keys[0])
+                        }
+                      }}
+                      onCreateNew={(id) => {
+                        setOnNestedEntityCreated((newKey: string) => {
+                          handleAddRequiredProperty(newKey)
+                        })
+                        openNestedCreateModal({
+                          entityType: 'property',
+                          prefilledId: id,
+                          parentContext: { entityType: 'category', fieldName: 'Required Properties' },
+                        })
+                      }}
+                      placeholder="Add required property..."
+                    />
+                  </div>
                 )}
-                selectedKeys={[]}
-                onChange={(keys) => {
-                  if (keys.length > 0) {
-                    handleAddOptionalProperty(keys[0])
-                  }
-                }}
-                onCreateNew={(id) => {
-                  setOnNestedEntityCreated((newKey: string) => {
-                    handleAddOptionalProperty(newKey)
-                  })
-                  openNestedCreateModal({
-                    entityType: 'property',
-                    prefilledId: id,
-                    parentContext: { entityType: 'category', fieldName: 'Optional Properties' },
-                  })
-                }}
-                placeholder="Add optional property..."
-              />
-            )}
-          </div>
-
-          {/* Inherited Properties (read-only) */}
-          {category.properties &&
-            category.properties.filter((p) => p.is_inherited).length > 0 && (
-              <div className="space-y-2 pt-2 border-t">
-                <h4 className="text-sm font-medium text-muted-foreground">
-                  Inherited Properties
-                </h4>
-                {category.properties
-                  .filter((p) => p.is_inherited)
-                  .map((prop) => (
-                    <button
-                      key={prop.entity_key}
-                      onClick={() => setSelectedEntity(prop.entity_key, 'property')}
-                      className="w-full text-left px-2 py-1.5 text-sm rounded flex items-center gap-2 hover:bg-sidebar-accent transition-colors"
-                    >
-                      <span className="flex-1 truncate">{prop.label}</span>
-                      <Badge variant="secondary" className="text-xs">
-                        from {prop.source_category}
-                      </Badge>
-                    </button>
-                  ))}
               </div>
+            </div>
+          )}
+
+          {/* Optional — hidden when empty in read mode */}
+          {(activeOptionalProps.length > 0 || deletedOptionalProperties.size > 0 || isEditing) && (
+            <div className="space-y-1.5">
+              <h4 className="text-xs font-medium text-muted-foreground">Optional</h4>
+              <div className="pl-2">
+                <RelationshipChips
+                  values={activeOptionalProps}
+                  onRemove={handleDeleteOptionalProperty}
+                  disabled={!isEditing}
+                  colorHint="property"
+                  getLabel={(key) => {
+                    const prop = availableProperties.find((p) => p.key === key)
+                    return prop?.label || key
+                  }}
+                />
+                {Array.from(deletedOptionalProperties).map((propKey) => (
+                  <DeletedItemBadge
+                    key={`deleted-opt-prop-${propKey}`}
+                    label={availableProperties.find((p) => p.key === propKey)?.label || propKey}
+                    onUndo={() => handleUndoDeleteOptionalProperty(propKey)}
+                  />
+                ))}
+                {activeOptionalProps.length === 0 && deletedOptionalProperties.size === 0 && isEditing && (
+                  <p className="text-xs text-muted-foreground/60">None</p>
+                )}
+                {isEditing && (
+                  <div className="mt-1.5">
+                    <EntityCombobox
+                      entityType="property"
+                      availableEntities={availableProperties.filter(
+                        (p) =>
+                          !editedRequiredProperties.includes(p.key) &&
+                          !editedOptionalProperties.includes(p.key)
+                      )}
+                      selectedKeys={[]}
+                      onChange={(keys) => {
+                        if (keys.length > 0) {
+                          handleAddOptionalProperty(keys[0])
+                        }
+                      }}
+                      onCreateNew={(id) => {
+                        setOnNestedEntityCreated((newKey: string) => {
+                          handleAddOptionalProperty(newKey)
+                        })
+                        openNestedCreateModal({
+                          entityType: 'property',
+                          prefilledId: id,
+                          parentContext: { entityType: 'category', fieldName: 'Optional Properties' },
+                        })
+                      }}
+                      placeholder="Add optional property..."
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Inherited — visually distinct: dashed outline chips, lower opacity */}
+          {inheritedProps.length > 0 && (
+            <div className="space-y-1.5 pt-3 border-t border-dashed">
+              <h4 className="text-xs font-medium text-muted-foreground/70 italic">Inherited</h4>
+              <div className="pl-2 flex flex-wrap gap-1.5">
+                {inheritedProps.map((prop) => (
+                  <button
+                    key={prop.entity_key}
+                    onClick={() => setSelectedEntity(prop.entity_key, 'property')}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 text-sm rounded-full border border-dashed border-border/50 text-foreground/60 opacity-80 hover:opacity-100 hover:bg-accent hover:text-foreground transition-all"
+                  >
+                    {prop.label}
+                    <span className="text-[10px] text-muted-foreground/50">{prop.source_category}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Nothing at all in this section */}
+          {activeRequiredProps.length === 0 &&
+            activeOptionalProps.length === 0 &&
+            inheritedProps.length === 0 &&
+            !isEditing && (
+              <p className="text-xs text-muted-foreground/60">No properties</p>
             )}
         </div>
       </AccordionSection>
 
-      {/* Subobjects Section - Editable */}
+      {/* Subobjects */}
       <AccordionSection
         id="subobjects"
         title="Subobjects"
-        count={
-          editedRequiredSubobjects.filter((s) => !deletedRequiredSubobjects.has(s)).length +
-          editedOptionalSubobjects.filter((s) => !deletedOptionalSubobjects.has(s)).length
-        }
+        count={activeRequiredSubs.length + activeOptionalSubs.length}
         defaultOpen
+        colorHint="subobject"
       >
         <div className="space-y-4">
-          {/* Required Subobjects */}
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium text-muted-foreground">Required Subobjects</h4>
-            <RelationshipChips
-              values={editedRequiredSubobjects.filter((s) => !deletedRequiredSubobjects.has(s))}
-              onRemove={handleDeleteRequiredSubobject}
-              disabled={!isEditing}
-              getLabel={(key) => {
-                const sub = availableSubobjects.find((s) => s.key === key)
-                return sub?.label || key
-              }}
-            />
-            {/* Soft-deleted required subobjects */}
-            {Array.from(deletedRequiredSubobjects).map((subKey) => (
-              <DeletedItemBadge
-                key={`deleted-req-sub-${subKey}`}
-                label={availableSubobjects.find((s) => s.key === subKey)?.label || subKey}
-                onUndo={() => handleUndoDeleteRequiredSubobject(subKey)}
-              />
-            ))}
-            {/* Empty state */}
-            {editedRequiredSubobjects.filter((s) => !deletedRequiredSubobjects.has(s)).length === 0 &&
-              deletedRequiredSubobjects.size === 0 &&
-              !isEditing && (
-                <p className="text-sm text-muted-foreground italic">No required subobjects</p>
-              )}
-            {/* Add required subobject in edit mode */}
-            {isEditing && (
-              <EntityCombobox
-                entityType="subobject"
-                availableEntities={availableSubobjects.filter(
-                  (s) =>
-                    !editedRequiredSubobjects.includes(s.key) &&
-                    !editedOptionalSubobjects.includes(s.key)
+          {/* Required — hidden when empty in read mode */}
+          {(activeRequiredSubs.length > 0 || deletedRequiredSubobjects.size > 0 || isEditing) && (
+            <div className="space-y-1.5">
+              <h4 className="text-xs font-medium text-muted-foreground">Required</h4>
+              <div className="pl-2">
+                <RelationshipChips
+                  values={activeRequiredSubs}
+                  onRemove={handleDeleteRequiredSubobject}
+                  disabled={!isEditing}
+                  colorHint="subobject"
+                  getLabel={(key) => {
+                    const sub = availableSubobjects.find((s) => s.key === key)
+                    return sub?.label || key
+                  }}
+                />
+                {Array.from(deletedRequiredSubobjects).map((subKey) => (
+                  <DeletedItemBadge
+                    key={`deleted-req-sub-${subKey}`}
+                    label={availableSubobjects.find((s) => s.key === subKey)?.label || subKey}
+                    onUndo={() => handleUndoDeleteRequiredSubobject(subKey)}
+                  />
+                ))}
+                {activeRequiredSubs.length === 0 && deletedRequiredSubobjects.size === 0 && isEditing && (
+                  <p className="text-xs text-muted-foreground/60">None</p>
                 )}
-                selectedKeys={[]}
-                onChange={(keys) => {
-                  if (keys.length > 0) {
-                    handleAddRequiredSubobject(keys[0])
-                  }
-                }}
-                onCreateNew={(id) => {
-                  setOnNestedEntityCreated((newKey: string) => {
-                    handleAddRequiredSubobject(newKey)
-                  })
-                  openNestedCreateModal({
-                    entityType: 'subobject',
-                    prefilledId: id,
-                    parentContext: { entityType: 'category', fieldName: 'Required Subobjects' },
-                  })
-                }}
-                placeholder="Add required subobject..."
-              />
-            )}
-          </div>
+                {isEditing && (
+                  <div className="mt-1.5">
+                    <EntityCombobox
+                      entityType="subobject"
+                      availableEntities={availableSubobjects.filter(
+                        (s) =>
+                          !editedRequiredSubobjects.includes(s.key) &&
+                          !editedOptionalSubobjects.includes(s.key)
+                      )}
+                      selectedKeys={[]}
+                      onChange={(keys) => {
+                        if (keys.length > 0) {
+                          handleAddRequiredSubobject(keys[0])
+                        }
+                      }}
+                      onCreateNew={(id) => {
+                        setOnNestedEntityCreated((newKey: string) => {
+                          handleAddRequiredSubobject(newKey)
+                        })
+                        openNestedCreateModal({
+                          entityType: 'subobject',
+                          prefilledId: id,
+                          parentContext: { entityType: 'category', fieldName: 'Required Subobjects' },
+                        })
+                      }}
+                      placeholder="Add required subobject..."
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
-          {/* Optional Subobjects */}
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium text-muted-foreground">Optional Subobjects</h4>
-            <RelationshipChips
-              values={editedOptionalSubobjects.filter((s) => !deletedOptionalSubobjects.has(s))}
-              onRemove={handleDeleteOptionalSubobject}
-              disabled={!isEditing}
-              getLabel={(key) => {
-                const sub = availableSubobjects.find((s) => s.key === key)
-                return sub?.label || key
-              }}
-            />
-            {/* Soft-deleted optional subobjects */}
-            {Array.from(deletedOptionalSubobjects).map((subKey) => (
-              <DeletedItemBadge
-                key={`deleted-opt-sub-${subKey}`}
-                label={availableSubobjects.find((s) => s.key === subKey)?.label || subKey}
-                onUndo={() => handleUndoDeleteOptionalSubobject(subKey)}
-              />
-            ))}
-            {/* Empty state */}
-            {editedOptionalSubobjects.filter((s) => !deletedOptionalSubobjects.has(s)).length === 0 &&
-              deletedOptionalSubobjects.size === 0 &&
-              !isEditing && (
-                <p className="text-sm text-muted-foreground italic">No optional subobjects</p>
-              )}
-            {/* Add optional subobject in edit mode */}
-            {isEditing && (
-              <EntityCombobox
-                entityType="subobject"
-                availableEntities={availableSubobjects.filter(
-                  (s) =>
-                    !editedRequiredSubobjects.includes(s.key) &&
-                    !editedOptionalSubobjects.includes(s.key)
+          {/* Optional — hidden when empty in read mode */}
+          {(activeOptionalSubs.length > 0 || deletedOptionalSubobjects.size > 0 || isEditing) && (
+            <div className="space-y-1.5">
+              <h4 className="text-xs font-medium text-muted-foreground">Optional</h4>
+              <div className="pl-2">
+                <RelationshipChips
+                  values={activeOptionalSubs}
+                  onRemove={handleDeleteOptionalSubobject}
+                  disabled={!isEditing}
+                  colorHint="subobject"
+                  getLabel={(key) => {
+                    const sub = availableSubobjects.find((s) => s.key === key)
+                    return sub?.label || key
+                  }}
+                />
+                {Array.from(deletedOptionalSubobjects).map((subKey) => (
+                  <DeletedItemBadge
+                    key={`deleted-opt-sub-${subKey}`}
+                    label={availableSubobjects.find((s) => s.key === subKey)?.label || subKey}
+                    onUndo={() => handleUndoDeleteOptionalSubobject(subKey)}
+                  />
+                ))}
+                {activeOptionalSubs.length === 0 && deletedOptionalSubobjects.size === 0 && isEditing && (
+                  <p className="text-xs text-muted-foreground/60">None</p>
                 )}
-                selectedKeys={[]}
-                onChange={(keys) => {
-                  if (keys.length > 0) {
-                    handleAddOptionalSubobject(keys[0])
-                  }
-                }}
-                onCreateNew={(id) => {
-                  setOnNestedEntityCreated((newKey: string) => {
-                    handleAddOptionalSubobject(newKey)
-                  })
-                  openNestedCreateModal({
-                    entityType: 'subobject',
-                    prefilledId: id,
-                    parentContext: { entityType: 'category', fieldName: 'Optional Subobjects' },
-                  })
-                }}
-                placeholder="Add optional subobject..."
-              />
+                {isEditing && (
+                  <div className="mt-1.5">
+                    <EntityCombobox
+                      entityType="subobject"
+                      availableEntities={availableSubobjects.filter(
+                        (s) =>
+                          !editedRequiredSubobjects.includes(s.key) &&
+                          !editedOptionalSubobjects.includes(s.key)
+                      )}
+                      selectedKeys={[]}
+                      onChange={(keys) => {
+                        if (keys.length > 0) {
+                          handleAddOptionalSubobject(keys[0])
+                        }
+                      }}
+                      onCreateNew={(id) => {
+                        setOnNestedEntityCreated((newKey: string) => {
+                          handleAddOptionalSubobject(newKey)
+                        })
+                        openNestedCreateModal({
+                          entityType: 'subobject',
+                          prefilledId: id,
+                          parentContext: { entityType: 'category', fieldName: 'Optional Subobjects' },
+                        })
+                      }}
+                      placeholder="Add optional subobject..."
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Nothing at all */}
+          {activeRequiredSubs.length === 0 &&
+            activeOptionalSubs.length === 0 &&
+            !isEditing && (
+              <p className="text-xs text-muted-foreground/60">No subobjects</p>
             )}
-          </div>
         </div>
       </AccordionSection>
 
-      {/* Module/Bundle membership - TODO: fetch from module_entity table */}
+      {/* Membership */}
       <MembershipSection modules={[]} bundles={[]} />
     </div>
   )

@@ -158,7 +158,7 @@ export function DashboardDetail({
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="px-4 py-3">
       {isSaving && (
         <div className="fixed top-4 right-4 bg-primary text-primary-foreground px-3 py-1 rounded text-sm">
           Saving...
@@ -184,6 +184,7 @@ export function DashboardDetail({
         id="pages"
         title="Pages"
         count={editedPages.length}
+        colorHint="dashboard"
       >
         {editedPages.length === 0 ? (
           <p className="text-sm text-muted-foreground italic">
