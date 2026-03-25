@@ -272,13 +272,13 @@ async def _get_category_resources(
     """
     resources: set[str] = set()
 
-    # Query canonical resources (ARRAY contains)
-    query = select(Resource.entity_key).where(
-        Resource.category_keys.contains([category_key])  # type: ignore[attr-defined]
-    )
+    # Query all canonical resources and filter by category in Python
+    # (JSONB containment operators don't work across all DB backends)
+    query = select(Resource)
     result = await session.execute(query)
-    for row in result.fetchall():
-        resources.add(row[0])
+    for resource in result.scalars().all():
+        if category_key in (resource.category_keys or []):
+            resources.add(resource.entity_key)
 
     # Include draft-created resources for this category
     for key, change in draft_changes.items():

@@ -18,10 +18,12 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Add new JSON column for category list
+    # Add new JSONB column for category list (JSONB supports @> containment queries)
+    from sqlalchemy.dialects.postgresql import JSONB
+
     op.add_column(
         "resources",
-        sa.Column("category_keys", sa.JSON(), nullable=False, server_default="[]"),
+        sa.Column("category_keys", JSONB(), nullable=False, server_default="[]"),
     )
 
     # Migrate data: copy category_key into category_keys JSON array

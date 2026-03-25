@@ -111,12 +111,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
     entityType: 'module',
     entityKey,
     debounceMs: 500,
-    onSuccess: () => {
-      refetchModule().then((r) => {
-        const d = r.data as ModuleDetailV2 | undefined
-        console.log('[ModuleDetail] refetch result — closure:', d?.closure, 'categories:', d?.entities?.category)
-      })
-    },
+    onSuccess: () => void refetchModule(),
   })
 
   // Type assertion since useModule returns EntityWithStatus | ModuleDetailV2
@@ -185,13 +180,9 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
   const handleRemoveCategory = useCallback(
     (categoryKey: string) => {
       const newCategories = editedCategories.filter((k) => k !== categoryKey)
-      console.log('[ModuleDetail] removeCategory:', categoryKey, '-> new list:', newCategories)
       setEditedCategories(newCategories)
       if (draftToken) {
-        console.log('[ModuleDetail] calling saveChange with categories:', newCategories)
         saveChange([{ op: 'add', path: '/categories', value: newCategories }])
-      } else {
-        console.log('[ModuleDetail] NO draftToken, save skipped!')
       }
     },
     [editedCategories, draftToken, saveChange]

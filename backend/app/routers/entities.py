@@ -16,9 +16,7 @@ computation. When draft_id is provided, entities include change_status
 metadata (added/modified/deleted/unchanged).
 """
 
-import logging
-
-logger = logging.getLogger(__name__)
+import json
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from sqlalchemy import text
@@ -827,15 +825,14 @@ async def get_module(
     # Check if effective JSON has draft-modified entity arrays
     has_draft_entities = change_status in ("modified", "added") and any(
         key in effective
-        for key in ("categories", "properties", "subobjects", "templates", "dashboards", "resources")
-    )
-
-    logger.info(
-        "Module %s: change_status=%s, has_draft_entities=%s, effective_keys=%s",
-        entity_key,
-        change_status,
-        has_draft_entities,
-        list(effective.keys()) if effective else [],
+        for key in (
+            "categories",
+            "properties",
+            "subobjects",
+            "templates",
+            "dashboards",
+            "resources",
+        )
     )
 
     if has_draft_entities:
@@ -856,7 +853,6 @@ async def get_module(
             entities["resource"] = effective.get("resources", [])
 
         # Compute closure using draft-modified categories
-        logger.info("Module %s: direct_category_keys=%s", entity_key, direct_category_keys)
         closure = (
             await compute_module_closure(session, direct_category_keys)
             if direct_category_keys
@@ -1240,7 +1236,9 @@ async def list_resources(
     query = select(Resource).order_by(Resource.entity_key)
 
     if category:
-        query = query.where(Resource.category_keys.contains([category]))  # type: ignore[attr-defined]
+        query = query.where(text("CAST(category_keys AS jsonb) @> CAST(:cats AS jsonb)")).params(
+            cats=json.dumps([category])
+        )
     if cursor:
         query = query.where(Resource.entity_key > cursor)
 
@@ -1359,7 +1357,8 @@ async def get_category_resources(
     # Query resources that include this category (ARRAY contains)
     query = (
         select(Resource)
-        .where(Resource.category_keys.contains([entity_key]))  # type: ignore[attr-defined]
+        .where(text("CAST(category_keys AS jsonb) @> CAST(:cats AS jsonb)"))
+        .params(cats=json.dumps([entity_key]))
         .order_by(Resource.entity_key)
     )
     result = await session.execute(query)
