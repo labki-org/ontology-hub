@@ -15,7 +15,38 @@ from app.models.v2 import Category, ChangeType, DraftChange
 # Reserved keys that are NOT property fields
 # These are either structural fields (id, label, description, category)
 # or internal fields (entity_key, source_path)
-RESERVED_KEYS = frozenset({"id", "label", "description", "category", "entity_key", "source_path"})
+RESERVED_KEYS = frozenset(
+    {
+        "id",
+        "label",
+        "description",
+        "category",
+        "categories",
+        "wikitext",
+        "entity_key",
+        "source_path",
+    }
+)
+
+# Extended reserved keys including internal overlay fields (for dynamic field extraction)
+RESERVED_KEYS_WITH_INTERNAL = RESERVED_KEYS | frozenset(
+    {"_change_status", "_deleted", "_patch_error"}
+)
+
+
+def get_entity_categories(data: dict) -> list[str]:
+    """Extract categories from an entity dict, handling legacy "category" fallback.
+
+    Supports both the new "categories" (list) format and the legacy "category"
+    (single string) format. Returns an empty list if neither is present.
+    """
+    categories = data.get("categories")
+    if categories:
+        return list(categories)
+    single = data.get("category")
+    if single:
+        return [single]
+    return []
 
 
 async def get_category_effective_properties(
@@ -146,32 +177,35 @@ async def validate_resource_fields(
     Returns:
         Error message if validation fails, None if valid
     """
-    # 1. Check category field exists
-    category_key = resource_json.get("category")
-    if not category_key:
-        return "Resource requires 'category' field"
+    # 1. Check categories field exists
+    categories = get_entity_categories(resource_json)
+    if not categories:
+        return "Resource requires at least one category"
 
-    # 2. Check category exists (canonical or in draft)
-    category_exists = await get_canonical_category_exists(session, category_key)
-    if not category_exists and draft_id:
-        category_exists = await get_draft_category_exists(session, draft_id, category_key)
+    # 2. Check all categories exist (canonical or in draft)
+    for category_key in categories:
+        category_exists = await get_canonical_category_exists(session, category_key)
+        if not category_exists and draft_id:
+            category_exists = await get_draft_category_exists(session, draft_id, category_key)
+        if not category_exists:
+            return f"Category '{category_key}' does not exist"
 
-    if not category_exists:
-        return f"Category '{category_key}' does not exist"
-
-    # 3. Get effective properties for the category
-    valid_properties = await get_category_effective_properties(session, category_key, draft_id)
+    # 3. Get effective properties for all categories (union)
+    valid_properties: set[str] = set()
+    for category_key in categories:
+        cat_props = await get_category_effective_properties(session, category_key, draft_id)
+        valid_properties |= cat_props
 
     # 4. Check all non-reserved fields are valid properties
     provided_fields = set(resource_json.keys()) - RESERVED_KEYS
     invalid_fields = provided_fields - valid_properties
 
     if invalid_fields:
-        # Sort for consistent error messages
         invalid_list = sorted(invalid_fields)
+        cat_names = ", ".join(f"'{c}'" for c in categories)
         if len(invalid_list) == 1:
-            return f"Unknown property '{invalid_list[0]}' for category '{category_key}'"
+            return f"Unknown property '{invalid_list[0]}' for categories {cat_names}"
         else:
-            return f"Unknown properties {invalid_list} for category '{category_key}'"
+            return f"Unknown properties {invalid_list} for categories {cat_names}"
 
     return None

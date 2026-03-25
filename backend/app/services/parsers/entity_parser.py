@@ -17,6 +17,7 @@ from app.models.v2 import (
     Subobject,
     Template,
 )
+from app.services.resource_validation import get_entity_categories
 
 
 @dataclass
@@ -445,13 +446,15 @@ class EntityParser:
         """
         entity_key = content["id"]  # Already includes category: "Person/John_doe"
 
+        categories = get_entity_categories(content)
+
         return Resource(
             entity_key=entity_key,
             source_path=source_path,
             label=content.get("label", entity_key),
             description=content.get("description"),
-            category_key=content.get("category"),  # "Person"
-            canonical_json=content,  # Includes additional properties
+            category_keys=categories,
+            canonical_json=content,
         )
 
     def parse_all(self, files: dict[str, list[tuple[str, dict]]]) -> ParsedEntities:

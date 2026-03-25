@@ -1,4 +1,6 @@
+import { useMemo } from 'react'
 import { useForm } from 'react-hook-form'
+import { useQueries } from '@tanstack/react-query'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { resourceSchema, type ResourceFormData } from './schemas'
 import { FormField } from './FormField'
@@ -7,7 +9,8 @@ import { RelationshipChips } from './RelationshipChips'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { useCategories, useCategory } from '@/api/entities'
+import { useCategories } from '@/api/entities'
+import { apiFetch } from '@/api/client'
 import type { CategoryDetailV2 } from '@/api/types'
 
 interface ResourceFormProps {
@@ -66,26 +69,55 @@ export function ResourceForm({
     mode: 'onBlur',
     defaultValues: {
       id: initialData?.id ?? '',
-      category_key: initialData?.category_key ?? '',
+      category_keys: initialData?.category_keys ?? [],
       dynamic_fields: initialData?.dynamic_fields ?? {},
     },
   })
 
   const { isValid } = form.formState
-  const selectedCategory = form.watch('category_key')
+  const selectedCategories = form.watch('category_keys')
   const dynamicFields = form.watch('dynamic_fields')
 
-  // Fetch category detail for dynamic fields when category is selected
-  const { data: categoryData } = useCategory(selectedCategory, draftId)
-  const categoryDetail = categoryData as CategoryDetailV2 | undefined
+  // Fetch category details for all selected categories (for dynamic fields)
+  const categoryQueries = useQueries({
+    queries: selectedCategories.map((catKey) => ({
+      queryKey: ['v2', 'category', catKey, { draftId }],
+      queryFn: () => apiFetch(`/categories/${catKey}${draftId ? `?draft_id=${draftId}` : ''}`, { v2: true }) as Promise<CategoryDetailV2>,
+      enabled: !!catKey,
+    })),
+  })
 
-  // Handle category change - resets dynamic fields
-  const handleCategoryChange = (keys: string[]) => {
-    const newCategory = keys[0] || ''
-    if (newCategory !== form.getValues('category_key')) {
-      form.setValue('category_key', newCategory)
-      form.setValue('dynamic_fields', {}) // Reset fields on category change
+  // Merge properties from all categories, deduplicating by entity_key
+  const mergedProperties = useMemo(() => {
+    const propMap = new Map<string, { entity_key: string; label: string; is_required: boolean }>()
+    for (const query of categoryQueries) {
+      const catDetail = query.data as CategoryDetailV2 | undefined
+      if (!catDetail?.properties) continue
+      for (const prop of catDetail.properties) {
+        const existing = propMap.get(prop.entity_key)
+        if (existing) {
+          if (prop.is_required) existing.is_required = true
+        } else {
+          propMap.set(prop.entity_key, {
+            entity_key: prop.entity_key,
+            label: prop.label,
+            is_required: prop.is_required,
+          })
+        }
+      }
     }
+    return Array.from(propMap.values()).sort((a, b) => {
+      if (a.is_required !== b.is_required) return a.is_required ? -1 : 1
+      return a.label.localeCompare(b.label)
+    })
+    // Stabilize on actual data content, not the query array reference
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categoryQueries.map((q) => q.data).join(',')])
+
+  // Handle category change
+  const handleCategoryChange = (keys: string[]) => {
+    form.setValue('category_keys', keys, { shouldValidate: true })
+    form.setValue('dynamic_fields', {})
   }
 
   // Handle dynamic field value change
@@ -102,37 +134,39 @@ export function ResourceForm({
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-      {/* Category selection at top */}
+      {/* Category selection at top (multi-select) */}
       <div className="space-y-2">
         <Label className="flex items-center gap-1">
-          Category
+          Categories
           <span className="text-red-600">*</span>
         </Label>
         <EntityCombobox
           entityType="category"
           availableEntities={availableCategories}
-          selectedKeys={selectedCategory ? [selectedCategory] : []}
+          selectedKeys={selectedCategories}
           onChange={handleCategoryChange}
-          placeholder="Select category..."
+          placeholder="Select categories..."
         />
-        {selectedCategory && (
+        {selectedCategories.length > 0 && (
           <RelationshipChips
-            values={[selectedCategory]}
-            onRemove={() => handleCategoryChange([])}
+            values={selectedCategories}
+            onRemove={(key) =>
+              handleCategoryChange(selectedCategories.filter((k) => k !== key))
+            }
             getLabel={getCategoryLabel}
           />
         )}
       </div>
 
       {/* Dynamic fields section - appears after category selected */}
-      {selectedCategory && (
+      {selectedCategories.length > 0 && (
         <div className="space-y-3 p-3 border rounded-md bg-muted/30">
           <Label className="text-sm font-medium text-muted-foreground">
             Category Fields
           </Label>
-          {categoryDetail?.properties && categoryDetail.properties.length > 0 ? (
+          {mergedProperties.length > 0 ? (
             <div className="space-y-3">
-              {categoryDetail.properties.map((prop) => (
+              {mergedProperties.map((prop) => (
                 <div key={prop.entity_key} className="space-y-1">
                   <Label className="flex items-center gap-1 text-sm">
                     {prop.label}
@@ -154,7 +188,7 @@ export function ResourceForm({
         </div>
       )}
 
-      {!selectedCategory && (
+      {selectedCategories.length === 0 && (
         <p className="text-sm text-muted-foreground italic">
           Select a category to see available fields.
         </p>

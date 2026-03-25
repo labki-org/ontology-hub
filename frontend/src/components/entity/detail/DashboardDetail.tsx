@@ -52,6 +52,8 @@ export function DashboardDetail({
   const [editedLabel, setEditedLabel] = useState('')
   const [editedDescription, setEditedDescription] = useState('')
   const [editedPages, setEditedPages] = useState<DashboardPage[]>([])
+  const editedPagesRef = useRef<DashboardPage[]>([])
+  useEffect(() => { editedPagesRef.current = editedPages }, [editedPages])
 
   // Track which entity we've initialized original values for (prevent reset on refetch)
   const initializedEntityRef = useRef<string | null>(null)
@@ -109,19 +111,14 @@ export function DashboardDetail({
 
   const handlePageWikitextChange = useCallback(
     (pageIndex: number, wikitext: string) => {
-      setEditedPages((prev) => {
-        const updated = [...prev]
-        updated[pageIndex] = { ...updated[pageIndex], wikitext }
-        return updated
-      })
+      const updatedPages = [...editedPagesRef.current]
+      updatedPages[pageIndex] = { ...updatedPages[pageIndex], wikitext }
+      setEditedPages(updatedPages)
       if (draftToken) {
-        // Update the entire pages array - use 'add' for robustness
-        const updatedPages = [...editedPages]
-        updatedPages[pageIndex] = { ...updatedPages[pageIndex], wikitext }
         saveChange([{ op: 'add', path: '/pages', value: updatedPages }])
       }
     },
-    [draftToken, saveChange, editedPages]
+    [draftToken, saveChange]
   )
 
   if (isLoading) {

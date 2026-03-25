@@ -307,9 +307,15 @@ class ResourceDetailResponse(BaseModel):
     entity_key: str
     label: str
     description: str | None = None
-    category_key: str = Field(description="Category this resource belongs to")
+    category_keys: list[str] = Field(
+        default_factory=list,
+        description="Categories this resource belongs to",
+    )
     dynamic_fields: dict[str, Any] = Field(
         default_factory=dict, description="Dynamic property values"
+    )
+    wikitext: str = Field(
+        default="", description="Free-form wikitext body content for the resource page"
     )
     change_status: ChangeStatus | None = Field(
         default=None,

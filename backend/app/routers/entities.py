@@ -16,6 +16,8 @@ computation. When draft_id is provided, entities include change_status
 metadata (added/modified/deleted/unchanged).
 """
 
+import json
+
 from fastapi import APIRouter, HTTPException, Query, Request
 from sqlalchemy import text
 from sqlmodel import col, select
@@ -58,6 +60,10 @@ from app.schemas.entity import (
     TemplateDetailResponse,
 )
 from app.services.draft_overlay import DraftContextDep
+from app.services.resource_validation import (
+    RESERVED_KEYS_WITH_INTERNAL,
+    get_entity_categories,
+)
 
 router = APIRouter(tags=["entities-v2"])
 
@@ -821,9 +827,16 @@ async def get_module(
     change_status = effective.get("_change_status")
 
     # Check if effective JSON has draft-modified entity arrays
-    # canonical_json uses: categories, properties, subobjects, templates
     has_draft_entities = change_status in ("modified", "added") and any(
-        key in effective for key in ("categories", "properties", "subobjects", "templates")
+        key in effective
+        for key in (
+            "categories",
+            "properties",
+            "subobjects",
+            "templates",
+            "dashboards",
+            "resources",
+        )
     )
 
     if has_draft_entities:
@@ -838,6 +851,10 @@ async def get_module(
             entities["subobject"] = effective.get("subobjects", [])
         if "templates" in effective:
             entities["template"] = effective.get("templates", [])
+        if "dashboards" in effective:
+            entities["dashboard"] = effective.get("dashboards", [])
+        if "resources" in effective:
+            entities["resource"] = effective.get("resources", [])
 
         # Compute closure using draft-modified categories
         closure = (
@@ -1223,7 +1240,9 @@ async def list_resources(
     query = select(Resource).order_by(Resource.entity_key)
 
     if category:
-        query = query.where(Resource.category_key == category)
+        query = query.where(text("CAST(category_keys AS jsonb) @> CAST(:cats AS jsonb)")).params(
+            cats=json.dumps([category])
+        )
     if cursor:
         query = query.where(Resource.entity_key > cursor)
 
@@ -1245,7 +1264,7 @@ async def list_resources(
     # Include draft-created resources (filter by category if specified)
     draft_creates = await draft_ctx.get_draft_creates("resource")
     for create in draft_creates:
-        if category is None or create.get("category") == category:
+        if category is None or category in get_entity_categories(create):
             items.append(EntityWithStatus.model_validate(create))
 
     items.sort(key=lambda x: x.entity_key)
@@ -1282,25 +1301,17 @@ async def get_resource(
         raise HTTPException(status_code=404, detail="Resource not found")
 
     # Extract dynamic fields (everything except reserved keys)
-    reserved_keys = {
-        "id",
-        "entity_key",
-        "label",
-        "description",
-        "category",
-        "source_path",
-        "_change_status",
-        "_deleted",
-        "_patch_error",
-    }
-    dynamic_fields = {k: v for k, v in effective.items() if k not in reserved_keys}
+    dynamic_fields = {k: v for k, v in effective.items() if k not in RESERVED_KEYS_WITH_INTERNAL}
+
+    categories = get_entity_categories(effective)
 
     return ResourceDetailResponse(
         entity_key=effective.get("entity_key", entity_key),
         label=effective.get("label", ""),
         description=effective.get("description"),
-        category_key=effective.get("category", ""),
+        category_keys=categories,
         dynamic_fields=dynamic_fields,
+        wikitext=effective.get("wikitext", ""),
         change_status=effective.get("_change_status"),
         deleted=effective.get("_deleted", False),
     )
@@ -1331,9 +1342,12 @@ async def get_category_resources(
         if not effective:
             raise HTTPException(status_code=404, detail="Category not found")
 
-    # Query resources for this category
+    # Query resources that include this category (ARRAY contains)
     query = (
-        select(Resource).where(Resource.category_key == entity_key).order_by(Resource.entity_key)
+        select(Resource)
+        .where(text("CAST(category_keys AS jsonb) @> CAST(:cats AS jsonb)"))
+        .params(cats=json.dumps([entity_key]))
+        .order_by(Resource.entity_key)
     )
     result = await session.execute(query)
     resources = result.scalars().all()
@@ -1348,7 +1362,7 @@ async def get_category_resources(
     # Include draft-created resources for this category
     draft_creates = await draft_ctx.get_draft_creates("resource")
     for create in draft_creates:
-        if create.get("category") == entity_key:
+        if entity_key in get_entity_categories(create):
             items.append(EntityWithStatus.model_validate(create))
 
     items.sort(key=lambda x: x.entity_key)

@@ -57,11 +57,12 @@ export function useHybridLayout(
 
   const { algorithm, direction } = options
 
-  // Memoize the layout computation to avoid unnecessary recalculations
-  const layoutKey = useMemo(
-    () => `${initialNodes.map(n => n.id).join(',')}-${edges.map(e => `${e.source}-${e.target}`).join(',')}-${algorithm}-${direction}`,
-    [initialNodes, edges, algorithm, direction]
-  )
+  // Memoize the layout computation to avoid unnecessary recalculations.
+  // Only recompute layout when the structural graph changes (node/edge identity),
+  // NOT when metadata like change_status updates.
+  const nodeIds = useMemo(() => initialNodes.map(n => n.id).sort().join(','), [initialNodes])
+  const edgeIds = useMemo(() => edges.map(e => `${e.source}-${e.target}`).sort().join(','), [edges])
+  const layoutKey = `${nodeIds}-${edgeIds}-${algorithm}-${direction}`
 
   /* eslint-disable react-hooks/set-state-in-effect -- Valid sync with layout computation */
   useEffect(() => {
@@ -86,9 +87,10 @@ export function useHybridLayout(
 
     setNodes(positionedNodes)
 
+    const simulation = simulationRef.current
     return () => {
-      if (simulationRef.current) {
-        simulationRef.current.stop()
+      if (simulation) {
+        simulation.stop()
       }
     }
   }, [layoutKey]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -124,10 +126,10 @@ export function useHybridLayout(
 
     // Update nodes on each tick during animated restart
     simulation.on('tick', () => {
-      const currentD3Nodes = d3NodesRef.current
+      const d3Map = new Map(d3NodesRef.current.map((n) => [n.id, n]))
       setNodes((prevNodes) =>
         prevNodes.map((node) => {
-          const d3Node = currentD3Nodes.find((n) => n.id === node.id)
+          const d3Node = d3Map.get(node.id)
           return {
             ...node,
             position: {
@@ -307,8 +309,9 @@ function applyForceLayout(nodes: Node[], edges: Edge[]): Node[] {
   }
 
   // Set final positioned nodes
+  const d3Map = new Map(d3Nodes.map((n) => [n.id, n]))
   return nodes.map((node) => {
-    const d3Node = d3Nodes.find((n) => n.id === node.id)
+    const d3Node = d3Map.get(node.id)
     return {
       ...node,
       position: {
@@ -439,8 +442,9 @@ function applyHybridLayout(
   }
 
   // Build positioned connected nodes
+  const d3Map = new Map(d3Nodes.map((n) => [n.id, n]))
   const positionedConnected = connectedNodes.map((node) => {
-    const d3Node = d3Nodes.find((n) => n.id === node.id)
+    const d3Node = d3Map.get(node.id)
     return {
       ...node,
       position: {
@@ -678,7 +682,7 @@ function applyRadialLayout(
       (d: any) => nodePositions.get(d.id)?.radius ?? 0,
       0, 0
     ).strength(0.4))
-    .alphaDecay(0.025) // Slower decay for better convergence
+    .alphaDecay(0.025)
     .stop()
 
   simulationRef.current = simulation
@@ -691,8 +695,9 @@ function applyRadialLayout(
   }
 
   // Build positioned nodes
+  const d3Map = new Map(d3Nodes.map((n) => [n.id, n]))
   return nodes.map((node) => {
-    const d3Node = d3Nodes.find((n) => n.id === node.id)
+    const d3Node = d3Map.get(node.id)
     return {
       ...node,
       position: {

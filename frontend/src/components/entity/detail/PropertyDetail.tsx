@@ -296,7 +296,8 @@ export function PropertyDetail({
   )
 
   const handleHasDisplayTemplateChange = useCallback(
-    (value: string) => {
+    (rawValue: string) => {
+      const value = rawValue === '__none__' ? '' : rawValue
       setEditedHasDisplayTemplate(value)
       setIsEditingTemplate(false)
       if (draftToken) {
@@ -728,14 +729,14 @@ export function PropertyDetail({
                 {isEditingTemplate ? (
                   <div className="flex items-center gap-2">
                     <Select
-                      value={editedHasDisplayTemplate}
+                      value={editedHasDisplayTemplate || '__none__'}
                       onValueChange={handleHasDisplayTemplateChange}
                     >
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select template..." />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="__none__">None</SelectItem>
                         {availableTemplates.map((t) => (
                           <SelectItem key={t.key} value={t.key}>
                             {t.label}

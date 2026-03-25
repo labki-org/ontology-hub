@@ -199,7 +199,7 @@ export type DashboardFormData = z.infer<typeof dashboardSchema>
 
 /**
  * Resource entity schema.
- * Required: id (wiki page title), category_key
+ * Required: id (wiki page title), category_keys (at least one)
  * Optional: dynamic_fields (populated based on category properties)
  *
  * Note: Resources don't have label/description - they just have an ID
@@ -207,7 +207,7 @@ export type DashboardFormData = z.infer<typeof dashboardSchema>
  */
 export const resourceSchema = z.object({
   id: genericIdValidation,
-  category_key: z.string().min(1, 'Category is required'),
+  category_keys: z.array(z.string().min(1)).min(1, 'At least one category is required'),
   dynamic_fields: z.record(z.string(), z.unknown()),
 })
 

@@ -153,11 +153,11 @@ class TestGetCategoryResources:
 
         mock_session = AsyncMock()
 
-        # Mock resource query result
+        # Mock resource query result as (entity_key, category_keys) tuples
         mock_result = MagicMock()
-        mock_result.fetchall.return_value = [
-            ("Resource1",),
-            ("Resource2",),
+        mock_result.all.return_value = [
+            ("Resource1", ["Equipment"]),
+            ("Resource2", ["Equipment"]),
         ]
         mock_session.execute.return_value = mock_result
 
@@ -175,7 +175,7 @@ class TestGetCategoryResources:
 
         # Mock empty canonical resources
         mock_result = MagicMock()
-        mock_result.fetchall.return_value = []
+        mock_result.all.return_value = []
         mock_session.execute.return_value = mock_result
 
         # Create draft change for a new resource
@@ -198,7 +198,7 @@ class TestGetCategoryResources:
 
         # Mock empty canonical resources
         mock_result = MagicMock()
-        mock_result.fetchall.return_value = []
+        mock_result.all.return_value = []
         mock_session.execute.return_value = mock_result
 
         # Draft resource for different category
@@ -658,7 +658,7 @@ class TestDerivationChainE2E:
             entity_key="ResourceInB",
             source_path="resources/CategoryB/ResourceInB.json",
             label="Resource in B",
-            category_key="CategoryB",
+            category_keys=["CategoryB"],
             canonical_json={
                 "id": "ResourceInB",
                 "category": "CategoryB",
@@ -757,7 +757,7 @@ class TestDerivationChainE2E:
             entity_key="ResourceInY",
             source_path="resources/CategoryY/ResourceInY.json",
             label="Resource in Y",
-            category_key="CategoryY",
+            category_keys=["CategoryY"],
             canonical_json={
                 "id": "ResourceInY",
                 "category": "CategoryY",
@@ -847,7 +847,7 @@ class TestDerivationChainE2E:
                 entity_key=f"Resource{i}",
                 source_path=f"resources/CategoryManyRes/Resource{i}.json",
                 label=f"Resource {i}",
-                category_key="CategoryManyRes",
+                category_keys=["CategoryManyRes"],
                 canonical_json={
                     "id": f"Resource{i}",
                     "category": "CategoryManyRes",

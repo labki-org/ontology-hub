@@ -28,6 +28,11 @@ from app.models.v2 import (
 
 # Import validation report type
 from app.schemas.validation import DraftValidationReportV2
+from app.services.generators.wikitext_generator import (
+    generate_dashboard_page_wikitext,
+    generate_module_vocab_json,
+    generate_wikitext,
+)
 
 # Entity type to table model mapping
 ENTITY_MODELS = {
@@ -53,6 +58,18 @@ ENTITY_DIRS = {
     "resource": "resources",
 }
 
+# Entity type to file extension mapping
+ENTITY_EXTENSIONS = {
+    "category": ".wikitext",
+    "property": ".wikitext",
+    "subobject": ".wikitext",
+    "template": ".wikitext",
+    "dashboard": ".wikitext",
+    "resource": ".wikitext",
+    "module": ".vocab.json",
+    "bundle": ".json",
+}
+
 
 async def get_canonical_json(
     session: AsyncSession,
@@ -73,27 +90,63 @@ async def get_canonical_json(
     return None
 
 
-def serialize_for_repo(entity_json: dict, _entity_type: str) -> dict:
-    """Convert effective entity JSON to repository format.
-
-    Repo format uses "id" instead of "entity_key" for compatibility.
-    """
+def _clean_entity_json(entity_json: dict) -> dict:
+    """Remove internal fields from entity JSON before serialization."""
     result = deepcopy(entity_json)
-
-    # Remove internal fields
     for internal_field in ["_change_status", "_deleted", "_patch_error", "entity_key"]:
         result.pop(internal_field, None)
 
-    # Ensure "id" field exists (repo format uses "id", not "entity_key")
+    # Ensure "id" field exists
     if "id" not in result and "entity_key" in entity_json:
-        # Extract just the filename part from entity_key (e.g., "categories/Person" -> "Person")
         entity_key = entity_json.get("entity_key", "")
-        if "/" in entity_key:
-            result["id"] = entity_key.split("/")[-1]
-        else:
-            result["id"] = entity_key
+        result["id"] = entity_key.split("/")[-1] if "/" in entity_key else entity_key
 
     return result
+
+
+def serialize_for_repo(entity_json: dict, entity_type: str) -> str:
+    """Convert effective entity JSON to repository file content.
+
+    Generates wikitext for most entity types, vocab.json for modules,
+    and plain JSON for bundles.
+    """
+    cleaned = _clean_entity_json(entity_json)
+
+    # Module -> vocab.json
+    if entity_type == "module":
+        return generate_module_vocab_json(cleaned)
+
+    # Bundle -> plain JSON (unchanged format)
+    if entity_type == "bundle":
+        return json.dumps(cleaned, indent=2) + "\n"
+
+    # Dashboard -> wikitext pages (handled specially in build_files_from_draft_v2)
+    if entity_type == "dashboard":
+        # Dashboards have multi-page structure; this generates the root page
+        pages = cleaned.get("pages", [])
+        root = next((p for p in pages if p.get("name") == ""), None)
+        return generate_dashboard_page_wikitext(root["wikitext"] if root else "")
+
+    # Wikitext entity types (category, property, subobject, template, resource)
+    return generate_wikitext(cleaned, entity_type)
+
+
+def _append_dashboard_subpages(
+    files: list[dict[str, str | bool]],
+    entity_dir: str,
+    entity_key: str,
+    ext: str,
+    entity_json: dict,
+) -> None:
+    """Append dashboard subpage files for non-root pages."""
+    if not entity_json.get("pages"):
+        return
+    for page in entity_json["pages"]:
+        name = page.get("name")
+        if name:
+            sub_path = f"{entity_dir}/{entity_key}/{name}{ext}"
+            sub_content = generate_dashboard_page_wikitext(page.get("wikitext", ""))
+            files.append({"path": sub_path, "content": sub_content})
 
 
 async def build_files_from_draft_v2(
@@ -123,43 +176,36 @@ async def build_files_from_draft_v2(
 
     for change in changes:
         entity_dir = ENTITY_DIRS.get(change.entity_type, change.entity_type)
+        ext = ENTITY_EXTENSIONS.get(change.entity_type, ".wikitext")
 
-        # Extract filename from entity_key (e.g., "categories/Person" -> "Person")
-        if "/" in change.entity_key:
-            filename = change.entity_key.split("/")[-1]
-        else:
-            filename = change.entity_key
-
-        file_path = f"{entity_dir}/{filename}.json"
+        # Build file path using entity_key (preserves nested paths like Property/Page)
+        entity_key = change.entity_key
+        file_path = f"{entity_dir}/{entity_key}{ext}"
 
         if change.change_type == ChangeType.CREATE:
-            # New entity - use replacement_json
             if change.replacement_json:
-                repo_json = serialize_for_repo(change.replacement_json, change.entity_type)
-                content = json.dumps(repo_json, indent=2) + "\n"
+                content = serialize_for_repo(change.replacement_json, change.entity_type)
                 files.append({"path": file_path, "content": content})
+                _append_dashboard_subpages(
+                    files, entity_dir, entity_key, ext, change.replacement_json
+                )
 
         elif change.change_type == ChangeType.UPDATE:
-            # Modified entity - apply patch to canonical
             canonical = await get_canonical_json(session, change.entity_type, change.entity_key)
             if canonical and change.patch:
                 try:
                     patch = jsonpatch.JsonPatch(change.patch)
                     effective = patch.apply(deepcopy(canonical))
-                    repo_json = serialize_for_repo(effective, change.entity_type)
-                    content = json.dumps(repo_json, indent=2) + "\n"
+                    content = serialize_for_repo(effective, change.entity_type)
                     files.append({"path": file_path, "content": content})
+                    _append_dashboard_subpages(files, entity_dir, entity_key, ext, effective)
                 except jsonpatch.JsonPatchException:
-                    # Patch failed - skip this file (validation should have caught this)
                     pass
             elif canonical:
-                # No patch but canonical exists - shouldn't happen, but handle gracefully
-                repo_json = serialize_for_repo(canonical, change.entity_type)
-                content = json.dumps(repo_json, indent=2) + "\n"
+                content = serialize_for_repo(canonical, change.entity_type)
                 files.append({"path": file_path, "content": content})
 
         elif change.change_type == ChangeType.DELETE:
-            # Deleted entity - mark for deletion
             files.append({"path": file_path, "delete": True})
 
     return files
