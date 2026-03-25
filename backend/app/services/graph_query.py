@@ -515,24 +515,18 @@ class GraphQueryService:
                 has_cycles=False,
             )
 
-        # Find categories that reference this subobject in their canonical_json
-        # Check both optional_subobjects and required_subobjects
-        categories_query = select(Category)
-        result = await self.session.execute(categories_query)
-        all_categories = result.scalars().all()
+        # Find categories that reference this subobject via junction table
+        ref_cat_query = text("""
+            SELECT c.entity_key, c.label
+            FROM categories c
+            JOIN category_subobject cs ON cs.category_id = c.id
+            JOIN subobjects s ON s.id = cs.subobject_id
+            WHERE s.entity_key = :subobject_key
+        """)
+        result = await self.session.execute(ref_cat_query, {"subobject_key": entity_key})
+        referencing_category_rows = result.fetchall()
 
-        referencing_categories: list[Category] = []
-        for cat in all_categories:
-            canonical = cat.canonical_json or {}
-            optional = canonical.get("optional_subobjects", [])
-            required = canonical.get("required_subobjects", [])
-            all_subobjs = (optional if isinstance(optional, list) else []) + (
-                required if isinstance(required, list) else []
-            )
-            if entity_key in all_subobjs:
-                referencing_categories.append(cat)
-
-        category_keys = [cat.entity_key for cat in referencing_categories]
+        category_keys = [row.entity_key for row in referencing_category_rows]
 
         # At depth > 1, include parent categories
         if depth > 1 and category_keys:
@@ -603,7 +597,7 @@ class GraphQueryService:
 
         # Build edges: category -> subobject
         edges: list[GraphEdge] = []
-        for cat in referencing_categories:
+        for cat in referencing_category_rows:
             edges.append(
                 GraphEdge(
                     source=cat.entity_key,
