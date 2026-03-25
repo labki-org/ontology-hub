@@ -31,15 +31,12 @@ export function useAutoSave({
       // Invalidate draft query to refresh status (auto-reverts from validated to draft)
       queryClient.invalidateQueries({ queryKey: ['v2', 'draft', draftToken] })
       // Invalidate entity queries to refresh with new draft overlay
-      // Use partial match to catch queries with draftId in key
       queryClient.invalidateQueries({
-        predicate: (query) => {
-          const key = query.queryKey
-          return Array.isArray(key) &&
-            key[0] === 'v2' &&
-            key[1] === entityType &&
-            key[2] === entityKey
-        }
+        queryKey: ['v2', entityType, entityKey],
+      })
+      // Force immediate refetch (invalidation alone may not trigger re-render)
+      queryClient.refetchQueries({
+        queryKey: ['v2', entityType, entityKey],
       })
       // Also invalidate list queries for this entity type (sidebar refresh)
       // Handle irregular plural forms
