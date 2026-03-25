@@ -265,7 +265,7 @@ export function SubobjectDetail({
         <div className="space-y-4">
           {(activeRequiredProps.length > 0 || deletedRequiredProperties.size > 0 || isEditing) && (
             <div className="space-y-1.5">
-              <h4 className="text-xs font-medium text-muted-foreground">Required</h4>
+              <h4 className="text-sm font-semibold text-foreground/70">Required</h4>
               <div className="pl-2">
                 <RelationshipChips
                   values={activeRequiredProps}
@@ -322,7 +322,7 @@ export function SubobjectDetail({
 
           {(activeOptionalProps.length > 0 || deletedOptionalProperties.size > 0 || isEditing) && (
             <div className="space-y-1.5">
-              <h4 className="text-xs font-medium text-muted-foreground">Optional</h4>
+              <h4 className="text-sm font-semibold text-foreground/70">Optional</h4>
               <div className="pl-2">
                 <RelationshipChips
                   values={activeOptionalProps}

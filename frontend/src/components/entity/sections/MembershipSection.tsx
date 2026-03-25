@@ -36,7 +36,7 @@ export function MembershipSection({ modules = [], bundles = [] }: MembershipSect
       <div className="space-y-4">
         {modules.length > 0 && (
           <div className="space-y-1.5">
-            <h4 className="text-xs font-medium text-muted-foreground">Modules</h4>
+            <h4 className="text-sm font-semibold text-foreground/70">Modules</h4>
             <div className="pl-2 flex flex-wrap gap-1.5">
               {modules.map((moduleKey) => (
                 <Badge
@@ -54,7 +54,7 @@ export function MembershipSection({ modules = [], bundles = [] }: MembershipSect
 
         {bundles.length > 0 && (
           <div className="space-y-1.5">
-            <h4 className="text-xs font-medium text-muted-foreground">Bundles</h4>
+            <h4 className="text-sm font-semibold text-foreground/70">Bundles</h4>
             <div className="pl-2 flex flex-wrap gap-1.5">
               {bundles.map((bundleKey) => (
                 <Badge

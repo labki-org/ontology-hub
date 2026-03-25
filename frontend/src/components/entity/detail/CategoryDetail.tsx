@@ -585,7 +585,7 @@ export function CategoryDetail({
           {/* Required — hidden when empty in read mode */}
           {(activeRequiredProps.length > 0 || deletedRequiredProperties.size > 0 || isEditing) && (
             <div className="space-y-1.5">
-              <h4 className="text-xs font-medium text-muted-foreground">Required</h4>
+              <h4 className="text-sm font-semibold text-foreground/70">Required</h4>
               <div className="pl-2">
                 <RelationshipChips
                   values={activeRequiredProps}
@@ -643,7 +643,7 @@ export function CategoryDetail({
           {/* Optional — hidden when empty in read mode */}
           {(activeOptionalProps.length > 0 || deletedOptionalProperties.size > 0 || isEditing) && (
             <div className="space-y-1.5">
-              <h4 className="text-xs font-medium text-muted-foreground">Optional</h4>
+              <h4 className="text-sm font-semibold text-foreground/70">Optional</h4>
               <div className="pl-2">
                 <RelationshipChips
                   values={activeOptionalProps}
@@ -701,7 +701,7 @@ export function CategoryDetail({
           {/* Inherited — visually distinct: dashed outline chips, lower opacity */}
           {inheritedProps.length > 0 && (
             <div className="space-y-1.5 pt-3 border-t border-dashed">
-              <h4 className="text-xs font-medium text-muted-foreground/70 italic">Inherited</h4>
+              <h4 className="text-sm font-semibold text-foreground/50 italic">Inherited</h4>
               <div className="pl-2 flex flex-wrap gap-1.5">
                 {inheritedProps.map((prop) => (
                   <button
@@ -739,7 +739,7 @@ export function CategoryDetail({
           {/* Required — hidden when empty in read mode */}
           {(activeRequiredSubs.length > 0 || deletedRequiredSubobjects.size > 0 || isEditing) && (
             <div className="space-y-1.5">
-              <h4 className="text-xs font-medium text-muted-foreground">Required</h4>
+              <h4 className="text-sm font-semibold text-foreground/70">Required</h4>
               <div className="pl-2">
                 <RelationshipChips
                   values={activeRequiredSubs}
@@ -797,7 +797,7 @@ export function CategoryDetail({
           {/* Optional — hidden when empty in read mode */}
           {(activeOptionalSubs.length > 0 || deletedOptionalSubobjects.size > 0 || isEditing) && (
             <div className="space-y-1.5">
-              <h4 className="text-xs font-medium text-muted-foreground">Optional</h4>
+              <h4 className="text-sm font-semibold text-foreground/70">Optional</h4>
               <div className="pl-2">
                 <RelationshipChips
                   values={activeOptionalSubs}

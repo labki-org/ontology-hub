@@ -535,7 +535,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
 
           {/* Properties */}
           <div className="space-y-2">
-            <h4 className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+            <h4 className="text-sm font-semibold text-foreground/70 flex items-center gap-2">
               Properties
               <Badge variant="secondary" className="text-xs">
                 {derivedProperties.length}
@@ -554,7 +554,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
 
           {/* Subobjects */}
           <div className="space-y-2">
-            <h4 className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+            <h4 className="text-sm font-semibold text-foreground/70 flex items-center gap-2">
               Subobjects
               <Badge variant="secondary" className="text-xs">
                 {derivedSubobjects.length}
@@ -573,7 +573,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
 
           {/* Templates */}
           <div className="space-y-2">
-            <h4 className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+            <h4 className="text-sm font-semibold text-foreground/70 flex items-center gap-2">
               Templates
               <Badge variant="secondary" className="text-xs">
                 {derivedTemplates.length}
@@ -592,7 +592,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
 
           {/* Resources */}
           <div className="space-y-2">
-            <h4 className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+            <h4 className="text-sm font-semibold text-foreground/70 flex items-center gap-2">
               Resources
               <Badge variant="secondary" className="text-xs">
                 {derivedResources.length}

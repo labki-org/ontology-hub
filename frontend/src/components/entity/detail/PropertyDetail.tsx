@@ -377,7 +377,7 @@ export function PropertyDetail({
         <div className="space-y-4">
           {/* Datatype */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground block mb-1">
+            <label className="text-xs font-semibold text-foreground/60 block mb-1">
               Datatype
             </label>
             <VisualChangeMarker
@@ -429,7 +429,7 @@ export function PropertyDetail({
 
           {/* Cardinality */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground block mb-1">
+            <label className="text-xs font-semibold text-foreground/60 block mb-1">
               Cardinality
             </label>
             <VisualChangeMarker
@@ -487,7 +487,7 @@ export function PropertyDetail({
           <div className="space-y-4">
             {/* Allowed Values */}
             <div>
-              <label className="text-xs font-medium text-muted-foreground block mb-1">
+              <label className="text-xs font-semibold text-foreground/60 block mb-1">
                 Allowed Values
               </label>
               <VisualChangeMarker
@@ -545,7 +545,7 @@ export function PropertyDetail({
 
             {/* Allowed Pattern */}
             <div>
-              <label className="text-xs font-medium text-muted-foreground block mb-1">
+              <label className="text-xs font-semibold text-foreground/60 block mb-1">
                 Allowed Pattern (Regex)
               </label>
               <VisualChangeMarker
@@ -571,7 +571,7 @@ export function PropertyDetail({
 
             {/* Allowed Value List */}
             <div>
-              <label className="text-xs font-medium text-muted-foreground block mb-1">
+              <label className="text-xs font-semibold text-foreground/60 block mb-1">
                 Allowed Value List (Wiki Page)
               </label>
               <VisualChangeMarker
@@ -601,7 +601,7 @@ export function PropertyDetail({
           <div className="space-y-4">
             {/* Display Units */}
             <div>
-              <label className="text-xs font-medium text-muted-foreground block mb-1">
+              <label className="text-xs font-semibold text-foreground/60 block mb-1">
                 Display Units
               </label>
               <VisualChangeMarker
@@ -659,7 +659,7 @@ export function PropertyDetail({
 
             {/* Display Precision */}
             <div>
-              <label className="text-xs font-medium text-muted-foreground block mb-1">
+              <label className="text-xs font-semibold text-foreground/60 block mb-1">
                 Display Precision (decimal places)
               </label>
               <VisualChangeMarker
@@ -719,7 +719,7 @@ export function PropertyDetail({
 
             {/* Display Template */}
             <div>
-              <label className="text-xs font-medium text-muted-foreground block mb-1">
+              <label className="text-xs font-semibold text-foreground/60 block mb-1">
                 Display Template
               </label>
               <VisualChangeMarker

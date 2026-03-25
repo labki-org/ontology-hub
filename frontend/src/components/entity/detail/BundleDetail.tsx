@@ -271,7 +271,7 @@ export function BundleDetail({ entityKey, draftId, draftToken, isEditing }: Bund
               {/* Direct modules in closure */}
               {editedModules.length > 0 && (
                 <div>
-                  <h5 className="text-xs font-medium text-muted-foreground uppercase mb-1">
+                  <h5 className="text-sm font-semibold text-foreground/70 uppercase mb-1">
                     Direct ({editedModules.length})
                   </h5>
                   <ul className="space-y-1 pl-4">
@@ -296,7 +296,7 @@ export function BundleDetail({ entityKey, draftId, draftToken, isEditing }: Bund
               {/* Additional modules from dependencies */}
               {additionalModules.length > 0 && (
                 <div>
-                  <h5 className="text-xs font-medium text-muted-foreground uppercase mb-1">
+                  <h5 className="text-sm font-semibold text-foreground/70 uppercase mb-1">
                     Transitive Dependencies ({additionalModules.length})
                   </h5>
                   <ul className="space-y-1 pl-4">
