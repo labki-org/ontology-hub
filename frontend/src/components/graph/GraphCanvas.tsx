@@ -406,6 +406,8 @@ function getEdgeColor(edgeType: string): string {
       return '#7c3aed' // violet-600 (more saturated)
     case 'subobject_property':
       return '#0d9488' // teal-600 (more saturated)
+    case 'template':
+      return '#f59e0b' // amber-500 - distinct from other edge types
     case 'module_dashboard':
       return '#dc2626' // red-600 - matches dashboard color
     case 'category_resource':
@@ -425,6 +427,8 @@ function getEdgeStrokeDasharray(edgeType: string): string | undefined {
       return '2,2' // dotted
     case 'subobject_property':
       return '5,5' // dashed (like property edges)
+    case 'template':
+      return '8,3' // long dash
     case 'module_dashboard':
       return '8,4' // long dash - distinct
     case 'category_resource':

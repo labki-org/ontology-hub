@@ -1105,6 +1105,10 @@ class GraphQueryService:
 
         property_keys = [p.entity_key for p in properties]
 
+        # Track property->template edges (canonical vs effective)
+        canonical_template_edges: set[tuple[str, str]] = set()
+        effective_template_edges: set[tuple[str, str]] = set()
+
         if property_keys:
             prop_module_membership = await self._get_module_membership(property_keys, "property")
 
@@ -1124,6 +1128,15 @@ class GraphQueryService:
                         change_status=change_status,
                     )
                 )
+
+                # Collect template edges from canonical and effective state
+                canonical_tmpl = (prop.canonical_json or {}).get("has_display_template")
+                if canonical_tmpl:
+                    canonical_template_edges.add((prop.entity_key, canonical_tmpl))
+                if effective:
+                    eff_tmpl = effective.get("has_display_template")
+                    if eff_tmpl:
+                        effective_template_edges.add((prop.entity_key, eff_tmpl))
 
             # Get property edges (category -> property) with draft awareness
             # Build canonical edges from junction table
@@ -1357,6 +1370,11 @@ class GraphQueryService:
         # Subobject edges (effective vs canonical diff)
         self._emit_diff_edges(
             effective_sub_edges, canonical_sub_edges, "subobject", all_node_ids, edges
+        )
+
+        # Template edges (property -> template, effective vs canonical diff)
+        self._emit_diff_edges(
+            effective_template_edges, canonical_template_edges, "template", all_node_ids, edges
         )
         for draft_cat in draft_cat_creates:
             draft_key = draft_cat.get("entity_key")
