@@ -82,13 +82,16 @@ export function useAutoSave({
         clearTimeout(timeoutRef.current)
       }
 
+      console.log('[useAutoSave] saveChange called, scheduling timeout. pendingPatches:', Array.from(pendingPatchesRef.current.keys()))
       timeoutRef.current = setTimeout(() => {
         // Flush all accumulated patches
         const allPatches = Array.from(pendingPatchesRef.current.values())
         pendingPatchesRef.current.clear()
 
+        console.log('[useAutoSave] timeout fired, patches to send:', allPatches.length, allPatches.map(p => p.path))
         if (allPatches.length === 0) return
 
+        console.log('[useAutoSave] calling mutate, mutationRef exists:', !!mutationRef.current)
         mutationRef.current?.mutate({
           change_type: 'update',
           entity_type: entityType,
