@@ -181,7 +181,7 @@ export function ResourceForm({
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground italic">
+            <p className="text-xs text-muted-foreground/60">
               No properties defined for this category.
             </p>
           )}
@@ -189,7 +189,7 @@ export function ResourceForm({
       )}
 
       {selectedCategories.length === 0 && (
-        <p className="text-sm text-muted-foreground italic">
+        <p className="text-xs text-muted-foreground/60">
           Select a category to see available fields.
         </p>
       )}

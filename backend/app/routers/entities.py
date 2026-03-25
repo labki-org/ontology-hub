@@ -69,6 +69,49 @@ router = APIRouter(tags=["entities-v2"])
 
 
 # -----------------------------------------------------------------------------
+# Membership helper
+# -----------------------------------------------------------------------------
+
+
+async def _get_entity_membership(
+    session: SessionDep,
+    entity_key: str,
+    entity_type: str,
+) -> tuple[list[str], list[str]]:
+    """Get module and bundle membership for an entity.
+
+    Returns (module_keys, bundle_keys) where bundle membership is derived
+    transitively: entity → ModuleEntity → Module → BundleModule → Bundle.
+    """
+    # Module membership: which modules contain this entity
+    module_query = (
+        select(col(Module.entity_key).label("module_key"))  # type: ignore[var-annotated]
+        .join(ModuleEntity, col(ModuleEntity.module_id) == col(Module.id))
+        .where(
+            ModuleEntity.entity_key == entity_key,
+            ModuleEntity.entity_type == entity_type,
+        )
+    )
+    module_result = await session.execute(module_query)
+    module_keys = [row.module_key for row in module_result.all()]
+
+    # Bundle membership: which bundles contain those modules
+    bundle_keys: list[str] = []
+    if module_keys:
+        bundle_query = (
+            select(col(Bundle.entity_key).label("bundle_key"))  # type: ignore[var-annotated]
+            .join(BundleModule, col(BundleModule.bundle_id) == col(Bundle.id))
+            .join(Module, col(Module.id) == col(BundleModule.module_id))
+            .where(col(Module.entity_key).in_(module_keys))
+            .distinct()
+        )
+        bundle_result = await session.execute(bundle_query)
+        bundle_keys = [row.bundle_key for row in bundle_result.all()]
+
+    return module_keys, bundle_keys
+
+
+# -----------------------------------------------------------------------------
 # Ontology Version endpoint
 # -----------------------------------------------------------------------------
 
@@ -282,6 +325,9 @@ async def get_category(
                 SubobjectProvenance(entity_key=sub_key, label=sub_key, is_required=False)
             )
 
+    # Module and bundle membership
+    module_keys, bundle_keys = await _get_entity_membership(session, entity_key, "category")
+
     return CategoryDetailResponse(
         entity_key=effective.get("entity_key", entity_key),
         label=effective.get("label", ""),
@@ -289,6 +335,8 @@ async def get_category(
         parents=parents,
         properties=properties,
         subobjects=subobjects,
+        modules=module_keys,
+        bundles=bundle_keys,
         change_status=effective.get("_change_status"),
         deleted=effective.get("_deleted", False),
         patch_error=effective.get("_patch_error"),
@@ -379,6 +427,9 @@ async def get_property(
     if not effective:
         raise HTTPException(status_code=404, detail="Property not found")
 
+    # Module and bundle membership
+    module_keys, bundle_keys = await _get_entity_membership(session, entity_key, "property")
+
     return PropertyDetailResponse(
         entity_key=effective.get("entity_key", entity_key),
         label=effective.get("label", ""),
@@ -395,6 +446,8 @@ async def get_property(
         # Constraints and relationships
         unique_values=effective.get("unique_values", False),
         has_display_template=effective.get("has_display_template_key"),
+        modules=module_keys,
+        bundles=bundle_keys,
         change_status=effective.get("_change_status"),
         deleted=effective.get("_deleted", False),
     )
@@ -597,12 +650,17 @@ async def get_subobject(
                 SubobjectPropertyInfo(entity_key=prop_key, label=prop_key, is_required=False)
             )
 
+    # Module and bundle membership
+    module_keys, bundle_keys = await _get_entity_membership(session, entity_key, "subobject")
+
     return SubobjectDetailResponse(
         entity_key=effective.get("entity_key", entity_key),
         label=effective.get("label", ""),
         description=effective.get("description"),
         required_properties=required_properties,
         optional_properties=optional_properties,
+        modules=module_keys,
+        bundles=bundle_keys,
         change_status=effective.get("_change_status"),
         deleted=effective.get("_deleted", False),
     )
@@ -686,12 +744,17 @@ async def get_template(
     if not effective:
         raise HTTPException(status_code=404, detail="Template not found")
 
+    # Module and bundle membership
+    module_keys, bundle_keys = await _get_entity_membership(session, entity_key, "template")
+
     return TemplateDetailResponse(
         entity_key=effective.get("entity_key", entity_key),
         label=effective.get("label", ""),
         description=effective.get("description"),
         wikitext=effective.get("wikitext"),
         property_key=effective.get("property_key"),
+        modules=module_keys,
+        bundles=bundle_keys,
         change_status=effective.get("_change_status"),
         deleted=effective.get("_deleted", False),
     )
@@ -1206,11 +1269,16 @@ async def get_dashboard(
         DashboardPage(name=p.get("name", ""), wikitext=p.get("wikitext", "")) for p in pages_data
     ]
 
+    # Module and bundle membership
+    module_keys, bundle_keys = await _get_entity_membership(session, entity_key, "dashboard")
+
     return DashboardDetailResponse(
         entity_key=effective.get("entity_key", entity_key),
         label=effective.get("label", ""),
         description=effective.get("description"),
         pages=pages,
+        modules=module_keys,
+        bundles=bundle_keys,
         change_status=effective.get("_change_status"),
         deleted=effective.get("_deleted", False),
     )
@@ -1305,6 +1373,9 @@ async def get_resource(
 
     categories = get_entity_categories(effective)
 
+    # Module and bundle membership
+    module_keys, bundle_keys = await _get_entity_membership(session, entity_key, "resource")
+
     return ResourceDetailResponse(
         entity_key=effective.get("entity_key", entity_key),
         label=effective.get("label", ""),
@@ -1312,6 +1383,8 @@ async def get_resource(
         category_keys=categories,
         dynamic_fields=dynamic_fields,
         wikitext=effective.get("wikitext", ""),
+        modules=module_keys,
+        bundles=bundle_keys,
         change_status=effective.get("_change_status"),
         deleted=effective.get("_deleted", False),
     )

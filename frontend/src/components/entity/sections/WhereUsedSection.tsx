@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge'
 import { useGraphStore } from '@/stores/graphStore'
 import { AccordionSection } from './AccordionSection'
+import { SubsectionHeader } from './SubsectionHeader'
 
 interface WhereUsedItem {
   entityKey: string
@@ -27,7 +28,7 @@ export function WhereUsedSection({
   if (items.length === 0) {
     return (
       <AccordionSection id="where-used" title={title} count={0} defaultOpen={false}>
-        <p className="text-sm text-muted-foreground italic">Not used by any entities</p>
+        <p className="text-xs text-muted-foreground/60">Not used by any entities</p>
       </AccordionSection>
     )
   }
@@ -57,8 +58,8 @@ export function WhereUsedSection({
       <div className="space-y-4">
         {Object.entries(grouped).map(([type, typeItems]) => (
           <div key={type}>
-            <h4 className="text-sm font-medium mb-2">{typeLabels[type] || type}</h4>
-            <div className="flex flex-wrap gap-2">
+            <SubsectionHeader className="mb-2">{typeLabels[type] || type}</SubsectionHeader>
+            <div className="flex flex-wrap gap-1.5">
               {typeItems.map((item) => (
                 <Badge
                   key={item.entityKey}

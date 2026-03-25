@@ -10,6 +10,7 @@ import { EntityCombobox } from '../forms/EntityCombobox'
 import { RelationshipChips } from '../forms/RelationshipChips'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import { SaveIndicator } from '../sections/SaveIndicator'
 
 interface BundleDetailProps {
   entityKey: string
@@ -161,13 +162,9 @@ export function BundleDetail({ entityKey, draftId, draftToken, isEditing }: Bund
     bundleDetail.closure?.filter((mod) => !directModules.has(mod)) || []
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="px-4 py-3">
       {/* Saving indicator */}
-      {isSaving && (
-        <div className="fixed top-4 right-4 bg-primary text-primary-foreground px-3 py-1 rounded text-sm z-50">
-          Saving...
-        </div>
-      )}
+      <SaveIndicator isSaving={isSaving} />
 
       {/* Deleted marker */}
       {isDeleted && (
@@ -204,6 +201,7 @@ export function BundleDetail({ entityKey, draftId, draftToken, isEditing }: Bund
         title="Modules"
         count={editedModules.length}
         defaultOpen={true}
+        colorHint="module"
       >
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">
@@ -223,7 +221,7 @@ export function BundleDetail({ entityKey, draftId, draftToken, isEditing }: Bund
 
           {/* Empty state */}
           {editedModules.length === 0 && !isEditing && (
-            <p className="text-sm text-muted-foreground italic">No modules in bundle</p>
+            <p className="text-xs text-muted-foreground/60">No modules in bundle</p>
           )}
 
           {/* Add module via combobox in edit mode */}
@@ -270,7 +268,7 @@ export function BundleDetail({ entityKey, draftId, draftToken, isEditing }: Bund
               {/* Direct modules in closure */}
               {editedModules.length > 0 && (
                 <div>
-                  <h5 className="text-xs font-medium text-muted-foreground uppercase mb-1">
+                  <h5 className="text-sm font-semibold text-foreground/70 uppercase mb-1">
                     Direct ({editedModules.length})
                   </h5>
                   <ul className="space-y-1 pl-4">
@@ -295,7 +293,7 @@ export function BundleDetail({ entityKey, draftId, draftToken, isEditing }: Bund
               {/* Additional modules from dependencies */}
               {additionalModules.length > 0 && (
                 <div>
-                  <h5 className="text-xs font-medium text-muted-foreground uppercase mb-1">
+                  <h5 className="text-sm font-semibold text-foreground/70 uppercase mb-1">
                     Transitive Dependencies ({additionalModules.length})
                   </h5>
                   <ul className="space-y-1 pl-4">
@@ -315,7 +313,7 @@ export function BundleDetail({ entityKey, draftId, draftToken, isEditing }: Bund
               )}
             </div>
           ) : (
-            <div className="text-sm text-muted-foreground italic">
+            <div className="text-xs text-muted-foreground/60">
               No modules in closure
             </div>
           )}

@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { VisualChangeMarker } from '../form/VisualChangeMarker'
+import { SaveIndicator } from '../sections/SaveIndicator'
 import {
   Select,
   SelectContent,
@@ -351,12 +352,8 @@ export function PropertyDetail({
   const showConstraintsSection = isEditing || editedUniqueValues || editedHasDisplayTemplate
 
   return (
-    <div className="p-6 space-y-6">
-      {isSaving && (
-        <div className="fixed top-4 right-4 bg-primary text-primary-foreground px-3 py-1 rounded text-sm z-50">
-          Saving...
-        </div>
-      )}
+    <div className="px-4 py-3">
+      <SaveIndicator isSaving={isSaving} />
 
       {/* Header */}
       <EntityHeader
@@ -377,7 +374,7 @@ export function PropertyDetail({
         <div className="space-y-4">
           {/* Datatype */}
           <div>
-            <label className="text-sm font-medium text-muted-foreground block mb-2">
+            <label className="text-sm font-semibold text-foreground/70 block mb-1">
               Datatype
             </label>
             <VisualChangeMarker
@@ -429,7 +426,7 @@ export function PropertyDetail({
 
           {/* Cardinality */}
           <div>
-            <label className="text-sm font-medium text-muted-foreground block mb-2">
+            <label className="text-sm font-semibold text-foreground/70 block mb-1">
               Cardinality
             </label>
             <VisualChangeMarker
@@ -487,7 +484,7 @@ export function PropertyDetail({
           <div className="space-y-4">
             {/* Allowed Values */}
             <div>
-              <label className="text-sm font-medium text-muted-foreground block mb-2">
+              <label className="text-sm font-semibold text-foreground/70 block mb-1">
                 Allowed Values
               </label>
               <VisualChangeMarker
@@ -537,7 +534,7 @@ export function PropertyDetail({
                     </div>
                   )}
                   {!isEditing && editedAllowedValues.length === 0 && (
-                    <p className="text-sm text-muted-foreground italic">No allowed values specified</p>
+                    <p className="text-xs text-muted-foreground/60">No allowed values specified</p>
                   )}
                 </div>
               </VisualChangeMarker>
@@ -545,7 +542,7 @@ export function PropertyDetail({
 
             {/* Allowed Pattern */}
             <div>
-              <label className="text-sm font-medium text-muted-foreground block mb-2">
+              <label className="text-sm font-semibold text-foreground/70 block mb-1">
                 Allowed Pattern (Regex)
               </label>
               <VisualChangeMarker
@@ -564,14 +561,14 @@ export function PropertyDetail({
                     {editedAllowedPattern}
                   </code>
                 ) : (
-                  <p className="text-sm text-muted-foreground italic">No pattern specified</p>
+                  <p className="text-xs text-muted-foreground/60">No pattern specified</p>
                 )}
               </VisualChangeMarker>
             </div>
 
             {/* Allowed Value List */}
             <div>
-              <label className="text-sm font-medium text-muted-foreground block mb-2">
+              <label className="text-sm font-semibold text-foreground/70 block mb-1">
                 Allowed Value List (Wiki Page)
               </label>
               <VisualChangeMarker
@@ -587,7 +584,7 @@ export function PropertyDetail({
                 ) : editedAllowedValueList ? (
                   <span className="text-sm">{editedAllowedValueList}</span>
                 ) : (
-                  <p className="text-sm text-muted-foreground italic">No value list specified</p>
+                  <p className="text-xs text-muted-foreground/60">No value list specified</p>
                 )}
               </VisualChangeMarker>
             </div>
@@ -601,7 +598,7 @@ export function PropertyDetail({
           <div className="space-y-4">
             {/* Display Units */}
             <div>
-              <label className="text-sm font-medium text-muted-foreground block mb-2">
+              <label className="text-sm font-semibold text-foreground/70 block mb-1">
                 Display Units
               </label>
               <VisualChangeMarker
@@ -651,7 +648,7 @@ export function PropertyDetail({
                     </div>
                   )}
                   {!isEditing && editedDisplayUnits.length === 0 && (
-                    <p className="text-sm text-muted-foreground italic">No display units specified</p>
+                    <p className="text-xs text-muted-foreground/60">No display units specified</p>
                   )}
                 </div>
               </VisualChangeMarker>
@@ -659,7 +656,7 @@ export function PropertyDetail({
 
             {/* Display Precision */}
             <div>
-              <label className="text-sm font-medium text-muted-foreground block mb-2">
+              <label className="text-sm font-semibold text-foreground/70 block mb-1">
                 Display Precision (decimal places)
               </label>
               <VisualChangeMarker
@@ -678,7 +675,7 @@ export function PropertyDetail({
                 ) : editedDisplayPrecision !== null ? (
                   <span className="text-sm">{editedDisplayPrecision} decimal places</span>
                 ) : (
-                  <p className="text-sm text-muted-foreground italic">No precision specified</p>
+                  <p className="text-xs text-muted-foreground/60">No precision specified</p>
                 )}
               </VisualChangeMarker>
             </div>
@@ -711,7 +708,7 @@ export function PropertyDetail({
                   ) : editedUniqueValues ? (
                     <span className="text-sm">Values must be unique across all pages</span>
                   ) : (
-                    <span className="text-sm text-muted-foreground italic">Values do not need to be unique</span>
+                    <span className="text-xs text-muted-foreground/60">Values do not need to be unique</span>
                   )}
                 </div>
               </VisualChangeMarker>
@@ -719,7 +716,7 @@ export function PropertyDetail({
 
             {/* Display Template */}
             <div>
-              <label className="text-sm font-medium text-muted-foreground block mb-2">
+              <label className="text-sm font-semibold text-foreground/70 block mb-1">
                 Display Template
               </label>
               <VisualChangeMarker
@@ -785,7 +782,7 @@ export function PropertyDetail({
                     Add template
                   </Button>
                 ) : (
-                  <p className="text-sm text-muted-foreground italic">No display template</p>
+                  <p className="text-xs text-muted-foreground/60">No display template</p>
                 )}
               </VisualChangeMarker>
             </div>
@@ -836,14 +833,14 @@ export function PropertyDetail({
             ))}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground italic">
+          <p className="text-xs text-muted-foreground/60">
             No categories use this property
           </p>
         )}
       </AccordionSection>
 
       {/* Module membership */}
-      <MembershipSection modules={[]} bundles={[]} />
+      <MembershipSection modules={property.modules || []} bundles={property.bundles || []} />
     </div>
   )
 }

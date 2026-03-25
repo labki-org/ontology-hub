@@ -20,6 +20,7 @@ import { RelationshipChips } from '../forms/RelationshipChips'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Sparkles, Users } from 'lucide-react'
+import { SaveIndicator } from '../sections/SaveIndicator'
 
 interface ModuleDetailProps {
   entityKey: string
@@ -304,13 +305,9 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="px-4 py-3">
       {/* Saving indicator */}
-      {isSaving && (
-        <div className="fixed top-4 right-4 bg-primary text-primary-foreground px-3 py-1 rounded text-sm z-50">
-          Saving...
-        </div>
-      )}
+      <SaveIndicator isSaving={isSaving} />
 
       {/* Deleted marker */}
       {isDeleted && (
@@ -357,6 +354,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
         }
         count={editedCategories.length}
         defaultOpen={true}
+        colorHint="category"
       >
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">
@@ -370,11 +368,12 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
             onRemove={handleRemoveCategory}
             disabled={!isEditing}
             getLabel={(key) => getLabel(key, availableCategories)}
+            colorHint="category"
           />
 
           {/* Empty state */}
           {editedCategories.length === 0 && !isEditing && (
-            <p className="text-sm text-muted-foreground italic">No categories in module</p>
+            <p className="text-xs text-muted-foreground/60">No categories in module</p>
           )}
 
           {/* Add category via combobox in edit mode */}
@@ -421,6 +420,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
         }
         count={editedDependencies.length}
         defaultOpen={true}
+        colorHint="module"
       >
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">
@@ -433,11 +433,12 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
             onRemove={handleRemoveDependency}
             disabled={!isEditing}
             getLabel={(key) => getLabel(key, availableModules)}
+            colorHint="module"
           />
 
           {/* Empty state */}
           {editedDependencies.length === 0 && !isEditing && (
-            <p className="text-sm text-muted-foreground italic">No module dependencies</p>
+            <p className="text-xs text-muted-foreground/60">No module dependencies</p>
           )}
 
           {/* Add dependency via combobox in edit mode */}
@@ -464,6 +465,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
         id="dashboards"
         title="Dashboards"
         count={editedDashboards.length}
+        colorHint="dashboard"
       >
         <div className="space-y-3">
           {isDashboardsModified && (
@@ -480,10 +482,11 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
             onRemove={handleRemoveDashboard}
             disabled={!isEditing}
             getLabel={(key) => getLabel(key, availableDashboards)}
+            colorHint="dashboard"
           />
 
           {editedDashboards.length === 0 && !isEditing && (
-            <p className="text-sm text-muted-foreground italic">No dashboards</p>
+            <p className="text-xs text-muted-foreground/60">No dashboards</p>
           )}
 
           {isEditing && (
@@ -529,7 +532,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
 
           {/* Properties */}
           <div className="space-y-2">
-            <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <h4 className="text-sm font-semibold text-foreground/70 flex items-center gap-2">
               Properties
               <Badge variant="secondary" className="text-xs">
                 {derivedProperties.length}
@@ -542,13 +545,13 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
                 )}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground italic pl-4">No properties</p>
+              <p className="text-xs text-muted-foreground/60 pl-4">No properties</p>
             )}
           </div>
 
           {/* Subobjects */}
           <div className="space-y-2">
-            <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <h4 className="text-sm font-semibold text-foreground/70 flex items-center gap-2">
               Subobjects
               <Badge variant="secondary" className="text-xs">
                 {derivedSubobjects.length}
@@ -561,13 +564,13 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
                 )}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground italic pl-4">No subobjects</p>
+              <p className="text-xs text-muted-foreground/60 pl-4">No subobjects</p>
             )}
           </div>
 
           {/* Templates */}
           <div className="space-y-2">
-            <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <h4 className="text-sm font-semibold text-foreground/70 flex items-center gap-2">
               Templates
               <Badge variant="secondary" className="text-xs">
                 {derivedTemplates.length}
@@ -580,13 +583,13 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
                 )}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground italic pl-4">No templates</p>
+              <p className="text-xs text-muted-foreground/60 pl-4">No templates</p>
             )}
           </div>
 
           {/* Resources */}
           <div className="space-y-2">
-            <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <h4 className="text-sm font-semibold text-foreground/70 flex items-center gap-2">
               Resources
               <Badge variant="secondary" className="text-xs">
                 {derivedResources.length}
@@ -599,7 +602,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
                 )}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground italic pl-4">No resources</p>
+              <p className="text-xs text-muted-foreground/60 pl-4">No resources</p>
             )}
           </div>
         </div>
@@ -624,7 +627,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
               )}
             </div>
           ) : (
-            <div className="text-sm text-muted-foreground italic">
+            <div className="text-xs text-muted-foreground/60">
               No transitive dependencies
             </div>
           )}

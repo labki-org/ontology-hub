@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { VisualChangeMarker } from '../form/VisualChangeMarker'
+import { SaveIndicator } from '../sections/SaveIndicator'
 import type { ResourceDetailV2, CategoryDetailV2 } from '@/api/types'
 
 /** Merged property info from multiple categories */
@@ -267,12 +268,8 @@ export function ResourceDetail({
   )
 
   return (
-    <div className="p-6 space-y-6">
-      {isSaving && (
-        <div className="fixed top-4 right-4 bg-primary text-primary-foreground px-3 py-1 rounded text-sm">
-          Saving...
-        </div>
-      )}
+    <div className="px-4 py-3">
+      <SaveIndicator isSaving={isSaving} />
 
       {/* Header */}
       <div className="space-y-4">
@@ -292,6 +289,7 @@ export function ResourceDetail({
         title="Categories"
         count={editedCategories.length}
         defaultOpen
+        colorHint="category"
       >
         <VisualChangeMarker
           status={areCategoriesModified ? 'modified' : 'unchanged'}
@@ -311,7 +309,7 @@ export function ResourceDetail({
 
             {/* Empty state */}
             {editedCategories.length === 0 && !isEditing && (
-              <p className="text-sm text-muted-foreground italic">
+              <p className="text-xs text-muted-foreground/60">
                 No categories assigned
               </p>
             )}
@@ -359,9 +357,10 @@ export function ResourceDetail({
           (p) => editedDynamicFields[p.entity_key] !== undefined && editedDynamicFields[p.entity_key] !== ''
         ).length}
         defaultOpen
+        colorHint="property"
       >
         {mergedProperties.length === 0 ? (
-          <p className="text-sm text-muted-foreground italic">
+          <p className="text-xs text-muted-foreground/60">
             {editedCategories.length === 0
               ? 'No categories assigned — add a category to see available properties'
               : 'No properties defined for the selected categories'}
@@ -372,7 +371,7 @@ export function ResourceDetail({
               const value = editedDynamicFields[prop.entity_key]
               return (
                 <div key={prop.entity_key} className="space-y-1">
-                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+                  <label className="text-sm font-semibold text-foreground/70 flex items-center gap-1.5">
                     {prop.label}
                     {prop.is_required && (
                       <span className="text-red-500 text-xs">required</span>
@@ -432,7 +431,7 @@ export function ResourceDetail({
               {editedWikitext}
             </pre>
           ) : (
-            <p className="text-sm text-muted-foreground italic">
+            <p className="text-xs text-muted-foreground/60">
               No page content defined
             </p>
           )}

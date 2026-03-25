@@ -7,6 +7,7 @@ import { MembershipSection } from '../sections/MembershipSection'
 import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
 import { VisualChangeMarker } from '../form/VisualChangeMarker'
+import { SaveIndicator } from '../sections/SaveIndicator'
 import type { TemplateDetailV2 } from '@/api/types'
 
 interface TemplateDetailProps {
@@ -137,12 +138,8 @@ export function TemplateDetail({
   const isWikitextModified = editedWikitext !== originalValues.wikitext
 
   return (
-    <div className="p-6 space-y-6">
-      {isSaving && (
-        <div className="fixed top-4 right-4 bg-primary text-primary-foreground px-3 py-1 rounded text-sm">
-          Saving...
-        </div>
-      )}
+    <div className="px-4 py-3">
+      <SaveIndicator isSaving={isSaving} />
 
       {/* Header */}
       <EntityHeader
@@ -159,7 +156,7 @@ export function TemplateDetail({
       />
 
       {/* Wikitext Content */}
-      <AccordionSection id="wikitext" title="Wikitext Content">
+      <AccordionSection id="wikitext" title="Wikitext Content" colorHint="template">
         {isEditing ? (
           <VisualChangeMarker
             status={isWikitextModified ? 'modified' : 'unchanged'}
@@ -183,7 +180,7 @@ export function TemplateDetail({
                   {editedWikitext}
                 </pre>
               ) : (
-                <p className="text-sm text-muted-foreground italic">
+                <p className="text-xs text-muted-foreground/60">
                   No wikitext content
                 </p>
               )}
@@ -192,8 +189,7 @@ export function TemplateDetail({
         )}
       </AccordionSection>
 
-      {/* Module membership - TODO: needs API */}
-      <MembershipSection modules={[]} bundles={[]} />
+      <MembershipSection modules={template.modules || []} bundles={template.bundles || []} />
     </div>
   )
 }
