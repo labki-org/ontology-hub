@@ -6,6 +6,7 @@ and extracts relationships for separate relationship tables.
 
 from dataclasses import dataclass, field
 
+from app.services.resource_validation import get_entity_categories
 from app.models.v2 import (
     Bundle,
     Category,
@@ -445,10 +446,7 @@ class EntityParser:
         """
         entity_key = content["id"]  # Already includes category: "Person/John_doe"
 
-        # Support both "categories" (list) and legacy "category" (single string)
-        categories = content.get("categories", [])
-        if not categories and content.get("category"):
-            categories = [content["category"]]
+        categories = get_entity_categories(content)
 
         return Resource(
             entity_key=entity_key,

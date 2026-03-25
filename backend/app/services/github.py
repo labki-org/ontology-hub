@@ -128,50 +128,27 @@ class GitHubClient:
             )
         ]
 
+    async def _fetch_file_text(
+        self, owner: str, repo: str, path: str, ref: str = "main"
+    ) -> str:
+        """Fetch and decode a file from GitHub as UTF-8 text."""
+        url = f"/repos/{owner}/{repo}/contents/{path}"
+        data = await self._request("GET", url, params={"ref": ref})
+        content_bytes = base64.b64decode(data["content"])
+        return content_bytes.decode("utf-8")
+
     async def get_file_content(
         self, owner: str, repo: str, path: str, ref: str = "main"
     ) -> dict[str, Any]:
-        """Fetch and decode a single JSON file from GitHub.
-
-        Args:
-            owner: Repository owner
-            repo: Repository name
-            path: File path within repository
-            ref: Git ref (branch, tag, or commit SHA)
-
-        Returns:
-            Parsed JSON content of the file
-        """
-        url = f"/repos/{owner}/{repo}/contents/{path}"
-        data = await self._request("GET", url, params={"ref": ref})
-
-        # Content is base64 encoded
-        content_bytes = base64.b64decode(data["content"])
-        content_str = content_bytes.decode("utf-8")
-
+        """Fetch and decode a single JSON file from GitHub."""
+        content_str = await self._fetch_file_text(owner, repo, path, ref)
         return cast(dict[str, Any], json.loads(content_str))
 
     async def get_file_content_raw(
         self, owner: str, repo: str, path: str, ref: str = "main"
     ) -> str:
-        """Fetch and decode a file from GitHub as raw text.
-
-        Used for .wikitext files that aren't JSON.
-
-        Args:
-            owner: Repository owner
-            repo: Repository name
-            path: File path within repository
-            ref: Git ref (branch, tag, or commit SHA)
-
-        Returns:
-            Raw text content of the file
-        """
-        url = f"/repos/{owner}/{repo}/contents/{path}"
-        data = await self._request("GET", url, params={"ref": ref})
-
-        content_bytes = base64.b64decode(data["content"])
-        return content_bytes.decode("utf-8")
+        """Fetch and decode a file from GitHub as raw text (e.g. .wikitext files)."""
+        return await self._fetch_file_text(owner, repo, path, ref)
 
     async def get_latest_commit_sha(self, owner: str, repo: str, branch: str = "main") -> str:
         """Get the SHA of the latest commit on a branch.

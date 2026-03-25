@@ -131,6 +131,24 @@ def serialize_for_repo(entity_json: dict, entity_type: str) -> str:
     return generate_wikitext(cleaned, entity_type)
 
 
+def _append_dashboard_subpages(
+    files: list[dict[str, str | bool]],
+    entity_dir: str,
+    entity_key: str,
+    ext: str,
+    entity_json: dict,
+) -> None:
+    """Append dashboard subpage files for non-root pages."""
+    if not entity_json.get("pages"):
+        return
+    for page in entity_json["pages"]:
+        name = page.get("name")
+        if name:
+            sub_path = f"{entity_dir}/{entity_key}/{name}{ext}"
+            sub_content = generate_dashboard_page_wikitext(page.get("wikitext", ""))
+            files.append({"path": sub_path, "content": sub_content})
+
+
 async def build_files_from_draft_v2(
     draft_id: UUID,
     session: AsyncSession,
@@ -168,14 +186,7 @@ async def build_files_from_draft_v2(
             if change.replacement_json:
                 content = serialize_for_repo(change.replacement_json, change.entity_type)
                 files.append({"path": file_path, "content": content})
-
-                # For dashboards, also generate subpage files
-                if change.entity_type == "dashboard":
-                    for page in change.replacement_json.get("pages", []):
-                        if page.get("name"):
-                            sub_path = f"{entity_dir}/{entity_key}/{page['name']}{ext}"
-                            sub_content = generate_dashboard_page_wikitext(page["wikitext"])
-                            files.append({"path": sub_path, "content": sub_content})
+                _append_dashboard_subpages(files, entity_dir, entity_key, ext, change.replacement_json)
 
         elif change.change_type == ChangeType.UPDATE:
             canonical = await get_canonical_json(session, change.entity_type, change.entity_key)
@@ -185,14 +196,7 @@ async def build_files_from_draft_v2(
                     effective = patch.apply(deepcopy(canonical))
                     content = serialize_for_repo(effective, change.entity_type)
                     files.append({"path": file_path, "content": content})
-
-                    # Dashboard subpages
-                    if change.entity_type == "dashboard":
-                        for page in effective.get("pages", []):
-                            if page.get("name"):
-                                sub_path = f"{entity_dir}/{entity_key}/{page['name']}{ext}"
-                                sub_content = generate_dashboard_page_wikitext(page["wikitext"])
-                                files.append({"path": sub_path, "content": sub_content})
+                    _append_dashboard_subpages(files, entity_dir, entity_key, ext, effective)
                 except jsonpatch.JsonPatchException:
                     pass
             elif canonical:

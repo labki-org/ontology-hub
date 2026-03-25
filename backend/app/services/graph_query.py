@@ -25,6 +25,7 @@ from app.models.v2 import (
 )
 from app.schemas.graph import GraphEdge, GraphNode, GraphResponse
 from app.services.draft_overlay import DraftOverlayService
+from app.services.resource_validation import get_entity_categories
 
 
 class GraphQueryService:
@@ -911,9 +912,7 @@ class GraphQueryService:
             edges: list[GraphEdge] = []
 
             # Check if draft resource has categories
-            draft_categories = draft_match.get("categories") or []
-            if not draft_categories and draft_match.get("category"):
-                draft_categories = [draft_match["category"]]
+            draft_categories = get_entity_categories(draft_match)
 
             for draft_category_key in draft_categories:
                 cat_query = select(Category).where(Category.entity_key == draft_category_key)
@@ -1089,8 +1088,7 @@ class GraphQueryService:
                     )
 
         # Add draft-created categories (nodes only — edges computed later with full node set)
-        draft_cat_creates = await self.draft_overlay.get_draft_creates("category")
-        await self._add_draft_created_nodes("category", nodes)
+        draft_cat_creates = await self._add_draft_created_nodes("category", nodes)
 
         # Get all properties
         properties_query = select(Property)
@@ -1299,6 +1297,9 @@ class GraphQueryService:
 
         resource_keys = [r.entity_key for r in resources]
 
+        # Build node ID set for O(1) lookups in resource category edge emission
+        pre_resource_node_ids = {n.id for n in nodes}
+
         if resource_keys:
             for resource in resources:
                 effective = await self.draft_overlay.apply_overlay(
@@ -1319,7 +1320,7 @@ class GraphQueryService:
 
                 # Add edges: category -> resource (for each category in graph)
                 for cat_key in resource.category_keys:
-                    if any(n.id == cat_key for n in nodes):
+                    if cat_key in pre_resource_node_ids:
                         edges.append(
                             GraphEdge(
                                 source=cat_key,
@@ -1329,19 +1330,15 @@ class GraphQueryService:
                         )
 
         # Add draft-created resources (nodes + category edges)
-        draft_resource_creates = await self.draft_overlay.get_draft_creates("resource")
-        await self._add_draft_created_nodes("resource", nodes)
+        draft_resource_creates = await self._add_draft_created_nodes("resource", nodes)
         # Add category->resource edges for draft-created resources
-        existing_node_ids = {n.id for n in nodes}
         for draft_resource in draft_resource_creates:
             draft_key = draft_resource.get("entity_key")
             if not draft_key:
                 continue
-            draft_categories = draft_resource.get("categories") or []
-            if not draft_categories and draft_resource.get("category"):
-                draft_categories = [draft_resource["category"]]
+            draft_categories = get_entity_categories(draft_resource)
             for cat_key in draft_categories:
-                if cat_key in existing_node_ids:
+                if cat_key in pre_resource_node_ids:
                     edges.append(
                         GraphEdge(
                             source=cat_key,
@@ -1635,9 +1632,14 @@ class GraphQueryService:
         self,
         entity_type: str,
         nodes: list[GraphNode],
-    ) -> None:
-        """Append draft-created entities as 'added' nodes, skipping duplicates."""
-        draft_creates = await self.draft_overlay.get_draft_creates(entity_type)
+        draft_creates: list[dict] | None = None,
+    ) -> list[dict]:
+        """Append draft-created entities as 'added' nodes, skipping duplicates.
+
+        Returns the draft_creates list (fetched if not provided) for reuse.
+        """
+        if draft_creates is None:
+            draft_creates = await self.draft_overlay.get_draft_creates(entity_type)
         existing_ids = {n.id for n in nodes}
         for draft in draft_creates:
             draft_key = draft.get("entity_key")
@@ -1653,6 +1655,7 @@ class GraphQueryService:
                         change_status="added",
                     )
                 )
+        return draft_creates
 
     @staticmethod
     def _emit_diff_edges(

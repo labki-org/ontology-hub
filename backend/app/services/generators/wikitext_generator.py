@@ -12,6 +12,7 @@ import json
 from typing import Any
 
 from app.services.parsers.wikitext_parser import NAMESPACE_TO_ENTITY_TYPE, to_page_name
+from app.services.resource_validation import RESERVED_KEYS, get_entity_categories
 
 # Reverse mapping: entity type -> namespace constant
 ENTITY_TYPE_TO_NAMESPACE: dict[str, str] = {v: k for k, v in NAMESPACE_TO_ENTITY_TYPE.items()}
@@ -142,9 +143,8 @@ def generate_resource_wikitext(entity: dict[str, Any]) -> str:
         lines.append(f"[[Display label::{entity['label']}]]")
 
     # Dynamic property fields
-    metadata_keys = {"id", "label", "description", "category", "categories", "wikitext"}
     for key, value in entity.items():
-        if key in metadata_keys:
+        if key in RESERVED_KEYS:
             continue
         page_name = to_page_name(key)
         if isinstance(value, list):
@@ -156,11 +156,8 @@ def generate_resource_wikitext(entity: dict[str, Any]) -> str:
     lines.append("<!-- OntologySync End -->")
 
     # Category memberships (supports multiple)
-    for cat in entity.get("categories", []):
+    for cat in get_entity_categories(entity):
         lines.append(f"[[Category:{to_page_name(cat)}]]")
-    # Backwards compat: singular "category" field
-    if not entity.get("categories") and entity.get("category"):
-        lines.append(f"[[Category:{to_page_name(entity['category'])}]]")
     lines.append("[[Category:OntologySync-managed-resource]]")
 
     # Free-form body content

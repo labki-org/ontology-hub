@@ -60,6 +60,10 @@ from app.schemas.entity import (
     TemplateDetailResponse,
 )
 from app.services.draft_overlay import DraftContextDep
+from app.services.resource_validation import (
+    RESERVED_KEYS_WITH_INTERNAL,
+    get_entity_categories,
+)
 
 router = APIRouter(tags=["entities-v2"])
 
@@ -1260,7 +1264,7 @@ async def list_resources(
     # Include draft-created resources (filter by category if specified)
     draft_creates = await draft_ctx.get_draft_creates("resource")
     for create in draft_creates:
-        if category is None or category in (create.get("categories") or [create.get("category")]):
+        if category is None or category in get_entity_categories(create):
             items.append(EntityWithStatus.model_validate(create))
 
     items.sort(key=lambda x: x.entity_key)
@@ -1297,25 +1301,9 @@ async def get_resource(
         raise HTTPException(status_code=404, detail="Resource not found")
 
     # Extract dynamic fields (everything except reserved keys)
-    reserved_keys = {
-        "id",
-        "entity_key",
-        "label",
-        "description",
-        "category",
-        "categories",
-        "wikitext",
-        "source_path",
-        "_change_status",
-        "_deleted",
-        "_patch_error",
-    }
-    dynamic_fields = {k: v for k, v in effective.items() if k not in reserved_keys}
+    dynamic_fields = {k: v for k, v in effective.items() if k not in RESERVED_KEYS_WITH_INTERNAL}
 
-    # Support both "categories" (list) and legacy "category" (string)
-    categories = effective.get("categories", [])
-    if not categories and effective.get("category"):
-        categories = [effective["category"]]
+    categories = get_entity_categories(effective)
 
     return ResourceDetailResponse(
         entity_key=effective.get("entity_key", entity_key),
@@ -1374,8 +1362,7 @@ async def get_category_resources(
     # Include draft-created resources for this category
     draft_creates = await draft_ctx.get_draft_creates("resource")
     for create in draft_creates:
-        cats = create.get("categories") or [create.get("category")]
-        if entity_key in (cats or []):
+        if entity_key in get_entity_categories(create):
             items.append(EntityWithStatus.model_validate(create))
 
     items.sort(key=lambda x: x.entity_key)

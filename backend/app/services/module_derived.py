@@ -18,12 +18,15 @@ import uuid
 from copy import deepcopy
 from typing import Any
 
+import json
+
 import jsonpatch
 from sqlalchemy import text
 from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.models.v2 import Category, ChangeType, DraftChange, Property, Resource
+from app.services.resource_validation import get_entity_categories
 
 
 async def compute_module_derived_entities(
@@ -272,20 +275,22 @@ async def _get_category_resources(
     """
     resources: set[str] = set()
 
-    # Query all canonical resources and filter by category in Python
-    # (JSONB containment operators don't work across all DB backends)
-    query = select(Resource)
+    # Query canonical resources using JSONB containment (matches entities.py pattern)
+    query = (
+        select(Resource.entity_key)
+        .where(text("CAST(category_keys AS jsonb) @> CAST(:cats AS jsonb)"))
+        .params(cats=json.dumps([category_key]))
+    )
     result = await session.execute(query)
-    for resource in result.scalars().all():
-        if category_key in (resource.category_keys or []):
-            resources.add(resource.entity_key)
+    for row in result.all():
+        resources.add(row[0])
 
     # Include draft-created resources for this category
     for key, change in draft_changes.items():
         if key.startswith("resource:") and change.change_type == ChangeType.CREATE:
             replacement = change.replacement_json or {}
-            cats = replacement.get("categories") or [replacement.get("category")]
-            if category_key in (cats or []):
+            cats = get_entity_categories(replacement)
+            if category_key in cats:
                 resource_key = key.split(":", 1)[1]
                 resources.add(resource_key)
 

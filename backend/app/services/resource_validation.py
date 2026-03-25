@@ -28,6 +28,26 @@ RESERVED_KEYS = frozenset(
     }
 )
 
+# Extended reserved keys including internal overlay fields (for dynamic field extraction)
+RESERVED_KEYS_WITH_INTERNAL = RESERVED_KEYS | frozenset(
+    {"_change_status", "_deleted", "_patch_error"}
+)
+
+
+def get_entity_categories(data: dict) -> list[str]:
+    """Extract categories from an entity dict, handling legacy "category" fallback.
+
+    Supports both the new "categories" (list) format and the legacy "category"
+    (single string) format. Returns an empty list if neither is present.
+    """
+    categories = data.get("categories")
+    if categories:
+        return list(categories)
+    single = data.get("category")
+    if single:
+        return [single]
+    return []
+
 
 async def get_category_effective_properties(
     session: AsyncSession,
@@ -158,9 +178,7 @@ async def validate_resource_fields(
         Error message if validation fails, None if valid
     """
     # 1. Check categories field exists
-    categories = resource_json.get("categories") or []
-    if not categories and resource_json.get("category"):
-        categories = [resource_json["category"]]
+    categories = get_entity_categories(resource_json)
     if not categories:
         return "Resource requires at least one category"
 

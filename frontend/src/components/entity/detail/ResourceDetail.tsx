@@ -127,9 +127,11 @@ export function ResourceDetail({
     })),
   })
 
+  // Stabilize on actual data content, not the query array reference (useQueries returns new array each render)
   const mergedProperties = useMemo(
     () => mergePropertiesFromCategories(activeCategoryQueries),
-    [activeCategoryQueries]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeCategoryQueries.map((q) => q.data).join(',')]
   )
 
   const initializedEntityRef = useRef<string | null>(null)
