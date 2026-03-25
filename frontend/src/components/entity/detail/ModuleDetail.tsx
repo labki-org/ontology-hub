@@ -112,14 +112,9 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
     entityKey,
     debounceMs: 500,
     onSuccess: () => {
-      console.log('[ModuleDetail] onSuccess fired, refetching module...')
-      refetchModule().then((result) => {
-        const data = result.data as ModuleDetailV2 | undefined
-        console.log('[ModuleDetail] refetch complete:', {
-          categories: data?.entities?.category,
-          closure: data?.closure,
-          changeStatus: data?.change_status,
-        })
+      refetchModule().then((r) => {
+        const d = r.data as ModuleDetailV2 | undefined
+        console.log('[ModuleDetail] refetch result — closure:', d?.closure, 'categories:', d?.entities?.category)
       })
     },
   })

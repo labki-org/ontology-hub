@@ -24,6 +24,8 @@ export function useAutoSave({
   const queryClient = useQueryClient()
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const requestIdRef = useRef(0)
+  // Accumulate patches from multiple rapid changes so they're sent together
+  const pendingPatchesRef = useRef<Map<string, { op: string; path: string; value?: unknown }>>(new Map())
 
   const mutation = useMutation({
     mutationFn: (change: DraftChangeCreate) => addDraftChange(draftToken, change),
@@ -67,27 +69,34 @@ export function useAutoSave({
 
   const saveChange = useCallback(
     (patch: Array<{ op: string; path: string; value?: unknown }>) => {
-      // Cancel pending timeout
+      // Accumulate patches by path — later patches for the same path replace earlier ones
+      for (const op of patch) {
+        pendingPatchesRef.current.set(op.path, op)
+      }
+
+      // Cancel pending timeout (debounce)
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current)
       }
 
-      // Increment request ID for race condition handling
       const currentRequestId = ++requestIdRef.current
 
       timeoutRef.current = setTimeout(() => {
-        // Check if this is still the latest request
         if (currentRequestId !== requestIdRef.current) {
-          console.log('[useAutoSave] skipping stale request', currentRequestId, 'vs', requestIdRef.current)
           return // Stale request, skip
         }
 
-        console.log('[useAutoSave] mutating:', entityType, entityKey, 'patch:', JSON.stringify(patch).slice(0, 100))
+        // Flush all accumulated patches
+        const allPatches = Array.from(pendingPatchesRef.current.values())
+        pendingPatchesRef.current.clear()
+
+        if (allPatches.length === 0) return
+
         mutation.mutate({
           change_type: 'update',
           entity_type: entityType,
           entity_key: entityKey,
-          patch,
+          patch: allPatches,
         })
       }, debounceMs)
     },
