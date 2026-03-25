@@ -1341,7 +1341,9 @@ async def get_category_resources(
 
     # Query resources that include this category (ARRAY contains)
     query = (
-        select(Resource).where(Resource.category_keys.contains([entity_key])).order_by(Resource.entity_key)
+        select(Resource)
+        .where(Resource.category_keys.contains([entity_key]))
+        .order_by(Resource.entity_key)
     )
     result = await session.execute(query)
     resources = result.scalars().all()

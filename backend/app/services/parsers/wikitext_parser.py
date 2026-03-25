@@ -107,9 +107,7 @@ def _first(annotations: dict[str, list[str]], prop: str, default: str = "") -> s
     return values[0] if values else default
 
 
-def _all_stripped(
-    annotations: dict[str, list[str]], prop: str, ns: str
-) -> list[str]:
+def _all_stripped(annotations: dict[str, list[str]], prop: str, ns: str) -> list[str]:
     """Get all values for a property, stripping namespace prefix."""
     return [_strip_namespace(v, ns) for v in annotations.get(prop, [])]
 
@@ -159,9 +157,7 @@ def parse_property_wikitext(wikitext: str, entity_key: str) -> dict[str, Any]:
         "label": _first(ann, "Display label", to_page_name(entity_key)),
         "description": _first(ann, "Has description", ""),
         "datatype": _first(ann, "Has type", ""),
-        "cardinality": "multiple"
-        if _first(ann, "Allows multiple values") == "true"
-        else "single",
+        "cardinality": "multiple" if _first(ann, "Allows multiple values") == "true" else "single",
     }
 
     allowed_vals = ann.get("Allows value")
@@ -170,9 +166,7 @@ def parse_property_wikitext(wikitext: str, entity_key: str) -> dict[str, Any]:
 
     from_cat = _first(ann, "Allows value from category")
     if from_cat:
-        result["Allows_value_from_category"] = _strip_namespace(
-            from_cat, "Category"
-        )
+        result["Allows_value_from_category"] = _strip_namespace(from_cat, "Category")
 
     pattern = _first(ann, "Allows pattern")
     if pattern:
@@ -366,9 +360,7 @@ _WIKITEXT_PARSERS: dict[str, Any] = {
 }
 
 
-def parse_wikitext(
-    wikitext: str, entity_type: str, entity_key: str
-) -> dict[str, Any]:
+def parse_wikitext(wikitext: str, entity_type: str, entity_key: str) -> dict[str, Any]:
     """Parse a wikitext file into a structured dict, dispatching by entity type.
 
     For dashboards, use parse_dashboard_page() directly since they need

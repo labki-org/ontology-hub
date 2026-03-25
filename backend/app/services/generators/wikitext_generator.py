@@ -14,9 +14,7 @@ from typing import Any
 from app.services.parsers.wikitext_parser import NAMESPACE_TO_ENTITY_TYPE, to_page_name
 
 # Reverse mapping: entity type -> namespace constant
-ENTITY_TYPE_TO_NAMESPACE: dict[str, str] = {
-    v: k for k, v in NAMESPACE_TO_ENTITY_TYPE.items()
-}
+ENTITY_TYPE_TO_NAMESPACE: dict[str, str] = {v: k for k, v in NAMESPACE_TO_ENTITY_TYPE.items()}
 
 
 def _with_ns(entity_key: str, ns: str) -> str:
@@ -93,14 +91,10 @@ def generate_property_wikitext(entity: dict[str, Any]) -> str:
         lines.append("[[Has unique values::true]]")
 
     if entity.get("has_display_template"):
-        lines.append(
-            f"[[Has template::{_with_ns(entity['has_display_template'], 'Template')}]]"
-        )
+        lines.append(f"[[Has template::{_with_ns(entity['has_display_template'], 'Template')}]]")
 
     if entity.get("parent_property"):
-        lines.append(
-            f"[[Subproperty of::{_with_ns(entity['parent_property'], 'Property')}]]"
-        )
+        lines.append(f"[[Subproperty of::{_with_ns(entity['parent_property'], 'Property')}]]")
 
     lines.append("<!-- OntologySync End -->")
     lines.append("[[Category:OntologySync-managed-property]]")

@@ -987,9 +987,7 @@ class GraphQueryService:
                     parent_category, "category", cat_key
                 )
                 cat_change_status = cat_effective.get("_change_status") if cat_effective else None
-                cat_module_membership = await self._get_module_membership(
-                    [cat_key], "category"
-                )
+                cat_module_membership = await self._get_module_membership([cat_key], "category")
 
                 nodes_list.append(
                     GraphNode(
@@ -1070,16 +1068,15 @@ class GraphQueryService:
                 effective = category_overlays[cat.entity_key]
                 if effective:
                     for parent_key in effective.get("parents", []):
-                        if parent_key in category_keys or any(
-                            n.id == parent_key for n in nodes
-                        ):
+                        if parent_key in category_keys or any(n.id == parent_key for n in nodes):
                             effective_parent_edges.add((cat.entity_key, parent_key))
 
             for edge_pair in effective_parent_edges:
                 is_new = edge_pair not in canonical_parent_edges
                 edges.append(
                     GraphEdge(
-                        source=edge_pair[0], target=edge_pair[1],
+                        source=edge_pair[0],
+                        target=edge_pair[1],
                         edge_type="parent",
                         change_status="added" if is_new else None,
                     )
@@ -1090,7 +1087,8 @@ class GraphQueryService:
                 if edge_pair not in effective_parent_edges:
                     edges.append(
                         GraphEdge(
-                            source=edge_pair[0], target=edge_pair[1],
+                            source=edge_pair[0],
+                            target=edge_pair[1],
                             edge_type="parent",
                             change_status="deleted",
                         )
@@ -1146,9 +1144,8 @@ class GraphQueryService:
             for cat in categories:
                 effective = category_overlays[cat.entity_key]
                 if effective:
-                    for prop_key in (
-                        effective.get("required_properties", [])
-                        + effective.get("optional_properties", [])
+                    for prop_key in effective.get("required_properties", []) + effective.get(
+                        "optional_properties", []
                     ):
                         effective_prop_edges.add((cat.entity_key, prop_key))
 
@@ -1188,7 +1185,9 @@ class GraphQueryService:
         canonical_sub_edges: set[tuple[str, str]] = set()
         for cat in categories:
             canonical = cat.canonical_json or {}
-            for sub_key in canonical.get("optional_subobjects", []) + canonical.get("required_subobjects", []):
+            for sub_key in canonical.get("optional_subobjects", []) + canonical.get(
+                "required_subobjects", []
+            ):
                 if sub_key in subobject_keys:
                     canonical_sub_edges.add((cat.entity_key, sub_key))
 
@@ -1196,9 +1195,8 @@ class GraphQueryService:
         for cat in categories:
             effective = category_overlays[cat.entity_key]
             if effective:
-                for sub_key in (
-                    effective.get("required_subobjects", [])
-                    + effective.get("optional_subobjects", [])
+                for sub_key in effective.get("required_subobjects", []) + effective.get(
+                    "optional_subobjects", []
                 ):
                     effective_sub_edges.add((cat.entity_key, sub_key))
 
@@ -1367,30 +1365,40 @@ class GraphQueryService:
             # Parent edges
             for parent_key in draft_cat.get("parents", []):
                 if parent_key in all_node_ids:
-                    edges.append(GraphEdge(
-                        source=draft_key, target=parent_key,
-                        edge_type="parent", change_status="added",
-                    ))
+                    edges.append(
+                        GraphEdge(
+                            source=draft_key,
+                            target=parent_key,
+                            edge_type="parent",
+                            change_status="added",
+                        )
+                    )
             # Property edges
-            for prop_key in (
-                draft_cat.get("required_properties", [])
-                + draft_cat.get("optional_properties", [])
+            for prop_key in draft_cat.get("required_properties", []) + draft_cat.get(
+                "optional_properties", []
             ):
                 if prop_key in all_node_ids:
-                    edges.append(GraphEdge(
-                        source=draft_key, target=prop_key,
-                        edge_type="property", change_status="added",
-                    ))
+                    edges.append(
+                        GraphEdge(
+                            source=draft_key,
+                            target=prop_key,
+                            edge_type="property",
+                            change_status="added",
+                        )
+                    )
             # Subobject edges
-            for sub_key in (
-                draft_cat.get("required_subobjects", [])
-                + draft_cat.get("optional_subobjects", [])
+            for sub_key in draft_cat.get("required_subobjects", []) + draft_cat.get(
+                "optional_subobjects", []
             ):
                 if sub_key in all_node_ids:
-                    edges.append(GraphEdge(
-                        source=draft_key, target=sub_key,
-                        edge_type="subobject", change_status="added",
-                    ))
+                    edges.append(
+                        GraphEdge(
+                            source=draft_key,
+                            target=sub_key,
+                            edge_type="subobject",
+                            change_status="added",
+                        )
+                    )
 
         # Check for cycles in category hierarchy
         has_cycles = await self._check_cycles_in_subgraph(category_keys) if category_keys else False
@@ -1650,17 +1658,24 @@ class GraphQueryService:
         for source, target in effective:
             if target in all_node_ids:
                 is_new = (source, target) not in canonical
-                edges.append(GraphEdge(
-                    source=source, target=target,
-                    edge_type=edge_type,
-                    change_status="added" if is_new else None,
-                ))
+                edges.append(
+                    GraphEdge(
+                        source=source,
+                        target=target,
+                        edge_type=edge_type,
+                        change_status="added" if is_new else None,
+                    )
+                )
         for source, target in canonical:
             if (source, target) not in effective:
-                edges.append(GraphEdge(
-                    source=source, target=target,
-                    edge_type=edge_type, change_status="deleted",
-                ))
+                edges.append(
+                    GraphEdge(
+                        source=source,
+                        target=target,
+                        edge_type=edge_type,
+                        change_status="deleted",
+                    )
+                )
 
     async def _check_cycles_in_subgraph(
         self,

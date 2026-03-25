@@ -121,9 +121,7 @@ class IngestService:
                 entity_key = "/".join(parts[1:]).removesuffix(".wikitext")
 
                 try:
-                    raw = await self._github.get_file_content_raw(
-                        owner, repo, path, ref=ref
-                    )
+                    raw = await self._github.get_file_content_raw(owner, repo, path, ref=ref)
 
                     # Dashboards: assemble multi-page structure
                     if directory == "dashboards":
@@ -150,9 +148,7 @@ class IngestService:
                 if len(parts) != 2:
                     continue
                 try:
-                    content = await self._github.get_file_content(
-                        owner, repo, path, ref=ref
-                    )
+                    content = await self._github.get_file_content(owner, repo, path, ref=ref)
                     # Transform vocab.json into module dict format
                     module_dict = parse_module_vocab(content)
                     files[directory].append((path, module_dict))
@@ -164,9 +160,7 @@ class IngestService:
                 if len(parts) != 2:
                     continue
                 try:
-                    content = await self._github.get_file_content(
-                        owner, repo, path, ref=ref
-                    )
+                    content = await self._github.get_file_content(owner, repo, path, ref=ref)
                     files[directory].append((path, content))
                 except Exception as e:
                     self._warnings.append(f"Failed to load {path}: {e}")
@@ -176,9 +170,7 @@ class IngestService:
 
         return files
 
-    def _assemble_dashboards(
-        self, raw_pages: list[tuple[str, dict]]
-    ) -> list[tuple[str, dict]]:
+    def _assemble_dashboards(self, raw_pages: list[tuple[str, dict]]) -> list[tuple[str, dict]]:
         """Assemble dashboard pages into single dashboard entities.
 
         Multiple wikitext files (root + subpages) combine into one dashboard dict
