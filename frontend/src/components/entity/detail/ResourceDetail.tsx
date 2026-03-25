@@ -374,7 +374,7 @@ export function ResourceDetail({
               const value = editedDynamicFields[prop.entity_key]
               return (
                 <div key={prop.entity_key} className="space-y-1">
-                  <label className="text-xs font-semibold text-foreground/60 flex items-center gap-1.5">
+                  <label className="text-sm font-semibold text-foreground/70 flex items-center gap-1.5">
                     {prop.label}
                     {prop.is_required && (
                       <span className="text-red-500 text-xs">required</span>
