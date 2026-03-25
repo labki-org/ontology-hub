@@ -71,22 +71,18 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
   const { data, isLoading, error, isFetching } = useFullOntologyGraph(draftId)
 
   // Track previous data to keep showing graph while loading
-  /* eslint-disable react-hooks/refs -- Intentional pattern to preserve data during loading */
   const prevDataRef = useRef(data)
   if (data && !isFetching) {
     prevDataRef.current = data
   }
   const displayData = data ?? prevDataRef.current
-  /* eslint-enable react-hooks/refs */
 
   // Get hovered node for edge highlighting
   const hoveredNodeId = useGraphStore((s) => s.hoveredNodeId)
 
   // Convert API response to React Flow format
-  /* eslint-disable react-hooks/refs -- displayData derived from ref for loading state preservation */
   const { initialNodes, filteredEdges } = useMemo(() => {
     if (!displayData) return { initialNodes: [], filteredEdges: [] }
-    /* eslint-enable react-hooks/refs */
 
     // Convert nodes
     const nodes: Node[] = displayData.nodes.map((node: ApiGraphNode) => ({
@@ -111,8 +107,12 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
           ? edge.source === hoveredNodeId || edge.target === hoveredNodeId
           : false
 
+        const isAddedEdge = edge.change_status === 'added' || edge.change_status === 'modified'
+        const isDeletedEdge = edge.change_status === 'deleted'
+        const isDraftEdge = isAddedEdge || isDeletedEdge
+
         // Calculate opacity and stroke width based on hover state
-        let opacity = 0.7 // Default opacity
+        let opacity = 0.7
         let strokeWidth = 1.5
         if (hoveredNodeId) {
           if (isConnectedToHovered) {
@@ -123,26 +123,36 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
           }
         }
 
+        // Draft edges: green for added, red for deleted, animated
+        const edgeColor = isAddedEdge
+          ? '#22c55e'
+          : isDeletedEdge
+          ? '#ef4444'
+          : getEdgeColor(edge.edge_type)
+        const dasharray = isDraftEdge ? '6,4' : getEdgeStrokeDasharray(edge.edge_type)
+
         return {
           id: `e${index}-${edge.source}-${edge.target}`,
           source: edge.source,
           target: edge.target,
-          type: 'default', // 'default' is bezier curve in React Flow
+          type: 'default',
+          animated: isDraftEdge, // Animated moving dashes for draft edges
           markerEnd: {
             type: MarkerType.ArrowClosed,
             width: 15,
             height: 15,
-            color: getEdgeColor(edge.edge_type),
+            color: edgeColor,
           },
           style: {
-            stroke: getEdgeColor(edge.edge_type),
-            strokeWidth,
-            strokeDasharray: getEdgeStrokeDasharray(edge.edge_type),
-            opacity,
+            stroke: edgeColor,
+            strokeWidth: isDraftEdge ? 2 : strokeWidth,
+            strokeDasharray: dasharray,
+            opacity: isDeletedEdge ? 0.5 : opacity,
             transition: 'opacity 0.2s ease, stroke-width 0.2s ease',
           },
           data: {
             edge_type: edge.edge_type,
+            change_status: edge.change_status,
           },
         }
       })
@@ -209,7 +219,7 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
     const x = availableCenterX - nodeX * zoom
     const y = availableCenterY - nodeY * zoom
 
-    setViewport({ x, y, zoom }, { duration: animate ? 300 : 0 })
+    setViewport({ x, y, zoom }, { duration: animate ? 100 : 0 })
   }, [nodes, detailPanelOpen, viewport.zoom, setViewport])
 
   // Helper to fit entire graph with offset for detail panel
@@ -286,6 +296,7 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
     if (layoutInitializedRef.current && entityKey && isGraphSupported && nodes.length > 0) {
       centerOnNode(entityKey, true)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally re-center only when panel toggles
   }, [detailPanelOpen])
 
   // Sync graph data to store for change propagation tracking
@@ -296,7 +307,6 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
   }, [displayData, setGraphData])
 
   // Only show loading skeleton on initial load
-  // eslint-disable-next-line react-hooks/refs -- Intentional check for initial load state
   if (isLoading && !prevDataRef.current) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -392,6 +402,8 @@ function getEdgeColor(edgeType: string): string {
       return '#7c3aed' // violet-600 (more saturated)
     case 'subobject_property':
       return '#0d9488' // teal-600 (more saturated)
+    case 'template':
+      return '#f59e0b' // amber-500 - distinct from other edge types
     case 'module_dashboard':
       return '#dc2626' // red-600 - matches dashboard color
     case 'category_resource':
@@ -411,6 +423,8 @@ function getEdgeStrokeDasharray(edgeType: string): string | undefined {
       return '2,2' // dotted
     case 'subobject_property':
       return '5,5' // dashed (like property edges)
+    case 'template':
+      return '8,3' // long dash
     case 'module_dashboard':
       return '8,4' // long dash - distinct
     case 'category_resource':

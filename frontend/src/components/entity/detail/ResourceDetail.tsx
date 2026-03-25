@@ -1,13 +1,62 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react'
-import { useResource } from '@/api/entities'
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react'
+import { useQueries } from '@tanstack/react-query'
+import { useResource, useCategories } from '@/api/entities'
+import { apiFetch } from '@/api/client'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useGraphStore } from '@/stores/graphStore'
 import { AccordionSection } from '../sections/AccordionSection'
+import { EntityCombobox } from '../forms/EntityCombobox'
+import { RelationshipChips } from '../forms/RelationshipChips'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { VisualChangeMarker } from '../form/VisualChangeMarker'
-import type { ResourceDetailV2 } from '@/api/types'
+import type { ResourceDetailV2, CategoryDetailV2 } from '@/api/types'
+
+/** Merged property info from multiple categories */
+interface MergedProperty {
+  entity_key: string
+  label: string
+  is_required: boolean
+  source_categories: string[]
+}
+
+/**
+ * Merge properties from category detail queries into a deduplicated, sorted list.
+ * If a property appears in multiple categories, it is required if any category requires it.
+ */
+function mergePropertiesFromCategories(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- useQueries return type is complex
+  queries: ReturnType<typeof useQueries<any>>
+): MergedProperty[] {
+  const propMap = new Map<string, MergedProperty>()
+
+  for (const query of queries) {
+    const catDetail = query.data as CategoryDetailV2 | undefined
+    if (!catDetail?.properties) continue
+
+    for (const prop of catDetail.properties) {
+      const existing = propMap.get(prop.entity_key)
+      if (existing) {
+        if (prop.is_required) existing.is_required = true
+        existing.source_categories.push(catDetail.entity_key)
+      } else {
+        propMap.set(prop.entity_key, {
+          entity_key: prop.entity_key,
+          label: prop.label,
+          is_required: prop.is_required,
+          source_categories: [catDetail.entity_key],
+        })
+      }
+    }
+  }
+
+  return Array.from(propMap.values()).sort((a, b) => {
+    // Required first, then alphabetical
+    if (a.is_required !== b.is_required) return a.is_required ? -1 : 1
+    return a.label.localeCompare(b.label)
+  })
+}
 
 interface ResourceDetailProps {
   entityKey: string
@@ -18,7 +67,6 @@ interface ResourceDetailProps {
 
 /**
  * Format a dynamic field value for display.
- * Handles strings, numbers, arrays, objects, and null/undefined.
  */
 function formatValue(value: unknown): string | React.ReactNode {
   if (value === null || value === undefined) {
@@ -36,15 +84,6 @@ function formatValue(value: unknown): string | React.ReactNode {
   return String(value)
 }
 
-/**
- * Resource detail view with:
- * - Simple header (entity key + category link)
- * - Dynamic fields displayed in flat list
- * - Simple text input for field editing in draft mode
- *
- * Resources are data instances - they have an ID, category, and dynamic fields.
- * Unlike schema entities, they don't have label/description fields.
- */
 export function ResourceDetail({
   entityKey,
   draftId,
@@ -54,21 +93,49 @@ export function ResourceDetail({
   const { data, isLoading, error } = useResource(entityKey, draftId)
   const setSelectedEntity = useGraphStore((s) => s.setSelectedEntity)
 
-  // Cast to ResourceDetailV2
   const resource = data as ResourceDetailV2 | undefined
+
+  // Fetch available categories for the combobox
+  const { data: categoriesData } = useCategories(undefined, undefined, draftId)
+  const availableCategories = (categoriesData?.items || []).map((c) => ({
+    key: c.entity_key,
+    label: c.label,
+  }))
 
   // Track original values for change detection
   const [originalValues, setOriginalValues] = useState<{
+    category_keys?: string[]
     dynamic_fields?: Record<string, unknown>
+    wikitext?: string
   }>({})
 
-  // Local editable state - only dynamic fields (resources don't have label/description)
+  // Local editable state
+  const [editedCategories, setEditedCategories] = useState<string[]>([])
   const [editedDynamicFields, setEditedDynamicFields] = useState<Record<string, unknown>>({})
+  const editedDynamicFieldsRef = useRef<Record<string, unknown>>({})
+  useEffect(() => { editedDynamicFieldsRef.current = editedDynamicFields }, [editedDynamicFields])
+  const [editedWikitext, setEditedWikitext] = useState<string>('')
 
-  // Track which entity we've initialized original values for (prevent reset on refetch)
+  // Use edited categories in edit mode, canonical keys in read mode.
+  // Single useQueries call avoids redundant hook overhead and merge logic.
+  const activeCategoryKeys = isEditing ? editedCategories : (resource?.category_keys || [])
+  const activeCategoryQueries = useQueries({
+    queries: activeCategoryKeys.map((catKey) => ({
+      queryKey: ['v2', 'category', catKey, { draftId }],
+      queryFn: () => apiFetch(`/categories/${catKey}${draftId ? `?draft_id=${draftId}` : ''}`, { v2: true }) as Promise<CategoryDetailV2>,
+      enabled: !!catKey,
+    })),
+  })
+
+  // Stabilize on actual data content, not the query array reference (useQueries returns new array each render)
+  const mergedProperties = useMemo(
+    () => mergePropertiesFromCategories(activeCategoryQueries),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeCategoryQueries.map((q) => q.data).join(',')]
+  )
+
   const initializedEntityRef = useRef<string | null>(null)
 
-  // Auto-save hook
   const { saveChange, isSaving } = useAutoSave({
     draftToken: draftToken || '',
     entityType: 'resource',
@@ -76,49 +143,80 @@ export function ResourceDetail({
     debounceMs: 500,
   })
 
-  // Initialize state when resource loads for a new entity (not on refetch)
-  /* eslint-disable react-hooks/set-state-in-effect -- Valid sync with external data */
+  // Initialize state when resource loads for a new entity
   useEffect(() => {
     if (resource) {
       const isNewEntity = initializedEntityRef.current !== entityKey
 
-      // Only reset edited values and original values for a NEW entity
-      // (not on refetch after auto-save)
       if (isNewEntity) {
+        setEditedCategories(resource.category_keys || [])
         setEditedDynamicFields(resource.dynamic_fields || {})
+        setEditedWikitext(resource.wikitext || '')
 
         setOriginalValues({
+          category_keys: resource.category_keys || [],
           dynamic_fields: resource.dynamic_fields || {},
+          wikitext: resource.wikitext || '',
         })
 
         initializedEntityRef.current = entityKey
       }
     }
   }, [resource, entityKey])
-  /* eslint-enable react-hooks/set-state-in-effect */
 
-  // Change handler for dynamic fields - use 'add' instead of 'replace' for robustness
+  // Category change handlers
+  const handleAddCategory = useCallback(
+    (categoryKey: string) => {
+      const updated = [...editedCategories, categoryKey]
+      setEditedCategories(updated)
+      if (draftToken) {
+        saveChange([{ op: 'add', path: '/categories', value: updated }])
+      }
+    },
+    [draftToken, saveChange, editedCategories]
+  )
+
+  const handleRemoveCategory = useCallback(
+    (categoryKey: string) => {
+      const updated = editedCategories.filter((k) => k !== categoryKey)
+      setEditedCategories(updated)
+      if (draftToken) {
+        saveChange([{ op: 'add', path: '/categories', value: updated }])
+      }
+    },
+    [draftToken, saveChange, editedCategories]
+  )
+
+  // Dynamic field change handler
   const handleDynamicFieldChange = useCallback(
     (fieldKey: string, value: string) => {
-      setEditedDynamicFields((prev) => ({
-        ...prev,
-        [fieldKey]: value,
-      }))
+      const updatedFields = { ...editedDynamicFieldsRef.current, [fieldKey]: value }
+      setEditedDynamicFields(updatedFields)
       if (draftToken) {
-        // Update the dynamic_fields object with the new value
-        const updatedFields = { ...editedDynamicFields, [fieldKey]: value }
         saveChange([{ op: 'add', path: '/dynamic_fields', value: updatedFields }])
       }
     },
-    [draftToken, saveChange, editedDynamicFields]
+    [draftToken, saveChange]
+  )
+
+  // Wikitext change handler
+  const handleWikitextChange = useCallback(
+    (value: string) => {
+      setEditedWikitext(value)
+      if (draftToken) {
+        saveChange([{ op: 'add', path: '/wikitext', value }])
+      }
+    },
+    [draftToken, saveChange]
   )
 
   // Navigate to category detail
-  const handleCategoryClick = useCallback(() => {
-    if (resource?.category_key) {
-      setSelectedEntity(resource.category_key, 'category')
-    }
-  }, [resource, setSelectedEntity])
+  const handleCategoryClick = useCallback(
+    (categoryKey: string) => {
+      setSelectedEntity(categoryKey, 'category')
+    },
+    [setSelectedEntity]
+  )
 
   if (isLoading) {
     return (
@@ -141,42 +239,30 @@ export function ResourceDetail({
     )
   }
 
-  // Extract the resource ID from entity_key (format: "category/id")
   const resourceId = entityKey.includes('/') ? entityKey.split('/').pop() : entityKey
 
-  // Get dynamic field entries
-  const fieldEntries = Object.entries(editedDynamicFields)
-
-  // Check if a specific field was modified
   const isFieldModified = (fieldKey: string): boolean => {
     const original = originalValues.dynamic_fields?.[fieldKey]
     const current = editedDynamicFields[fieldKey]
     return JSON.stringify(original) !== JSON.stringify(current)
   }
 
-  // Change status badge
-  const statusBadge = resource.change_status && resource.change_status !== 'unchanged' && (
-    <Badge
-      variant={
-        resource.change_status === 'added'
-          ? 'default'
-          : resource.change_status === 'modified'
-          ? 'secondary'
-          : 'destructive'
-      }
-      className={
-        resource.change_status === 'added'
-          ? 'bg-green-500 hover:bg-green-600'
-          : resource.change_status === 'modified'
-          ? 'bg-yellow-500 hover:bg-yellow-600'
-          : ''
-      }
-    >
-      {resource.change_status === 'added'
-        ? '+ Added'
-        : resource.change_status === 'modified'
-        ? '~ Modified'
-        : '- Deleted'}
+  const areCategoriesModified =
+    JSON.stringify(editedCategories) !== JSON.stringify(originalValues.category_keys)
+
+  const statusConfig: Record<string, { variant: 'default' | 'secondary' | 'destructive'; className: string; label: string }> = {
+    added: { variant: 'default', className: 'bg-green-500 hover:bg-green-600', label: '+ Added' },
+    modified: { variant: 'secondary', className: 'bg-yellow-500 hover:bg-yellow-600', label: '~ Modified' },
+    deleted: { variant: 'destructive', className: '', label: '- Deleted' },
+  }
+
+  const status = resource.change_status && resource.change_status !== 'unchanged'
+    ? statusConfig[resource.change_status]
+    : null
+
+  const statusBadge = status && (
+    <Badge variant={status.variant} className={status.className}>
+      {status.label}
     </Badge>
   )
 
@@ -188,7 +274,7 @@ export function ResourceDetail({
         </div>
       )}
 
-      {/* Simple Header - Resources don't have label/description */}
+      {/* Header */}
       <div className="space-y-4">
         <div className="flex items-center gap-3">
           <Badge variant="outline" className="capitalize">
@@ -197,64 +283,160 @@ export function ResourceDetail({
           {statusBadge}
         </div>
 
-        {/* Resource ID as title */}
         <h2 className="text-2xl font-bold">{resourceId}</h2>
-
-        {/* Category Link - prominent placement */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Category:</span>
-          <button
-            onClick={handleCategoryClick}
-            className="text-primary hover:underline font-medium"
-          >
-            {resource.category_key}
-          </button>
-        </div>
       </div>
 
-      {/* Dynamic Fields Section */}
+      {/* Categories Section */}
+      <AccordionSection
+        id="categories"
+        title="Categories"
+        count={editedCategories.length}
+        defaultOpen
+      >
+        <VisualChangeMarker
+          status={areCategoriesModified ? 'modified' : 'unchanged'}
+          originalValue={originalValues.category_keys?.join(', ') ?? ''}
+        >
+          <div className="space-y-3">
+            {/* Category chips — clickable to navigate, removable in edit mode */}
+            <RelationshipChips
+              values={editedCategories}
+              onRemove={handleRemoveCategory}
+              disabled={!isEditing}
+              getLabel={(key) => {
+                const cat = availableCategories.find((c) => c.key === key)
+                return cat?.label || key
+              }}
+            />
+
+            {/* Empty state */}
+            {editedCategories.length === 0 && !isEditing && (
+              <p className="text-sm text-muted-foreground italic">
+                No categories assigned
+              </p>
+            )}
+
+            {/* Add category combobox in edit mode */}
+            {isEditing && (
+              <EntityCombobox
+                entityType="category"
+                availableEntities={availableCategories.filter(
+                  (c) => !editedCategories.includes(c.key)
+                )}
+                selectedKeys={[]}
+                onChange={(keys) => {
+                  if (keys.length > 0) {
+                    handleAddCategory(keys[0])
+                  }
+                }}
+                placeholder="Add category..."
+              />
+            )}
+
+            {/* Clickable links (read-only mode) */}
+            {!isEditing && editedCategories.length > 0 && (
+              <div className="flex gap-2 flex-wrap">
+                {editedCategories.map((catKey) => (
+                  <button
+                    key={catKey}
+                    onClick={() => handleCategoryClick(catKey)}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    View {catKey}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </VisualChangeMarker>
+      </AccordionSection>
+
+      {/* Properties Section — driven by category schema */}
       <AccordionSection
         id="fields"
         title="Properties"
-        count={fieldEntries.length}
+        count={mergedProperties.filter(
+          (p) => editedDynamicFields[p.entity_key] !== undefined && editedDynamicFields[p.entity_key] !== ''
+        ).length}
         defaultOpen
       >
-        {fieldEntries.length === 0 ? (
+        {mergedProperties.length === 0 ? (
           <p className="text-sm text-muted-foreground italic">
-            No properties defined
+            {editedCategories.length === 0
+              ? 'No categories assigned — add a category to see available properties'
+              : 'No properties defined for the selected categories'}
           </p>
         ) : (
           <div className="space-y-4">
-            {fieldEntries.map(([key, value]) => (
-              <div key={key} className="space-y-1">
-                <label className="text-sm font-medium text-muted-foreground">
-                  {key}
-                </label>
-                {isEditing ? (
+            {mergedProperties.map((prop) => {
+              const value = editedDynamicFields[prop.entity_key]
+              return (
+                <div key={prop.entity_key} className="space-y-1">
+                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+                    {prop.label}
+                    {prop.is_required && (
+                      <span className="text-red-500 text-xs">required</span>
+                    )}
+                    {prop.source_categories.length > 1 && (
+                      <span className="text-xs text-muted-foreground/60">
+                        (from {prop.source_categories.join(', ')})
+                      </span>
+                    )}
+                  </label>
                   <VisualChangeMarker
-                    status={isFieldModified(key) ? 'modified' : 'unchanged'}
-                    originalValue={String(originalValues.dynamic_fields?.[key] ?? '')}
+                    status={isFieldModified(prop.entity_key) ? 'modified' : 'unchanged'}
+                    originalValue={String(originalValues.dynamic_fields?.[prop.entity_key] ?? '')}
                   >
-                    <Input
-                      value={String(value ?? '')}
-                      onChange={(e) => handleDynamicFieldChange(key, e.target.value)}
-                      placeholder={`Enter ${key}...`}
-                    />
+                    {isEditing ? (
+                      <Input
+                        value={String(value ?? '')}
+                        onChange={(e) =>
+                          handleDynamicFieldChange(prop.entity_key, e.target.value)
+                        }
+                        placeholder={`Enter ${prop.label}...`}
+                      />
+                    ) : (
+                      <div className="text-sm py-2">
+                        {formatValue(value)}
+                      </div>
+                    )}
                   </VisualChangeMarker>
-                ) : (
-                  <VisualChangeMarker
-                    status={isFieldModified(key) ? 'modified' : 'unchanged'}
-                    originalValue={String(originalValues.dynamic_fields?.[key] ?? '')}
-                  >
-                    <div className="text-sm py-2">
-                      {formatValue(value)}
-                    </div>
-                  </VisualChangeMarker>
-                )}
-              </div>
-            ))}
+                </div>
+              )
+            })}
           </div>
         )}
+      </AccordionSection>
+
+      {/* Wikitext Body Content */}
+      <AccordionSection
+        id="wikitext"
+        title="Page Content"
+        count={editedWikitext ? 1 : 0}
+        defaultOpen={!!editedWikitext || isEditing}
+      >
+        <VisualChangeMarker
+          status={editedWikitext !== (originalValues.wikitext || '') ? 'modified' : 'unchanged'}
+          originalValue={originalValues.wikitext || ''}
+        >
+          {isEditing ? (
+            <textarea
+              value={editedWikitext}
+              onChange={(e) => handleWikitextChange(e.target.value)}
+              placeholder="Enter wikitext content for this resource page..."
+              className="w-full min-h-[200px] p-3 text-sm font-mono border rounded-md bg-background resize-y focus:outline-none focus:ring-2 focus:ring-ring"
+              spellCheck={false}
+            />
+          ) : editedWikitext ? (
+            <pre className="text-sm p-3 bg-muted rounded-md whitespace-pre-wrap font-mono overflow-x-auto">
+              {editedWikitext}
+            </pre>
+          ) : (
+            <p className="text-sm text-muted-foreground italic">
+              No page content defined
+            </p>
+          )}
+        </VisualChangeMarker>
       </AccordionSection>
     </div>
   )

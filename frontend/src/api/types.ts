@@ -60,6 +60,7 @@ export interface GraphEdge {
   source: string
   target: string
   edge_type: string
+  change_status?: 'added' | 'modified' | 'deleted' | 'unchanged' | null
 }
 
 export interface GraphResponse {
@@ -163,8 +164,9 @@ export interface ResourceDetailV2 {
   entity_key: string
   label: string
   description?: string | null
-  category_key: string
+  category_keys: string[]
   dynamic_fields: Record<string, unknown>
+  wikitext?: string
   change_status?: 'added' | 'modified' | 'deleted' | 'unchanged'
   deleted?: boolean
 }

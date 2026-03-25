@@ -24,6 +24,7 @@ from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.models.v2 import Category, ChangeType, DraftChange, Property, Resource
+from app.services.resource_validation import get_entity_categories
 
 
 async def compute_module_derived_entities(
@@ -272,19 +273,20 @@ async def _get_category_resources(
     """
     resources: set[str] = set()
 
-    # Query canonical resources
-    query = select(Resource.entity_key).where(Resource.category_key == category_key)
+    # Select only the columns we need (avoids loading full canonical_json blobs).
+    # Uses Python filtering for SQLite compatibility in tests.
+    query = select(Resource.entity_key, Resource.category_keys)
     result = await session.execute(query)
-    for row in result.fetchall():
-        resources.add(row[0])
+    for row in result.all():
+        if category_key in (row[1] or []):
+            resources.add(row[0])
 
     # Include draft-created resources for this category
     for key, change in draft_changes.items():
         if key.startswith("resource:") and change.change_type == ChangeType.CREATE:
             replacement = change.replacement_json or {}
-            # Resources store category_key in the "category" field of canonical_json
-            # or directly in the resource model's category_key field
-            if replacement.get("category") == category_key:
+            cats = get_entity_categories(replacement)
+            if category_key in cats:
                 resource_key = key.split(":", 1)[1]
                 resources.add(resource_key)
 

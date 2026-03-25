@@ -36,20 +36,26 @@ from app.models.v2 import (
 )
 from app.services.github import GitHubClient
 from app.services.parsers import EntityParser, ParsedEntities, PendingRelationship
-from app.services.validators import SchemaValidator
+from app.services.parsers.wikitext_parser import (
+    parse_module_vocab,
+    parse_wikitext,
+)
 
 logger = logging.getLogger(__name__)
 
-# Entity directories and their schema file paths
-ENTITY_DIRECTORIES = {
-    "categories": "categories/_schema.json",
-    "properties": "properties/_schema.json",
-    "subobjects": "subobjects/_schema.json",
-    "modules": "modules/_schema.json",
-    "bundles": "bundles/_schema.json",
-    "templates": "templates/_schema.json",
-    "dashboards": "dashboards/_schema.json",
-    "resources": "resources/_schema.json",
+# Entity directories and their file types
+# "wikitext" = .wikitext files parsed via wikitext_parser
+# "vocab.json" = .vocab.json files parsed as JSON with module metadata
+# "json" = plain .json files (bundles)
+ENTITY_DIRECTORIES: dict[str, str] = {
+    "categories": "wikitext",
+    "properties": "wikitext",
+    "subobjects": "wikitext",
+    "modules": "vocab.json",
+    "bundles": "json",
+    "templates": "wikitext",
+    "dashboards": "wikitext",
+    "resources": "wikitext",
 }
 
 
@@ -66,34 +72,21 @@ class IngestService:
         self._warnings: list[str] = []
         self._errors: list[str] = []
 
-    async def load_schemas(
-        self,
-        owner: str,
-        repo: str,
-        ref: str,
-    ) -> dict[str, dict]:
-        """Load all _schema.json files from repo."""
-        schemas = {}
-        for entity_type, path in ENTITY_DIRECTORIES.items():
-            try:
-                content = await self._github.get_file_content(owner, repo, path, ref=ref)
-                schemas[entity_type] = content
-            except Exception as e:
-                self._warnings.append(f"Schema not found: {path} - {e}")
-        return schemas
-
     async def load_entity_files(
         self,
         owner: str,
         repo: str,
         ref: str,
     ) -> dict[str, list[tuple[str, dict]]]:
-        """Load all entity JSON files from repo.
+        """Load all entity files from repo (.wikitext, .vocab.json, .json).
+
+        Wikitext files are parsed into structured dicts via wikitext_parser.
+        Module vocab.json files are parsed for module metadata.
+        Bundle .json files are loaded as-is.
 
         Returns:
-            {entity_type: [(source_path, content), ...]}
+            {entity_type: [(source_path, content_dict), ...]}
         """
-        # Get repository tree
         tree_entries = await self._github.get_repository_tree(owner, repo, ref)
 
         files: dict[str, list[tuple[str, dict]]] = {key: [] for key in ENTITY_DIRECTORIES}
@@ -102,35 +95,116 @@ class IngestService:
             path = entry.get("path", "")
             parts = path.split("/")
 
-            # Need at least directory/filename
             if len(parts) < 2:
                 continue
 
             directory = parts[0]
             filename = parts[-1]
 
-            # Skip _schema.json files
-            if filename == "_schema.json":
-                continue
-
-            # Skip non-entity directories
             if directory not in files:
                 continue
 
-            # Only process files directly in entity directories (e.g., "bundles/Default.json")
-            # Skip nested files like "bundles/Default/versions/1.0.0.json"
-            # Exception: templates and resources allow nested paths
-            # (e.g., templates/Property/Page.json, resources/Person/John_doe.json)
-            if len(parts) != 2 and directory not in ("templates", "resources"):
-                continue
+            file_type = ENTITY_DIRECTORIES.get(directory)
 
-            try:
-                content = await self._github.get_file_content(owner, repo, path, ref=ref)
-                files[directory].append((path, content))
-            except Exception as e:
-                self._warnings.append(f"Failed to load {path}: {e}")
+            # ── Wikitext entities ──
+            if file_type == "wikitext" and filename.endswith(".wikitext"):
+                # Allow nested paths for templates, resources, dashboards
+                # e.g. templates/Property/Page.wikitext, dashboards/Core_overview/Setup.wikitext
+                if len(parts) != 2 and directory not in (
+                    "templates",
+                    "resources",
+                    "dashboards",
+                ):
+                    continue
+
+                # Derive entity key from path
+                entity_key = "/".join(parts[1:]).removesuffix(".wikitext")
+
+                try:
+                    raw = await self._github.get_file_content_raw(owner, repo, path, ref=ref)
+
+                    # Dashboards: assemble multi-page structure
+                    if directory == "dashboards":
+                        # For dashboards, we assemble pages into a single entity later
+                        # Store raw wikitext with a special marker for post-processing
+                        page_name = entity_key.split("/", 1)[1] if "/" in entity_key else ""
+                        dashboard_id = entity_key.split("/")[0]
+                        content = {
+                            "_dashboard_id": dashboard_id,
+                            "_page_name": page_name,
+                            "_wikitext": raw,
+                        }
+                        files[directory].append((path, content))
+                        continue
+
+                    # Parse wikitext to structured dict
+                    content = parse_wikitext(raw, directory, entity_key)
+                    files[directory].append((path, content))
+                except Exception as e:
+                    self._warnings.append(f"Failed to load {path}: {e}")
+
+            # ── Module vocab.json ──
+            elif file_type == "vocab.json" and filename.endswith(".vocab.json"):
+                if len(parts) != 2:
+                    continue
+                try:
+                    content = await self._github.get_file_content(owner, repo, path, ref=ref)
+                    # Transform vocab.json into module dict format
+                    module_dict = parse_module_vocab(content)
+                    files[directory].append((path, module_dict))
+                except Exception as e:
+                    self._warnings.append(f"Failed to load {path}: {e}")
+
+            # ── Bundle JSON ──
+            elif file_type == "json" and filename.endswith(".json"):
+                if len(parts) != 2:
+                    continue
+                try:
+                    content = await self._github.get_file_content(owner, repo, path, ref=ref)
+                    files[directory].append((path, content))
+                except Exception as e:
+                    self._warnings.append(f"Failed to load {path}: {e}")
+
+        # Post-process dashboards: assemble multi-page structures
+        files["dashboards"] = self._assemble_dashboards(files["dashboards"])
 
         return files
+
+    def _assemble_dashboards(self, raw_pages: list[tuple[str, dict]]) -> list[tuple[str, dict]]:
+        """Assemble dashboard pages into single dashboard entities.
+
+        Multiple wikitext files (root + subpages) combine into one dashboard dict
+        with a 'pages' array matching the old JSON format.
+        """
+        # Group pages by dashboard ID
+        by_dashboard: dict[str, list[tuple[str, dict]]] = {}
+        for path, page_data in raw_pages:
+            dashboard_id = page_data["_dashboard_id"]
+            by_dashboard.setdefault(dashboard_id, []).append((path, page_data))
+
+        result: list[tuple[str, dict]] = []
+        for dashboard_id, pages_data in by_dashboard.items():
+            pages = []
+            source_path = ""
+            for path, page_data in pages_data:
+                page_name = page_data["_page_name"]
+                wikitext = page_data["_wikitext"]
+                pages.append({"name": page_name, "wikitext": wikitext.rstrip()})
+                if page_name == "":
+                    source_path = path  # Use root page path as source
+
+            # Sort: root page first, then subpages alphabetically
+            pages.sort(key=lambda p: (p["name"] != "", p["name"]))
+
+            dashboard_dict = {
+                "id": dashboard_id,
+                "label": dashboard_id.replace("_", " "),
+                "description": "",
+                "pages": pages,
+            }
+            result.append((source_path or f"dashboards/{dashboard_id}.wikitext", dashboard_dict))
+
+        return result
 
     async def delete_all_canonical(self) -> None:
         """Delete all canonical data in correct FK order."""
@@ -379,23 +453,19 @@ async def sync_repository_v2(
     commit_sha = await github_client.get_latest_commit_sha(owner, repo)
     logger.info("Syncing to commit %s", commit_sha)
 
-    # 2. Load schema files
-    schemas = await service.load_schemas(owner, repo, commit_sha)
-    logger.info("Loaded %d schema files", len(schemas))
-
-    # 3. Load entity files
+    # 2. Load entity files (wikitext + vocab.json + json)
     entity_files = await service.load_entity_files(owner, repo, commit_sha)
     total_files = sum(len(files) for files in entity_files.values())
     logger.info("Loaded %d entity files", total_files)
 
-    # 4. Validate all files against schemas
-    validator = SchemaValidator(schemas)
-    validation_errors = validator.validate_all(
-        {
-            entity_type: [(path, content) for path, content in files]
-            for entity_type, files in entity_files.items()
-        }
-    )
+    # 3. Validate parsed entities (basic structural checks)
+    # Wikitext files are already parsed into structured dicts by the loader.
+    # JSON Schema validation is no longer needed since the source format is wikitext.
+    validation_errors: list[str] = []
+    for _entity_type, files_list in entity_files.items():
+        for path, content in files_list:
+            if not content.get("id"):
+                validation_errors.append(f"{path}: missing 'id' field")
 
     if validation_errors:
         # Log errors and abort - don't ingest invalid data

@@ -6,6 +6,8 @@ import {
   useProperties,
   useSubobjects,
   useTemplates,
+  useDashboards,
+  useResources,
 } from '@/api/entities'
 import type { ModuleDetailV2 } from '@/api/types'
 import { useAutoSave } from '@/hooks/useAutoSave'
@@ -39,12 +41,14 @@ interface ModuleDetailProps {
  * what the categories require.
  */
 export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: ModuleDetailProps) {
-  const { data: module, isLoading, error } = useModule(entityKey, draftId)
+  const { data: module, isLoading, error, refetch: refetchModule } = useModule(entityKey, draftId)
   const { data: modulesData } = useModules(undefined, undefined, draftId)
   const { data: categoriesData } = useCategories(undefined, undefined, draftId)
   const { data: propertiesData } = useProperties(undefined, undefined, draftId)
   const { data: subobjectsData } = useSubobjects(undefined, undefined, draftId)
   const { data: templatesData } = useTemplates(undefined, undefined, draftId)
+  const { data: dashboardsData } = useDashboards(undefined, undefined, draftId)
+  const { data: resourcesData } = useResources(undefined, undefined, draftId)
 
   const setSelectedEntity = useGraphStore((s) => s.setSelectedEntity)
   const openNestedCreateModal = useDraftStore((s) => s.openNestedCreateModal)
@@ -73,6 +77,14 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
     key: t.entity_key,
     label: t.label,
   }))
+  const availableDashboards = (dashboardsData?.items || []).map((d) => ({
+    key: d.entity_key,
+    label: d.label,
+  }))
+  const availableResources = (resourcesData?.items || []).map((r) => ({
+    key: r.entity_key,
+    label: r.label,
+  }))
 
   // Track original values for change detection
   const [originalValues, setOriginalValues] = useState<{
@@ -80,23 +92,26 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
     description?: string
     categories?: string[]
     dependencies?: string[]
+    dashboards?: string[]
   }>({})
 
-  // Local editable state - only categories and dependencies are editable
+  // Local editable state
   const [editedLabel, setEditedLabel] = useState('')
   const [editedDescription, setEditedDescription] = useState('')
   const [editedCategories, setEditedCategories] = useState<string[]>([])
   const [editedDependencies, setEditedDependencies] = useState<string[]>([])
+  const [editedDashboards, setEditedDashboards] = useState<string[]>([])
 
   // Track which entity we've initialized original values for (prevent reset on refetch)
   const initializedEntityRef = useRef<string | null>(null)
 
-  // Auto-save hook
+  // Auto-save hook — refetch module detail after save to update closure and derived entities
   const { saveChange, isSaving } = useAutoSave({
     draftToken: draftToken || '',
     entityType: 'module',
     entityKey,
     debounceMs: 500,
+    onSuccess: () => void refetchModule(),
   })
 
   // Type assertion since useModule returns EntityWithStatus | ModuleDetailV2
@@ -109,16 +124,19 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
     if (moduleDetail && initializedEntityRef.current !== entityKey) {
       const categories = moduleDetail.entities?.category || []
       const dependencies = moduleDetail.dependencies || []
+      const dashboards = moduleDetail.entities?.dashboard || []
 
       setEditedLabel(moduleDetail.label)
       setEditedDescription(moduleDetail.description || '')
       setEditedCategories(categories)
       setEditedDependencies(dependencies)
+      setEditedDashboards(dashboards)
       setOriginalValues({
         label: moduleDetail.label,
         description: moduleDetail.description || '',
         categories,
         dependencies,
+        dashboards,
       })
 
       initializedEntityRef.current = entityKey
@@ -193,6 +211,28 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
     [editedDependencies, draftToken, saveChange]
   )
 
+  const handleAddDashboard = useCallback(
+    (dashboardKey: string) => {
+      const newDashboards = [...editedDashboards, dashboardKey]
+      setEditedDashboards(newDashboards)
+      if (draftToken) {
+        saveChange([{ op: 'add', path: '/dashboards', value: newDashboards }])
+      }
+    },
+    [editedDashboards, draftToken, saveChange]
+  )
+
+  const handleRemoveDashboard = useCallback(
+    (dashboardKey: string) => {
+      const newDashboards = editedDashboards.filter((k) => k !== dashboardKey)
+      setEditedDashboards(newDashboards)
+      if (draftToken) {
+        saveChange([{ op: 'add', path: '/dashboards', value: newDashboards }])
+      }
+    },
+    [editedDashboards, draftToken, saveChange]
+  )
+
   if (isLoading) {
     return (
       <div className="p-6 space-y-4">
@@ -231,7 +271,8 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
   const derivedProperties = moduleDetail.entities?.property || []
   const derivedSubobjects = moduleDetail.entities?.subobject || []
   const derivedTemplates = moduleDetail.entities?.template || []
-  const totalDerived = derivedProperties.length + derivedSubobjects.length + derivedTemplates.length
+  const derivedResources = moduleDetail.entities?.resource || []
+  const totalDerived = derivedProperties.length + derivedSubobjects.length + derivedTemplates.length + derivedResources.length
 
   // Check for modifications
   const isCategoriesModified =
@@ -240,6 +281,9 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
   const isDependenciesModified =
     JSON.stringify(editedDependencies.sort()) !==
     JSON.stringify((originalValues.dependencies || []).sort())
+  const isDashboardsModified =
+    JSON.stringify(editedDashboards.sort()) !==
+    JSON.stringify((originalValues.dashboards || []).sort())
 
   // Helper to render a clickable entity chip
   const renderEntityChip = (key: string, type: string, label?: string) => (
@@ -415,6 +459,51 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
         </div>
       </AccordionSection>
 
+      {/* Dashboards (manually added) */}
+      <AccordionSection
+        id="dashboards"
+        title="Dashboards"
+        count={editedDashboards.length}
+      >
+        <div className="space-y-3">
+          {isDashboardsModified && (
+            <Badge variant="secondary" className="text-xs bg-yellow-500/10 text-yellow-700 border-yellow-300">
+              Modified
+            </Badge>
+          )}
+          <p className="text-sm text-muted-foreground">
+            Documentation and overview pages included in this module
+          </p>
+
+          <RelationshipChips
+            values={editedDashboards}
+            onRemove={handleRemoveDashboard}
+            disabled={!isEditing}
+            getLabel={(key) => getLabel(key, availableDashboards)}
+          />
+
+          {editedDashboards.length === 0 && !isEditing && (
+            <p className="text-sm text-muted-foreground italic">No dashboards</p>
+          )}
+
+          {isEditing && (
+            <EntityCombobox
+              entityType="category"
+              availableEntities={availableDashboards.filter(
+                (d) => !editedDashboards.includes(d.key)
+              )}
+              selectedKeys={[]}
+              onChange={(keys) => {
+                if (keys.length > 0) {
+                  handleAddDashboard(keys[0])
+                }
+              }}
+              placeholder="Add dashboard..."
+            />
+          )}
+        </div>
+      </AccordionSection>
+
       {/* Auto-included Entities (Derived - Read Only) */}
       <AccordionSection
         id="derived"
@@ -494,6 +583,25 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
               <p className="text-sm text-muted-foreground italic pl-4">No templates</p>
             )}
           </div>
+
+          {/* Resources */}
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              Resources
+              <Badge variant="secondary" className="text-xs">
+                {derivedResources.length}
+              </Badge>
+            </h4>
+            {derivedResources.length > 0 ? (
+              <div className="flex flex-wrap gap-1 pl-4">
+                {derivedResources.map((key) =>
+                  renderEntityChip(key, 'resource', getLabel(key, availableResources))
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground italic pl-4">No resources</p>
+            )}
+          </div>
         </div>
       </AccordionSection>
 
@@ -502,7 +610,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
         id="closure"
         title="Category Closure"
         count={moduleDetail.closure?.length || 0}
-        defaultOpen={false}
+        defaultOpen={true}
       >
         <div className="space-y-2">
           <p className="text-sm text-muted-foreground">

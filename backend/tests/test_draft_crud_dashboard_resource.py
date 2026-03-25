@@ -131,7 +131,7 @@ async def seeded_resource(test_session: AsyncSession, seeded_category: Category)
         source_path="resources/Equipment/Lab_Microscope.json",
         label="Lab Microscope",
         description="A test resource",
-        category_key="Equipment",
+        category_keys=["Equipment"],
         canonical_json={
             "id": "Lab_Microscope",
             "label": "Lab Microscope",

@@ -311,18 +311,19 @@ export function Sidebar() {
       let entityKey = data.id as string
 
       if (createModalEntityType === 'resource') {
-        const { category_key, dynamic_fields, ...rest } = data as {
-          category_key?: string
+        const { category_keys, dynamic_fields, ...rest } = data as {
+          category_keys?: string[]
           dynamic_fields?: Record<string, string>
           [key: string]: unknown
         }
         transformedData = {
           ...rest,
-          category: category_key,
+          categories: category_keys || [],
           ...(dynamic_fields || {}),
         }
-        // Resource entity_key is "{category}/{id}"
-        entityKey = `${category_key}/${data.id}`
+        // Resource entity_key is "{primaryCategory}/{id}"
+        const primaryCategory = category_keys?.[0] || ''
+        entityKey = `${primaryCategory}/${data.id}`
       }
 
       await createEntity.mutateAsync({
