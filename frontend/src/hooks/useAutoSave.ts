@@ -24,8 +24,8 @@ export function useAutoSave({
   const queryClient = useQueryClient()
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const requestIdRef = useRef(0)
-  // Accumulate patches from multiple rapid changes so they're sent together
   const pendingPatchesRef = useRef<Map<string, { op: string; path: string; value?: unknown }>>(new Map())
+  const mutationRef = useRef<ReturnType<typeof useMutation<unknown, Error, DraftChangeCreate>>>()
 
   const mutation = useMutation({
     mutationFn: (change: DraftChangeCreate) => addDraftChange(draftToken, change),
@@ -67,6 +67,9 @@ export function useAutoSave({
     },
   })
 
+  // Keep mutation ref current so the timeout closure always uses the latest
+  mutationRef.current = mutation
+
   const saveChange = useCallback(
     (patch: Array<{ op: string; path: string; value?: unknown }>) => {
       // Accumulate patches by path — later patches for the same path replace earlier ones
@@ -79,20 +82,14 @@ export function useAutoSave({
         clearTimeout(timeoutRef.current)
       }
 
-      const currentRequestId = ++requestIdRef.current
-
       timeoutRef.current = setTimeout(() => {
-        if (currentRequestId !== requestIdRef.current) {
-          return // Stale request, skip
-        }
-
         // Flush all accumulated patches
         const allPatches = Array.from(pendingPatchesRef.current.values())
         pendingPatchesRef.current.clear()
 
         if (allPatches.length === 0) return
 
-        mutation.mutate({
+        mutationRef.current?.mutate({
           change_type: 'update',
           entity_type: entityType,
           entity_key: entityKey,
@@ -100,7 +97,7 @@ export function useAutoSave({
         })
       }, debounceMs)
     },
-    [mutation, entityType, entityKey, debounceMs]
+    [entityType, entityKey, debounceMs]
   )
 
   // Cleanup on unmount
