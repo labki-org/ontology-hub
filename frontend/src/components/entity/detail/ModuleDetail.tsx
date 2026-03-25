@@ -41,7 +41,7 @@ interface ModuleDetailProps {
  * what the categories require.
  */
 export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: ModuleDetailProps) {
-  const { data: module, isLoading, error } = useModule(entityKey, draftId)
+  const { data: module, isLoading, error, refetch: refetchModule } = useModule(entityKey, draftId)
   const { data: modulesData } = useModules(undefined, undefined, draftId)
   const { data: categoriesData } = useCategories(undefined, undefined, draftId)
   const { data: propertiesData } = useProperties(undefined, undefined, draftId)
@@ -105,12 +105,16 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
   // Track which entity we've initialized original values for (prevent reset on refetch)
   const initializedEntityRef = useRef<string | null>(null)
 
-  // Auto-save hook
+  // Auto-save hook — refetch module detail after save to update closure and derived entities
   const { saveChange, isSaving } = useAutoSave({
     draftToken: draftToken || '',
     entityType: 'module',
     entityKey,
     debounceMs: 500,
+    onSuccess: () => {
+      // Explicit refetch to pick up server-computed closure and auto-derived entities
+      setTimeout(() => refetchModule(), 100)
+    },
   })
 
   // Type assertion since useModule returns EntityWithStatus | ModuleDetailV2

@@ -16,6 +16,10 @@ computation. When draft_id is provided, entities include change_status
 metadata (added/modified/deleted/unchanged).
 """
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 from fastapi import APIRouter, HTTPException, Query, Request
 from sqlalchemy import text
 from sqlmodel import col, select
@@ -826,6 +830,14 @@ async def get_module(
         for key in ("categories", "properties", "subobjects", "templates", "dashboards", "resources")
     )
 
+    logger.info(
+        "Module %s: change_status=%s, has_draft_entities=%s, effective_keys=%s",
+        entity_key,
+        change_status,
+        has_draft_entities,
+        list(effective.keys()) if effective else [],
+    )
+
     if has_draft_entities:
         # Use entity arrays from effective JSON (draft changes take precedence)
         # Convert from canonical_json format (categories/properties/etc) to API format (entities object)
@@ -844,6 +856,7 @@ async def get_module(
             entities["resource"] = effective.get("resources", [])
 
         # Compute closure using draft-modified categories
+        logger.info("Module %s: direct_category_keys=%s", entity_key, direct_category_keys)
         closure = (
             await compute_module_closure(session, direct_category_keys)
             if direct_category_keys

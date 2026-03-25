@@ -120,7 +120,6 @@ export function useModule(entityKey: string, draftId?: string) {
     queryKey: ['v2', 'module', entityKey, { draftId }],
     queryFn: () => fetchEntityV2('modules', entityKey, draftId),
     enabled: !!entityKey,
-    gcTime: 0, // Don't cache — always fetch fresh from server
   })
 }
 
