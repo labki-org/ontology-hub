@@ -24,7 +24,7 @@ export function useAutoSave({
   const queryClient = useQueryClient()
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const pendingPatchesRef = useRef<Map<string, { op: string; path: string; value?: unknown }>>(new Map())
-  const mutationRef = useRef<{ mutate: (change: DraftChangeCreate) => void }>()
+  const mutationRef = useRef<{ mutate: (change: DraftChangeCreate) => void } | null>(null)
   // Serialize mutations: queue patches while one is in-flight
   const [inFlight, setInFlight] = useState(false)
   const inFlightRef = useRef(false)
