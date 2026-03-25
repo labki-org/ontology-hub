@@ -1,4 +1,4 @@
-import { useCallback, useRef, useEffect } from 'react'
+import { useCallback, useRef, useEffect, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { addDraftChange, type DraftChangeCreate } from '@/api/drafts'
 import { useDraftStore } from '@/stores/draftStore'
@@ -26,6 +26,7 @@ export function useAutoSave({
   const pendingPatchesRef = useRef<Map<string, { op: string; path: string; value?: unknown }>>(new Map())
   const mutationRef = useRef<ReturnType<typeof useMutation<unknown, Error, DraftChangeCreate>>>()
   // Serialize mutations: queue patches while one is in-flight
+  const [inFlight, setInFlight] = useState(false)
   const inFlightRef = useRef(false)
   const queuedPatchesRef = useRef<Map<string, { op: string; path: string; value?: unknown }>>(new Map())
   // Promise resolver for flush() callers waiting for save to complete
@@ -34,7 +35,7 @@ export function useAutoSave({
   const doMutate = useCallback(
     (patches: Array<{ op: string; path: string; value?: unknown }>) => {
       if (patches.length === 0) return
-      inFlightRef.current = true
+      inFlightRef.current = true; setInFlight(true)
       mutationRef.current?.mutate({
         change_type: 'update',
         entity_type: entityType,
@@ -46,7 +47,7 @@ export function useAutoSave({
   )
 
   const handleSettled = useCallback(() => {
-    inFlightRef.current = false
+    inFlightRef.current = false; setInFlight(false)
 
     // Flush queued patches that accumulated while in-flight
     if (queuedPatchesRef.current.size > 0) {
@@ -94,7 +95,7 @@ export function useAutoSave({
   })
 
   // Keep mutation ref current so closures always use the latest
-  mutationRef.current = mutation
+  useEffect(() => { mutationRef.current = mutation })
 
   const saveChange = useCallback(
     (patch: Array<{ op: string; path: string; value?: unknown }>) => {
@@ -171,7 +172,7 @@ export function useAutoSave({
   return {
     saveChange,
     flush,
-    isSaving: mutation.isPending || inFlightRef.current,
+    isSaving: mutation.isPending || inFlight,
     error: mutation.error,
   }
 }

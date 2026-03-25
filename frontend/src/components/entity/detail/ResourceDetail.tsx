@@ -113,7 +113,7 @@ export function ResourceDetail({
   const [editedCategories, setEditedCategories] = useState<string[]>([])
   const [editedDynamicFields, setEditedDynamicFields] = useState<Record<string, unknown>>({})
   const editedDynamicFieldsRef = useRef<Record<string, unknown>>({})
-  editedDynamicFieldsRef.current = editedDynamicFields
+  useEffect(() => { editedDynamicFieldsRef.current = editedDynamicFields }, [editedDynamicFields])
   const [editedWikitext, setEditedWikitext] = useState<string>('')
 
   // Use edited categories in edit mode, canonical keys in read mode.
@@ -144,7 +144,6 @@ export function ResourceDetail({
   })
 
   // Initialize state when resource loads for a new entity
-  /* eslint-disable react-hooks/set-state-in-effect -- Valid sync with external data */
   useEffect(() => {
     if (resource) {
       const isNewEntity = initializedEntityRef.current !== entityKey
@@ -164,7 +163,6 @@ export function ResourceDetail({
       }
     }
   }, [resource, entityKey])
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Category change handlers
   const handleAddCategory = useCallback(

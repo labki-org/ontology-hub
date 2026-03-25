@@ -53,7 +53,7 @@ export function DashboardDetail({
   const [editedDescription, setEditedDescription] = useState('')
   const [editedPages, setEditedPages] = useState<DashboardPage[]>([])
   const editedPagesRef = useRef<DashboardPage[]>([])
-  editedPagesRef.current = editedPages
+  useEffect(() => { editedPagesRef.current = editedPages }, [editedPages])
 
   // Track which entity we've initialized original values for (prevent reset on refetch)
   const initializedEntityRef = useRef<string | null>(null)

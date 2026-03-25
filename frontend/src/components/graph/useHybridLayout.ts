@@ -87,9 +87,10 @@ export function useHybridLayout(
 
     setNodes(positionedNodes)
 
+    const simulation = simulationRef.current
     return () => {
-      if (simulationRef.current) {
-        simulationRef.current.stop()
+      if (simulation) {
+        simulation.stop()
       }
     }
   }, [layoutKey]) // eslint-disable-line react-hooks/exhaustive-deps
