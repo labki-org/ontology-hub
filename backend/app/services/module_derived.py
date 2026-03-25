@@ -273,7 +273,9 @@ async def _get_category_resources(
     resources: set[str] = set()
 
     # Query canonical resources (ARRAY contains)
-    query = select(Resource.entity_key).where(Resource.category_keys.contains([category_key]))
+    query = select(Resource.entity_key).where(
+        Resource.category_keys.contains([category_key])  # type: ignore[union-attr]
+    )
     result = await session.execute(query)
     for row in result.fetchall():
         resources.add(row[0])

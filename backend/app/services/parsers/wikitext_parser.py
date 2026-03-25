@@ -369,4 +369,5 @@ def parse_wikitext(wikitext: str, entity_type: str, entity_key: str) -> dict[str
     parser = _WIKITEXT_PARSERS.get(entity_type)
     if not parser:
         raise ValueError(f"Unknown entity type for wikitext parsing: {entity_type}")
-    return parser(wikitext, entity_key)
+    result: dict[str, Any] = parser(wikitext, entity_key)
+    return result

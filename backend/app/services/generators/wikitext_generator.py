@@ -232,4 +232,5 @@ def generate_wikitext(entity_json: dict[str, Any], entity_type: str) -> str:
     generator = _GENERATORS.get(entity_type)
     if not generator:
         raise ValueError(f"Unknown entity type for wikitext generation: {entity_type}")
-    return generator(entity_json)
+    result: str = generator(entity_json)
+    return result
