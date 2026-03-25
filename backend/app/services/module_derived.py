@@ -14,7 +14,6 @@ Phase 27 Extension:
 - Cycle-safe: uses visited set pattern with max_depth cap
 """
 
-import json
 import uuid
 from copy import deepcopy
 from typing import Any
@@ -274,15 +273,13 @@ async def _get_category_resources(
     """
     resources: set[str] = set()
 
-    # Query canonical resources using JSONB containment (matches entities.py pattern)
-    query = (
-        select(Resource.entity_key)
-        .where(text("CAST(category_keys AS jsonb) @> CAST(:cats AS jsonb)"))
-        .params(cats=json.dumps([category_key]))
-    )
+    # Select only the columns we need (avoids loading full canonical_json blobs).
+    # Uses Python filtering for SQLite compatibility in tests.
+    query = select(Resource.entity_key, Resource.category_keys)
     result = await session.execute(query)
     for row in result.all():
-        resources.add(row[0])
+        if category_key in (row[1] or []):
+            resources.add(row[0])
 
     # Include draft-created resources for this category
     for key, change in draft_changes.items():

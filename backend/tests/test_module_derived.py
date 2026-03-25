@@ -153,16 +153,12 @@ class TestGetCategoryResources:
 
         mock_session = AsyncMock()
 
-        # Mock resource query result with Resource-like objects
-        mock_resource1 = MagicMock()
-        mock_resource1.entity_key = "Resource1"
-        mock_resource1.category_keys = ["Equipment"]
-        mock_resource2 = MagicMock()
-        mock_resource2.entity_key = "Resource2"
-        mock_resource2.category_keys = ["Equipment"]
-
+        # Mock resource query result as (entity_key, category_keys) tuples
         mock_result = MagicMock()
-        mock_result.scalars.return_value.all.return_value = [mock_resource1, mock_resource2]
+        mock_result.all.return_value = [
+            ("Resource1", ["Equipment"]),
+            ("Resource2", ["Equipment"]),
+        ]
         mock_session.execute.return_value = mock_result
 
         result = await _get_category_resources(mock_session, "Equipment", {})
@@ -179,7 +175,7 @@ class TestGetCategoryResources:
 
         # Mock empty canonical resources
         mock_result = MagicMock()
-        mock_result.fetchall.return_value = []
+        mock_result.all.return_value = []
         mock_session.execute.return_value = mock_result
 
         # Create draft change for a new resource
@@ -202,7 +198,7 @@ class TestGetCategoryResources:
 
         # Mock empty canonical resources
         mock_result = MagicMock()
-        mock_result.fetchall.return_value = []
+        mock_result.all.return_value = []
         mock_session.execute.return_value = mock_result
 
         # Draft resource for different category
