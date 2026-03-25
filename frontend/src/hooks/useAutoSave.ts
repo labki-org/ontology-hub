@@ -28,8 +28,12 @@ export function useAutoSave({
   const mutationRef = useRef<ReturnType<typeof useMutation<unknown, Error, DraftChangeCreate>>>()
 
   const mutation = useMutation({
-    mutationFn: (change: DraftChangeCreate) => addDraftChange(draftToken, change),
+    mutationFn: (change: DraftChangeCreate) => {
+      console.log('[useAutoSave] mutationFn executing, draftToken:', draftToken, 'change:', change.entity_type, change.patch?.map(p => p.path))
+      return addDraftChange(draftToken, change)
+    },
     onSuccess: () => {
+      console.log('[useAutoSave] onSuccess fired for', entityType, entityKey)
       // Invalidate draft query to refresh status (auto-reverts from validated to draft)
       queryClient.invalidateQueries({ queryKey: ['v2', 'draft', draftToken] })
       // Invalidate and refetch entity queries to refresh with new draft overlay
@@ -63,6 +67,7 @@ export function useAutoSave({
       onSuccess?.()
     },
     onError: (error: Error) => {
+      console.error('[useAutoSave] onError:', error.message)
       onError?.(error)
     },
   })
@@ -91,7 +96,7 @@ export function useAutoSave({
         console.log('[useAutoSave] timeout fired, patches to send:', allPatches.length, allPatches.map(p => p.path))
         if (allPatches.length === 0) return
 
-        console.log('[useAutoSave] calling mutate, mutationRef exists:', !!mutationRef.current)
+        console.log('[useAutoSave] calling mutate, mutationRef exists:', !!mutationRef.current, 'draftToken:', draftToken)
         mutationRef.current?.mutate({
           change_type: 'update',
           entity_type: entityType,
