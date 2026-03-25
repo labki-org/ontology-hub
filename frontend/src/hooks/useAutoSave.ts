@@ -23,51 +23,77 @@ export function useAutoSave({
 }: UseAutoSaveOptions) {
   const queryClient = useQueryClient()
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const requestIdRef = useRef(0)
   const pendingPatchesRef = useRef<Map<string, { op: string; path: string; value?: unknown }>>(new Map())
   const mutationRef = useRef<ReturnType<typeof useMutation<unknown, Error, DraftChangeCreate>>>()
+  // Serialize mutations: queue patches while one is in-flight
+  const inFlightRef = useRef(false)
+  const queuedPatchesRef = useRef<Map<string, { op: string; path: string; value?: unknown }>>(new Map())
+  // Promise resolver for flush() callers waiting for save to complete
+  const flushResolversRef = useRef<Array<() => void>>([])
+
+  const doMutate = useCallback(
+    (patches: Array<{ op: string; path: string; value?: unknown }>) => {
+      if (patches.length === 0) return
+      inFlightRef.current = true
+      mutationRef.current?.mutate({
+        change_type: 'update',
+        entity_type: entityType,
+        entity_key: entityKey,
+        patch: patches,
+      })
+    },
+    [entityType, entityKey]
+  )
+
+  const handleSettled = useCallback(() => {
+    inFlightRef.current = false
+
+    // Flush queued patches that accumulated while in-flight
+    if (queuedPatchesRef.current.size > 0) {
+      const queued = Array.from(queuedPatchesRef.current.values())
+      queuedPatchesRef.current.clear()
+      doMutate(queued)
+    } else {
+      // No more pending work — resolve any flush() waiters
+      const resolvers = flushResolversRef.current.splice(0)
+      for (const resolve of resolvers) resolve()
+    }
+  }, [doMutate])
 
   const mutation = useMutation({
     mutationFn: (change: DraftChangeCreate) => addDraftChange(draftToken, change),
     onSuccess: () => {
-      // Invalidate draft query to refresh status (auto-reverts from validated to draft)
+      // Invalidate draft query to refresh status
       queryClient.invalidateQueries({ queryKey: ['v2', 'draft', draftToken] })
-      // Invalidate and refetch entity queries to refresh with new draft overlay
-      queryClient.invalidateQueries({
-        queryKey: ['v2', entityType, entityKey],
-      })
-      // Force immediate refetch of ALL v2 queries for this entity
-      // This ensures computed fields (like module closure) are up to date
-      void queryClient.refetchQueries({
-        queryKey: ['v2', entityType],
-        type: 'active',
-      })
-      // Also invalidate list queries for this entity type (sidebar refresh)
-      // Handle irregular plural forms
+      // Invalidate and refetch entity queries
+      queryClient.invalidateQueries({ queryKey: ['v2', entityType, entityKey] })
+      void queryClient.refetchQueries({ queryKey: ['v2', entityType], type: 'active' })
+      // Invalidate list queries for sidebar refresh
       const pluralType = entityType === 'category' ? 'categories' :
                          entityType === 'property' ? 'properties' :
                          `${entityType}s`
       queryClient.invalidateQueries({ queryKey: ['v2', pluralType] })
-      // Clear stale validation - draft has changed since last validation
+      // Clear stale validation
       useDraftStore.getState().clearValidation()
-      // Also invalidate draft changes list to show updated change count
+      // Invalidate draft changes list
       queryClient.invalidateQueries({ queryKey: ['v2', 'draft-changes'] })
-      // Invalidate graph queries to refresh edge change_status indicators
+      // Invalidate graph queries
       queryClient.invalidateQueries({ queryKey: ['graph'] })
 
-      // Track this entity as edited for change propagation visualization
-      // Uses current graph data if available (empty if graph not loaded)
+      // Track entity as edited for change propagation visualization
       const { nodes, edges } = useGraphStore.getState()
       useDraftStore.getState().markEntityEdited(entityKey, nodes, edges)
 
       onSuccess?.()
+      handleSettled()
     },
     onError: (error: Error) => {
       onError?.(error)
+      handleSettled()
     },
   })
 
-  // Keep mutation ref current so the timeout closure always uses the latest
+  // Keep mutation ref current so closures always use the latest
   mutationRef.current = mutation
 
   const saveChange = useCallback(
@@ -77,7 +103,7 @@ export function useAutoSave({
         pendingPatchesRef.current.set(op.path, op)
       }
 
-      // Cancel pending timeout (debounce)
+      // Cancel pending debounce timeout
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current)
       }
@@ -88,16 +114,50 @@ export function useAutoSave({
 
         if (allPatches.length === 0) return
 
-        mutationRef.current?.mutate({
-          change_type: 'update',
-          entity_type: entityType,
-          entity_key: entityKey,
-          patch: allPatches,
-        })
+        if (inFlightRef.current) {
+          // A mutation is already in-flight — queue these for after it settles
+          for (const op of allPatches) {
+            queuedPatchesRef.current.set(op.path, op)
+          }
+        } else {
+          doMutate(allPatches)
+        }
       }, debounceMs)
     },
-    [entityType, entityKey, debounceMs]
+    [debounceMs, doMutate]
   )
+
+  /**
+   * Flush any pending/queued patches and wait for all in-flight mutations to settle.
+   * Call this before create/delete operations to prevent race conditions.
+   */
+  const flush = useCallback((): Promise<void> => {
+    // Fire any pending debounced patches immediately
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
+    const allPatches = Array.from(pendingPatchesRef.current.values())
+    pendingPatchesRef.current.clear()
+
+    if (allPatches.length > 0) {
+      if (inFlightRef.current) {
+        for (const op of allPatches) queuedPatchesRef.current.set(op.path, op)
+      } else {
+        doMutate(allPatches)
+      }
+    }
+
+    // If nothing is in-flight and nothing queued, resolve immediately
+    if (!inFlightRef.current && queuedPatchesRef.current.size === 0) {
+      return Promise.resolve()
+    }
+
+    // Otherwise wait for the current chain of mutations to settle
+    return new Promise<void>((resolve) => {
+      flushResolversRef.current.push(resolve)
+    })
+  }, [doMutate])
 
   // Cleanup on unmount
   useEffect(() => {
@@ -110,7 +170,8 @@ export function useAutoSave({
 
   return {
     saveChange,
-    isSaving: mutation.isPending,
+    flush,
+    isSaving: mutation.isPending || inFlightRef.current,
     error: mutation.error,
   }
 }

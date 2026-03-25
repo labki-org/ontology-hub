@@ -208,7 +208,7 @@ async def auto_populate_module_derived(
         ]:
             filtered_patches.append({"op": "add", "path": path, "value": values})
 
-        change.patch = filtered_patches  # type: ignore[assignment]
+        change.patch = filtered_patches
 
     # No commit here — caller commits after auto_populate_module_derived
 
@@ -332,12 +332,14 @@ async def add_draft_change(
             "Changes can only be added when status is 'draft' or 'validated'.",
         )
 
-    # Check if there's already a change for this entity in this draft
+    # Check if there's already a change for this entity in this draft.
+    # Use FOR UPDATE to serialize concurrent writes to the same change row.
     existing_query = (
         select(DraftChange)
         .where(DraftChange.draft_id == draft.id)
         .where(DraftChange.entity_type == change_in.entity_type)
         .where(DraftChange.entity_key == change_in.entity_key)
+        .with_for_update()
     )
     existing_result = await session.execute(existing_query)
     existing_change = existing_result.scalar_one_or_none()

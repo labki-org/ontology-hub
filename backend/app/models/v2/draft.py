@@ -9,6 +9,7 @@ import uuid
 from datetime import datetime
 from enum import StrEnum
 
+import sqlalchemy as sa
 from sqlalchemy import JSON, Column
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, SQLModel
@@ -92,6 +93,11 @@ class DraftChange(SQLModel, table=True):
     """
 
     __tablename__ = "draft_change"
+    __table_args__ = (
+        sa.UniqueConstraint(
+            "draft_id", "entity_type", "entity_key", name="uq_draft_change_draft_entity"
+        ),
+    )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     draft_id: uuid.UUID = Field(foreign_key="draft.id", index=True)
@@ -102,7 +108,9 @@ class DraftChange(SQLModel, table=True):
     )
     entity_type: str  # "category", "property", etc. (string, not enum FK)
     entity_key: str = Field(index=True)  # The entity being changed
-    patch: dict | None = Field(default=None, sa_column=Column(JSON))  # JSON Patch for updates
+    patch: list[dict] | None = Field(
+        default=None, sa_column=Column(JSON)
+    )  # RFC 6902 JSON Patch ops
     replacement_json: dict | None = Field(
         default=None, sa_column=Column(JSON)
     )  # Full JSON for creates
@@ -131,6 +139,6 @@ class DraftChangePublic(SQLModel):
     change_type: ChangeType
     entity_type: str
     entity_key: str
-    patch: dict | None
+    patch: list[dict] | None
     replacement_json: dict | None
     created_at: datetime
