@@ -19,7 +19,6 @@ import {
   useTemplates,
   useDashboards,
   useResources,
-  useOntologyVersion,
 } from '@/api/entities'
 import { useDraftV2, useCreateEntityChange, useDeleteEntityChange, useUndoDeleteChange, useDraftChanges } from '@/api/drafts'
 import { useGraphStore } from '@/stores/graphStore'
@@ -287,7 +286,7 @@ export function Sidebar() {
     draftId
   )
 
-  const { data: versionInfo } = useOntologyVersion()
+
 
   const categories = categoriesData?.items || []
   const properties = propertiesData?.items || []
@@ -440,11 +439,6 @@ export function Sidebar() {
         <Link to="/" className="font-semibold text-lg hover:opacity-80">
           Ontology Hub
         </Link>
-        {versionInfo && (
-          <div className="text-xs text-muted-foreground mt-1">
-            v {versionInfo.commit_sha.slice(0, 7)}
-          </div>
-        )}
         {draftToken && (
           <Badge variant="outline" className="text-xs mt-1">
             Draft Mode

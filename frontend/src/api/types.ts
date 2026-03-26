@@ -48,6 +48,18 @@ export interface OntologyVersionInfo {
   ingested_at: string
 }
 
+export interface SyncStatus {
+  repo_owner: string
+  repo_name: string
+  repo_url: string
+  db_commit_sha: string | null
+  db_commit_url: string | null
+  db_ingested_at: string | null
+  github_commit_sha: string | null
+  sync_state: 'synced' | 'behind' | 'syncing' | 'error' | 'unknown'
+  error: string | null
+}
+
 // Graph types (from backend app/schemas/graph.py)
 export interface GraphNode {
   id: string

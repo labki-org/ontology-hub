@@ -5,12 +5,17 @@ import type {
   EntityWithStatus,
   CategoryDetailV2,
   OntologyVersionInfo,
+  SyncStatus,
 } from './types'
 
 // Fetch functions
 
 async function fetchOntologyVersion(): Promise<OntologyVersionInfo> {
   return apiFetch('/ontology-version', { v2: true })
+}
+
+async function fetchSyncStatus(): Promise<SyncStatus> {
+  return apiFetch('/sync/status', { v2: true })
 }
 
 async function fetchEntitiesV2(
@@ -60,6 +65,15 @@ export function useOntologyVersion() {
   return useQuery({
     queryKey: ['ontology-version'],
     queryFn: fetchOntologyVersion,
+  })
+}
+
+export function useSyncStatus() {
+  return useQuery({
+    queryKey: ['sync-status'],
+    queryFn: fetchSyncStatus,
+    refetchInterval: 30_000,
+    staleTime: 10_000,
   })
 }
 
