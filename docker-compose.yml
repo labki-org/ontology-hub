@@ -1,6 +1,11 @@
 services:
   db:
     image: postgres:17-alpine
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "25m"
+        max-file: "4"
     environment:
       POSTGRES_USER: ontology
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -22,6 +27,11 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "25m"
+        max-file: "4"
     environment:
       DATABASE_URL: postgresql+asyncpg://ontology:${POSTGRES_PASSWORD}@db:5432/ontology_hub
       DEBUG: ${DEBUG:-false}
@@ -40,6 +50,11 @@ services:
   frontend:
     image: node:20-alpine
     working_dir: /app
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "25m"
+        max-file: "4"
     depends_on:
       - backend
     volumes:
