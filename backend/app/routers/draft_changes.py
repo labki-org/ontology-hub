@@ -180,8 +180,8 @@ async def auto_populate_module_derived(
 
     # Update the change with derived entities
     if change.change_type == ChangeType.CREATE:
-        # Update replacement_json directly
-        replacement = change.replacement_json or {}
+        # Build new dict to ensure SQLAlchemy detects the mutation
+        replacement = dict(change.replacement_json or {})
         replacement["properties"] = derived["properties"]
         replacement["subobjects"] = derived["subobjects"]
         replacement["templates"] = derived["templates"]
