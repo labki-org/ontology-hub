@@ -27,7 +27,7 @@ export function MainLayout() {
 
   const handleRefresh = useCallback(() => {
     setResetKey((k) => k + 1)
-    queryClient.invalidateQueries()
+    queryClient.invalidateQueries({ queryKey: ['v2'] })
     setShowBanner(false)
   }, [queryClient])
 

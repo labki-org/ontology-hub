@@ -48,24 +48,18 @@ function StatusBadge({ syncState }: { syncState: string }) {
 export function SyncStatusIndicator({ onStaleDetected, resetKey }: SyncStatusIndicatorProps) {
   const { data, isError } = useSyncStatus()
   const loadedSha = useRef<string | null>(null)
-  const prevResetKey = useRef(resetKey)
 
-  // Reset baseline SHA when resetKey changes (user clicked Refresh)
+  // Adopt current SHA as baseline on mount or after user refresh
   useEffect(() => {
-    if (resetKey !== prevResetKey.current) {
-      prevResetKey.current = resetKey
-      loadedSha.current = data?.db_commit_sha ?? null
-    }
-  }, [resetKey, data?.db_commit_sha])
+    loadedSha.current = data?.db_commit_sha ?? null
+  }, [resetKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Track the SHA we loaded with
   useEffect(() => {
     if (data?.db_commit_sha && loadedSha.current === null) {
       loadedSha.current = data.db_commit_sha
     }
   }, [data?.db_commit_sha])
 
-  // Detect stale data
   useEffect(() => {
     if (
       data?.db_commit_sha &&
