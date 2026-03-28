@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ChevronRight, Boxes, Tag, Package, Layers, Archive, FileCode, LayoutDashboard, FileText, Plus, Trash2 } from 'lucide-react'
 import {
@@ -72,6 +72,17 @@ function EntitySection({
   const transitiveAffects = useDraftStore((s) => s.transitivelyAffectedEntities)
   const filteredEntities = useSearchFilter(searchTerm, entities)
 
+  const [isOpen, setIsOpen] = useState(false)
+
+  // Auto-expand when search has matches, collapse when search is cleared
+  useEffect(() => {
+    if (searchTerm && filteredEntities.length > 0) {
+      setIsOpen(true)
+    } else if (!searchTerm) {
+      setIsOpen(false)
+    }
+  }, [searchTerm, filteredEntities.length])
+
   if (isLoading) {
     return (
       <div className="space-y-2 p-2">
@@ -82,7 +93,7 @@ function EntitySection({
   }
 
   return (
-    <Collapsible defaultOpen>
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <div className="flex items-center w-full">
         <CollapsibleTrigger className="flex items-center flex-1 px-2 py-1.5 rounded hover:bg-sidebar-accent text-sm group">
           <ChevronRight className="h-4 w-4 transition-transform group-data-[state=open]:rotate-90" />
