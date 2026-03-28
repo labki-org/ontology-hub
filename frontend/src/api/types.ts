@@ -3,6 +3,7 @@ export interface EntityWithStatus {
   entity_key: string
   label: string
   description?: string | null
+  parents?: string[] | null
   change_status?: 'added' | 'modified' | 'deleted' | 'unchanged'
   deleted?: boolean
 }

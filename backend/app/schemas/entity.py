@@ -21,6 +21,10 @@ class EntityWithStatus(BaseModel):
 
     entity_key: str
     label: str
+    parents: list[str] | None = Field(
+        default=None,
+        description="Parent entity keys (categories only)",
+    )
     change_status: ChangeStatus | None = Field(
         default=None,
         validation_alias="_change_status",
