@@ -122,6 +122,10 @@ class PropertyDetailResponse(BaseModel):
     allowed_value_list: str | None = Field(
         default=None, description="Reference to a wiki page containing allowed values"
     )
+    allowed_value_from_category: str | None = Field(
+        default=None,
+        description="Category entity key restricting Page-type values",
+    )
     # Display configuration
     display_units: list[str] | None = Field(
         default=None, description="Units or formats for display"

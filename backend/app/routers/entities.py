@@ -440,6 +440,7 @@ async def get_property(
         allowed_values=effective.get("allowed_values"),
         allowed_pattern=effective.get("allowed_pattern"),
         allowed_value_list=effective.get("allowed_value_list"),
+        allowed_value_from_category=effective.get("Allows_value_from_category"),
         # Display configuration
         display_units=effective.get("display_units"),
         display_precision=effective.get("display_precision"),

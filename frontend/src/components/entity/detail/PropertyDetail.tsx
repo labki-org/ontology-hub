@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { useProperty, usePropertyUsedBy, useTemplates } from '@/api/entities'
+import { useProperty, usePropertyUsedBy, useTemplates, useCategories } from '@/api/entities'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useGraphStore } from '@/stores/graphStore'
 import { EntityHeader } from '../sections/EntityHeader'
@@ -39,6 +39,7 @@ interface OriginalValues {
   allowed_values?: string[]
   allowed_pattern?: string
   allowed_value_list?: string
+  allowed_value_from_category?: string
   display_units?: string[]
   display_precision?: number | null
   unique_values?: boolean
@@ -65,12 +66,17 @@ export function PropertyDetail({
     isLoading: usedByLoading,
   } = usePropertyUsedBy(entityKey, draftId)
   const { data: templatesData } = useTemplates(undefined, undefined, draftId)
+  const { data: categoriesData } = useCategories(undefined, undefined, draftId)
   const setSelectedEntity = useGraphStore((s) => s.setSelectedEntity)
 
   // Build available templates for selection
   const availableTemplates = (templatesData?.items || []).map((t) => ({
     key: t.entity_key,
     label: t.label,
+  }))
+  const availableCategories = (categoriesData?.items || []).map((c) => ({
+    key: c.entity_key,
+    label: c.label,
   }))
 
   // Cast to PropertyDetailV2
@@ -89,6 +95,8 @@ export function PropertyDetail({
   const [editedAllowedValues, setEditedAllowedValues] = useState<string[]>([])
   const [editedAllowedPattern, setEditedAllowedPattern] = useState('')
   const [editedAllowedValueList, setEditedAllowedValueList] = useState('')
+  const [editedAllowedValueFromCategory, setEditedAllowedValueFromCategory] = useState('')
+  const [isEditingCategory, setIsEditingCategory] = useState(false)
   const [editedDisplayUnits, setEditedDisplayUnits] = useState<string[]>([])
   const [editedDisplayPrecision, setEditedDisplayPrecision] = useState<number | null>(null)
   const [editedUniqueValues, setEditedUniqueValues] = useState(false)
@@ -129,6 +137,7 @@ export function PropertyDetail({
         setEditedAllowedValues(property.allowed_values || [])
         setEditedAllowedPattern(property.allowed_pattern || '')
         setEditedAllowedValueList(property.allowed_value_list || '')
+        setEditedAllowedValueFromCategory(property.allowed_value_from_category || '')
         setEditedDisplayUnits(property.display_units || [])
         setEditedDisplayPrecision(property.display_precision ?? null)
         setEditedUniqueValues(property.unique_values || false)
@@ -142,6 +151,7 @@ export function PropertyDetail({
           allowed_values: property.allowed_values || [],
           allowed_pattern: property.allowed_pattern || '',
           allowed_value_list: property.allowed_value_list || '',
+          allowed_value_from_category: property.allowed_value_from_category || '',
           display_units: property.display_units || [],
           display_precision: property.display_precision ?? null,
           unique_values: property.unique_values || false,
@@ -236,6 +246,22 @@ export function PropertyDetail({
           saveChange([{ op: 'add', path: '/allowed_value_list', value }])
         } else {
           saveChange([{ op: 'remove', path: '/allowed_value_list' }])
+        }
+      }
+    },
+    [draftToken, saveChange]
+  )
+
+  const handleAllowedValueFromCategoryChange = useCallback(
+    (rawValue: string) => {
+      const value = rawValue === '__none__' ? '' : rawValue
+      setEditedAllowedValueFromCategory(value)
+      setIsEditingCategory(false)
+      if (draftToken) {
+        if (value) {
+          saveChange([{ op: 'add', path: '/Allows_value_from_category', value }])
+        } else {
+          saveChange([{ op: 'remove', path: '/Allows_value_from_category' }])
         }
       }
     },
@@ -339,13 +365,15 @@ export function PropertyDetail({
   const isAllowedValuesModified = JSON.stringify(editedAllowedValues) !== JSON.stringify(originalValues.allowed_values)
   const isAllowedPatternModified = editedAllowedPattern !== originalValues.allowed_pattern
   const isAllowedValueListModified = editedAllowedValueList !== originalValues.allowed_value_list
+  const isAllowedValueFromCategoryModified = editedAllowedValueFromCategory !== originalValues.allowed_value_from_category
   const isDisplayUnitsModified = JSON.stringify(editedDisplayUnits) !== JSON.stringify(originalValues.display_units)
   const isDisplayPrecisionModified = editedDisplayPrecision !== originalValues.display_precision
   const isUniqueValuesModified = editedUniqueValues !== originalValues.unique_values
   const isTemplateModified = editedHasDisplayTemplate !== originalValues.has_display_template
 
   // Show validation section if has values or in edit mode
-  const showValidationSection = isEditing || editedAllowedValues.length > 0 || editedAllowedPattern || editedAllowedValueList
+  const isPageType = editedDatatype === 'Page'
+  const showValidationSection = isEditing || editedAllowedValues.length > 0 || editedAllowedPattern || editedAllowedValueList || editedAllowedValueFromCategory
   // Show display section if has values or in edit mode
   const showDisplaySection = isEditing || editedDisplayUnits.length > 0 || editedDisplayPrecision !== null
   // Show constraints section if has values or in edit mode
@@ -588,6 +616,81 @@ export function PropertyDetail({
                 )}
               </VisualChangeMarker>
             </div>
+
+            {/* Allowed Value From Category — only for Page-type properties */}
+            {(isPageType || editedAllowedValueFromCategory) && (
+              <div>
+                <label className="text-sm font-semibold text-foreground/70 block mb-1">
+                  Restrict to Category
+                </label>
+                <VisualChangeMarker
+                  status={isAllowedValueFromCategoryModified ? 'modified' : 'unchanged'}
+                  originalValue={originalValues.allowed_value_from_category}
+                >
+                  {isEditingCategory ? (
+                    <div className="flex items-center gap-2">
+                      <Select
+                        value={editedAllowedValueFromCategory || '__none__'}
+                        onValueChange={handleAllowedValueFromCategoryChange}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select category..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">None (any page)</SelectItem>
+                          {availableCategories.map((c) => (
+                            <SelectItem key={c.key} value={c.key}>
+                              {c.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => setIsEditingCategory(false)}
+                        className="text-muted-foreground hover:text-foreground"
+                        aria-label="Cancel"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : editedAllowedValueFromCategory ? (
+                    <div className="group relative rounded-md px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                      <button
+                        onClick={() => setSelectedEntity(editedAllowedValueFromCategory, 'category')}
+                        className="flex items-center gap-1 text-sm text-primary hover:underline"
+                      >
+                        <Link2 className="h-3 w-3" />
+                        {editedAllowedValueFromCategory}
+                      </button>
+                      {isEditing && (
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => setIsEditingCategory(true)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+                          aria-label="Edit category restriction"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ) : isEditing ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsEditingCategory(true)}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Restrict to category
+                    </Button>
+                  ) : (
+                    <p className="text-xs text-muted-foreground/60">Any page allowed</p>
+                  )}
+                </VisualChangeMarker>
+              </div>
+            )}
           </div>
         </AccordionSection>
       )}

@@ -94,6 +94,7 @@ export interface PropertyDetailV2 {
   allowed_values?: string[] | null
   allowed_pattern?: string | null
   allowed_value_list?: string | null
+  allowed_value_from_category?: string | null
   // Display configuration
   display_units?: string[] | null
   display_precision?: number | null
