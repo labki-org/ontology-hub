@@ -271,6 +271,19 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
       }
     }
 
+    // Build set of clone node IDs for the selected entity (for edge dimming)
+    const selectedCloneIds = new Set<string>()
+    if (selectedEntityKey) {
+      for (const edge of edges) {
+        if (edge.source === selectedEntityKey || edge.source.startsWith(selectedEntityKey + '__')) {
+          selectedCloneIds.add(edge.source)
+        }
+        if (edge.target === selectedEntityKey || edge.target.startsWith(selectedEntityKey + '__')) {
+          selectedCloneIds.add(edge.target)
+        }
+      }
+    }
+
     // Apply styling to all edges
     const styledEdges: Edge[] = edges.map((edge) => {
       const edgeType = edge.data?.edge_type as string
@@ -278,6 +291,10 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
 
       const isConnectedToHovered = hoveredNodeId
         ? edge.source === hoveredNodeId || edge.target === hoveredNodeId
+        : false
+
+      const isConnectedToSelected = !hoveredNodeId && selectedCloneIds.size > 0
+        ? selectedCloneIds.has(edge.source) || selectedCloneIds.has(edge.target)
         : false
 
       const isAddedEdge = changeStatus === 'added' || changeStatus === 'modified'
@@ -288,6 +305,13 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
       let strokeWidth = 1.5
       if (hoveredNodeId) {
         if (isConnectedToHovered) {
+          opacity = 1
+          strokeWidth = 2.5
+        } else {
+          opacity = 0.15
+        }
+      } else if (selectedCloneIds.size > 0) {
+        if (isConnectedToSelected) {
           opacity = 1
           strokeWidth = 2.5
         } else {
@@ -322,7 +346,7 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
     })
 
     return { initialNodes: nodes, filteredEdges: styledEdges }
-  }, [displayData, edgeTypeFilter, hoveredNodeId])
+  }, [displayData, edgeTypeFilter, hoveredNodeId, selectedEntityKey])
 
   // Apply layout based on selected algorithm
   const { nodes, isRunning, restartSimulation } = useHybridLayout(

@@ -170,15 +170,15 @@ function applyDagreLayout(
   const dagreGraph = new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}))
   dagreGraph.setGraph({
     rankdir: direction,
-    nodesep: 50,
-    ranksep: 80,
-    marginx: 20,
-    marginy: 20,
+    nodesep: 30,
+    ranksep: 50,
+    marginx: 15,
+    marginy: 15,
   })
 
-  // Add all nodes
+  // Add all nodes — use compact sizing for tighter layout
   for (const node of nodes) {
-    dagreGraph.setNode(node.id, { width: NODE_WIDTH, height: NODE_HEIGHT })
+    dagreGraph.setNode(node.id, { width: 60, height: NODE_HEIGHT })
   }
 
   // Add edges - reverse parent edges so parents appear above children
@@ -240,8 +240,8 @@ function applyDagreLayout(
     // Position orphans in a grid below
     const orphanNodes = positionedNodes.filter(n => orphanIds.has(n.id))
     const cols = Math.ceil(Math.sqrt(orphanNodes.length))
-    const orphanGap = 50
-    const startY = maxY + 100
+    const orphanGap = 20
+    const startY = maxY + 40
 
     let i = 0
     for (const node of positionedNodes) {
