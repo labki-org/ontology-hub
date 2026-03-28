@@ -200,16 +200,13 @@ function GraphNodeComponent({ data }: { data: GraphNodeData }) {
   // (a selected entity may have multiple clones, e.g. Has_description__Equipment)
   const selectedNodeIds = useMemo(() => {
     if (!selectedEntityKey || hoveredNodeId) return null
-    const ids: string[] = []
+    const ids = new Set<string>()
+    const prefix = selectedEntityKey + '__'
     for (const edge of edges) {
-      if (edge.source.startsWith(selectedEntityKey + '__') || edge.source === selectedEntityKey) {
-        if (!ids.includes(edge.source)) ids.push(edge.source)
-      }
-      if (edge.target.startsWith(selectedEntityKey + '__') || edge.target === selectedEntityKey) {
-        if (!ids.includes(edge.target)) ids.push(edge.target)
-      }
+      if (edge.source === selectedEntityKey || edge.source.startsWith(prefix)) ids.add(edge.source)
+      if (edge.target === selectedEntityKey || edge.target.startsWith(prefix)) ids.add(edge.target)
     }
-    return ids.length > 0 ? ids : null
+    return ids.size > 0 ? ids : null
   }, [selectedEntityKey, hoveredNodeId, edges])
 
   const getOpacity = (): number => {
@@ -227,11 +224,11 @@ function GraphNodeComponent({ data }: { data: GraphNodeData }) {
 
     // Selection dimming
     if (selectedNodeIds) {
-      if (selectedNodeIds.includes(nodeId)) return 1
+      if (selectedNodeIds.has(nodeId)) return 1
       const isConnected = edges.some(
         (edge) =>
-          (selectedNodeIds.includes(edge.source) && edge.target === nodeId) ||
-          (selectedNodeIds.includes(edge.target) && edge.source === nodeId)
+          (selectedNodeIds.has(edge.source) && edge.target === nodeId) ||
+          (selectedNodeIds.has(edge.target) && edge.source === nodeId)
       )
       if (isConnected) return 1
       return 0.25

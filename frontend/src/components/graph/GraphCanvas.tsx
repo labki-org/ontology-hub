@@ -83,8 +83,8 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
   // Convert API response to React Flow format
   // Non-category nodes (properties, subobjects, etc.) are duplicated per connected
   // category so each category forms a clean cluster without cross-links.
-  const { initialNodes, filteredEdges } = useMemo(() => {
-    if (!displayData) return { initialNodes: [], filteredEdges: [] }
+  const { initialNodes, rawEdges } = useMemo(() => {
+    if (!displayData) return { initialNodes: [], rawEdges: [] }
 
     const categoryTypes = new Set(['category'])
     const apiNodes = displayData.nodes as ApiGraphNode[]
@@ -271,21 +271,21 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
       }
     }
 
-    // Build set of clone node IDs for the selected entity (for edge dimming)
+    return { initialNodes: nodes, rawEdges: edges }
+  }, [displayData, edgeTypeFilter])
+
+  // Style edges separately — depends on hover/selection which change frequently
+  const filteredEdges = useMemo(() => {
     const selectedCloneIds = new Set<string>()
     if (selectedEntityKey) {
-      for (const edge of edges) {
-        if (edge.source === selectedEntityKey || edge.source.startsWith(selectedEntityKey + '__')) {
-          selectedCloneIds.add(edge.source)
-        }
-        if (edge.target === selectedEntityKey || edge.target.startsWith(selectedEntityKey + '__')) {
-          selectedCloneIds.add(edge.target)
-        }
+      const prefix = selectedEntityKey + '__'
+      for (const edge of rawEdges) {
+        if (edge.source === selectedEntityKey || edge.source.startsWith(prefix)) selectedCloneIds.add(edge.source)
+        if (edge.target === selectedEntityKey || edge.target.startsWith(prefix)) selectedCloneIds.add(edge.target)
       }
     }
 
-    // Apply styling to all edges
-    const styledEdges: Edge[] = edges.map((edge) => {
+    return rawEdges.map((edge) => {
       const edgeType = edge.data?.edge_type as string
       const changeStatus = edge.data?.change_status as string | undefined
 
@@ -304,37 +304,20 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
       let opacity = 0.7
       let strokeWidth = 1.5
       if (hoveredNodeId) {
-        if (isConnectedToHovered) {
-          opacity = 1
-          strokeWidth = 2.5
-        } else {
-          opacity = 0.15
-        }
+        if (isConnectedToHovered) { opacity = 1; strokeWidth = 2.5 }
+        else { opacity = 0.15 }
       } else if (selectedCloneIds.size > 0) {
-        if (isConnectedToSelected) {
-          opacity = 1
-          strokeWidth = 2.5
-        } else {
-          opacity = 0.15
-        }
+        if (isConnectedToSelected) { opacity = 1; strokeWidth = 2.5 }
+        else { opacity = 0.15 }
       }
 
-      const edgeColor = isAddedEdge
-        ? '#22c55e'
-        : isDeletedEdge
-        ? '#ef4444'
-        : getEdgeColor(edgeType)
+      const edgeColor = isAddedEdge ? '#22c55e' : isDeletedEdge ? '#ef4444' : getEdgeColor(edgeType)
       const dasharray = isDraftEdge ? '6,4' : getEdgeStrokeDasharray(edgeType)
 
       return {
         ...edge,
         animated: isDraftEdge,
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          width: 15,
-          height: 15,
-          color: edgeColor,
-        },
+        markerEnd: { type: MarkerType.ArrowClosed, width: 15, height: 15, color: edgeColor },
         style: {
           stroke: edgeColor,
           strokeWidth: isDraftEdge ? 2 : strokeWidth,
@@ -344,9 +327,7 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
         },
       }
     })
-
-    return { initialNodes: nodes, filteredEdges: styledEdges }
-  }, [displayData, edgeTypeFilter, hoveredNodeId, selectedEntityKey])
+  }, [rawEdges, hoveredNodeId, selectedEntityKey])
 
   // Apply layout based on selected algorithm
   const { nodes, isRunning, restartSimulation } = useHybridLayout(

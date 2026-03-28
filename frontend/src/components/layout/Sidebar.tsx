@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ChevronRight, Boxes, Tag, Package, Layers, Archive, FileCode, LayoutDashboard, FileText, Plus, Trash2 } from 'lucide-react'
 import {
@@ -103,6 +103,10 @@ function EntitySection({
   const directEdits = useDraftStore((s) => s.directlyEditedEntities)
   const transitiveAffects = useDraftStore((s) => s.transitivelyAffectedEntities)
   const filteredEntities = useSearchFilter(searchTerm, entities)
+  const tree = useMemo(
+    () => treeMode ? buildTree(filteredEntities) : null,
+    [treeMode, filteredEntities]
+  )
 
   const [manualOpen, setManualOpen] = useState<boolean | null>(null)
 
@@ -256,8 +260,7 @@ function EntitySection({
                 )
               })
 
-            if (treeMode && !searchTerm) {
-              const tree = buildTree(filteredEntities)
+            if (tree && !searchTerm) {
               return renderTreeNodes(tree)
             }
 
@@ -328,46 +331,45 @@ export function Sidebar() {
   const debouncedSearchTerm = useDebounce(searchTerm, 150)
 
   // Fetch all entity types
-  // Fetch all entities (limit=100 to avoid default 20-item cap)
-  const allLimit = 100
+  const SIDEBAR_FETCH_LIMIT = 100
   const { data: categoriesData, isLoading: categoriesLoading } = useCategories(
     undefined,
-    allLimit,
+    SIDEBAR_FETCH_LIMIT,
     draftId
   )
   const { data: propertiesData, isLoading: propertiesLoading } = useProperties(
     undefined,
-    allLimit,
+    SIDEBAR_FETCH_LIMIT,
     draftId
   )
   const { data: subobjectsData, isLoading: subobjectsLoading } = useSubobjects(
     undefined,
-    allLimit,
+    SIDEBAR_FETCH_LIMIT,
     draftId
   )
   const { data: modulesData, isLoading: modulesLoading } = useModules(
     undefined,
-    allLimit,
+    SIDEBAR_FETCH_LIMIT,
     draftId
   )
   const { data: bundlesData, isLoading: bundlesLoading } = useBundles(
     undefined,
-    allLimit,
+    SIDEBAR_FETCH_LIMIT,
     draftId
   )
   const { data: templatesData, isLoading: templatesLoading } = useTemplates(
     undefined,
-    allLimit,
+    SIDEBAR_FETCH_LIMIT,
     draftId
   )
   const { data: dashboardsData, isLoading: dashboardsLoading } = useDashboards(
     undefined,
-    allLimit,
+    SIDEBAR_FETCH_LIMIT,
     draftId
   )
   const { data: resourcesData, isLoading: resourcesLoading } = useResources(
     undefined,
-    allLimit,
+    SIDEBAR_FETCH_LIMIT,
     draftId
   )
 
