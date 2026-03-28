@@ -61,16 +61,12 @@ async def get_cached_github_sha(
 
     try:
         sha = await github_client.get_latest_commit_sha(owner, repo)
-        _github_sha_cache = _GitHubShaCache(
-            sha=sha, error=None, checked_at=time.monotonic()
-        )
+        _github_sha_cache = _GitHubShaCache(sha=sha, error=None, checked_at=time.monotonic())
         return sha, None
     except Exception as e:
         error_msg = f"GitHub unreachable: {e}"
         logger.warning("Failed to fetch GitHub SHA: %s", e)
-        _github_sha_cache = _GitHubShaCache(
-            sha=None, error=error_msg, checked_at=time.monotonic()
-        )
+        _github_sha_cache = _GitHubShaCache(sha=None, error=error_msg, checked_at=time.monotonic())
         return None, error_msg
 
 
@@ -94,9 +90,7 @@ async def run_sync_with_lock(httpx_client: Any) -> bool:
             prev_version = (
                 (
                     await session.execute(
-                        select(OntologyVersion).order_by(
-                            col(OntologyVersion.created_at).desc()
-                        )
+                        select(OntologyVersion).order_by(col(OntologyVersion.created_at).desc())
                     )
                 )
                 .scalars()

@@ -75,18 +75,12 @@ async def get_sync_status(
     Returns repo info, current DB SHA, GitHub SHA, and sync state.
     Auto-triggers a background sync if the DB is behind GitHub.
     """
-    query = (
-        select(OntologyVersion)
-        .order_by(col(OntologyVersion.created_at).desc())
-        .limit(1)
-    )
+    query = select(OntologyVersion).order_by(col(OntologyVersion.created_at).desc()).limit(1)
     result = await session.execute(query)
     version = result.scalar_one_or_none()
 
     db_commit_sha = version.commit_sha if version else None
-    db_ingested_at = (
-        version.ingested_at.isoformat() if version and version.ingested_at else None
-    )
+    db_ingested_at = version.ingested_at.isoformat() if version and version.ingested_at else None
 
     if is_sync_in_progress():
         return _build_response(

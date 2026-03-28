@@ -450,15 +450,10 @@ async def sync_repository_v2(
 
     # Mark current version as in-progress so the status endpoint can detect it
     existing_version = (
-        (
-            await session.execute(
-                select(OntologyVersion).order_by(
-                    col(OntologyVersion.created_at).desc()
-                ).limit(1)
-            )
+        await session.execute(
+            select(OntologyVersion).order_by(col(OntologyVersion.created_at).desc()).limit(1)
         )
-        .scalar_one_or_none()
-    )
+    ).scalar_one_or_none()
     if existing_version:
         existing_version.ingest_status = IngestStatus.IN_PROGRESS
         await session.commit()
