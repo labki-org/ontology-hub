@@ -269,6 +269,7 @@ export function PropertyDetail({
   )
 
   // Display units handlers
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const handleAddDisplayUnit = useCallback(() => {
     if (newDisplayUnit.trim() && !editedDisplayUnits.includes(newDisplayUnit.trim())) {
       const newUnits = [...editedDisplayUnits, newDisplayUnit.trim()]
@@ -323,6 +324,7 @@ export function PropertyDetail({
   )
 
   const handleHasDisplayTemplateChange = useCallback(
+    // eslint-disable-next-line react-hooks/preserve-manual-memoization
     (rawValue: string) => {
       const value = rawValue === '__none__' ? '' : rawValue
       setEditedHasDisplayTemplate(value)
