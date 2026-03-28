@@ -245,44 +245,46 @@ export function Sidebar() {
   const debouncedSearchTerm = useDebounce(searchTerm, 150)
 
   // Fetch all entity types
+  // Fetch all entities (limit=100 to avoid default 20-item cap)
+  const allLimit = 100
   const { data: categoriesData, isLoading: categoriesLoading } = useCategories(
     undefined,
-    undefined,
+    allLimit,
     draftId
   )
   const { data: propertiesData, isLoading: propertiesLoading } = useProperties(
     undefined,
-    undefined,
+    allLimit,
     draftId
   )
   const { data: subobjectsData, isLoading: subobjectsLoading } = useSubobjects(
     undefined,
-    undefined,
+    allLimit,
     draftId
   )
   const { data: modulesData, isLoading: modulesLoading } = useModules(
     undefined,
-    undefined,
+    allLimit,
     draftId
   )
   const { data: bundlesData, isLoading: bundlesLoading } = useBundles(
     undefined,
-    undefined,
+    allLimit,
     draftId
   )
   const { data: templatesData, isLoading: templatesLoading } = useTemplates(
     undefined,
-    undefined,
+    allLimit,
     draftId
   )
   const { data: dashboardsData, isLoading: dashboardsLoading } = useDashboards(
     undefined,
-    undefined,
+    allLimit,
     draftId
   )
   const { data: resourcesData, isLoading: resourcesLoading } = useResources(
     undefined,
-    undefined,
+    allLimit,
     draftId
   )
 
