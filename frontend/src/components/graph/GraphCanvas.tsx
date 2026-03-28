@@ -81,83 +81,247 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
   const hoveredNodeId = useGraphStore((s) => s.hoveredNodeId)
 
   // Convert API response to React Flow format
+  // Non-category nodes (properties, subobjects, etc.) are duplicated per connected
+  // category so each category forms a clean cluster without cross-links.
   const { initialNodes, filteredEdges } = useMemo(() => {
     if (!displayData) return { initialNodes: [], filteredEdges: [] }
 
-    // Convert nodes
-    const nodes: Node[] = displayData.nodes.map((node: ApiGraphNode) => ({
-      id: node.id,
-      type: 'entity',
-      position: { x: 0, y: 0 }, // Will be set by force layout
-      data: {
-        label: node.label,
-        entity_key: node.id,
-        entity_type: node.entity_type,
-        modules: node.modules,
-        change_status: node.change_status,
-      },
-    }))
+    const categoryTypes = new Set(['category'])
+    const apiNodes = displayData.nodes as ApiGraphNode[]
+    const apiEdges = displayData.edges as ApiGraphEdge[]
 
-    // Filter edges by edge_type
-    const edges: Edge[] = displayData.edges
-      .filter((edge: ApiGraphEdge) => edgeTypeFilter.has(edge.edge_type))
-      .map((edge: ApiGraphEdge, index: number) => {
-        // Determine if this edge connects to the hovered node
-        const isConnectedToHovered = hoveredNodeId
-          ? edge.source === hoveredNodeId || edge.target === hoveredNodeId
-          : false
+    // Identify category node IDs
+    const categoryNodeIds = new Set(
+      apiNodes.filter(n => categoryTypes.has(n.entity_type)).map(n => n.id)
+    )
 
-        const isAddedEdge = edge.change_status === 'added' || edge.change_status === 'modified'
-        const isDeletedEdge = edge.change_status === 'deleted'
-        const isDraftEdge = isAddedEdge || isDeletedEdge
+    // Build map: non-category node → list of connected category IDs (via edges)
+    // First pass: direct category connections (property/subobject edges)
+    const nodeToCategoryEdges = new Map<string, { catId: string; edge: ApiGraphEdge }[]>()
+    // Also track non-category → non-category edges for second pass
+    const nonCatToNonCat = new Map<string, { neighborId: string; edge: ApiGraphEdge }[]>()
 
-        // Calculate opacity and stroke width based on hover state
-        let opacity = 0.7
-        let strokeWidth = 1.5
-        if (hoveredNodeId) {
-          if (isConnectedToHovered) {
-            opacity = 1
-            strokeWidth = 2.5
-          } else {
-            opacity = 0.15
+    for (const edge of apiEdges) {
+      if (!edgeTypeFilter.has(edge.edge_type)) continue
+      if (edge.edge_type === 'parent') continue
+
+      const sourceIsCat = categoryNodeIds.has(edge.source)
+      const targetIsCat = categoryNodeIds.has(edge.target)
+
+      if (sourceIsCat && !targetIsCat) {
+        if (!nodeToCategoryEdges.has(edge.target)) nodeToCategoryEdges.set(edge.target, [])
+        nodeToCategoryEdges.get(edge.target)!.push({ catId: edge.source, edge })
+      } else if (targetIsCat && !sourceIsCat) {
+        if (!nodeToCategoryEdges.has(edge.source)) nodeToCategoryEdges.set(edge.source, [])
+        nodeToCategoryEdges.get(edge.source)!.push({ catId: edge.target, edge })
+      } else if (!sourceIsCat && !targetIsCat) {
+        // Track non-cat to non-cat edges (e.g., subobject_property)
+        if (!nonCatToNonCat.has(edge.source)) nonCatToNonCat.set(edge.source, [])
+        nonCatToNonCat.get(edge.source)!.push({ neighborId: edge.target, edge })
+        if (!nonCatToNonCat.has(edge.target)) nonCatToNonCat.set(edge.target, [])
+        nonCatToNonCat.get(edge.target)!.push({ neighborId: edge.source, edge })
+      }
+    }
+
+    // Second pass: propagate category ownership through non-cat→non-cat edges.
+    // If a subobject belongs to category X and has a subobject_property edge to
+    // a property, that property should also be associated with category X.
+    for (const [nodeId, neighbors] of nonCatToNonCat) {
+      if (nodeToCategoryEdges.has(nodeId)) continue // Already has category connections
+      const catIds = new Set<string>()
+      for (const { neighborId } of neighbors) {
+        const neighborCats = nodeToCategoryEdges.get(neighborId)
+        if (neighborCats) {
+          for (const { catId } of neighborCats) catIds.add(catId)
+        }
+      }
+      if (catIds.size > 0) {
+        // Create synthetic category associations for this node
+        nodeToCategoryEdges.set(nodeId, [...catIds].map(catId => ({
+          catId,
+          edge: neighbors[0].edge, // Use first edge for type info
+        })))
+      }
+    }
+
+    // Build nodes: categories as-is, non-categories duplicated per connected category
+    const nodeMap = new Map(apiNodes.map(n => [n.id, n]))
+    const nodes: Node[] = []
+    const edges: Edge[] = []
+    const processedNonCats = new Set<string>()
+
+    // Add category nodes
+    for (const node of apiNodes) {
+      if (categoryNodeIds.has(node.id)) {
+        nodes.push({
+          id: node.id,
+          type: 'entity',
+          position: { x: 0, y: 0 },
+          data: {
+            label: node.label,
+            node_id: node.id,
+            entity_key: node.id,
+            entity_type: node.entity_type,
+            modules: node.modules,
+            change_status: node.change_status,
+          },
+        })
+      }
+    }
+
+    // Add non-category nodes — one copy per connected category
+    for (const [nodeId, catEdges] of nodeToCategoryEdges) {
+      processedNonCats.add(nodeId)
+      const node = nodeMap.get(nodeId)
+      if (!node) continue
+
+      for (const { catId, edge } of catEdges) {
+        const cloneId = `${nodeId}__${catId}`
+        nodes.push({
+          id: cloneId,
+          type: 'entity',
+          position: { x: 0, y: 0 },
+          data: {
+            label: node.label,
+            node_id: cloneId,
+            entity_key: node.id,
+            entity_type: node.entity_type,
+            modules: node.modules,
+            change_status: node.change_status,
+          },
+        })
+
+        // Create edge from category to this clone
+        const edgeSource = categoryNodeIds.has(edge.source) ? edge.source : cloneId
+        const edgeTarget = categoryNodeIds.has(edge.target) ? edge.target : cloneId
+        edges.push({
+          id: `clone-${cloneId}-${edge.edge_type}`,
+          source: edgeSource,
+          target: edgeTarget,
+          type: 'default',
+          data: { edge_type: edge.edge_type, change_status: edge.change_status },
+          style: {},
+        })
+      }
+    }
+
+    // Add non-category nodes with no category connections (keep original)
+    for (const node of apiNodes) {
+      if (!categoryNodeIds.has(node.id) && !processedNonCats.has(node.id)) {
+        nodes.push({
+          id: node.id,
+          type: 'entity',
+          position: { x: 0, y: 0 },
+          data: {
+            label: node.label,
+            node_id: node.id,
+            entity_key: node.id,
+            entity_type: node.entity_type,
+            modules: node.modules,
+            change_status: node.change_status,
+          },
+        })
+      }
+    }
+
+    // Add parent edges (category→category, untouched)
+    const parentEdges = apiEdges.filter(e =>
+      edgeTypeFilter.has(e.edge_type) && e.edge_type === 'parent'
+    )
+    for (let i = 0; i < parentEdges.length; i++) {
+      const edge = parentEdges[i]
+      edges.push({
+        id: `parent-${i}-${edge.source}-${edge.target}`,
+        source: edge.source,
+        target: edge.target,
+        type: 'default',
+        data: { edge_type: edge.edge_type, change_status: edge.change_status },
+        style: {},
+      })
+    }
+
+    // Add edges between non-category nodes (e.g., subobject→property)
+    const nonCatEdges = apiEdges.filter(e =>
+      edgeTypeFilter.has(e.edge_type) &&
+      e.edge_type !== 'parent' &&
+      !categoryNodeIds.has(e.source) &&
+      !categoryNodeIds.has(e.target)
+    )
+    for (let i = 0; i < nonCatEdges.length; i++) {
+      const edge = nonCatEdges[i]
+      // Find clones that share a category parent, or just use first clone
+      const sourceClones = nodeToCategoryEdges.get(edge.source)
+      const targetClones = nodeToCategoryEdges.get(edge.target)
+      if (sourceClones && targetClones) {
+        // Connect clones that share a category
+        for (const sc of sourceClones) {
+          for (const tc of targetClones) {
+            if (sc.catId === tc.catId) {
+              edges.push({
+                id: `noncat-${i}-${sc.catId}`,
+                source: `${edge.source}__${sc.catId}`,
+                target: `${edge.target}__${tc.catId}`,
+                type: 'default',
+                data: { edge_type: edge.edge_type, change_status: edge.change_status },
+                style: {},
+              })
+            }
           }
         }
+      }
+    }
 
-        // Draft edges: green for added, red for deleted, animated
-        const edgeColor = isAddedEdge
-          ? '#22c55e'
-          : isDeletedEdge
-          ? '#ef4444'
-          : getEdgeColor(edge.edge_type)
-        const dasharray = isDraftEdge ? '6,4' : getEdgeStrokeDasharray(edge.edge_type)
+    // Apply styling to all edges
+    const styledEdges: Edge[] = edges.map((edge) => {
+      const edgeType = edge.data?.edge_type as string
+      const changeStatus = edge.data?.change_status as string | undefined
 
-        return {
-          id: `e${index}-${edge.source}-${edge.target}`,
-          source: edge.source,
-          target: edge.target,
-          type: 'default',
-          animated: isDraftEdge, // Animated moving dashes for draft edges
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            width: 15,
-            height: 15,
-            color: edgeColor,
-          },
-          style: {
-            stroke: edgeColor,
-            strokeWidth: isDraftEdge ? 2 : strokeWidth,
-            strokeDasharray: dasharray,
-            opacity: isDeletedEdge ? 0.5 : opacity,
-            transition: 'opacity 0.2s ease, stroke-width 0.2s ease',
-          },
-          data: {
-            edge_type: edge.edge_type,
-            change_status: edge.change_status,
-          },
+      const isConnectedToHovered = hoveredNodeId
+        ? edge.source === hoveredNodeId || edge.target === hoveredNodeId
+        : false
+
+      const isAddedEdge = changeStatus === 'added' || changeStatus === 'modified'
+      const isDeletedEdge = changeStatus === 'deleted'
+      const isDraftEdge = isAddedEdge || isDeletedEdge
+
+      let opacity = 0.7
+      let strokeWidth = 1.5
+      if (hoveredNodeId) {
+        if (isConnectedToHovered) {
+          opacity = 1
+          strokeWidth = 2.5
+        } else {
+          opacity = 0.15
         }
-      })
+      }
 
-    return { initialNodes: nodes, filteredEdges: edges }
+      const edgeColor = isAddedEdge
+        ? '#22c55e'
+        : isDeletedEdge
+        ? '#ef4444'
+        : getEdgeColor(edgeType)
+      const dasharray = isDraftEdge ? '6,4' : getEdgeStrokeDasharray(edgeType)
+
+      return {
+        ...edge,
+        animated: isDraftEdge,
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          width: 15,
+          height: 15,
+          color: edgeColor,
+        },
+        style: {
+          stroke: edgeColor,
+          strokeWidth: isDraftEdge ? 2 : strokeWidth,
+          strokeDasharray: dasharray,
+          opacity: isDeletedEdge ? 0.5 : opacity,
+          transition: 'opacity 0.2s ease, stroke-width 0.2s ease',
+        },
+      }
+    })
+
+    return { initialNodes: nodes, filteredEdges: styledEdges }
   }, [displayData, edgeTypeFilter, hoveredNodeId])
 
   // Apply layout based on selected algorithm

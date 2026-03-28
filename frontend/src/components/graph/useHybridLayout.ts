@@ -29,6 +29,7 @@ interface D3Node {
   vy?: number
   targetX?: number // Dagre-assigned X position for force constraint
   targetY?: number // Dagre-assigned Y position for force constraint
+  isCategory?: boolean // Whether this is a category node (gets strong position constraint)
 }
 
 /**
@@ -323,7 +324,11 @@ function applyForceLayout(nodes: Node[], edges: Edge[]): Node[] {
 }
 
 /**
- * Hybrid layout: dagre for hierarchy + force for refinement
+ * Hybrid layout: dagre for category hierarchy + force clustering for properties.
+ *
+ * 1. Run dagre ONLY on category nodes (using parent edges) to establish backbone
+ * 2. Position non-category nodes near their connected category centroid
+ * 3. Run d3-force with strong clustering: categories pinned, properties orbit them
  */
 function applyHybridLayout(
   nodes: Node[],
@@ -334,7 +339,11 @@ function applyHybridLayout(
 ): Node[] {
   if (!nodes.length) return []
 
-  // Step 1: Identify connected vs orphan nodes
+  // Step 1: Classify nodes
+  const categoryIds = new Set(
+    nodes.filter(n => n.data?.entity_type === 'category').map(n => n.id)
+  )
+
   const connectedIds = new Set<string>()
   for (const edge of edges) {
     connectedIds.add(edge.source)
@@ -344,101 +353,147 @@ function applyHybridLayout(
   const connectedNodes = nodes.filter(n => connectedIds.has(n.id))
   const orphanNodes = nodes.filter(n => !connectedIds.has(n.id))
 
-  // Step 2: Extract parent edges for hierarchical structure
+  // Step 2: Run dagre ONLY on categories with parent edges
   const parentEdges = edges.filter(e => e.data?.edge_type === 'parent')
+  const categoryNodes = connectedNodes.filter(n => categoryIds.has(n.id))
 
-  // Step 3: Run dagre on parent edges to get rank assignments
   const dagreGraph = new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}))
   dagreGraph.setGraph({
     rankdir: direction,
-    nodesep: 100,  // Horizontal spacing between nodes in same rank
-    ranksep: 150,  // Vertical spacing between ranks
+    nodesep: 200,
+    ranksep: 250,
     marginx: 50,
     marginy: 50,
   })
 
-  // Add connected nodes to dagre
-  for (const node of connectedNodes) {
+  for (const node of categoryNodes) {
     dagreGraph.setNode(node.id, { width: NODE_WIDTH, height: NODE_HEIGHT })
   }
 
-  // Add parent edges to dagre (these define the hierarchy)
-  // Parent edges go child→parent, but dagre expects source above target
-  // So we reverse the edge direction for dagre
   for (const edge of parentEdges) {
-    if (connectedIds.has(edge.source) && connectedIds.has(edge.target)) {
-      // Reverse: parent (target) above child (source)
+    if (categoryIds.has(edge.source) && categoryIds.has(edge.target)) {
       dagreGraph.setEdge(edge.target, edge.source)
     }
   }
 
   dagre.layout(dagreGraph)
 
-  // Get dagre positions as targets for force simulation
-  const nodeTargets = new Map<string, { x: number; y: number }>()
-  for (const node of connectedNodes) {
+  // Get category positions from dagre
+  const categoryPositions = new Map<string, { x: number; y: number }>()
+  for (const node of categoryNodes) {
     const dagreNode = dagreGraph.node(node.id)
     if (dagreNode) {
-      nodeTargets.set(node.id, {
+      categoryPositions.set(node.id, {
         x: dagreNode.x - NODE_WIDTH / 2,
         y: dagreNode.y - NODE_HEIGHT / 2,
       })
     }
   }
 
-  // Step 4: Create d3 nodes with dagre positions as starting points
+  // Step 3: Compute initial positions for non-category nodes
+  // Place them near the centroid of their connected categories
+  const nodeNeighborCategories = new Map<string, string[]>()
+  for (const edge of edges) {
+    for (const [nodeId, catId] of [[edge.source, edge.target], [edge.target, edge.source]]) {
+      if (!categoryIds.has(nodeId) && categoryIds.has(catId)) {
+        if (!nodeNeighborCategories.has(nodeId)) {
+          nodeNeighborCategories.set(nodeId, [])
+        }
+        nodeNeighborCategories.get(nodeId)!.push(catId)
+      }
+    }
+  }
+
+  // Step 4: Build d3 nodes
   const d3Nodes: D3Node[] = connectedNodes.map((node) => {
-    const target = nodeTargets.get(node.id) ?? { x: 0, y: 0 }
+    const isCat = categoryIds.has(node.id)
+
+    if (isCat) {
+      const pos = categoryPositions.get(node.id) ?? { x: 0, y: 0 }
+      return {
+        id: node.id,
+        x: pos.x,
+        y: pos.y,
+        targetX: pos.x,
+        targetY: pos.y,
+        isCategory: true,
+      }
+    }
+
+    // Non-category: start near connected categories' centroid
+    const connCats = nodeNeighborCategories.get(node.id) ?? []
+    let cx = 0, cy = 0
+    if (connCats.length > 0) {
+      for (const catId of connCats) {
+        const pos = categoryPositions.get(catId) ?? { x: 0, y: 0 }
+        cx += pos.x
+        cy += pos.y
+      }
+      cx /= connCats.length
+      cy /= connCats.length
+    }
+
+    // Add jitter so they don't all start at exact same point
+    let hash = 0
+    for (const char of node.id) {
+      hash = ((hash << 5) - hash) + char.charCodeAt(0)
+      hash |= 0
+    }
+    const angle = (Math.abs(hash) % 360) * (Math.PI / 180)
+    const jitter = 30 + (Math.abs(hash) % 40)
+
     return {
       id: node.id,
-      x: target.x,
-      y: target.y,
-      targetX: target.x,
-      targetY: target.y,
+      x: cx + Math.cos(angle) * jitter,
+      y: cy + Math.sin(angle) * jitter,
+      targetX: cx,
+      targetY: cy,
+      isCategory: false,
     }
   })
   d3NodesRef.current = d3Nodes
 
-  // Step 5: Create d3 links with different distances by edge type
+  // Step 5: Create links with edge-type-aware distances
   const d3Links = edges
     .filter(e => connectedIds.has(e.source) && connectedIds.has(e.target))
-    .map((edge) => ({
-      source: edge.source,
-      target: edge.target,
-      distance: edge.data?.edge_type === 'parent' ? 180 : 120,
-    }))
+    .map((edge) => {
+      const edgeType = edge.data?.edge_type
+      if (edgeType === 'parent') {
+        return { source: edge.source, target: edge.target, distance: 200, strength: 0.5 }
+      }
+      // Property/subobject edges: short distance, strong pull to cluster
+      return { source: edge.source, target: edge.target, distance: 70, strength: 0.8 }
+    })
 
-  // Step 6: Run force simulation with constraints
-  // In TB mode, Y is the hierarchical axis (stronger constraint)
-  // In LR mode, X is the hierarchical axis (stronger constraint)
-  const hierarchyStrength = 0.6
-  const crossStrength = 0.3
-  const xStrength = direction === 'LR' ? hierarchyStrength : crossStrength
-  const yStrength = direction === 'TB' ? hierarchyStrength : crossStrength
-
+  // Step 6: Force simulation with clustering behavior
   const simulation = forceSimulation(d3Nodes)
-    .force('charge', forceManyBody().strength(-400))
+    .force('charge', forceManyBody().strength((d: any) =>
+      d.isCategory ? -600 : -150
+    ))
     .force(
       'link',
       forceLink(d3Links)
         .id((d: any) => d.id)
         .distance((d: any) => d.distance)
-        .strength(0.3)
+        .strength((d: any) => d.strength)
     )
-    .force('collide', forceCollide(70))
-    // Constrain nodes toward their dagre-assigned positions
-    .force('targetX', forceX((d: any) => d.targetX).strength(xStrength))
-    .force('targetY', forceY((d: any) => d.targetY).strength(yStrength))
-    .alphaDecay(0.03)
+    .force('collide', forceCollide((d: any) => d.isCategory ? 80 : 40))
+    // Pin categories strongly to dagre positions
+    .force('targetX', forceX((d: any) => d.targetX).strength((d: any) =>
+      d.isCategory ? 0.9 : 0.05
+    ))
+    .force('targetY', forceY((d: any) => d.targetY).strength((d: any) =>
+      d.isCategory ? 0.9 : 0.05
+    ))
+    .alphaDecay(0.02)
     .stop()
 
   simulationRef.current = simulation
 
-  // Run simulation to completion
-  const maxIterations = 300
+  const maxIterations = 400
   for (let i = 0; i < maxIterations; i++) {
     simulation.tick()
-    if (simulation.alpha() < 0.01) break
+    if (simulation.alpha() < 0.005) break
   }
 
   // Build positioned connected nodes
@@ -454,7 +509,7 @@ function applyHybridLayout(
     }
   })
 
-  // Step 7: Position orphan nodes in a grid below the main graph
+  // Step 7: Position orphan nodes in a grid below
   let maxY = -Infinity
   for (const node of positionedConnected) {
     maxY = Math.max(maxY, node.position.y + NODE_HEIGHT)

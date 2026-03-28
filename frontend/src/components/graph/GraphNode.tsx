@@ -190,14 +190,16 @@ function GraphNodeComponent({ data }: { data: GraphNodeData }) {
   }
 
   // Calculate highlight state for hover dimming
+  // Use node_id (clone ID) for edge matching, fall back to entity_key
+  const nodeId = (data.node_id as string) ?? data.entity_key
   const getOpacity = (): number => {
     if (!hoveredNodeId) return 1
-    if (data.entity_key === hoveredNodeId) return 1
+    if (nodeId === hoveredNodeId) return 1
     // Check if this node is connected to the hovered node
     const isConnected = edges.some(
       (edge) =>
-        (edge.source === hoveredNodeId && edge.target === data.entity_key) ||
-        (edge.target === hoveredNodeId && edge.source === data.entity_key)
+        (edge.source === hoveredNodeId && edge.target === nodeId) ||
+        (edge.target === hoveredNodeId && edge.source === nodeId)
     )
     if (isConnected) return 0.85 // Connected nodes are slightly dimmed
     return 0.25 // Unconnected nodes are more dimmed
