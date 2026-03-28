@@ -129,7 +129,7 @@ async def get_sync_status(
 
     # Auto-trigger sync if behind
     if sync_state in ("behind", "unknown"):
-        started = asyncio.ensure_future(run_sync_with_lock(httpx_client))
+        asyncio.ensure_future(run_sync_with_lock(httpx_client))
         if is_sync_in_progress():
             sync_state = "syncing"
 

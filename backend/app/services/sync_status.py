@@ -9,7 +9,7 @@ Provides:
 import asyncio
 import logging
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 from sqlalchemy import select
@@ -87,46 +87,45 @@ async def run_sync_with_lock(httpx_client: Any) -> bool:
         logger.info("Sync already in progress, skipping")
         return False
 
-    async with _sync_lock:
-        async with async_session_maker() as session:
-            github_client = GitHubClient(httpx_client)
-            try:
-                # Get previous commit SHA for draft rebase
-                prev_version = (
-                    (
-                        await session.execute(
-                            select(OntologyVersion).order_by(
-                                col(OntologyVersion.created_at).desc()
-                            )
+    async with _sync_lock, async_session_maker() as session:
+        github_client = GitHubClient(httpx_client)
+        try:
+            # Get previous commit SHA for draft rebase
+            prev_version = (
+                (
+                    await session.execute(
+                        select(OntologyVersion).order_by(
+                            col(OntologyVersion.created_at).desc()
                         )
                     )
-                    .scalars()
-                    .first()
                 )
-                old_commit_sha = prev_version.commit_sha if prev_version else None
+                .scalars()
+                .first()
+            )
+            old_commit_sha = prev_version.commit_sha if prev_version else None
 
-                # Run sync
-                result = await sync_repository_v2(
-                    github_client=github_client,
-                    session=session,
-                    owner=settings.GITHUB_REPO_OWNER,
-                    repo=settings.GITHUB_REPO_NAME,
+            # Run sync
+            result = await sync_repository_v2(
+                github_client=github_client,
+                session=session,
+                owner=settings.GITHUB_REPO_OWNER,
+                repo=settings.GITHUB_REPO_NAME,
+            )
+            logger.info("Sync complete: %s", result)
+
+            # Auto-rebase drafts after canonical update
+            if result.get("status") == "completed" and old_commit_sha:
+                rebase_stats = await auto_rebase_drafts(
+                    session, old_commit_sha, result["commit_sha"]
                 )
-                logger.info("Sync complete: %s", result)
+                logger.info(
+                    "Auto-rebase: %d clean, %d conflicts",
+                    rebase_stats["rebased"],
+                    rebase_stats["conflicted"],
+                )
 
-                # Auto-rebase drafts after canonical update
-                if result.get("status") == "completed" and old_commit_sha:
-                    rebase_stats = await auto_rebase_drafts(
-                        session, old_commit_sha, result["commit_sha"]
-                    )
-                    logger.info(
-                        "Auto-rebase: %d clean, %d conflicts",
-                        rebase_stats["rebased"],
-                        rebase_stats["conflicted"],
-                    )
-
-            except Exception as e:
-                logger.error("Sync failed: %s", e, exc_info=True)
+        except Exception as e:
+            logger.error("Sync failed: %s", e, exc_info=True)
 
     return True
 
