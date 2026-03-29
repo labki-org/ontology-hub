@@ -119,11 +119,8 @@ async def auto_populate_module_derived(
     """Auto-populate module derived entities after categories change.
 
     When a module's categories are modified, this function computes and adds
-    the derived entities (properties, subobjects, templates) based on what
-    those categories require.
-
-    For UPDATE changes: merges derived entity patches into existing patch
-    For CREATE changes: updates replacement_json with derived entities
+    all derived entities (properties, subobjects, templates, resources) based
+    on what those categories require. Entities can appear in multiple modules.
 
     Args:
         session: Async database session
@@ -138,18 +135,14 @@ async def auto_populate_module_derived(
     categories: list[str] = []
 
     if change.change_type == ChangeType.CREATE:
-        # New module: get categories from replacement_json
         categories = (change.replacement_json or {}).get("categories", [])
     elif change.change_type == ChangeType.UPDATE:
-        # Updated module: apply ONLY /categories patches to get effective categories
-        # (Full patch may fail if it includes /properties etc. that don't exist in canonical)
         module_query = select(Module).where(Module.entity_key == change.entity_key)
         result = await session.execute(module_query)
         module = result.scalar_one_or_none()
 
         if module:
             canonical_json = deepcopy(module.canonical_json)
-            # Extract only /categories-related patches
             categories_patches = [
                 op for op in (change.patch or []) if op.get("path", "").startswith("/categories")
             ]
@@ -163,11 +156,32 @@ async def auto_populate_module_derived(
             else:
                 categories = canonical_json.get("categories", [])
         else:
-            # Module doesn't exist in canonical (shouldn't happen for UPDATE)
             return
 
+    # Save manual categories before expanding (for UI distinction)
+    manual_categories = sorted(categories)
+
+    # Expand categories to include parent closure (so the module is self-contained)
+    if categories:
+        all_categories = set(categories)
+        pending = set(categories)
+        while pending:
+            batch = list(pending)
+            pending.clear()
+            for cat_key in batch:
+                cat_query = await session.execute(
+                    select(Category).where(Category.entity_key == cat_key)
+                )
+                cat = cat_query.scalar_one_or_none()
+                if cat:
+                    parents = (cat.canonical_json or {}).get("parents", [])
+                    for p in parents:
+                        if p not in all_categories:
+                            all_categories.add(p)
+                            pending.add(p)
+        categories = sorted(all_categories)
+
     if not categories:
-        # No categories to derive from - set empty derived arrays
         derived: dict[str, list[str] | dict[str, str]] = {
             "properties": [],
             "subobjects": [],
@@ -175,32 +189,35 @@ async def auto_populate_module_derived(
             "resources": [],
         }
     else:
-        # Compute derived entities from categories
         derived = await compute_module_derived_entities(session, categories, draft_id=draft.id)
 
-    # Update the change with derived entities
+    # Update the change with derived entities + expanded categories
     if change.change_type == ChangeType.CREATE:
-        # Update replacement_json directly
-        replacement = change.replacement_json or {}
+        replacement = dict(change.replacement_json or {})
+        replacement["categories"] = categories
+        replacement["manual_categories"] = manual_categories
         replacement["properties"] = derived["properties"]
         replacement["subobjects"] = derived["subobjects"]
         replacement["templates"] = derived["templates"]
         replacement["resources"] = derived.get("resources", [])
         change.replacement_json = replacement
     else:
-        # For UPDATE: add/merge patch operations for derived arrays
         existing_patches: list[dict[str, Any]] = list(change.patch) if change.patch else []
 
-        # Remove any existing patches for derived paths
-        derived_paths = {"/properties", "/subobjects", "/templates", "/resources"}
+        derived_paths = {
+            "/categories",
+            "/manual_categories",
+            "/properties",
+            "/subobjects",
+            "/templates",
+            "/resources",
+        }
         filtered_patches = [p for p in existing_patches if p.get("path") not in derived_paths]
 
-        # Add new patches for derived entities
-        # IMPORTANT: Use "add" not "replace"! The "replace" op fails if the field
-        # doesn't exist in canonical_json (e.g., 'templates' may not exist).
-        # For object members, "add" creates if missing or replaces if exists.
-        # See CLAUDE.md for more details on this gotcha.
+        # IMPORTANT: Use "add" not "replace" — field may not exist in canonical.
         for path, values in [
+            ("/categories", categories),
+            ("/manual_categories", manual_categories),
             ("/properties", derived["properties"]),
             ("/subobjects", derived["subobjects"]),
             ("/templates", derived["templates"]),

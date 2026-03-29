@@ -1,4 +1,5 @@
-import { Handle, Position } from '@xyflow/react'
+import { useMemo } from 'react'
+import { Handle, Position, useEdges } from '@xyflow/react'
 import { useGraphStore } from '@/stores/graphStore'
 import { useDraftStore } from '@/stores/draftStore'
 
@@ -162,8 +163,8 @@ function GraphNodeComponent({ data }: { data: GraphNodeData }) {
   const directEdits = useDraftStore((s) => s.directlyEditedEntities)
   const transitiveAffects = useDraftStore((s) => s.transitivelyAffectedEntities)
 
-  // Get edges from store to determine connectivity to hovered node
-  const edges = useGraphStore((s) => s.edges)
+  // Use rendered React Flow edges (which have clone IDs) for hover connectivity
+  const edges = useEdges()
 
   const handleClick = () => {
     setSelectedEntity(data.entity_key, data.entity_type)
@@ -189,18 +190,51 @@ function GraphNodeComponent({ data }: { data: GraphNodeData }) {
     fillColor = '#dbeafe' // blue-100 - subtle highlight for transitively affected
   }
 
-  // Calculate highlight state for hover dimming
+  // Calculate highlight state for hover/selection dimming
+  // Use node_id (clone ID) for edge matching, fall back to entity_key
+  const nodeId = (data.node_id as string) ?? data.entity_key
+
+  // The "focus" node is either the hovered node or the selected node's clone IDs
+  const focusNodeId = hoveredNodeId ?? null
+  // For selection, find all node IDs that match the selected entity key
+  // (a selected entity may have multiple clones, e.g. Has_description__Equipment)
+  const selectedNodeIds = useMemo(() => {
+    if (!selectedEntityKey || hoveredNodeId) return null
+    const ids = new Set<string>()
+    const prefix = selectedEntityKey + '__'
+    for (const edge of edges) {
+      if (edge.source === selectedEntityKey || edge.source.startsWith(prefix)) ids.add(edge.source)
+      if (edge.target === selectedEntityKey || edge.target.startsWith(prefix)) ids.add(edge.target)
+    }
+    return ids.size > 0 ? ids : null
+  }, [selectedEntityKey, hoveredNodeId, edges])
+
   const getOpacity = (): number => {
-    if (!hoveredNodeId) return 1
-    if (data.entity_key === hoveredNodeId) return 1
-    // Check if this node is connected to the hovered node
-    const isConnected = edges.some(
-      (edge) =>
-        (edge.source === hoveredNodeId && edge.target === data.entity_key) ||
-        (edge.target === hoveredNodeId && edge.source === data.entity_key)
-    )
-    if (isConnected) return 0.85 // Connected nodes are slightly dimmed
-    return 0.25 // Unconnected nodes are more dimmed
+    // Hover takes priority over selection
+    if (focusNodeId) {
+      if (nodeId === focusNodeId) return 1
+      const isConnected = edges.some(
+        (edge) =>
+          (edge.source === focusNodeId && edge.target === nodeId) ||
+          (edge.target === focusNodeId && edge.source === nodeId)
+      )
+      if (isConnected) return 1
+      return 0.25
+    }
+
+    // Selection dimming
+    if (selectedNodeIds) {
+      if (selectedNodeIds.has(nodeId)) return 1
+      const isConnected = edges.some(
+        (edge) =>
+          (selectedNodeIds.has(edge.source) && edge.target === nodeId) ||
+          (selectedNodeIds.has(edge.target) && edge.source === nodeId)
+      )
+      if (isConnected) return 1
+      return 0.25
+    }
+
+    return 1
   }
 
   // Get glow filter for change_status or selection

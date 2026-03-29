@@ -56,7 +56,7 @@ const initialState = {
   showSubobjects: false,
   showTemplates: false,
   edgeTypeFilter: new Set<string>(['parent', 'property', 'subobject', 'subobject_property', 'template', 'module_dashboard', 'category_resource']),
-  layoutAlgorithm: 'radial' as LayoutAlgorithm,
+  layoutAlgorithm: 'hybrid' as LayoutAlgorithm,
   layoutDirection: 'TB' as LayoutDirection,
 }
 

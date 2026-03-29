@@ -13,6 +13,8 @@ from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.models.v2 import (
+    Bundle,
+    BundleModule,
     Category,
     Dashboard,
     Module,
@@ -1409,6 +1411,29 @@ class GraphQueryService:
                         )
                     )
 
+        # Batch load bundle membership for all nodes
+        entity_type_map = {
+            "category": [],
+            "property": [],
+            "subobject": [],
+            "template": [],
+            "dashboard": [],
+            "resource": [],
+        }
+        for node in nodes:
+            et = node.entity_type
+            if et in entity_type_map:
+                entity_type_map[et].append(node.id)
+
+        bundle_membership: dict[str, list[str]] = {}
+        for et, keys in entity_type_map.items():
+            if keys:
+                bm = await self._get_bundle_membership(keys, et)
+                bundle_membership.update(bm)
+
+        for node in nodes:
+            node.bundles = bundle_membership.get(node.id, [])
+
         # Check for cycles in category hierarchy
         has_cycles = await self._check_cycles_in_subgraph(category_keys) if category_keys else False
 
@@ -1591,6 +1616,41 @@ class GraphQueryService:
                 membership[entity_key] = []
             membership[entity_key].append(module_key)
 
+        return membership
+
+    async def _get_bundle_membership(
+        self,
+        entity_keys: list[str],
+        entity_type: str = "category",
+    ) -> dict[str, list[str]]:
+        """Batch load bundle membership for entities.
+
+        Traverses: entity → ModuleEntity → Module → BundleModule → Bundle.
+        """
+        if not entity_keys:
+            return {}
+
+        query = (
+            select(
+                ModuleEntity.entity_key,
+                col(Bundle.entity_key).label("bundle_key"),
+            )
+            .join(Module, onclause=col(Module.id) == col(ModuleEntity.module_id))
+            .join(BundleModule, onclause=col(BundleModule.module_id) == col(Module.id))
+            .join(Bundle, onclause=col(Bundle.id) == col(BundleModule.bundle_id))
+            .where(
+                col(ModuleEntity.entity_key).in_(entity_keys),
+                ModuleEntity.entity_type == entity_type,
+            )
+        )
+
+        result = await self.session.execute(query)
+        membership: dict[str, list[str]] = {}
+        for row in result.fetchall():
+            if row.entity_key not in membership:
+                membership[row.entity_key] = []
+            if row.bundle_key not in membership[row.entity_key]:
+                membership[row.entity_key].append(row.bundle_key)
         return membership
 
     async def _get_edges_for_categories(

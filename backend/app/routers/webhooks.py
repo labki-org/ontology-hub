@@ -11,14 +11,9 @@ import logging
 from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
-from sqlalchemy import select
 
 from app.config import settings
-from app.database import async_session_maker
-from app.models.v2 import OntologyVersion
-from app.services.draft_rebase import auto_rebase_drafts
-from app.services.github import GitHubClient
-from app.services.ingest import sync_repository_v2
+from app.services.sync_status import run_sync_with_lock
 
 logger = logging.getLogger(__name__)
 
@@ -67,51 +62,13 @@ async def verify_github_signature(request: Request) -> bytes:
 async def trigger_sync_background_v2(httpx_client: Any) -> None:
     """Background task to sync repository using v2.0 ingest.
 
-    Creates its own database session since FastAPI BackgroundTasks
-    run after the request context is closed.
+    Delegates to the shared run_sync_with_lock function which handles
+    session creation, sync execution, draft rebasing, and concurrency.
 
     Args:
         httpx_client: Pre-configured httpx.AsyncClient from app.state
     """
-    async with async_session_maker() as session:
-        github_client = GitHubClient(httpx_client)
-        try:
-            # Get previous commit SHA for draft staleness detection
-            from sqlmodel import col
-
-            prev_version = (
-                (
-                    await session.execute(
-                        select(OntologyVersion).order_by(col(OntologyVersion.created_at).desc())
-                    )
-                )
-                .scalars()
-                .first()
-            )
-            old_commit_sha = prev_version.commit_sha if prev_version else None
-
-            # Run v2.0 ingest
-            result = await sync_repository_v2(
-                github_client=github_client,
-                session=session,
-                owner=settings.GITHUB_REPO_OWNER,
-                repo=settings.GITHUB_REPO_NAME,
-            )
-            logger.info("v2.0 sync complete: %s", result)
-
-            # Auto-rebase drafts after canonical update
-            if result.get("status") == "completed" and old_commit_sha:
-                rebase_stats = await auto_rebase_drafts(
-                    session, old_commit_sha, result["commit_sha"]
-                )
-                logger.info(
-                    "Auto-rebase: %d clean, %d conflicts",
-                    rebase_stats["rebased"],
-                    rebase_stats["conflicted"],
-                )
-
-        except Exception as e:
-            logger.error("v2.0 sync failed: %s", e, exc_info=True)
+    await run_sync_with_lock(httpx_client)
 
 
 @router.post("/github")

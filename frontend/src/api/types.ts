@@ -3,6 +3,7 @@ export interface EntityWithStatus {
   entity_key: string
   label: string
   description?: string | null
+  parents?: string[] | null
   change_status?: 'added' | 'modified' | 'deleted' | 'unchanged'
   deleted?: boolean
 }
@@ -48,6 +49,18 @@ export interface OntologyVersionInfo {
   ingested_at: string
 }
 
+export interface SyncStatus {
+  repo_owner: string
+  repo_name: string
+  repo_url: string
+  db_commit_sha: string | null
+  db_commit_url: string | null
+  db_ingested_at: string | null
+  github_commit_sha: string | null
+  sync_state: 'synced' | 'behind' | 'syncing' | 'error' | 'unknown'
+  error: string | null
+}
+
 // Graph types (from backend app/schemas/graph.py)
 export interface GraphNode {
   id: string
@@ -55,6 +68,7 @@ export interface GraphNode {
   entity_type: string
   depth?: number
   modules: string[]
+  bundles: string[]
   change_status?: 'added' | 'modified' | 'deleted' | 'unchanged'
 }
 
@@ -82,6 +96,7 @@ export interface PropertyDetailV2 {
   allowed_values?: string[] | null
   allowed_pattern?: string | null
   allowed_value_list?: string | null
+  allowed_value_from_category?: string | null
   // Display configuration
   display_units?: string[] | null
   display_precision?: number | null
@@ -121,8 +136,9 @@ export interface ModuleDetailV2 {
   version?: string | null
   description?: string | null
   entities: Record<string, string[]>  // { category: [...], property: [...] }
+  manual_categories?: string[]  // User-selected categories (vs auto-expanded parents)
   dependencies: string[]  // Module entity keys this module depends on
-  closure: string[]  // Transitive category dependencies
+  closure: string[]  // Transitive category dependencies (legacy)
   change_status?: 'added' | 'modified' | 'deleted' | 'unchanged'
   deleted?: boolean
 }

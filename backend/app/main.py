@@ -28,6 +28,7 @@ from app.routers import (
     mediawiki_import_router,
     oauth_router,
     register_oauth_client,
+    sync_router,
     webhooks_router,
 )
 from app.routers.entities import router as entities_router
@@ -146,6 +147,7 @@ app.include_router(graph_router, prefix="/api/v2")
 app.include_router(drafts_router, prefix="/api/v2")
 app.include_router(draft_changes_router, prefix="/api/v2")
 app.include_router(mediawiki_import_router, prefix="/api/v2")
+app.include_router(sync_router, prefix="/api/v2")
 
 
 @app.get("/health")

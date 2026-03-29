@@ -9,6 +9,7 @@ from app.routers.graph import router as graph_router
 from app.routers.mediawiki_import import router as mediawiki_import_router
 from app.routers.oauth import register_oauth_client
 from app.routers.oauth import router as oauth_router
+from app.routers.sync import router as sync_router
 from app.routers.webhooks import router as webhooks_router
 
 __all__ = [
@@ -18,5 +19,6 @@ __all__ = [
     "mediawiki_import_router",
     "oauth_router",
     "register_oauth_client",
+    "sync_router",
     "webhooks_router",
 ]

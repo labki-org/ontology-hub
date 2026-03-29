@@ -21,6 +21,10 @@ class EntityWithStatus(BaseModel):
 
     entity_key: str
     label: str
+    parents: list[str] | None = Field(
+        default=None,
+        description="Parent entity keys (categories only)",
+    )
     change_status: ChangeStatus | None = Field(
         default=None,
         validation_alias="_change_status",
@@ -121,6 +125,10 @@ class PropertyDetailResponse(BaseModel):
     )
     allowed_value_list: str | None = Field(
         default=None, description="Reference to a wiki page containing allowed values"
+    )
+    allowed_value_from_category: str | None = Field(
+        default=None,
+        description="Category entity key restricting Page-type values",
     )
     # Display configuration
     display_units: list[str] | None = Field(
@@ -233,6 +241,10 @@ class ModuleDetailResponse(BaseModel):
     entities: dict[str, list[str]] = Field(
         default_factory=dict,
         description="Entities by type: {category: [...], property: [...], ...}",
+    )
+    manual_categories: list[str] | None = Field(
+        default=None,
+        description="User-selected categories (before parent expansion)",
     )
     dependencies: list[str] = Field(
         default_factory=list,
