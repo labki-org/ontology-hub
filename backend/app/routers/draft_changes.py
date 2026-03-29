@@ -111,6 +111,71 @@ async def entity_exists(session: AsyncSession, entity_type: str, entity_key: str
     return result.scalars().first() is not None
 
 
+async def _build_module_dep_graph(
+    session: AsyncSession,
+    draft: Draft,
+) -> dict[str, set[str]]:
+    """Build module → direct dependencies graph (canonical + draft-aware).
+
+    Returns:
+        Dict mapping module_key to set of direct dependency module_keys
+    """
+    from copy import deepcopy
+
+    import jsonpatch
+
+    graph: dict[str, set[str]] = {}
+
+    # Canonical modules
+    for mod in (await session.execute(select(Module))).scalars().all():
+        deps = (mod.canonical_json or {}).get("dependencies", [])
+        graph[mod.entity_key] = set(deps)
+
+    # Draft changes
+    draft_changes_query = await session.execute(
+        select(DraftChange).where(
+            DraftChange.draft_id == draft.id,
+            DraftChange.entity_type == "module",
+        )
+    )
+    for dc in draft_changes_query.scalars().all():
+        if dc.change_type == ChangeType.CREATE:
+            rj = dc.replacement_json or {}
+            graph[dc.entity_key] = set(rj.get("dependencies", []))
+        elif dc.change_type == ChangeType.UPDATE:
+            canon_q = await session.execute(
+                select(Module).where(Module.entity_key == dc.entity_key)
+            )
+            canon_mod = canon_q.scalar_one_or_none()
+            if canon_mod:
+                try:
+                    cj = deepcopy(canon_mod.canonical_json)
+                    effective = jsonpatch.JsonPatch(dc.patch or []).apply(cj)
+                except jsonpatch.JsonPatchException:
+                    effective = canon_mod.canonical_json
+                graph[dc.entity_key] = set(effective.get("dependencies", []))
+        elif dc.change_type == ChangeType.DELETE:
+            graph.pop(dc.entity_key, None)
+
+    return graph
+
+
+def _resolve_transitive_deps(
+    direct_deps: set[str],
+    dep_graph: dict[str, set[str]],
+) -> set[str]:
+    """Resolve the full transitive closure of module dependencies."""
+    visited: set[str] = set()
+    pending = set(direct_deps)
+    while pending:
+        current = pending.pop()
+        if current in visited:
+            continue
+        visited.add(current)
+        pending.update(dep_graph.get(current, set()))
+    return visited
+
+
 async def _build_entity_module_index(
     session: AsyncSession,
     draft: Draft,
@@ -249,25 +314,13 @@ async def auto_populate_module_derived(
     # Build reverse index: entity → owning module (canonical + draft-aware)
     entity_module_index = await _build_entity_module_index(session, draft, change.entity_key)
 
-    # Separate derived entities into "include" vs "depend on other module"
-    auto_dependencies: set[str] = set()
-    filtered_derived: dict[str, list[str]] = {}
+    # Build module dependency graph to resolve transitive deps
+    module_dep_graph = await _build_module_dep_graph(session, draft)
 
-    for etype in ["properties", "subobjects", "templates", "resources"]:
-        included: list[str] = []
-        for ek in derived.get(etype, []):
-            owner = entity_module_index.get(f"{etype}:{ek}")
-            if owner:
-                auto_dependencies.add(owner)
-            else:
-                included.append(ek)
-        filtered_derived[etype] = included
-
-    # Get existing manual dependencies to merge with auto-discovered ones
+    # Get existing manual dependencies
     if change.change_type == ChangeType.CREATE:
-        existing_deps = set((change.replacement_json or {}).get("dependencies", []))
+        manual_deps = set((change.replacement_json or {}).get("dependencies", []))
     elif change.change_type == ChangeType.UPDATE:
-        # Get effective dependencies from canonical + patch
         module_query2 = await session.execute(
             select(Module).where(Module.entity_key == change.entity_key)
         )
@@ -280,17 +333,37 @@ async def auto_populate_module_derived(
             if dep_patches:
                 try:
                     effective_cj = jsonpatch.JsonPatch(dep_patches).apply(cj)
-                    existing_deps = set(effective_cj.get("dependencies", []))
+                    manual_deps = set(effective_cj.get("dependencies", []))
                 except jsonpatch.JsonPatchException:
-                    existing_deps = set(cj.get("dependencies", []))
+                    manual_deps = set(cj.get("dependencies", []))
             else:
-                existing_deps = set(cj.get("dependencies", []))
+                manual_deps = set(cj.get("dependencies", []))
         else:
-            existing_deps = set()
+            manual_deps = set()
     else:
-        existing_deps = set()
+        manual_deps = set()
 
-    merged_deps = sorted(existing_deps | auto_dependencies)
+    # Resolve transitive closure of manual dependencies
+    transitive_deps = _resolve_transitive_deps(manual_deps, module_dep_graph)
+
+    # Separate derived entities: exclude if owned by a transitively-reachable module,
+    # otherwise add the owning module as a new direct dependency
+    auto_dependencies: set[str] = set()
+    filtered_derived: dict[str, list[str]] = {}
+
+    for etype in ["properties", "subobjects", "templates", "resources"]:
+        included: list[str] = []
+        for ek in derived.get(etype, []):
+            owner = entity_module_index.get(f"{etype}:{ek}")
+            if owner and owner in transitive_deps:
+                pass  # Already covered by existing dependency chain
+            elif owner:
+                auto_dependencies.add(owner)
+            else:
+                included.append(ek)
+        filtered_derived[etype] = included
+
+    merged_deps = sorted(manual_deps | auto_dependencies)
 
     # Update the change with filtered derived entities + dependencies
     if change.change_type == ChangeType.CREATE:
