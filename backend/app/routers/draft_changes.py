@@ -111,19 +111,94 @@ async def entity_exists(session: AsyncSession, entity_type: str, entity_key: str
     return result.scalars().first() is not None
 
 
+async def _build_entity_module_index(
+    session: AsyncSession,
+    draft: Draft,
+    exclude_module_key: str,
+) -> dict[str, str]:
+    """Build a reverse index mapping entity → owning module key.
+
+    Considers both canonical modules and draft-created/modified modules
+    in the same draft (so a second module in a draft sees the first).
+
+    Args:
+        session: Async database session
+        draft: Current draft (for draft-aware resolution)
+        exclude_module_key: Module being populated (skip it to avoid self-reference)
+
+    Returns:
+        Dict mapping "type:entity_key" (e.g. "properties:Has_email") to module key
+    """
+    from copy import deepcopy
+
+    import jsonpatch
+
+    entity_to_module: dict[str, str] = {}
+    entity_types = ["properties", "subobjects", "templates", "resources"]
+
+    # 1. Index canonical modules
+    canonical_modules = await session.execute(select(Module))
+    for mod in canonical_modules.scalars().all():
+        if mod.entity_key == exclude_module_key:
+            continue
+        cj = mod.canonical_json or {}
+        for etype in entity_types:
+            for ek in cj.get(etype, []):
+                entity_to_module[f"{etype}:{ek}"] = mod.entity_key
+
+    # 2. Apply draft changes (creates override canonical, updates patch over it)
+    draft_changes_query = await session.execute(
+        select(DraftChange).where(
+            DraftChange.draft_id == draft.id,
+            DraftChange.entity_type == "module",
+            DraftChange.entity_key != exclude_module_key,
+        )
+    )
+    for dc in draft_changes_query.scalars().all():
+        if dc.change_type == ChangeType.CREATE:
+            rj = dc.replacement_json or {}
+            for etype in entity_types:
+                for ek in rj.get(etype, []):
+                    entity_to_module[f"{etype}:{ek}"] = dc.entity_key
+        elif dc.change_type == ChangeType.UPDATE:
+            # Apply patch to canonical to get effective module contents
+            canon_q = await session.execute(
+                select(Module).where(Module.entity_key == dc.entity_key)
+            )
+            canon_mod = canon_q.scalar_one_or_none()
+            if canon_mod:
+                try:
+                    cj = deepcopy(canon_mod.canonical_json)
+                    effective = jsonpatch.JsonPatch(dc.patch or []).apply(cj)
+                except jsonpatch.JsonPatchException:
+                    effective = canon_mod.canonical_json
+                # Remove old entries for this module, add new
+                keys_to_remove = [k for k, v in entity_to_module.items() if v == dc.entity_key]
+                for k in keys_to_remove:
+                    del entity_to_module[k]
+                for etype in entity_types:
+                    for ek in effective.get(etype, []):
+                        entity_to_module[f"{etype}:{ek}"] = dc.entity_key
+        elif dc.change_type == ChangeType.DELETE:
+            keys_to_remove = [k for k, v in entity_to_module.items() if v == dc.entity_key]
+            for k in keys_to_remove:
+                del entity_to_module[k]
+
+    return entity_to_module
+
+
 async def auto_populate_module_derived(
     session: AsyncSession,
     draft: Draft,
     change: DraftChange,
 ) -> None:
-    """Auto-populate module derived entities after categories change.
+    """Auto-populate module derived entities and dependencies after categories change.
 
-    When a module's categories are modified, this function computes and adds
-    the derived entities (properties, subobjects, templates) based on what
-    those categories require.
-
-    For UPDATE changes: merges derived entity patches into existing patch
-    For CREATE changes: updates replacement_json with derived entities
+    When a module's categories are modified, this function:
+    1. Computes all entities the categories need (properties, subobjects, etc.)
+    2. Checks which entities are already owned by other modules
+    3. Adds those modules as dependencies (single-ownership rule)
+    4. Only includes entities not owned by any other module
 
     Args:
         session: Async database session
@@ -138,18 +213,14 @@ async def auto_populate_module_derived(
     categories: list[str] = []
 
     if change.change_type == ChangeType.CREATE:
-        # New module: get categories from replacement_json
         categories = (change.replacement_json or {}).get("categories", [])
     elif change.change_type == ChangeType.UPDATE:
-        # Updated module: apply ONLY /categories patches to get effective categories
-        # (Full patch may fail if it includes /properties etc. that don't exist in canonical)
         module_query = select(Module).where(Module.entity_key == change.entity_key)
         result = await session.execute(module_query)
         module = result.scalar_one_or_none()
 
         if module:
             canonical_json = deepcopy(module.canonical_json)
-            # Extract only /categories-related patches
             categories_patches = [
                 op for op in (change.patch or []) if op.get("path", "").startswith("/categories")
             ]
@@ -163,11 +234,9 @@ async def auto_populate_module_derived(
             else:
                 categories = canonical_json.get("categories", [])
         else:
-            # Module doesn't exist in canonical (shouldn't happen for UPDATE)
             return
 
     if not categories:
-        # No categories to derive from - set empty derived arrays
         derived: dict[str, list[str] | dict[str, str]] = {
             "properties": [],
             "subobjects": [],
@@ -175,36 +244,82 @@ async def auto_populate_module_derived(
             "resources": [],
         }
     else:
-        # Compute derived entities from categories
         derived = await compute_module_derived_entities(session, categories, draft_id=draft.id)
 
-    # Update the change with derived entities
+    # Build reverse index: entity → owning module (canonical + draft-aware)
+    entity_module_index = await _build_entity_module_index(session, draft, change.entity_key)
+
+    # Separate derived entities into "include" vs "depend on other module"
+    auto_dependencies: set[str] = set()
+    filtered_derived: dict[str, list[str]] = {}
+
+    for etype in ["properties", "subobjects", "templates", "resources"]:
+        included: list[str] = []
+        for ek in derived.get(etype, []):
+            owner = entity_module_index.get(f"{etype}:{ek}")
+            if owner:
+                auto_dependencies.add(owner)
+            else:
+                included.append(ek)
+        filtered_derived[etype] = included
+
+    # Get existing manual dependencies to merge with auto-discovered ones
     if change.change_type == ChangeType.CREATE:
-        # Build new dict to ensure SQLAlchemy detects the mutation
+        existing_deps = set((change.replacement_json or {}).get("dependencies", []))
+    elif change.change_type == ChangeType.UPDATE:
+        # Get effective dependencies from canonical + patch
+        module_query2 = await session.execute(
+            select(Module).where(Module.entity_key == change.entity_key)
+        )
+        mod = module_query2.scalar_one_or_none()
+        if mod:
+            cj = deepcopy(mod.canonical_json)
+            dep_patches = [
+                op for op in (change.patch or []) if op.get("path", "").startswith("/dependencies")
+            ]
+            if dep_patches:
+                try:
+                    effective_cj = jsonpatch.JsonPatch(dep_patches).apply(cj)
+                    existing_deps = set(effective_cj.get("dependencies", []))
+                except jsonpatch.JsonPatchException:
+                    existing_deps = set(cj.get("dependencies", []))
+            else:
+                existing_deps = set(cj.get("dependencies", []))
+        else:
+            existing_deps = set()
+    else:
+        existing_deps = set()
+
+    merged_deps = sorted(existing_deps | auto_dependencies)
+
+    # Update the change with filtered derived entities + dependencies
+    if change.change_type == ChangeType.CREATE:
         replacement = dict(change.replacement_json or {})
-        replacement["properties"] = derived["properties"]
-        replacement["subobjects"] = derived["subobjects"]
-        replacement["templates"] = derived["templates"]
-        replacement["resources"] = derived.get("resources", [])
+        replacement["properties"] = filtered_derived["properties"]
+        replacement["subobjects"] = filtered_derived["subobjects"]
+        replacement["templates"] = filtered_derived["templates"]
+        replacement["resources"] = filtered_derived["resources"]
+        replacement["dependencies"] = merged_deps
         change.replacement_json = replacement
     else:
-        # For UPDATE: add/merge patch operations for derived arrays
         existing_patches: list[dict[str, Any]] = list(change.patch) if change.patch else []
 
-        # Remove any existing patches for derived paths
-        derived_paths = {"/properties", "/subobjects", "/templates", "/resources"}
+        derived_paths = {
+            "/properties",
+            "/subobjects",
+            "/templates",
+            "/resources",
+            "/dependencies",
+        }
         filtered_patches = [p for p in existing_patches if p.get("path") not in derived_paths]
 
-        # Add new patches for derived entities
-        # IMPORTANT: Use "add" not "replace"! The "replace" op fails if the field
-        # doesn't exist in canonical_json (e.g., 'templates' may not exist).
-        # For object members, "add" creates if missing or replaces if exists.
-        # See CLAUDE.md for more details on this gotcha.
+        # IMPORTANT: Use "add" not "replace" — field may not exist in canonical.
         for path, values in [
-            ("/properties", derived["properties"]),
-            ("/subobjects", derived["subobjects"]),
-            ("/templates", derived["templates"]),
-            ("/resources", derived.get("resources", [])),
+            ("/properties", filtered_derived["properties"]),
+            ("/subobjects", filtered_derived["subobjects"]),
+            ("/templates", filtered_derived["templates"]),
+            ("/resources", filtered_derived["resources"]),
+            ("/dependencies", merged_deps),
         ]:
             filtered_patches.append({"op": "add", "path": path, "value": values})
 
