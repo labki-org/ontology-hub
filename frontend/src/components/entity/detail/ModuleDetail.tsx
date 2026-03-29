@@ -269,11 +269,13 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
   const isDeleted = moduleDetail.deleted || false
 
   // Get derived entities (read-only, auto-populated)
+  const allCategories = moduleDetail.entities?.category || []
+  const derivedCategories = allCategories.filter((c: string) => !editedCategories.includes(c))
   const derivedProperties = moduleDetail.entities?.property || []
   const derivedSubobjects = moduleDetail.entities?.subobject || []
   const derivedTemplates = moduleDetail.entities?.template || []
   const derivedResources = moduleDetail.entities?.resource || []
-  const totalDerived = derivedProperties.length + derivedSubobjects.length + derivedTemplates.length + derivedResources.length
+  const totalDerived = derivedCategories.length + derivedProperties.length + derivedSubobjects.length + derivedTemplates.length + derivedResources.length
 
   // Check for modifications
   const isCategoriesModified =
@@ -530,6 +532,25 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
             </p>
           </div>
 
+          {/* Categories (auto-expanded parents) */}
+          <div className="space-y-2">
+            <h4 className="text-sm font-semibold text-foreground/70 flex items-center gap-2">
+              Categories
+              <Badge variant="secondary" className="text-xs">
+                {derivedCategories.length}
+              </Badge>
+            </h4>
+            {derivedCategories.length > 0 ? (
+              <div className="flex flex-wrap gap-1 pl-4">
+                {derivedCategories.map((key: string) =>
+                  renderEntityChip(key, 'category', getLabel(key, availableCategories))
+                )}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground/60 pl-4">No additional parent categories</p>
+            )}
+          </div>
+
           {/* Properties */}
           <div className="space-y-2">
             <h4 className="text-sm font-semibold text-foreground/70 flex items-center gap-2">
@@ -605,32 +626,6 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
               <p className="text-xs text-muted-foreground/60 pl-4">No resources</p>
             )}
           </div>
-        </div>
-      </AccordionSection>
-
-      {/* Computed closure (transitive category dependencies) */}
-      <AccordionSection
-        id="closure"
-        title="Category Closure"
-        count={moduleDetail.closure?.length || 0}
-        defaultOpen={true}
-      >
-        <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">
-            Transitive category dependencies - parent categories that are required by the
-            categories in this module
-          </p>
-          {moduleDetail.closure && moduleDetail.closure.length > 0 ? (
-            <div className="flex flex-wrap gap-1">
-              {moduleDetail.closure.map((categoryKey) =>
-                renderEntityChip(categoryKey, 'category', getLabel(categoryKey, availableCategories))
-              )}
-            </div>
-          ) : (
-            <div className="text-xs text-muted-foreground/60">
-              No transitive dependencies
-            </div>
-          )}
         </div>
       </AccordionSection>
 
