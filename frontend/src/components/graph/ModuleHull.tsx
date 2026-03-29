@@ -74,7 +74,7 @@ export function ModuleHull({
   const hullShape = useMemo((): HullShape | null => {
     // Filter nodes belonging to this module
     const moduleNodes = nodes.filter(
-      (n) => n.data.modules && Array.isArray(n.data.modules) && n.data.modules.includes(moduleId)
+      (n) => n.data.bundles && Array.isArray(n.data.bundles) && n.data.bundles.includes(moduleId)
     )
 
     if (moduleNodes.length === 0) return null
@@ -120,7 +120,7 @@ export function ModuleHull({
   // Compute label position above the hull
   const labelPosition = useMemo(() => {
     const moduleNodes = nodes.filter(
-      (n) => n.data.modules && Array.isArray(n.data.modules) && n.data.modules.includes(moduleId)
+      (n) => n.data.bundles && Array.isArray(n.data.bundles) && n.data.bundles.includes(moduleId)
     )
     if (moduleNodes.length === 0) return null
 

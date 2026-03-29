@@ -163,6 +163,7 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
             entity_key: node.id,
             entity_type: node.entity_type,
             modules: node.modules,
+            bundles: node.bundles,
             change_status: node.change_status,
           },
         })
@@ -187,6 +188,7 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
             entity_key: node.id,
             entity_type: node.entity_type,
             modules: node.modules,
+            bundles: node.bundles,
             change_status: node.change_status,
           },
         })
@@ -218,6 +220,7 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
             entity_key: node.id,
             entity_type: node.entity_type,
             modules: node.modules,
+            bundles: node.bundles,
             change_status: node.change_status,
           },
         })
@@ -336,13 +339,13 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
     { algorithm: layoutAlgorithm, direction: layoutDirection }
   )
 
-  // Extract unique module IDs for hull controls
+  // Extract unique bundle IDs for hull controls
   const moduleIds = useMemo(() => {
-    const moduleSet = new Set<string>()
+    const bundleSet = new Set<string>()
     for (const node of nodes) {
-      if (node.data.modules && Array.isArray(node.data.modules)) {
-        for (const moduleId of node.data.modules) {
-          moduleSet.add(moduleId)
+      if (node.data.bundles && Array.isArray(node.data.bundles)) {
+        for (const bundleId of node.data.bundles) {
+          bundleSet.add(bundleId)
         }
       }
     }

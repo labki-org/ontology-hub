@@ -68,6 +68,7 @@ export interface GraphNode {
   entity_type: string
   depth?: number
   modules: string[]
+  bundles: string[]
   change_status?: 'added' | 'modified' | 'deleted' | 'unchanged'
 }
 

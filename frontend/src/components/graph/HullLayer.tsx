@@ -58,26 +58,24 @@ export function getModuleColor(moduleId: string): string {
 export function HullLayer({ nodes, viewport }: HullLayerProps) {
   const visibleModules = useHullStore((s) => s.visibleModules)
 
-  // Extract all unique module IDs from nodes
-  const allModuleIds = useMemo(() => {
-    const moduleSet = new Set<string>()
+  // Extract all unique bundle IDs from nodes
+  const allBundleIds = useMemo(() => {
+    const bundleSet = new Set<string>()
     for (const node of nodes) {
-      if (node.data.modules && Array.isArray(node.data.modules)) {
-        for (const moduleId of node.data.modules) {
-          moduleSet.add(moduleId)
+      if (node.data.bundles && Array.isArray(node.data.bundles)) {
+        for (const bundleId of node.data.bundles) {
+          bundleSet.add(bundleId)
         }
       }
     }
-    return Array.from(moduleSet)
+    return Array.from(bundleSet)
   }, [nodes])
 
-  // Filter to only visible modules
+  // Filter to only visible bundles
   const visibleModuleIds = useMemo(() => {
-    // If visibleModules is empty, show all modules
-    if (visibleModules.size === 0) return allModuleIds
-
-    return allModuleIds.filter((moduleId) => visibleModules.has(moduleId))
-  }, [allModuleIds, visibleModules])
+    if (visibleModules.size === 0) return allBundleIds
+    return allBundleIds.filter((bundleId) => visibleModules.has(bundleId))
+  }, [allBundleIds, visibleModules])
 
   if (visibleModuleIds.length === 0) return null
 
