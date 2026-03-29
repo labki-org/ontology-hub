@@ -123,7 +123,11 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
   /* eslint-disable react-hooks/set-state-in-effect -- Valid sync with external data */
   useEffect(() => {
     if (moduleDetail && initializedEntityRef.current !== entityKey) {
-      const categories = moduleDetail.entities?.category || []
+      // Use manual_categories if available (preserves user intent);
+      // fall back to full category list for older modules without it
+      const categories = moduleDetail.manual_categories
+        ?? moduleDetail.entities?.category
+        ?? []
       const dependencies = moduleDetail.dependencies || []
       const dashboards = moduleDetail.entities?.dashboard || []
 

@@ -178,15 +178,23 @@ def generate_module_vocab_json(
     The entity dict should contain the standard module fields (id, version, label,
     description, dependencies) plus entity arrays (categories, properties, etc.).
     """
+    manual_categories = set(entity.get("manual_categories", []))
+
     import_entries = []
     for etype, namespace in ENTITY_TYPE_TO_NAMESPACE.items():
         for key in entity.get(etype, []):
+            options: dict[str, Any] = {"replaceable": True}
+            # Manual categories are the only user-selected entries; everything
+            # else (parent categories, properties, subobjects, etc.) is auto-derived
+            is_manual = etype == "categories" and key in manual_categories
+            if not is_manual:
+                options["auto_included"] = True
             import_entries.append(
                 {
                     "page": to_page_name(key),
                     "namespace": namespace,
                     "contents": {"importFrom": f"{etype}/{key}.wikitext"},
-                    "options": {"replaceable": True},
+                    "options": options,
                 }
             )
 

@@ -242,6 +242,10 @@ class ModuleDetailResponse(BaseModel):
         default_factory=dict,
         description="Entities by type: {category: [...], property: [...], ...}",
     )
+    manual_categories: list[str] | None = Field(
+        default=None,
+        description="User-selected categories (before parent expansion)",
+    )
     dependencies: list[str] = Field(
         default_factory=list,
         description="Module entity keys that this module depends on",

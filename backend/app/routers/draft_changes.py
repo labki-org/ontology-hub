@@ -158,6 +158,9 @@ async def auto_populate_module_derived(
         else:
             return
 
+    # Save manual categories before expanding (for UI distinction)
+    manual_categories = sorted(categories)
+
     # Expand categories to include parent closure (so the module is self-contained)
     if categories:
         all_categories = set(categories)
@@ -166,7 +169,6 @@ async def auto_populate_module_derived(
             batch = list(pending)
             pending.clear()
             for cat_key in batch:
-                # Check canonical
                 cat_query = await session.execute(
                     select(Category).where(Category.entity_key == cat_key)
                 )
@@ -193,6 +195,7 @@ async def auto_populate_module_derived(
     if change.change_type == ChangeType.CREATE:
         replacement = dict(change.replacement_json or {})
         replacement["categories"] = categories
+        replacement["manual_categories"] = manual_categories
         replacement["properties"] = derived["properties"]
         replacement["subobjects"] = derived["subobjects"]
         replacement["templates"] = derived["templates"]
@@ -203,6 +206,7 @@ async def auto_populate_module_derived(
 
         derived_paths = {
             "/categories",
+            "/manual_categories",
             "/properties",
             "/subobjects",
             "/templates",
@@ -213,6 +217,7 @@ async def auto_populate_module_derived(
         # IMPORTANT: Use "add" not "replace" — field may not exist in canonical.
         for path, values in [
             ("/categories", categories),
+            ("/manual_categories", manual_categories),
             ("/properties", derived["properties"]),
             ("/subobjects", derived["subobjects"]),
             ("/templates", derived["templates"]),

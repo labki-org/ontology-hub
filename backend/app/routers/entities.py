@@ -998,6 +998,7 @@ async def get_module(
         version=effective.get("version"),
         description=effective.get("description"),
         entities=entities,
+        manual_categories=effective.get("manual_categories"),
         dependencies=dependencies,
         closure=closure,
         change_status=effective.get("_change_status"),
