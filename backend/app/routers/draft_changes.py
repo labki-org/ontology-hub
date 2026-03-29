@@ -158,6 +158,27 @@ async def auto_populate_module_derived(
         else:
             return
 
+    # Expand categories to include parent closure (so the module is self-contained)
+    if categories:
+        all_categories = set(categories)
+        pending = set(categories)
+        while pending:
+            batch = list(pending)
+            pending.clear()
+            for cat_key in batch:
+                # Check canonical
+                cat_query = await session.execute(
+                    select(Category).where(Category.entity_key == cat_key)
+                )
+                cat = cat_query.scalar_one_or_none()
+                if cat:
+                    parents = (cat.canonical_json or {}).get("parents", [])
+                    for p in parents:
+                        if p not in all_categories:
+                            all_categories.add(p)
+                            pending.add(p)
+        categories = sorted(all_categories)
+
     if not categories:
         derived: dict[str, list[str] | dict[str, str]] = {
             "properties": [],
@@ -168,9 +189,10 @@ async def auto_populate_module_derived(
     else:
         derived = await compute_module_derived_entities(session, categories, draft_id=draft.id)
 
-    # Update the change with derived entities
+    # Update the change with derived entities + expanded categories
     if change.change_type == ChangeType.CREATE:
         replacement = dict(change.replacement_json or {})
+        replacement["categories"] = categories
         replacement["properties"] = derived["properties"]
         replacement["subobjects"] = derived["subobjects"]
         replacement["templates"] = derived["templates"]
@@ -179,11 +201,18 @@ async def auto_populate_module_derived(
     else:
         existing_patches: list[dict[str, Any]] = list(change.patch) if change.patch else []
 
-        derived_paths = {"/properties", "/subobjects", "/templates", "/resources"}
+        derived_paths = {
+            "/categories",
+            "/properties",
+            "/subobjects",
+            "/templates",
+            "/resources",
+        }
         filtered_patches = [p for p in existing_patches if p.get("path") not in derived_paths]
 
         # IMPORTANT: Use "add" not "replace" — field may not exist in canonical.
         for path, values in [
+            ("/categories", categories),
             ("/properties", derived["properties"]),
             ("/subobjects", derived["subobjects"]),
             ("/templates", derived["templates"]),
