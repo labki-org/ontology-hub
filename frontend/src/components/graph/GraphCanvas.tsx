@@ -349,7 +349,7 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
         }
       }
     }
-    return Array.from(moduleSet)
+    return Array.from(bundleSet)
   }, [nodes])
 
   // Track if layout has been initialized
