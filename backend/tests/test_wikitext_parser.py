@@ -346,18 +346,30 @@ class TestModuleVocabRoundTrip:
             "description": "Core entities",
             "dependencies": [],
             "import": [
-                {"page": "Person", "namespace": "NS_CATEGORY",
-                 "contents": {"importFrom": "categories/Person.wikitext"},
-                 "options": {"replaceable": True}},
-                {"page": "Agent", "namespace": "NS_CATEGORY",
-                 "contents": {"importFrom": "categories/Agent.wikitext"},
-                 "options": {"replaceable": True}},
-                {"page": "Has_name", "namespace": "SMW_NS_PROPERTY",
-                 "contents": {"importFrom": "properties/Has_name.wikitext"},
-                 "options": {"replaceable": True}},
-                {"page": "Address", "namespace": "NS_SUBOBJECT",
-                 "contents": {"importFrom": "subobjects/Address.wikitext"},
-                 "options": {"replaceable": True}},
+                {
+                    "page": "Person",
+                    "namespace": "NS_CATEGORY",
+                    "contents": {"importFrom": "categories/Person.wikitext"},
+                    "options": {"replaceable": True},
+                },
+                {
+                    "page": "Agent",
+                    "namespace": "NS_CATEGORY",
+                    "contents": {"importFrom": "categories/Agent.wikitext"},
+                    "options": {"replaceable": True},
+                },
+                {
+                    "page": "Has_name",
+                    "namespace": "SMW_NS_PROPERTY",
+                    "contents": {"importFrom": "properties/Has_name.wikitext"},
+                    "options": {"replaceable": True},
+                },
+                {
+                    "page": "Address",
+                    "namespace": "NS_SUBOBJECT",
+                    "contents": {"importFrom": "subobjects/Address.wikitext"},
+                    "options": {"replaceable": True},
+                },
             ],
         }
         parsed = parse_module_vocab(vocab)
