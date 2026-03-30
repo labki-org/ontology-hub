@@ -2,13 +2,11 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { useBundle, useModules } from '@/api/entities'
 import type { BundleDetailV2 } from '@/api/types'
 import { useAutoSave } from '@/hooks/useAutoSave'
-import { useGraphStore } from '@/stores/graphStore'
 import { useDraftStore } from '@/stores/draftStore'
 import { AccordionSection } from '@/components/entity/sections/AccordionSection'
 import { EntityHeader } from '../sections/EntityHeader'
 import { EntityCombobox } from '../forms/EntityCombobox'
 import { RelationshipChips } from '../forms/RelationshipChips'
-import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { SaveIndicator } from '../sections/SaveIndicator'
 
@@ -21,16 +19,14 @@ interface BundleDetailProps {
 
 /**
  * Bundle detail page showing:
- * - Label and version
+ * - Label and description
  * - Direct modules list
- * - Computed closure (all modules including transitive dependencies)
  * - Edit mode for adding/removing modules
  */
 export function BundleDetail({ entityKey, draftId, draftToken, isEditing }: BundleDetailProps) {
   const { data: bundle, isLoading, error } = useBundle(entityKey, draftId)
   const { data: modulesData } = useModules(undefined, undefined, draftId)
 
-  const setSelectedEntity = useGraphStore((s) => s.setSelectedEntity)
   const openNestedCreateModal = useDraftStore((s) => s.openNestedCreateModal)
   const setOnNestedEntityCreated = useDraftStore((s) => s.setOnNestedEntityCreated)
 
@@ -156,11 +152,6 @@ export function BundleDetail({ entityKey, draftId, draftToken, isEditing }: Bund
   const changeStatus = bundleDetail.change_status || 'unchanged'
   const isDeleted = bundleDetail.deleted || false
 
-  // Calculate additional modules in closure (not in direct list)
-  const directModules = new Set(editedModules)
-  const additionalModules =
-    bundleDetail.closure?.filter((mod) => !directModules.has(mod)) || []
-
   return (
     <div className="px-4 py-3">
       {/* Saving indicator */}
@@ -186,14 +177,6 @@ export function BundleDetail({ entityKey, draftId, draftToken, isEditing }: Bund
         onLabelChange={handleLabelChange}
         onDescriptionChange={handleDescriptionChange}
       />
-
-      {/* Version badge */}
-      {bundleDetail.version && (
-        <div className="text-sm">
-          <span className="text-muted-foreground">Version: </span>
-          <Badge variant="outline">{bundleDetail.version}</Badge>
-        </div>
-      )}
 
       {/* Direct modules */}
       <AccordionSection
@@ -251,103 +234,6 @@ export function BundleDetail({ entityKey, draftId, draftToken, isEditing }: Bund
         </div>
       </AccordionSection>
 
-      {/* Computed closure (transitive dependencies) */}
-      <AccordionSection
-        id="closure"
-        title="Computed Closure"
-        count={bundleDetail.closure?.length || 0}
-        defaultOpen={false}
-      >
-        <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">
-            All modules including transitive dependencies (modules required by modules in this
-            bundle)
-          </p>
-          {bundleDetail.closure && bundleDetail.closure.length > 0 ? (
-            <div className="space-y-3">
-              {/* Direct modules in closure */}
-              {editedModules.length > 0 && (
-                <div>
-                  <h5 className="text-sm font-semibold text-foreground/70 uppercase mb-1">
-                    Direct ({editedModules.length})
-                  </h5>
-                  <ul className="space-y-1 pl-4">
-                    {editedModules.map((moduleKey) => (
-                      <li
-                        key={moduleKey}
-                        className="text-sm font-mono text-xs py-1 text-primary"
-                      >
-                        <Badge
-                          variant="outline"
-                          className="cursor-pointer hover:bg-secondary/80"
-                          onClick={() => setSelectedEntity(moduleKey, 'module')}
-                        >
-                          {moduleKey}
-                        </Badge>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Additional modules from dependencies */}
-              {additionalModules.length > 0 && (
-                <div>
-                  <h5 className="text-sm font-semibold text-foreground/70 uppercase mb-1">
-                    Transitive Dependencies ({additionalModules.length})
-                  </h5>
-                  <ul className="space-y-1 pl-4">
-                    {additionalModules.map((moduleKey) => (
-                      <li key={moduleKey} className="text-sm font-mono text-xs py-1">
-                        <Badge
-                          variant="outline"
-                          className="cursor-pointer hover:bg-secondary/80"
-                          onClick={() => setSelectedEntity(moduleKey, 'module')}
-                        >
-                          {moduleKey}
-                        </Badge>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="text-xs text-muted-foreground/60">
-              No modules in closure
-            </div>
-          )}
-        </div>
-      </AccordionSection>
-
-      {/* Suggested version increment */}
-      {draftId && (
-        <AccordionSection
-          id="version-info"
-          title="Version Information"
-          defaultOpen={false}
-        >
-          <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">
-              Suggested version increment based on changes
-            </p>
-            <div className="text-sm">
-              <span className="text-muted-foreground">Current: </span>
-              <Badge variant="outline">{bundleDetail.version || 'unreleased'}</Badge>
-            </div>
-            <div className="text-sm">
-              <span className="text-muted-foreground">Suggested: </span>
-              <Badge variant="secondary">
-                {changeStatus === 'added'
-                  ? 'New bundle'
-                  : changeStatus === 'modified'
-                    ? 'Patch'
-                    : 'No change'}
-              </Badge>
-            </div>
-          </div>
-        </AccordionSection>
-      )}
     </div>
   )
 }

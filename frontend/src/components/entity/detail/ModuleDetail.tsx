@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   useModule,
-  useModules,
   useCategories,
   useProperties,
   useSubobjects,
@@ -31,19 +30,16 @@ interface ModuleDetailProps {
 
 /**
  * Module detail page showing:
- * - Label and version
+ * - Label and description
  * - Direct categories (manually added, editable)
- * - Module dependencies (manually added, editable)
  * - Auto-included entities (derived from categories, read-only)
- * - Computed closure (transitive category dependencies)
  *
- * Only categories and module dependencies are editable.
+ * Only categories are editable.
  * Properties, subobjects, and templates are auto-populated based on
  * what the categories require.
  */
 export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: ModuleDetailProps) {
   const { data: module, isLoading, error, refetch: refetchModule } = useModule(entityKey, draftId)
-  const { data: modulesData } = useModules(undefined, undefined, draftId)
   const { data: categoriesData } = useCategories(undefined, undefined, draftId)
   const { data: propertiesData } = useProperties(undefined, undefined, draftId)
   const { data: subobjectsData } = useSubobjects(undefined, undefined, draftId)
@@ -60,12 +56,6 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
     key: c.entity_key,
     label: c.label,
   }))
-  const availableModules = (modulesData?.items || [])
-    .filter((m) => m.entity_key !== entityKey) // Exclude self
-    .map((m) => ({
-      key: m.entity_key,
-      label: m.label,
-    }))
   const availableProperties = (propertiesData?.items || []).map((p) => ({
     key: p.entity_key,
     label: p.label,
@@ -92,7 +82,6 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
     label?: string
     description?: string
     categories?: string[]
-    dependencies?: string[]
     dashboards?: string[]
   }>({})
 
@@ -100,7 +89,6 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
   const [editedLabel, setEditedLabel] = useState('')
   const [editedDescription, setEditedDescription] = useState('')
   const [editedCategories, setEditedCategories] = useState<string[]>([])
-  const [editedDependencies, setEditedDependencies] = useState<string[]>([])
   const [editedDashboards, setEditedDashboards] = useState<string[]>([])
 
   // Track which entity we've initialized original values for (prevent reset on refetch)
@@ -123,20 +111,21 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
   /* eslint-disable react-hooks/set-state-in-effect -- Valid sync with external data */
   useEffect(() => {
     if (moduleDetail && initializedEntityRef.current !== entityKey) {
-      const categories = moduleDetail.entities?.category || []
-      const dependencies = moduleDetail.dependencies || []
+      // Use manual_categories if available (preserves user intent);
+      // fall back to full category list for older modules without it
+      const categories = moduleDetail.manual_categories
+        ?? moduleDetail.entities?.category
+        ?? []
       const dashboards = moduleDetail.entities?.dashboard || []
 
       setEditedLabel(moduleDetail.label)
       setEditedDescription(moduleDetail.description || '')
       setEditedCategories(categories)
-      setEditedDependencies(dependencies)
       setEditedDashboards(dashboards)
       setOriginalValues({
         label: moduleDetail.label,
         description: moduleDetail.description || '',
         categories,
-        dependencies,
         dashboards,
       })
 
@@ -187,29 +176,6 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
       }
     },
     [editedCategories, draftToken, saveChange]
-  )
-
-  // Dependency handlers
-  const handleAddDependency = useCallback(
-    (moduleKey: string) => {
-      const newDependencies = [...editedDependencies, moduleKey]
-      setEditedDependencies(newDependencies)
-      if (draftToken) {
-        saveChange([{ op: 'add', path: '/dependencies', value: newDependencies }])
-      }
-    },
-    [editedDependencies, draftToken, saveChange]
-  )
-
-  const handleRemoveDependency = useCallback(
-    (moduleKey: string) => {
-      const newDependencies = editedDependencies.filter((k) => k !== moduleKey)
-      setEditedDependencies(newDependencies)
-      if (draftToken) {
-        saveChange([{ op: 'add', path: '/dependencies', value: newDependencies }])
-      }
-    },
-    [editedDependencies, draftToken, saveChange]
   )
 
   const handleAddDashboard = useCallback(
@@ -269,19 +235,18 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
   const isDeleted = moduleDetail.deleted || false
 
   // Get derived entities (read-only, auto-populated)
+  const allCategories = moduleDetail.entities?.category || []
+  const derivedCategories = allCategories.filter((c: string) => !editedCategories.includes(c))
   const derivedProperties = moduleDetail.entities?.property || []
   const derivedSubobjects = moduleDetail.entities?.subobject || []
   const derivedTemplates = moduleDetail.entities?.template || []
   const derivedResources = moduleDetail.entities?.resource || []
-  const totalDerived = derivedProperties.length + derivedSubobjects.length + derivedTemplates.length + derivedResources.length
+  const totalDerived = derivedCategories.length + derivedProperties.length + derivedSubobjects.length + derivedTemplates.length + derivedResources.length
 
   // Check for modifications
   const isCategoriesModified =
     JSON.stringify(editedCategories.sort()) !==
     JSON.stringify((originalValues.categories || []).sort())
-  const isDependenciesModified =
-    JSON.stringify(editedDependencies.sort()) !==
-    JSON.stringify((originalValues.dependencies || []).sort())
   const isDashboardsModified =
     JSON.stringify(editedDashboards.sort()) !==
     JSON.stringify((originalValues.dashboards || []).sort())
@@ -329,14 +294,6 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
         onLabelChange={handleLabelChange}
         onDescriptionChange={handleDescriptionChange}
       />
-
-      {/* Version badge */}
-      {moduleDetail.version && (
-        <div className="text-sm">
-          <span className="text-muted-foreground">Version: </span>
-          <Badge variant="outline">{moduleDetail.version}</Badge>
-        </div>
-      )}
 
       {/* Categories (Manual - Editable) */}
       <AccordionSection
@@ -400,61 +357,6 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
                 })
               }}
               placeholder="Add category..."
-            />
-          )}
-        </div>
-      </AccordionSection>
-
-      {/* Module Dependencies (Manual - Editable) */}
-      <AccordionSection
-        id="dependencies"
-        title={
-          <span className="flex items-center gap-2">
-            Module Dependencies
-            {isDependenciesModified && (
-              <Badge variant="secondary" className="text-xs bg-yellow-500/20 text-yellow-700">
-                Modified
-              </Badge>
-            )}
-          </span>
-        }
-        count={editedDependencies.length}
-        defaultOpen={true}
-        colorHint="module"
-      >
-        <div className="space-y-3">
-          <p className="text-sm text-muted-foreground">
-            Other modules that must be installed before this module
-          </p>
-
-          {/* Current dependencies as chips */}
-          <RelationshipChips
-            values={editedDependencies}
-            onRemove={handleRemoveDependency}
-            disabled={!isEditing}
-            getLabel={(key) => getLabel(key, availableModules)}
-            colorHint="module"
-          />
-
-          {/* Empty state */}
-          {editedDependencies.length === 0 && !isEditing && (
-            <p className="text-xs text-muted-foreground/60">No module dependencies</p>
-          )}
-
-          {/* Add dependency via combobox in edit mode */}
-          {isEditing && (
-            <EntityCombobox
-              entityType="module"
-              availableEntities={availableModules.filter(
-                (m) => !editedDependencies.includes(m.key)
-              )}
-              selectedKeys={[]}
-              onChange={(keys) => {
-                if (keys.length > 0) {
-                  handleAddDependency(keys[0])
-                }
-              }}
-              placeholder="Add module dependency..."
             />
           )}
         </div>
@@ -528,6 +430,25 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
               These entities are automatically included based on the categories above. They cannot
               be edited directly - add or remove categories to change what's included.
             </p>
+          </div>
+
+          {/* Categories (auto-expanded parents) */}
+          <div className="space-y-2">
+            <h4 className="text-sm font-semibold text-foreground/70 flex items-center gap-2">
+              Categories
+              <Badge variant="secondary" className="text-xs">
+                {derivedCategories.length}
+              </Badge>
+            </h4>
+            {derivedCategories.length > 0 ? (
+              <div className="flex flex-wrap gap-1 pl-4">
+                {derivedCategories.map((key: string) =>
+                  renderEntityChip(key, 'category', getLabel(key, availableCategories))
+                )}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground/60 pl-4">No additional parent categories</p>
+            )}
           </div>
 
           {/* Properties */}
@@ -608,56 +529,6 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
         </div>
       </AccordionSection>
 
-      {/* Computed closure (transitive category dependencies) */}
-      <AccordionSection
-        id="closure"
-        title="Category Closure"
-        count={moduleDetail.closure?.length || 0}
-        defaultOpen={true}
-      >
-        <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">
-            Transitive category dependencies - parent categories that are required by the
-            categories in this module
-          </p>
-          {moduleDetail.closure && moduleDetail.closure.length > 0 ? (
-            <div className="flex flex-wrap gap-1">
-              {moduleDetail.closure.map((categoryKey) =>
-                renderEntityChip(categoryKey, 'category', getLabel(categoryKey, availableCategories))
-              )}
-            </div>
-          ) : (
-            <div className="text-xs text-muted-foreground/60">
-              No transitive dependencies
-            </div>
-          )}
-        </div>
-      </AccordionSection>
-
-      {/* Suggested version increment */}
-      {draftId && (
-        <AccordionSection id="version-info" title="Version Information" defaultOpen={false}>
-          <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">
-              Suggested version increment based on changes
-            </p>
-            <div className="text-sm">
-              <span className="text-muted-foreground">Current: </span>
-              <Badge variant="outline">{moduleDetail.version || 'unreleased'}</Badge>
-            </div>
-            <div className="text-sm">
-              <span className="text-muted-foreground">Suggested: </span>
-              <Badge variant="secondary">
-                {changeStatus === 'added'
-                  ? 'New module'
-                  : changeStatus === 'modified'
-                    ? 'Patch'
-                    : 'No change'}
-              </Badge>
-            </div>
-          </div>
-        </AccordionSection>
-      )}
     </div>
   )
 }

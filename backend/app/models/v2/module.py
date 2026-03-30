@@ -15,7 +15,6 @@ class ModuleBase(SQLModel):
     source_path: str  # Original file path, e.g., "modules/core.json"
     label: str = Field(index=True)
     description: str | None = None
-    version: str | None = None  # Semver version, e.g., "1.0.0"
     canonical_json: dict = Field(default_factory=dict, sa_column=Column(JSON))
 
 

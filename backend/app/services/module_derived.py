@@ -23,7 +23,7 @@ from sqlalchemy import text
 from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.models.v2 import Category, ChangeType, DraftChange, Property, Resource
+from app.models.v2 import Category, ChangeType, DraftChange, Property, Resource, Subobject
 from app.services.resource_validation import get_entity_categories
 
 
@@ -31,10 +31,10 @@ async def compute_module_derived_entities(
     session: AsyncSession,
     category_keys: list[str],
     draft_id: uuid.UUID | None = None,
-    max_depth: int = 10,
+    max_depth: int = 10,  # noqa: ARG001 — kept for API compatibility
     track_provenance: bool = False,
 ) -> dict[str, list[str] | dict[str, str]]:
-    """Compute derived entities from a list of category keys with transitive expansion.
+    """Compute derived entities from a list of category keys.
 
     For each category, collects:
     - All properties (required + optional, direct + inherited)
@@ -81,70 +81,40 @@ async def compute_module_derived_entities(
         for change in result_query.scalars().all():
             draft_changes[f"{change.entity_type}:{change.entity_key}"] = change
 
-    # Initialize tracking sets
-    visited_categories: set[str] = set()
-    pending_categories: set[str] = set(category_keys)
-
-    # Initialize collectors
+    # Collect properties/subobjects/resources only from the explicit categories
+    # (and their inheritance chains via _get_category_members).
+    # Referenced categories (via Allows_value_from_category) are NOT expanded —
+    # they only need to exist as module dependencies, not contribute their members.
     all_properties: set[str] = set()
     all_subobjects: set[str] = set()
     all_resources: set[str] = set()
-
-    # Provenance tracking (optional)
     provenance: dict[str, str] = {}
 
-    # Track properties collected per iteration for category ref extraction
-    newly_collected_properties: set[str] = set()
+    for cat_key in category_keys:
+        props, subs = await _get_category_members(session, cat_key, draft_changes)
 
-    depth = 0
-    while pending_categories and depth < max_depth:
-        depth += 1
-        current_batch = pending_categories - visited_categories
-        if not current_batch:
-            break
+        if track_provenance:
+            for prop_key in props - all_properties:
+                provenance[f"property:{prop_key}"] = f"derived from category {cat_key}"
+            for sub_key in subs - all_subobjects:
+                provenance[f"subobject:{sub_key}"] = f"derived from category {cat_key}"
 
-        visited_categories.update(current_batch)
-        newly_collected_properties.clear()
+        all_properties.update(props)
+        all_subobjects.update(subs)
 
-        for cat_key in current_batch:
-            # Get category's members (properties, subobjects)
-            props, subs = await _get_category_members(session, cat_key, draft_changes)
+        resources = await _get_category_resources(session, cat_key, draft_changes)
+        if track_provenance:
+            for res_key in resources - all_resources:
+                provenance[f"resource:{res_key}"] = f"derived from category {cat_key}"
+        all_resources.update(resources)
 
-            # Track new properties for category ref extraction
-            new_props = props - all_properties
-            newly_collected_properties.update(new_props)
-
-            # Record provenance for properties/subobjects
-            if track_provenance:
-                for prop_key in new_props:
-                    if prop_key not in provenance:
-                        provenance[f"property:{prop_key}"] = f"derived from category {cat_key}"
-                for sub_key in subs - all_subobjects:
-                    if sub_key not in provenance:
-                        provenance[f"subobject:{sub_key}"] = f"derived from category {cat_key}"
-
-            all_properties.update(props)
-            all_subobjects.update(subs)
-
-            # Get resources for this category
-            resources = await _get_category_resources(session, cat_key, draft_changes)
-            if track_provenance:
-                for res_key in resources - all_resources:
-                    provenance[f"resource:{res_key}"] = f"derived from category {cat_key}"
-            all_resources.update(resources)
-
-        # Extract category refs from newly collected properties
-        if newly_collected_properties:
-            new_category_refs = await _extract_category_refs_from_properties(
-                session, newly_collected_properties, draft_changes
-            )
-            # Add newly discovered categories to pending
-            new_cats = new_category_refs - visited_categories
-            if track_provenance:
-                for new_cat in new_cats:
-                    # Find which property referenced this category
-                    provenance[f"category:{new_cat}"] = "derived because a property references it"
-            pending_categories.update(new_cats)
+    # Collect properties from subobjects (subobject -> required/optional properties)
+    if all_subobjects:
+        sub_props = await _get_subobject_properties(session, list(all_subobjects), draft_changes)
+        if track_provenance:
+            for prop_key in sub_props - all_properties:
+                provenance[f"property:{prop_key}"] = "derived from subobject"
+        all_properties.update(sub_props)
 
     # After loop: collect templates from all properties
     all_templates: set[str] = set()
@@ -399,6 +369,58 @@ async def _get_category_members(
     subobjects.update(effective.get("optional_subobjects", []))
 
     return properties, subobjects
+
+
+async def _get_subobject_properties(
+    session: AsyncSession,
+    subobject_keys: list[str],
+    draft_changes: dict[str, DraftChange],
+) -> set[str]:
+    """Get all properties referenced by subobjects.
+
+    Args:
+        session: Async database session
+        subobject_keys: List of subobject entity_keys
+        draft_changes: Dict of draft changes
+
+    Returns:
+        Set of property entity_keys used by these subobjects
+    """
+    properties: set[str] = set()
+
+    if not subobject_keys:
+        return properties
+
+    # Query canonical subobjects
+    query = select(Subobject).where(col(Subobject.entity_key).in_(subobject_keys))
+    result = await session.execute(query)
+    for sub in result.scalars().all():
+        change_key = f"subobject:{sub.entity_key}"
+        draft_change = draft_changes.get(change_key)
+
+        if draft_change and draft_change.change_type == ChangeType.UPDATE:
+            canonical_json = deepcopy(sub.canonical_json)
+            try:
+                patch = jsonpatch.JsonPatch(draft_change.patch or [])
+                effective = patch.apply(canonical_json)
+            except jsonpatch.JsonPatchException:
+                effective = canonical_json
+        else:
+            effective = sub.canonical_json
+
+        properties.update(effective.get("required_properties", []))
+        properties.update(effective.get("optional_properties", []))
+
+    # Also check draft-created subobjects
+    for key, change in draft_changes.items():
+        if key.startswith("subobject:") and change.change_type == ChangeType.CREATE:
+            sub_key = key.split(":", 1)[1]
+            if sub_key in subobject_keys:
+                replacement = change.replacement_json or {}
+                properties.update(replacement.get("required_properties", []))
+                properties.update(replacement.get("optional_properties", []))
+
+    return properties
 
 
 async def _get_templates_from_properties(

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ChevronRight, Boxes, Tag, Package, Layers, Archive, FileCode, LayoutDashboard, FileText, Plus, Trash2 } from 'lucide-react'
 import {
@@ -19,7 +19,6 @@ import {
   useTemplates,
   useDashboards,
   useResources,
-  useOntologyVersion,
 } from '@/api/entities'
 import { useDraftV2, useCreateEntityChange, useDeleteEntityChange, useUndoDeleteChange, useDraftChanges } from '@/api/drafts'
 import { useGraphStore } from '@/stores/graphStore'
@@ -49,10 +48,41 @@ interface EntitySectionProps {
   searchTerm: string
   entityType: 'category' | 'property' | 'subobject' | 'template' | 'module' | 'bundle' | 'dashboard' | 'resource'
   isDraftMode: boolean
+  treeMode?: boolean
   onAddNew?: () => void
   onDelete?: (entityKey: string, entityLabel: string) => void
   onUndoDelete?: (entityKey: string) => void
   deletedEntityChanges: Map<string, string>
+}
+
+interface TreeNode {
+  entity: EntityWithStatus
+  children: TreeNode[]
+}
+
+function buildTree(entities: EntityWithStatus[]): TreeNode[] {
+  const entityMap = new Map(entities.map(e => [e.entity_key, e]))
+  const childrenMap = new Map<string | null, EntityWithStatus[]>()
+
+  for (const entity of entities) {
+    const parents = entity.parents?.length ? entity.parents : [null]
+    for (const parent of parents) {
+      // Only nest under parent if parent is in our list
+      const effectiveParent = parent && entityMap.has(parent) ? parent : null
+      if (!childrenMap.has(effectiveParent)) childrenMap.set(effectiveParent, [])
+      childrenMap.get(effectiveParent)!.push(entity)
+    }
+  }
+
+  function buildNodes(parentKey: string | null): TreeNode[] {
+    const children = childrenMap.get(parentKey) ?? []
+    return children.map(entity => ({
+      entity,
+      children: buildNodes(entity.entity_key),
+    }))
+  }
+
+  return buildNodes(null)
 }
 
 function EntitySection({
@@ -63,6 +93,7 @@ function EntitySection({
   searchTerm,
   entityType,
   isDraftMode,
+  treeMode,
   onAddNew,
   onDelete,
   onUndoDelete,
@@ -72,6 +103,21 @@ function EntitySection({
   const directEdits = useDraftStore((s) => s.directlyEditedEntities)
   const transitiveAffects = useDraftStore((s) => s.transitivelyAffectedEntities)
   const filteredEntities = useSearchFilter(searchTerm, entities)
+  const tree = useMemo(
+    () => treeMode ? buildTree(filteredEntities) : null,
+    [treeMode, filteredEntities]
+  )
+
+  const [manualOpen, setManualOpen] = useState<boolean | null>(null)
+
+  // Auto-expand when search has matches; manual toggle takes priority when no search
+  const isOpen = searchTerm
+    ? filteredEntities.length > 0
+    : manualOpen ?? false
+
+  const handleOpenChange = (open: boolean) => {
+    setManualOpen(open)
+  }
 
   if (isLoading) {
     return (
@@ -83,7 +129,7 @@ function EntitySection({
   }
 
   return (
-    <Collapsible defaultOpen>
+    <Collapsible open={isOpen} onOpenChange={handleOpenChange}>
       <div className="flex items-center w-full">
         <CollapsibleTrigger className="flex items-center flex-1 px-2 py-1.5 rounded hover:bg-sidebar-accent text-sm group">
           <ChevronRight className="h-4 w-4 transition-transform group-data-[state=open]:rotate-90" />
@@ -109,31 +155,27 @@ function EntitySection({
       </div>
       <CollapsibleContent>
         <ul className="ml-7 space-y-0.5">
-          {filteredEntities.map((entity) => {
-            const isDeleted = entity.change_status === 'deleted' || entity.deleted || deletedEntityChanges.has(entity.entity_key)
-            const isDirectEdit = directEdits.has(entity.entity_key)
-            const isTransitiveEffect = transitiveAffects.has(entity.entity_key)
+          {(() => {
+            const renderItemContent = (entity: EntityWithStatus) => {
+              const isDeleted = entity.change_status === 'deleted' || entity.deleted || deletedEntityChanges.has(entity.entity_key)
+              const isDirectEdit = directEdits.has(entity.entity_key)
+              const isTransitiveEffect = transitiveAffects.has(entity.entity_key)
 
-            // If entity is deleted and we're in draft mode, show DeletedItemBadge
-            if (isDeleted && isDraftMode && onUndoDelete) {
-              return (
-                <li key={entity.entity_key}>
+              if (isDeleted && isDraftMode && onUndoDelete) {
+                return (
                   <DeletedItemBadge
                     label={entity.label}
                     onUndo={() => onUndoDelete(entity.entity_key)}
                     className="px-2 py-1"
                   />
-                </li>
-              )
-            }
+                )
+              }
 
-            return (
-              <li key={entity.entity_key} className="group">
+              return (
                 <div
                   className={cn(
-                    'flex items-center gap-1 w-full px-2 py-1 text-sm rounded hover:bg-sidebar-accent',
+                    'flex items-center gap-1 w-full px-2 py-1 text-sm rounded hover:bg-sidebar-accent group',
                     isDirectEdit && 'bg-blue-100 dark:bg-blue-900/30',
-                    // Only show transitive if NOT direct edit (direct wins)
                     !isDirectEdit && isTransitiveEffect && 'bg-blue-50 dark:bg-blue-900/10',
                     isDeleted && 'line-through text-muted-foreground'
                   )}
@@ -167,7 +209,6 @@ function EntitySection({
                         : '-'}
                     </Badge>
                   )}
-                  {/* Delete button - visible on hover in draft mode */}
                   {isDraftMode && onDelete && !isDeleted && (
                     <button
                       onClick={(e) => {
@@ -182,9 +223,53 @@ function EntitySection({
                     </button>
                   )}
                 </div>
+              )
+            }
+
+            const renderTreeNodes = (nodes: TreeNode[], parentKey: string = 'root'): React.ReactNode =>
+              nodes.map((node) => {
+                const uniqueKey = `${parentKey}-${node.entity.entity_key}`
+                if (node.children.length === 0) {
+                  return (
+                    <li key={uniqueKey}>
+                      <div className="flex items-center">
+                        <span className="w-4 shrink-0" />
+                        <div className="flex-1">{renderItemContent(node.entity)}</div>
+                      </div>
+                    </li>
+                  )
+                }
+                return (
+                  <li key={uniqueKey}>
+                    <Collapsible defaultOpen>
+                      <div className="flex items-center">
+                        <CollapsibleTrigger className="w-4 shrink-0 flex items-center justify-center rounded hover:bg-sidebar-accent group/tree">
+                          <ChevronRight className="h-3 w-3 transition-transform group-data-[state=open]/tree:rotate-90" />
+                        </CollapsibleTrigger>
+                        <div className="flex-1">
+                          {renderItemContent(node.entity)}
+                        </div>
+                      </div>
+                      <CollapsibleContent>
+                        <ul className="ml-4 space-y-0.5">
+                          {renderTreeNodes(node.children, node.entity.entity_key)}
+                        </ul>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </li>
+                )
+              })
+
+            if (tree && !searchTerm) {
+              return renderTreeNodes(tree)
+            }
+
+            return filteredEntities.map((entity) => (
+              <li key={entity.entity_key}>
+                {renderItemContent(entity)}
               </li>
-            )
-          })}
+            ))
+          })()}
           {filteredEntities.length === 0 && (
             <li className="px-2 py-1 text-sm text-muted-foreground italic">
               {searchTerm ? 'No matches found' : `No ${title.toLowerCase()} found`}
@@ -246,48 +331,49 @@ export function Sidebar() {
   const debouncedSearchTerm = useDebounce(searchTerm, 150)
 
   // Fetch all entity types
+  const SIDEBAR_FETCH_LIMIT = 100
   const { data: categoriesData, isLoading: categoriesLoading } = useCategories(
     undefined,
-    undefined,
+    SIDEBAR_FETCH_LIMIT,
     draftId
   )
   const { data: propertiesData, isLoading: propertiesLoading } = useProperties(
     undefined,
-    undefined,
+    SIDEBAR_FETCH_LIMIT,
     draftId
   )
   const { data: subobjectsData, isLoading: subobjectsLoading } = useSubobjects(
     undefined,
-    undefined,
+    SIDEBAR_FETCH_LIMIT,
     draftId
   )
   const { data: modulesData, isLoading: modulesLoading } = useModules(
     undefined,
-    undefined,
+    SIDEBAR_FETCH_LIMIT,
     draftId
   )
   const { data: bundlesData, isLoading: bundlesLoading } = useBundles(
     undefined,
-    undefined,
+    SIDEBAR_FETCH_LIMIT,
     draftId
   )
   const { data: templatesData, isLoading: templatesLoading } = useTemplates(
     undefined,
-    undefined,
+    SIDEBAR_FETCH_LIMIT,
     draftId
   )
   const { data: dashboardsData, isLoading: dashboardsLoading } = useDashboards(
     undefined,
-    undefined,
+    SIDEBAR_FETCH_LIMIT,
     draftId
   )
   const { data: resourcesData, isLoading: resourcesLoading } = useResources(
     undefined,
-    undefined,
+    SIDEBAR_FETCH_LIMIT,
     draftId
   )
 
-  const { data: versionInfo } = useOntologyVersion()
+
 
   const categories = categoriesData?.items || []
   const properties = propertiesData?.items || []
@@ -440,11 +526,6 @@ export function Sidebar() {
         <Link to="/" className="font-semibold text-lg hover:opacity-80">
           Ontology Hub
         </Link>
-        {versionInfo && (
-          <div className="text-xs text-muted-foreground mt-1">
-            v {versionInfo.commit_sha.slice(0, 7)}
-          </div>
-        )}
         {draftToken && (
           <Badge variant="outline" className="text-xs mt-1">
             Draft Mode
@@ -487,6 +568,7 @@ export function Sidebar() {
             isLoading={categoriesLoading}
             searchTerm={debouncedSearchTerm}
             entityType="category"
+            treeMode
             isDraftMode={isDraftMode}
             onAddNew={() => openCreateModal('category')}
             onDelete={(key, label) => handleDelete('category', key, label)}

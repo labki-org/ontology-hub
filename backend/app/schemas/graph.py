@@ -25,7 +25,11 @@ class GraphNode(BaseModel):
     )
     modules: list[str] = Field(
         default_factory=list,
-        description="Module entity keys this node belongs to (for hull rendering)",
+        description="Module entity keys this node belongs to",
+    )
+    bundles: list[str] = Field(
+        default_factory=list,
+        description="Bundle entity keys this node belongs to (for hull rendering)",
     )
     change_status: Literal["added", "modified", "deleted", "unchanged"] | None = Field(
         default=None, description="Draft change status in draft context"

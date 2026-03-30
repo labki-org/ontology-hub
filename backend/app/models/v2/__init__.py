@@ -51,7 +51,6 @@ from app.models.v2.relationships import (
     CategoryProperty,
     CategorySubobject,
     ModuleDashboard,
-    ModuleDependency,
     ModuleEntity,
     SubobjectProperty,
 )
@@ -108,7 +107,6 @@ __all__ = [
     "CategorySubobject",
     "SubobjectProperty",
     "ModuleEntity",
-    "ModuleDependency",
     "BundleModule",
     "ModuleDashboard",
     "BundleDashboard",

@@ -320,6 +320,8 @@ def parse_module_vocab(vocab_json: dict[str, Any]) -> dict[str, Any]:
         "resources": [],
     }
 
+    auto_included_categories: set[str] = set()
+
     for entry in vocab_json.get("import", []):
         entity_type = NAMESPACE_TO_ENTITY_TYPE.get(entry.get("namespace", ""))
         if not entity_type:
@@ -335,9 +337,19 @@ def parse_module_vocab(vocab_json: dict[str, Any]) -> dict[str, Any]:
         if entity_key and entity_type in entities and entity_key not in entities[entity_type]:
             entities[entity_type].append(entity_key)
 
+        # Track auto-included categories
+        if entity_type == "categories" and entry.get("options", {}).get("auto_included"):
+            auto_included_categories.add(entity_key)
+
     for etype, keys in entities.items():
         if keys:
             result[etype] = keys
+
+    # Reconstruct manual_categories from categories minus auto-included
+    if auto_included_categories and "categories" in result:
+        result["manual_categories"] = [
+            c for c in result["categories"] if c not in auto_included_categories
+        ]
 
     return result
 

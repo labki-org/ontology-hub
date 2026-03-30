@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useCategory, useCategories, useProperties, useSubobjects } from '@/api/entities'
+import type { CategoryDetailV2 } from '@/api/types'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useGraphStore } from '@/stores/graphStore'
 import { useDraftStore } from '@/stores/draftStore'
@@ -73,8 +74,8 @@ export function CategoryDetail({
   // Check if current entity is transitively affected by parent edits
   const isTransitivelyAffected = transitiveAffects.has(entityKey)
 
-  // Type guard: ensure we have CategoryDetailV2
-  const category = rawCategory && 'parents' in rawCategory ? rawCategory : null
+  // Type guard: ensure we have CategoryDetailV2 (check for properties array, not parents)
+  const category = rawCategory && 'properties' in rawCategory ? rawCategory as CategoryDetailV2 : null
 
   // Track original values for change detection
   const [originalValues, setOriginalValues] = useState<{

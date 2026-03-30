@@ -28,13 +28,12 @@ interface BundleFormProps {
 }
 
 /**
- * Bundle creation form with ID, Version, Label, Description, and Modules fields.
+ * Bundle creation form with ID, Label, Description, and Modules fields.
  *
  * Features:
  * - Validates on blur (per CONTEXT.md)
  * - Create button disabled until form is valid
  * - ID field validates for kebab-case format
- * - Version field for semantic versioning
  * - Uses relaxed bundleCreateSchema (allows creation without modules initially)
  * - EntityCombobox for module selection with cascading create support
  *
@@ -70,7 +69,6 @@ export function BundleForm({
     mode: 'onBlur',
     defaultValues: {
       id: initialData?.id ?? '',
-      version: initialData?.version ?? '',
       label: initialData?.label ?? '',
       description: initialData?.description ?? '',
       modules: initialData?.modules ?? [],
@@ -98,22 +96,6 @@ export function BundleForm({
             {...field}
             id="id"
             placeholder="Main_bundle"
-            autoComplete="off"
-          />
-        )}
-      />
-
-      <FormField
-        name="version"
-        label="Version"
-        required
-        control={form.control}
-        description="Semantic version (e.g., 1.0.0)"
-        render={(field) => (
-          <Input
-            {...field}
-            id="version"
-            placeholder="1.0.0"
             autoComplete="off"
           />
         )}

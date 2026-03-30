@@ -21,6 +21,10 @@ class EntityWithStatus(BaseModel):
 
     entity_key: str
     label: str
+    parents: list[str] | None = Field(
+        default=None,
+        description="Parent entity keys (categories only)",
+    )
     change_status: ChangeStatus | None = Field(
         default=None,
         validation_alias="_change_status",
@@ -122,6 +126,10 @@ class PropertyDetailResponse(BaseModel):
     allowed_value_list: str | None = Field(
         default=None, description="Reference to a wiki page containing allowed values"
     )
+    allowed_value_from_category: str | None = Field(
+        default=None,
+        description="Category entity key restricting Page-type values",
+    )
     # Display configuration
     display_units: list[str] | None = Field(
         default=None, description="Units or formats for display"
@@ -220,27 +228,21 @@ class TemplateDetailResponse(BaseModel):
 
 
 class ModuleDetailResponse(BaseModel):
-    """Detailed module response with entities, dependencies, and closure.
+    """Detailed module response with entities.
 
     Entities are grouped by type for easy UI rendering.
-    Closure contains computed transitive dependencies.
     """
 
     entity_key: str
     label: str
-    version: str | None = None
     description: str | None = None
     entities: dict[str, list[str]] = Field(
         default_factory=dict,
         description="Entities by type: {category: [...], property: [...], ...}",
     )
-    dependencies: list[str] = Field(
-        default_factory=list,
-        description="Module entity keys that this module depends on",
-    )
-    closure: list[str] = Field(
-        default_factory=list,
-        description="Computed transitive category dependencies (entity keys)",
+    manual_categories: list[str] | None = Field(
+        default=None,
+        description="User-selected categories (before parent expansion)",
     )
     change_status: ChangeStatus | None = Field(
         default=None,
@@ -255,20 +257,13 @@ class ModuleDetailResponse(BaseModel):
 
 
 class BundleDetailResponse(BaseModel):
-    """Detailed bundle response with modules and closure.
-
-    Closure contains computed transitive module dependencies.
-    """
+    """Detailed bundle response with modules."""
 
     entity_key: str
     label: str
-    version: str | None = None
+    description: str | None = None
     modules: list[str] = Field(
         default_factory=list, description="Module entity keys in this bundle"
-    )
-    closure: list[str] = Field(
-        default_factory=list,
-        description="Computed transitive module closure (all modules including dependencies)",
     )
     change_status: ChangeStatus | None = Field(
         default=None,

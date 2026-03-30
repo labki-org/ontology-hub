@@ -53,9 +53,6 @@ export interface ValidationResultV2 {
   code: string
   message: string
   severity: 'error' | 'warning' | 'info'
-  suggested_semver: 'major' | 'minor' | 'patch' | null
-  old_value: string | null
-  new_value: string | null
 }
 
 export interface ValidationReportV2 {
@@ -63,8 +60,6 @@ export interface ValidationReportV2 {
   errors: ValidationResultV2[]
   warnings: ValidationResultV2[]
   info: ValidationResultV2[]
-  suggested_semver: 'major' | 'minor' | 'patch'
-  semver_reasons: string[]
 }
 
 export interface SubmitRequest {

@@ -83,19 +83,6 @@ class ModuleEntity(SQLModel, table=True):
     entity_key: str = Field(index=True)
 
 
-class ModuleDependency(SQLModel, table=True):
-    """Module dependency relationship.
-
-    Represents: "module X depends on module Y"
-    A module can depend on multiple other modules.
-    """
-
-    __tablename__ = "module_dependency"
-
-    module_id: uuid.UUID = Field(foreign_key="modules_v2.id", primary_key=True)
-    dependency_id: uuid.UUID = Field(foreign_key="modules_v2.id", primary_key=True)
-
-
 class BundleModule(SQLModel, table=True):
     """Bundle-to-module composition.
 

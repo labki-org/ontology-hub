@@ -21,11 +21,6 @@ class ValidationResultV2(BaseModel):
     )
     message: str  # Human-readable explanation
     severity: Literal["error", "warning", "info"]
-    suggested_semver: Literal["major", "minor", "patch"] | None = None
-
-    # For breaking changes, include old/new values
-    old_value: str | None = None
-    new_value: str | None = None
 
 
 class DraftValidationReportV2(BaseModel):
@@ -35,11 +30,3 @@ class DraftValidationReportV2(BaseModel):
     errors: list[ValidationResultV2]
     warnings: list[ValidationResultV2]
     info: list[ValidationResultV2]
-
-    # Aggregate semver recommendation
-    suggested_semver: Literal["major", "minor", "patch"]
-    semver_reasons: list[str]  # ["Datatype changed: has_name Text -> Number"]
-
-    # Per-module/bundle version suggestions
-    module_suggestions: dict[str, str] = {}  # module_key -> suggested version
-    bundle_suggestions: dict[str, str] = {}  # bundle_key -> suggested version
