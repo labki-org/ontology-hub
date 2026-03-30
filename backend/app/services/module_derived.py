@@ -23,7 +23,7 @@ from sqlalchemy import text
 from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.models.v2 import Category, ChangeType, DraftChange, Property, Resource
+from app.models.v2 import Category, ChangeType, DraftChange, Property, Resource, Subobject
 from app.services.resource_validation import get_entity_categories
 
 
@@ -107,6 +107,14 @@ async def compute_module_derived_entities(
             for res_key in resources - all_resources:
                 provenance[f"resource:{res_key}"] = f"derived from category {cat_key}"
         all_resources.update(resources)
+
+    # Collect properties from subobjects (subobject -> required/optional properties)
+    if all_subobjects:
+        sub_props = await _get_subobject_properties(session, list(all_subobjects), draft_changes)
+        if track_provenance:
+            for prop_key in sub_props - all_properties:
+                provenance[f"property:{prop_key}"] = "derived from subobject"
+        all_properties.update(sub_props)
 
     # After loop: collect templates from all properties
     all_templates: set[str] = set()
@@ -361,6 +369,58 @@ async def _get_category_members(
     subobjects.update(effective.get("optional_subobjects", []))
 
     return properties, subobjects
+
+
+async def _get_subobject_properties(
+    session: AsyncSession,
+    subobject_keys: list[str],
+    draft_changes: dict[str, DraftChange],
+) -> set[str]:
+    """Get all properties referenced by subobjects.
+
+    Args:
+        session: Async database session
+        subobject_keys: List of subobject entity_keys
+        draft_changes: Dict of draft changes
+
+    Returns:
+        Set of property entity_keys used by these subobjects
+    """
+    properties: set[str] = set()
+
+    if not subobject_keys:
+        return properties
+
+    # Query canonical subobjects
+    query = select(Subobject).where(col(Subobject.entity_key).in_(subobject_keys))
+    result = await session.execute(query)
+    for sub in result.scalars().all():
+        change_key = f"subobject:{sub.entity_key}"
+        draft_change = draft_changes.get(change_key)
+
+        if draft_change and draft_change.change_type == ChangeType.UPDATE:
+            canonical_json = deepcopy(sub.canonical_json)
+            try:
+                patch = jsonpatch.JsonPatch(draft_change.patch or [])
+                effective = patch.apply(canonical_json)
+            except jsonpatch.JsonPatchException:
+                effective = canonical_json
+        else:
+            effective = sub.canonical_json
+
+        properties.update(effective.get("required_properties", []))
+        properties.update(effective.get("optional_properties", []))
+
+    # Also check draft-created subobjects
+    for key, change in draft_changes.items():
+        if key.startswith("subobject:") and change.change_type == ChangeType.CREATE:
+            sub_key = key.split(":", 1)[1]
+            if sub_key in subobject_keys:
+                replacement = change.replacement_json or {}
+                properties.update(replacement.get("required_properties", []))
+                properties.update(replacement.get("optional_properties", []))
+
+    return properties
 
 
 async def _get_templates_from_properties(
