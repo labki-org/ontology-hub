@@ -1,7 +1,5 @@
 """Tests for wikitext parser and generator round-trip fidelity."""
 
-import json
-
 from app.services.generators.wikitext_generator import (
     generate_category_wikitext,
     generate_property_wikitext,
