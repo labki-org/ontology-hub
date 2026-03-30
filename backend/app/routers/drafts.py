@@ -438,7 +438,9 @@ async def submit_draft(
     pr_title = submit_req.pr_title or f"Schema update: {draft.title or str(draft.id)[:8]}"
     pr_body = generate_pr_body_v2(
         changes=changes,
-        validation=validation,
+        is_valid=validation.is_valid,
+        errors=validation.errors,
+        warnings=validation.warnings,
         draft_title=draft.title,
         user_comment=submit_req.user_comment,
     )

@@ -4,7 +4,6 @@ import json
 
 from app.services.generators.wikitext_generator import (
     generate_category_wikitext,
-    generate_module_vocab_json,
     generate_property_wikitext,
     generate_resource_wikitext,
     generate_subobject_wikitext,
@@ -340,20 +339,29 @@ class TestResourceRoundTrip:
 
 
 class TestModuleVocabRoundTrip:
-    def test_generate_and_parse(self):
-        original = {
+    def test_parse_module_vocab(self):
+        """Test parsing a vocab.json structure (for backward compat with existing repos)."""
+        vocab = {
             "id": "Core",
             "version": "1.0.0",
             "label": "Core Module",
             "description": "Core entities",
             "dependencies": [],
-            "categories": ["Person", "Agent"],
-            "properties": ["Has_name"],
-            "subobjects": ["Address"],
+            "import": [
+                {"page": "Person", "namespace": "NS_CATEGORY",
+                 "contents": {"importFrom": "categories/Person.wikitext"},
+                 "options": {"replaceable": True}},
+                {"page": "Agent", "namespace": "NS_CATEGORY",
+                 "contents": {"importFrom": "categories/Agent.wikitext"},
+                 "options": {"replaceable": True}},
+                {"page": "Has_name", "namespace": "SMW_NS_PROPERTY",
+                 "contents": {"importFrom": "properties/Has_name.wikitext"},
+                 "options": {"replaceable": True}},
+                {"page": "Address", "namespace": "NS_SUBOBJECT",
+                 "contents": {"importFrom": "subobjects/Address.wikitext"},
+                 "options": {"replaceable": True}},
+            ],
         }
-
-        vocab_str = generate_module_vocab_json(original, "0.1.2")
-        vocab = json.loads(vocab_str)
         parsed = parse_module_vocab(vocab)
 
         assert parsed["id"] == "Core"
