@@ -106,7 +106,6 @@ export type TemplateFormData = z.infer<typeof templateSchema>
  */
 const moduleBaseSchema = z.object({
   id: genericIdValidation,
-  version: z.string().min(1, 'Version is required'),
   label: z.string().min(1, 'Label is required'),
   description: z.string().min(1, 'Description is required'),
   categories: z.array(z.string()).optional(),
@@ -125,7 +124,7 @@ export type ModuleCreateFormData = z.infer<typeof moduleCreateSchema>
 
 /**
  * Module entity schema (full validation).
- * Required: id, version, label, description
+ * Required: id, label, description
  * Requires at least one of: categories, properties, subobjects, templates
  */
 export const moduleSchema = moduleBaseSchema.superRefine((data, ctx) => {
@@ -152,7 +151,6 @@ export type ModuleFormData = z.infer<typeof moduleSchema>
  */
 export const bundleCreateSchema = z.object({
   id: genericIdValidation,
-  version: z.string().min(1, 'Version is required'),
   label: z.string().min(1, 'Label is required'),
   description: z.string().min(1, 'Description is required'),
   modules: z.array(z.string()).optional(),
@@ -162,11 +160,10 @@ export type BundleCreateFormData = z.infer<typeof bundleCreateSchema>
 
 /**
  * Bundle entity schema (full validation).
- * Required: id, version, label, description, modules (at least one)
+ * Required: id, label, description, modules (at least one)
  */
 export const bundleSchema = z.object({
   id: genericIdValidation,
-  version: z.string().min(1, 'Version is required'),
   label: z.string().min(1, 'Label is required'),
   description: z.string().min(1, 'Description is required'),
   modules: z.array(z.string()).min(1, 'At least one module is required'),

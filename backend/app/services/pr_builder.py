@@ -25,12 +25,8 @@ from app.models.v2 import (
     Subobject,
     Template,
 )
-
-# Import validation report type
-from app.schemas.validation import DraftValidationReportV2
 from app.services.generators.wikitext_generator import (
     generate_dashboard_page_wikitext,
-    generate_module_vocab_json,
     generate_wikitext,
 )
 
@@ -66,7 +62,7 @@ ENTITY_EXTENSIONS = {
     "template": ".wikitext",
     "dashboard": ".wikitext",
     "resource": ".wikitext",
-    "module": ".vocab.json",
+    "module": ".json",
     "bundle": ".json",
 }
 
@@ -112,9 +108,9 @@ def serialize_for_repo(entity_json: dict, entity_type: str) -> str:
     """
     cleaned = _clean_entity_json(entity_json)
 
-    # Module -> vocab.json
+    # Module -> simple JSON
     if entity_type == "module":
-        return generate_module_vocab_json(cleaned)
+        return json.dumps(cleaned, indent=2) + "\n"
 
     # Bundle -> plain JSON (unchanged format)
     if entity_type == "bundle":
@@ -252,27 +248,25 @@ def generate_commit_message_v2(changes: list[DraftChange]) -> str:
     return f"feat(schema): update from Ontology Hub\n\nChanges: {summary}\n"
 
 
-def generate_pr_title_with_version(
+def generate_pr_title(
     changes: list[DraftChange],
     base_commit_sha: str | None,
-    suggested_semver: str | None,
     user_title: str | None = None,
 ) -> str:
-    """Generate PR title with version context.
+    """Generate PR title.
 
     Format: "[ontology @{sha_prefix}] {summary}"
     Examples:
     - "[ontology @a1b2c3d] Add category: Lab_member"
-    - "[ontology @a1b2c3d] (minor) 3 additions, 2 updates"
+    - "[ontology @a1b2c3d] 3 additions, 2 updates"
 
     Args:
         changes: List of DraftChange records
         base_commit_sha: Base commit SHA the draft is based on
-        suggested_semver: Suggested semver bump (patch/minor/major)
         user_title: Optional user-provided title
 
     Returns:
-        PR title with version context prefix
+        PR title with context prefix
     """
     # Build prefix with commit SHA
     sha_prefix = base_commit_sha[:7] if base_commit_sha else "unknown"
@@ -303,7 +297,7 @@ def generate_pr_title_with_version(
         )
         return f"{prefix} {action} {change.entity_type}: {change.entity_key}"
 
-    # For multiple changes, summarize with semver hint
+    # For multiple changes, summarize
     parts = []
     if creates:
         parts.append(f"{creates} addition{'s' if creates != 1 else ''}")
@@ -313,36 +307,32 @@ def generate_pr_title_with_version(
         parts.append(f"{deletes} deletion{'s' if deletes != 1 else ''}")
 
     summary = ", ".join(parts)
-
-    # Add semver hint if available
-    if suggested_semver:
-        return f"{prefix} ({suggested_semver}) {summary}"
     return f"{prefix} {summary}"
 
 
 def generate_pr_body_v2(
     changes: list[DraftChange],
-    validation: DraftValidationReportV2,
-    draft_title: str | None,
-    user_comment: str | None,
-    base_commit_sha: str | None = None,
-    affected_modules: dict[str, str] | None = None,
-    affected_bundles: dict[str, str] | None = None,
+    is_valid: bool,
+    errors: list | None = None,
+    warnings: list | None = None,
+    draft_title: str | None = None,
+    user_comment: str | None = None,
 ) -> str:
-    """Generate markdown PR body with changes, validation, and semver info.
+    """Generate markdown PR body with changes and validation status.
 
     Args:
         changes: List of DraftChange records
-        validation: Validation report
+        is_valid: Whether validation passed
+        errors: Validation errors (if any)
+        warnings: Validation warnings (if any)
         draft_title: Optional draft title
         user_comment: Optional user comment to include
-        base_commit_sha: Optional base commit SHA for version context
-        affected_modules: Optional dict mapping module keys to current versions
-        affected_bundles: Optional dict mapping bundle keys to current versions
 
     Returns:
         Markdown string for PR body
     """
+    errors = errors or []
+    warnings = warnings or []
     sections = []
 
     # Summary section
@@ -353,33 +343,6 @@ def generate_pr_body_v2(
     # User comment (if provided)
     if user_comment:
         sections.append(f"**Comment:** {user_comment}\n")
-
-    # Version context section
-    if base_commit_sha or affected_modules or affected_bundles:
-        sections.append("## Version Context\n")
-        if base_commit_sha:
-            sections.append(f"**Base ontology:** `{base_commit_sha[:7]}`")
-        sections.append(f"**Suggested bump:** `{validation.suggested_semver}`\n")
-
-        # Affected modules table
-        if affected_modules:
-            sections.append("### Affected Modules\n")
-            sections.append("| Module | Current Version | Suggested Version |")
-            sections.append("|--------|-----------------|-------------------|")
-            for module_key, current_version in affected_modules.items():
-                suggested = validation.module_suggestions.get(module_key, current_version)
-                sections.append(f"| {module_key} | {current_version} | {suggested} |")
-            sections.append("")
-
-        # Affected bundles table
-        if affected_bundles:
-            sections.append("### Affected Bundles\n")
-            sections.append("| Bundle | Current Version | Suggested Version |")
-            sections.append("|--------|-----------------|-------------------|")
-            for bundle_key, current_version in affected_bundles.items():
-                suggested = validation.bundle_suggestions.get(bundle_key, current_version)
-                sections.append(f"| {bundle_key} | {current_version} | {suggested} |")
-            sections.append("")
 
     # Changes section
     sections.append("## Changes\n")
@@ -412,42 +375,21 @@ def generate_pr_body_v2(
 
     # Validation section
     sections.append("## Validation\n")
-    status = "Passed" if validation.is_valid else "Failed"
-    sections.append(f"**Status:** {status}")
-    sections.append(f"**Suggested version bump:** `{validation.suggested_semver}`\n")
+    status = "Passed" if is_valid else "Failed"
+    sections.append(f"**Status:** {status}\n")
 
     # Errors (if any)
-    if validation.errors:
-        sections.append(f"### Errors ({len(validation.errors)})\n")
-        for error in validation.errors:
+    if errors:
+        sections.append(f"### Errors ({len(errors)})\n")
+        for error in errors:
             sections.append(f"- `{error.entity_key}`: {error.message}")
         sections.append("")
 
     # Warnings (if any)
-    if validation.warnings:
-        sections.append(f"### Warnings ({len(validation.warnings)})\n")
-        for warning in validation.warnings:
+    if warnings:
+        sections.append(f"### Warnings ({len(warnings)})\n")
+        for warning in warnings:
             sections.append(f"- `{warning.entity_key}`: {warning.message}")
-        sections.append("")
-
-    # Semver reasons
-    if validation.semver_reasons:
-        sections.append("### Version bump reasons\n")
-        for reason in validation.semver_reasons:
-            sections.append(f"- {reason}")
-        sections.append("")
-
-    # Module/bundle version suggestions
-    if validation.module_suggestions:
-        sections.append("### Module version suggestions\n")
-        for module_key, suggested in validation.module_suggestions.items():
-            sections.append(f"- `{module_key}`: bump to `{suggested}`")
-        sections.append("")
-
-    if validation.bundle_suggestions:
-        sections.append("### Bundle version suggestions\n")
-        for bundle_key, suggested in validation.bundle_suggestions.items():
-            sections.append(f"- `{bundle_key}`: bump to `{suggested}`")
         sections.append("")
 
     # Footer

@@ -33,13 +33,12 @@ interface ModuleFormProps {
 }
 
 /**
- * Module creation form with ID, Version, Label, Description, and entity relationship fields.
+ * Module creation form with ID, Label, Description, and entity relationship fields.
  *
  * Features:
  * - Validates on blur (per CONTEXT.md)
  * - Create button disabled until form is valid
  * - ID field validates for kebab-case format
- * - Version field for semantic versioning
  * - Uses relaxed moduleCreateSchema (allows creation without entities)
  * - EntityCombobox for categories, properties, subobjects, and templates
  *
@@ -100,7 +99,6 @@ export function ModuleForm({
     mode: 'onBlur',
     defaultValues: {
       id: initialData?.id ?? '',
-      version: initialData?.version ?? '',
       label: initialData?.label ?? '',
       description: initialData?.description ?? '',
       categories: initialData?.categories ?? [],
@@ -125,22 +123,6 @@ export function ModuleForm({
             {...field}
             id="id"
             placeholder="Core_module"
-            autoComplete="off"
-          />
-        )}
-      />
-
-      <FormField
-        name="version"
-        label="Version"
-        required
-        control={form.control}
-        description="Semantic version (e.g., 1.0.0)"
-        render={(field) => (
-          <Input
-            {...field}
-            id="version"
-            placeholder="1.0.0"
             autoComplete="off"
           />
         )}

@@ -141,25 +141,12 @@ export function ValidationSummary({ report, onEntityClick }: ValidationSummaryPr
 
   const totalIssues = report.errors.length + report.warnings.length + report.info.length
 
-  // Semver badge color
-  const semverColor =
-    report.suggested_semver === 'major'
-      ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-      : report.suggested_semver === 'minor'
-      ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-      : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-
   return (
     <div className="space-y-3">
       {/* Header with pass/fail indicator */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <StatusIcon className={`h-5 w-5 ${statusColor}`} />
-          <span className="font-semibold">{statusText}</span>
-        </div>
-        <Badge className={semverColor}>
-          Suggested: {report.suggested_semver.toUpperCase()}
-        </Badge>
+      <div className="flex items-center gap-2">
+        <StatusIcon className={`h-5 w-5 ${statusColor}`} />
+        <span className="font-semibold">{statusText}</span>
       </div>
 
       {/* Summary stats */}
@@ -212,17 +199,6 @@ export function ValidationSummary({ report, onEntityClick }: ValidationSummaryPr
         onEntityClick={onEntityClick}
       />
 
-      {/* Semver reasoning */}
-      {report.semver_reasons.length > 0 && (
-        <div className="text-sm text-muted-foreground border-t pt-3 mt-3">
-          <span className="font-medium">Semver reasoning:</span>
-          <ul className="ml-4 mt-1 list-disc">
-            {report.semver_reasons.map((reason, i) => (
-              <li key={i}>{reason}</li>
-            ))}
-          </ul>
-        </div>
-      )}
     </div>
   )
 }

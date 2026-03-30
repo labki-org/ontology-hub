@@ -33,7 +33,6 @@ from app.models.v2 import (
     CategorySubobject,
     Dashboard,
     Module,
-    ModuleDependency,
     ModuleEntity,
     OntologyVersion,
     OntologyVersionPublic,
@@ -815,51 +814,6 @@ async def list_modules(
     )
 
 
-async def compute_module_closure(
-    session: SessionDep,
-    direct_category_keys: list[str],
-) -> list[str]:
-    """Compute transitive category dependencies for a module.
-
-    For each category in module, find categories it depends on (inherits from).
-    Closure = all ancestor categories not already in direct list.
-    Uses recursive CTE on category_parent table.
-
-    Args:
-        session: Async database session
-        direct_category_keys: List of category entity_keys directly in the module
-
-    Returns:
-        List of ancestor category entity_keys (transitive dependencies)
-    """
-    if not direct_category_keys:
-        return []
-
-    # Recursive CTE to find all ancestor categories
-    query = text("""
-        WITH RECURSIVE ancestors AS (
-            -- Base: direct module categories' parents
-            SELECT cp.parent_id as category_id
-            FROM category_parent cp
-            JOIN categories c ON c.id = cp.category_id
-            WHERE c.entity_key = ANY(:category_keys)
-
-            UNION
-
-            -- Recursive: parents of parents
-            SELECT cp.parent_id
-            FROM category_parent cp
-            JOIN ancestors a ON a.category_id = cp.category_id
-        )
-        SELECT DISTINCT c.entity_key
-        FROM ancestors a
-        JOIN categories c ON c.id = a.category_id
-        WHERE c.entity_key != ALL(:category_keys)
-    """)
-    result = await session.execute(query, {"category_keys": direct_category_keys})
-    return [row[0] for row in result.fetchall()]
-
-
 @router.get("/modules/{entity_key}", response_model=ModuleDetailResponse)
 @limiter.limit(RATE_LIMITS["entity_read"])
 async def get_module(
@@ -887,7 +841,6 @@ async def get_module(
 
     # Get entities grouped by type
     entities: dict[str, list[str]] = {}
-    direct_category_keys: list[str] = []
     change_status = effective.get("_change_status")
 
     # Check if effective JSON has draft-modified entity arrays
@@ -905,10 +858,8 @@ async def get_module(
 
     if has_draft_entities:
         # Use entity arrays from effective JSON (draft changes take precedence)
-        # Convert from canonical_json format (categories/properties/etc) to API format (entities object)
         if "categories" in effective:
             entities["category"] = effective.get("categories", [])
-            direct_category_keys = entities["category"]
         if "properties" in effective:
             entities["property"] = effective.get("properties", [])
         if "subobjects" in effective:
@@ -919,28 +870,6 @@ async def get_module(
             entities["dashboard"] = effective.get("dashboards", [])
         if "resources" in effective:
             entities["resource"] = effective.get("resources", [])
-
-        # Compute closure using draft-modified categories
-        closure = (
-            await compute_module_closure(session, direct_category_keys)
-            if direct_category_keys
-            else []
-        )
-
-        # Get module dependencies (may also be draft-modified)
-        if "dependencies" in effective:
-            dependencies = effective.get("dependencies", [])
-        elif module:
-            dep_query = (
-                select(Module.entity_key)
-                .join(ModuleDependency, col(ModuleDependency.dependency_id) == col(Module.id))
-                .where(ModuleDependency.module_id == module.id)
-                .order_by(Module.entity_key)
-            )
-            dep_result = await session.execute(dep_query)
-            dependencies = [row[0] for row in dep_result.fetchall()]
-        else:
-            dependencies = []
     elif module:
         # No draft changes to entities - query canonical from database
         entity_query = (
@@ -951,33 +880,14 @@ async def get_module(
         entity_result = await session.execute(entity_query)
 
         for row in entity_result.fetchall():
-            # entity_type is stored as string in DB, may be returned as string or enum
             entity_type = row[0].value if hasattr(row[0], "value") else row[0]
             ent_key = row[1]
 
             if entity_type not in entities:
                 entities[entity_type] = []
             entities[entity_type].append(ent_key)
-
-            # Track categories for closure computation
-            if entity_type == "category":
-                direct_category_keys.append(ent_key)
-
-        # Compute closure (transitive category dependencies)
-        closure = await compute_module_closure(session, direct_category_keys)
-
-        # Get module dependencies
-        dep_query = (
-            select(Module.entity_key)
-            .join(ModuleDependency, col(ModuleDependency.dependency_id) == col(Module.id))
-            .where(ModuleDependency.module_id == module.id)
-            .order_by(Module.entity_key)
-        )
-        dep_result = await session.execute(dep_query)
-        dependencies = [row[0] for row in dep_result.fetchall()]
     else:
         # Draft-created module - extract entities from effective JSON if present
-        # Try both formats: canonical (categories/properties) and API (entities object)
         if "entities" in effective:
             entities = effective.get("entities", {})
         else:
@@ -989,18 +899,13 @@ async def get_module(
                 entities["subobject"] = effective.get("subobjects", [])
             if "templates" in effective:
                 entities["template"] = effective.get("templates", [])
-        dependencies = effective.get("dependencies", [])
-        closure = []  # No closure for draft-created modules yet
 
     return ModuleDetailResponse(
         entity_key=effective.get("entity_key", entity_key),
         label=effective.get("label", ""),
-        version=effective.get("version"),
         description=effective.get("description"),
         entities=entities,
         manual_categories=effective.get("manual_categories"),
-        dependencies=dependencies,
-        closure=closure,
         change_status=effective.get("_change_status"),
         deleted=effective.get("_deleted", False),
     )
@@ -1060,71 +965,6 @@ async def list_bundles(
     )
 
 
-async def compute_bundle_closure(
-    session: SessionDep,
-    direct_module_keys: list[str],
-) -> list[str]:
-    """Compute transitive module dependencies for a bundle.
-
-    Module A depends on Module B if A has a category that inherits from
-    a category in B. Uses category_parent and module_entity tables.
-
-    Args:
-        session: Async database session
-        direct_module_keys: List of module entity_keys directly in the bundle
-
-    Returns:
-        List of dependent module entity_keys (transitive dependencies)
-    """
-    if not direct_module_keys:
-        return []
-
-    # Find modules containing ancestor categories of direct modules' categories
-    query = text("""
-        WITH RECURSIVE category_ancestors AS (
-            -- Base: categories in direct modules
-            SELECT me.entity_key as category_key, m.entity_key as source_module_key
-            FROM module_entity me
-            JOIN modules_v2 m ON m.id = me.module_id
-            WHERE m.entity_key = ANY(:module_keys)
-              AND me.entity_type = 'category'
-        ),
-        parent_categories AS (
-            -- Get parent categories of all module categories
-            SELECT
-                parent_cat.entity_key as category_key,
-                ca.source_module_key
-            FROM category_ancestors ca
-            JOIN categories c ON c.entity_key = ca.category_key
-            JOIN category_parent cp ON cp.category_id = c.id
-            JOIN categories parent_cat ON parent_cat.id = cp.parent_id
-        ),
-        all_ancestors AS (
-            -- Recursive: find all ancestor categories
-            SELECT category_key, source_module_key FROM parent_categories
-
-            UNION
-
-            SELECT
-                parent_cat.entity_key,
-                aa.source_module_key
-            FROM all_ancestors aa
-            JOIN categories c ON c.entity_key = aa.category_key
-            JOIN category_parent cp ON cp.category_id = c.id
-            JOIN categories parent_cat ON parent_cat.id = cp.parent_id
-        )
-        -- Find modules containing these ancestor categories
-        SELECT DISTINCT m.entity_key
-        FROM all_ancestors aa
-        JOIN categories c ON c.entity_key = aa.category_key
-        JOIN module_entity me ON me.entity_key = aa.category_key AND me.entity_type = 'category'
-        JOIN modules_v2 m ON m.id = me.module_id
-        WHERE m.entity_key != ALL(:module_keys)
-    """)
-    result = await session.execute(query, {"module_keys": direct_module_keys})
-    return [row[0] for row in result.fetchall()]
-
-
 @router.get("/bundles/{entity_key}", response_model=BundleDetailResponse)
 @limiter.limit(RATE_LIMITS["entity_read"])
 async def get_bundle(
@@ -1159,8 +999,6 @@ async def get_bundle(
     if change_status in ("modified", "added") and "modules" in effective:
         # Use modules from effective JSON (draft changes take precedence)
         modules = effective.get("modules", [])
-        # Compute closure using draft-modified modules list
-        closure = await compute_bundle_closure(session, modules) if modules else []
     elif bundle:
         # No draft changes to modules - query canonical from database
         module_query = (
@@ -1171,20 +1009,14 @@ async def get_bundle(
         )
         module_result = await session.execute(module_query)
         modules = [row[0] for row in module_result.fetchall()]
-
-        # Compute closure (transitive module dependencies)
-        closure = await compute_bundle_closure(session, modules)
     else:
-        # Draft-created bundle with no modules field
         modules = []
-        closure = []
 
     return BundleDetailResponse(
         entity_key=effective.get("entity_key", entity_key),
         label=effective.get("label", ""),
-        version=effective.get("version"),
+        description=effective.get("description"),
         modules=modules,
-        closure=closure,
         change_status=effective.get("_change_status"),
         deleted=effective.get("_deleted", False),
     )

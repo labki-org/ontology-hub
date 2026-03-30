@@ -27,14 +27,6 @@ export function ReviewChanges({
     </Badge>
   )
 
-  // Get semver badge styling
-  const semverBadgeClass =
-    validationReport.suggested_semver === 'major'
-      ? 'bg-red-100 text-red-800'
-      : validationReport.suggested_semver === 'minor'
-      ? 'bg-amber-100 text-amber-800'
-      : 'bg-blue-100 text-blue-800'
-
   return (
     <div className="space-y-6">
       {/* Change summary */}
@@ -65,34 +57,13 @@ export function ReviewChanges({
       {/* Validation status */}
       <div className="space-y-3">
         <h3 className="font-medium">Validation Status</h3>
-        <div className="border rounded-md p-3 space-y-2">
+        <div className="border rounded-md p-3">
           <div className="flex items-center justify-between">
             <span className="text-sm">Schema Validation:</span>
             {validationBadge}
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm">Suggested Version Bump:</span>
-            <Badge className={semverBadgeClass}>
-              {validationReport.suggested_semver}
-            </Badge>
-          </div>
         </div>
       </div>
-
-      {/* Semver reasons */}
-      {validationReport.semver_reasons.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="font-medium text-sm">Version Bump Reasons:</h3>
-          <ul className="space-y-1 text-sm text-muted-foreground">
-            {validationReport.semver_reasons.map((reason, idx) => (
-              <li key={idx} className="flex items-start gap-2">
-                <span className="text-muted-foreground">•</span>
-                <span>{reason}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
 
       {/* Warnings */}
       {validationReport.warnings.length > 0 && (

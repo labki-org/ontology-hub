@@ -24,7 +24,6 @@ from app.models.v2 import (
     IngestStatus,
     Module,
     ModuleDashboard,
-    ModuleDependency,
     ModuleEntity,
     OntologyVersion,
     Property,
@@ -38,7 +37,6 @@ from app.models.v2 import (
 from app.services.github import GitHubClient
 from app.services.parsers import EntityParser, ParsedEntities, PendingRelationship
 from app.services.parsers.wikitext_parser import (
-    parse_module_vocab,
     parse_wikitext,
 )
 
@@ -46,13 +44,12 @@ logger = logging.getLogger(__name__)
 
 # Entity directories and their file types
 # "wikitext" = .wikitext files parsed via wikitext_parser
-# "vocab.json" = .vocab.json files parsed as JSON with module metadata
-# "json" = plain .json files (bundles)
+# "json" = plain .json files (modules, bundles)
 ENTITY_DIRECTORIES: dict[str, str] = {
     "categories": "wikitext",
     "properties": "wikitext",
     "subobjects": "wikitext",
-    "modules": "vocab.json",
+    "modules": "json",
     "bundles": "json",
     "templates": "wikitext",
     "dashboards": "wikitext",
@@ -144,19 +141,7 @@ class IngestService:
                 except Exception as e:
                     self._warnings.append(f"Failed to load {path}: {e}")
 
-            # ── Module vocab.json ──
-            elif file_type == "vocab.json" and filename.endswith(".vocab.json"):
-                if len(parts) != 2:
-                    continue
-                try:
-                    content = await self._github.get_file_content(owner, repo, path, ref=ref)
-                    # Transform vocab.json into module dict format
-                    module_dict = parse_module_vocab(content)
-                    files[directory].append((path, module_dict))
-                except Exception as e:
-                    self._warnings.append(f"Failed to load {path}: {e}")
-
-            # ── Bundle JSON ──
+            # ── JSON (modules, bundles) ──
             elif file_type == "json" and filename.endswith(".json"):
                 if len(parts) != 2:
                     continue
@@ -210,7 +195,6 @@ class IngestService:
     async def delete_all_canonical(self) -> None:
         """Delete all canonical data in correct FK order."""
         # 1. Delete relationships first (they reference entities)
-        await self._session.execute(delete(ModuleDependency))
         await self._session.execute(delete(ModuleEntity))
         await self._session.execute(delete(BundleModule))
         await self._session.execute(delete(ModuleDashboard))
@@ -359,21 +343,6 @@ class IngestService:
                     )
                 else:
                     self._warnings.append(f"Unresolved module: {rel.source_key}")
-
-            elif rel.type == "module_dependency":
-                module_id = modules.get(rel.source_key)
-                dep_id = modules.get(rel.target_key)
-                if module_id and dep_id:
-                    self._session.add(
-                        ModuleDependency(
-                            module_id=module_id,
-                            dependency_id=dep_id,
-                        )
-                    )
-                else:
-                    self._warnings.append(
-                        f"Unresolved module_dependency: {rel.source_key} -> {rel.target_key}"
-                    )
 
             elif rel.type == "bundle_module":
                 bundle_id = bundles.get(rel.source_key)

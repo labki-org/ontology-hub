@@ -8,14 +8,10 @@ Used by the PR builder to generate wikitext files for GitHub PRs.
 
 from __future__ import annotations
 
-import json
 from typing import Any
 
-from app.services.parsers.wikitext_parser import NAMESPACE_TO_ENTITY_TYPE, to_page_name
+from app.services.parsers.wikitext_parser import to_page_name
 from app.services.resource_validation import RESERVED_KEYS, get_entity_categories
-
-# Reverse mapping: entity type -> namespace constant
-ENTITY_TYPE_TO_NAMESPACE: dict[str, str] = {v: k for k, v in NAMESPACE_TO_ENTITY_TYPE.items()}
 
 
 def _with_ns(entity_key: str, ns: str) -> str:
@@ -169,51 +165,6 @@ def generate_resource_wikitext(entity: dict[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def generate_module_vocab_json(
-    entity: dict[str, Any],
-    ontology_version: str = "",
-) -> str:
-    """Generate a module vocab.json string from a structured module dict.
-
-    The entity dict should contain the standard module fields (id, version, label,
-    description, dependencies) plus entity arrays (categories, properties, etc.).
-    """
-    manual_categories = set(entity.get("manual_categories", []))
-
-    import_entries = []
-    for etype, namespace in ENTITY_TYPE_TO_NAMESPACE.items():
-        for key in entity.get(etype, []):
-            options: dict[str, Any] = {"replaceable": True}
-            # Manual categories are the only user-selected entries; everything
-            # else (parent categories, properties, subobjects, etc.) is auto-derived
-            is_manual = etype == "categories" and key in manual_categories
-            if not is_manual:
-                options["auto_included"] = True
-            import_entries.append(
-                {
-                    "page": to_page_name(key),
-                    "namespace": namespace,
-                    "contents": {"importFrom": f"{etype}/{key}.wikitext"},
-                    "options": options,
-                }
-            )
-
-    vocab = {
-        "description": entity.get("description", ""),
-        "id": entity.get("id", ""),
-        "version": entity.get("version", ""),
-        "label": entity.get("label", entity.get("id", "")),
-        "dependencies": entity.get("dependencies", []),
-        "import": import_entries,
-        "meta": {
-            "version": "1",
-            "ontologyVersion": ontology_version,
-        },
-    }
-
-    return json.dumps(vocab, indent=2) + "\n"
-
-
 # ─── Dispatch by entity type ────────────────────────────────────────────────
 
 _GENERATORS: dict[str, Any] = {
@@ -232,7 +183,7 @@ def generate_wikitext(entity_json: dict[str, Any], entity_type: str) -> str:
     entity_type values used by DraftChange and the PR builder.
 
     For dashboards, use generate_dashboard_page_wikitext() directly.
-    For modules, use generate_module_vocab_json().
+    For modules, use json.dumps() directly (simple JSON format).
     """
     generator = _GENERATORS.get(entity_type)
     if not generator:

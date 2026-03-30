@@ -133,12 +133,9 @@ export interface SubobjectDetailV2 {
 export interface ModuleDetailV2 {
   entity_key: string
   label: string
-  version?: string | null
   description?: string | null
   entities: Record<string, string[]>  // { category: [...], property: [...] }
   manual_categories?: string[]  // User-selected categories (vs auto-expanded parents)
-  dependencies: string[]  // Module entity keys this module depends on
-  closure: string[]  // Transitive category dependencies (legacy)
   change_status?: 'added' | 'modified' | 'deleted' | 'unchanged'
   deleted?: boolean
 }
@@ -148,9 +145,7 @@ export interface BundleDetailV2 {
   entity_key: string
   label: string
   description?: string | null
-  version?: string | null
   modules: string[]
-  closure: string[]  // Transitive module dependencies
   change_status?: 'added' | 'modified' | 'deleted' | 'unchanged'
   deleted?: boolean
 }

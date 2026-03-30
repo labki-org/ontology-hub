@@ -6,7 +6,6 @@ interface ConfirmSubmitProps {
   draftToken: string
   prTitle: string
   userComment: string
-  suggestedSemver?: string
   onBack: () => void
   onSuccess: (prUrl: string) => void
   onError: (error: string) => void
@@ -16,7 +15,6 @@ export function ConfirmSubmit({
   draftToken,
   prTitle,
   userComment,
-  suggestedSemver,
   onBack,
 }: ConfirmSubmitProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -31,9 +29,6 @@ export function ConfirmSubmit({
       pr_title: prTitle,
       user_comment: userComment,
     })
-    if (suggestedSemver) {
-      params.set('suggested_semver', suggestedSemver)
-    }
 
     // Redirect to GitHub OAuth login endpoint using current origin
     // Backend will handle PR creation in the OAuth callback

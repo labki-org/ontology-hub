@@ -253,7 +253,6 @@ class EntityParser:
         module = Module(
             entity_key=entity_key,
             source_path=source_path,
-            version=content.get("version"),
             label=content.get("label", entity_key),
             description=content.get("description"),
             canonical_json=content,
@@ -305,16 +304,6 @@ class EntityParser:
                 )
             )
 
-        # Extract module dependencies
-        for dep_key in content.get("dependencies", []):
-            relationships.append(
-                PendingRelationship(
-                    type="module_dependency",
-                    source_key=entity_key,
-                    target_key=dep_key,
-                )
-            )
-
         # Extract dashboard memberships
         for dash_key in content.get("dashboards", []):
             relationships.append(
@@ -355,7 +344,6 @@ class EntityParser:
         bundle = Bundle(
             entity_key=entity_key,
             source_path=source_path,
-            version=content.get("version"),
             label=content.get("label", entity_key),
             description=content.get("description"),
             canonical_json=content,

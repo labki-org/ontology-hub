@@ -27,7 +27,6 @@ from app.models.v2 import (
     IngestStatus,
     Module,
     ModuleBase,
-    ModuleDependency,
     ModuleEntity,
     ModulePublic,
     OntologyVersion,
@@ -86,7 +85,6 @@ __all__ = [
     "CategorySubobject",
     "SubobjectProperty",
     "ModuleEntity",
-    "ModuleDependency",
     "BundleModule",
     # Materialized view
     "CategoryPropertyEffective",

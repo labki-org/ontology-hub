@@ -5,7 +5,6 @@ and running all validation checks.
 """
 
 from copy import deepcopy
-from typing import Literal
 from uuid import UUID
 
 from sqlmodel import select
@@ -22,14 +21,10 @@ from app.models.v2 import (
     Template,
 )
 from app.schemas.validation import DraftValidationReportV2, ValidationResultV2
-from app.services.validation.breaking import detect_breaking_changes_v2
 from app.services.validation.datatype import ALLOWED_DATATYPES
 from app.services.validation.inheritance import check_circular_inheritance_v2
 from app.services.validation.reference import check_references_v2
 from app.services.validation.schema_v2 import check_schema_v2
-from app.services.validation.semver import compute_semver_suggestion
-
-SemverLevel = Literal["major", "minor", "patch"]
 
 
 async def validate_draft_v2(
@@ -44,15 +39,13 @@ async def validate_draft_v2(
     3. Circular inheritance detection (errors)
     4. Datatype validation (errors)
     5. JSON Schema validation (errors)
-    6. Breaking change detection (warnings/info)
-    7. Semver classification
 
     Args:
         draft_id: UUID of draft to validate
         session: Async database session
 
     Returns:
-        DraftValidationReportV2 with all findings and semver suggestion
+        DraftValidationReportV2 with all findings
     """
     # 1. Load draft changes and build effective entities
     draft_changes_query = select(DraftChange).where(DraftChange.draft_id == draft_id)
@@ -61,7 +54,7 @@ async def validate_draft_v2(
 
     effective_entities = await build_effective_entities(draft_changes, session)
 
-    # 2-6. Run all validation checks
+    # 2-5. Run all validation checks
     results: list[ValidationResultV2] = []
 
     # 2. Reference existence checks (errors)
@@ -76,56 +69,16 @@ async def validate_draft_v2(
     # 5. JSON Schema validation (errors)
     results.extend(await check_schema_v2(effective_entities, session))
 
-    # 6. Breaking change detection (warnings/info)
-    results.extend(await detect_breaking_changes_v2(effective_entities, draft_changes, session))
-
     # Separate by severity
     errors = [r for r in results if r.severity == "error"]
     warnings = [r for r in results if r.severity == "warning"]
     info = [r for r in results if r.severity == "info"]
-
-    # 7. Compute semver suggestion
-    suggested_semver: SemverLevel
-    if errors:
-        # Don't suggest semver until errors are resolved
-        suggested_semver = "patch"
-        semver_reasons = ["Resolve validation errors before semver classification"]
-    else:
-        # Filter to results with semver suggestions
-        semver_results = [r for r in results if r.suggested_semver]
-        suggested_semver, semver_reasons = compute_semver_suggestion(semver_results)
-
-    # Compute per-module and per-bundle version suggestions
-    # (For now, just use the overall suggestion - can be refined later)
-    module_suggestions = {}
-    bundle_suggestions = {}
-
-    # Identify modules and bundles affected by changes
-    affected_modules = set()
-    affected_bundles = set()
-
-    for change in draft_changes:
-        if change.entity_type == "module":
-            affected_modules.add(change.entity_key)
-        elif change.entity_type == "bundle":
-            affected_bundles.add(change.entity_key)
-
-    # Assign suggested semver to affected modules/bundles
-    for module_key in affected_modules:
-        module_suggestions[module_key] = str(suggested_semver)
-
-    for bundle_key in affected_bundles:
-        bundle_suggestions[bundle_key] = str(suggested_semver)
 
     return DraftValidationReportV2(
         is_valid=len(errors) == 0,
         errors=errors,
         warnings=warnings,
         info=info,
-        suggested_semver=suggested_semver,
-        semver_reasons=semver_reasons,
-        module_suggestions=module_suggestions,
-        bundle_suggestions=bundle_suggestions,
     )
 
 
