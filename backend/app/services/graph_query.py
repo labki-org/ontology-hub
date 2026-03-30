@@ -7,6 +7,7 @@ for change status badges (GRP-04).
 """
 
 import uuid
+from typing import Any
 
 from sqlalchemy import text
 from sqlmodel import col, select
@@ -1412,7 +1413,7 @@ class GraphQueryService:
                     )
 
         # Batch load bundle membership for all nodes
-        entity_type_map = {
+        entity_type_map: dict[str, list[str]] = {
             "category": [],
             "property": [],
             "subobject": [],
@@ -1630,7 +1631,7 @@ class GraphQueryService:
         if not entity_keys:
             return {}
 
-        query = (
+        query: Any = (
             select(
                 ModuleEntity.entity_key,
                 col(Bundle.entity_key).label("bundle_key"),
