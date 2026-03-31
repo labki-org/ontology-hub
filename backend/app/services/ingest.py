@@ -478,31 +478,26 @@ async def sync_repository_v2(
         parsed.entity_counts(),
     )
 
-    # 6. Atomic replacement within transaction
-    async with session.begin():
-        # Delete all existing canonical data
-        await service.delete_all_canonical()
-        logger.info("Deleted existing canonical data")
+    # 6. Replace canonical data
+    await service.delete_all_canonical()
+    logger.info("Deleted existing canonical data")
 
-        # Insert new entities
-        await service.insert_entities(parsed)
-        logger.info("Inserted entities")
+    await service.insert_entities(parsed)
+    logger.info("Inserted entities")
 
-        # Resolve and insert relationships
-        await service.resolve_and_insert_relationships(parsed.relationships)
-        logger.info("Inserted relationships")
+    await service.resolve_and_insert_relationships(parsed.relationships)
+    logger.info("Inserted relationships")
 
-        # Create OntologyVersion record
-        version = OntologyVersion(
-            commit_sha=commit_sha,
-            ingest_status=IngestStatus.COMPLETED,
-            entity_counts=parsed.entity_counts(),
-            warnings=service._warnings if service._warnings else None,
-            ingested_at=datetime.utcnow(),
-        )
-        session.add(version)
+    version = OntologyVersion(
+        commit_sha=commit_sha,
+        ingest_status=IngestStatus.COMPLETED,
+        entity_counts=parsed.entity_counts(),
+        warnings=service._warnings if service._warnings else None,
+        ingested_at=datetime.utcnow(),
+    )
+    session.add(version)
 
-        # Transaction commits on context exit
+    await session.commit()
 
     # 7. Refresh mat view (must be separate transaction)
     try:
