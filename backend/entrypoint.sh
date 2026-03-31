@@ -8,5 +8,5 @@ if [ "${RUN_MIGRATIONS:-false}" = "true" ]; then
     echo "Migrations complete."
 fi
 
-# Start the application
-exec uvicorn app.main:app --host 0.0.0.0 --port 8000 "$@"
+# Start the application (CMD provides the command)
+exec "$@"
