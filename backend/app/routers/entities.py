@@ -259,50 +259,17 @@ async def get_category(
         parents = effective.get("parents", [])
 
     # Get properties with provenance
-    # Check for draft-aware inheritance first (when draft modifies parents)
     properties: list[PropertyProvenance] = []
-    draft_properties = await draft_ctx.get_draft_aware_inherited_properties(
-        session, entity_key, category.id if category else None
+    change_status = effective.get("_change_status")
+
+    # If draft has modified or created this category, use the effective JSON for
+    # direct properties (the materialized view only has canonical state)
+    has_draft_property_changes = change_status in ("modified", "added") and (
+        "required_properties" in effective or "optional_properties" in effective
     )
 
-    if draft_properties:
-        # Draft modifies parents - use computed inheritance
-        for prop in draft_properties:
-            properties.append(PropertyProvenance(**prop))
-    elif category:
-        # No draft parent changes or no draft context - use canonical materialized view
-        # Query the category_property_effective materialized view
-        # joined with properties table to get property labels
-        props_query = text("""
-            SELECT
-                p.entity_key,
-                p.label,
-                cpe.depth,
-                cpe.is_required,
-                src.entity_key as source_category
-            FROM category_property_effective cpe
-            JOIN properties p ON p.id = cpe.property_id
-            JOIN categories c ON c.id = cpe.category_id
-            JOIN categories src ON src.id = cpe.source_category_id
-            WHERE c.entity_key = :entity_key
-            ORDER BY cpe.depth, p.label
-        """)
-        props_result = await session.execute(props_query, {"entity_key": entity_key})
-
-        for row in props_result.fetchall():
-            properties.append(
-                PropertyProvenance(
-                    entity_key=row[0],
-                    label=row[1],
-                    is_direct=(row[2] == 0),
-                    is_inherited=(row[2] > 0),
-                    is_required=row[3],
-                    source_category=row[4],
-                    inheritance_depth=row[2],
-                )
-            )
-    else:
-        # Draft-created category - extract properties from effective JSON
+    if has_draft_property_changes:
+        # Build direct properties from effective JSON
         for prop_key in effective.get("required_properties", []):
             properties.append(
                 PropertyProvenance(
@@ -319,10 +286,69 @@ async def get_category(
                     source_category=entity_key, inheritance_depth=0,
                 )
             )
+        # Also add inherited properties from canonical (depth > 0)
+        if category:
+            inherited_query = text("""
+                SELECT p.entity_key, p.label, cpe.depth, cpe.is_required,
+                       src.entity_key as source_category
+                FROM category_property_effective cpe
+                JOIN properties p ON p.id = cpe.property_id
+                JOIN categories c ON c.id = cpe.category_id
+                JOIN categories src ON src.id = cpe.source_category_id
+                WHERE c.entity_key = :entity_key AND cpe.depth > 0
+                ORDER BY cpe.depth, p.label
+            """)
+            inherited_result = await session.execute(inherited_query, {"entity_key": entity_key})
+            for row in inherited_result.fetchall():
+                properties.append(
+                    PropertyProvenance(
+                        entity_key=row[0], label=row[1],
+                        is_direct=False, is_inherited=True, is_required=row[3],
+                        source_category=row[4], inheritance_depth=row[2],
+                    )
+                )
+    elif category:
+        # No draft property changes - use canonical materialized view
+        props_query = text("""
+            SELECT
+                p.entity_key, p.label, cpe.depth, cpe.is_required,
+                src.entity_key as source_category
+            FROM category_property_effective cpe
+            JOIN properties p ON p.id = cpe.property_id
+            JOIN categories c ON c.id = cpe.category_id
+            JOIN categories src ON src.id = cpe.source_category_id
+            WHERE c.entity_key = :entity_key
+            ORDER BY cpe.depth, p.label
+        """)
+        props_result = await session.execute(props_query, {"entity_key": entity_key})
+
+        for row in props_result.fetchall():
+            properties.append(
+                PropertyProvenance(
+                    entity_key=row[0], label=row[1],
+                    is_direct=(row[2] == 0), is_inherited=(row[2] > 0),
+                    is_required=row[3], source_category=row[4], inheritance_depth=row[2],
+                )
+            )
 
     # Get subobjects assigned to this category
     subobjects: list[SubobjectProvenance] = []
-    if category:
+
+    # Same pattern: use effective JSON if draft modified subobjects
+    has_draft_subobject_changes = change_status in ("modified", "added") and (
+        "required_subobjects" in effective or "optional_subobjects" in effective
+    )
+
+    if has_draft_subobject_changes:
+        for sub_key in effective.get("required_subobjects", []):
+            subobjects.append(
+                SubobjectProvenance(entity_key=sub_key, label=sub_key, is_required=True)
+            )
+        for sub_key in effective.get("optional_subobjects", []):
+            subobjects.append(
+                SubobjectProvenance(entity_key=sub_key, label=sub_key, is_required=False)
+            )
+    elif category:
         subobject_query = (
             select(Subobject.entity_key, Subobject.label, CategorySubobject.is_required)
             .join(CategorySubobject, col(CategorySubobject.subobject_id) == col(Subobject.id))
@@ -337,16 +363,6 @@ async def get_category(
                     label=row[1],
                     is_required=row[2],
                 )
-            )
-    else:
-        # Draft-created category - extract from effective JSON if present
-        for sub_key in effective.get("required_subobjects", []):
-            subobjects.append(
-                SubobjectProvenance(entity_key=sub_key, label=sub_key, is_required=True)
-            )
-        for sub_key in effective.get("optional_subobjects", []):
-            subobjects.append(
-                SubobjectProvenance(entity_key=sub_key, label=sub_key, is_required=False)
             )
 
     # Module and bundle membership
