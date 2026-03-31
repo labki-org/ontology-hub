@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { useBundle, useModules } from '@/api/entities'
+import { useBundle, useAvailableEntities } from '@/api/entities'
 import type { BundleDetailV2 } from '@/api/types'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useDraftStore } from '@/stores/draftStore'
@@ -25,16 +25,10 @@ interface BundleDetailProps {
  */
 export function BundleDetail({ entityKey, draftId, draftToken, isEditing }: BundleDetailProps) {
   const { data: bundle, isLoading, error } = useBundle(entityKey, draftId)
-  const { data: modulesData } = useModules(undefined, undefined, draftId)
+  const availableModules = useAvailableEntities('modules', draftId)
 
   const openNestedCreateModal = useDraftStore((s) => s.openNestedCreateModal)
   const setOnNestedEntityCreated = useDraftStore((s) => s.setOnNestedEntityCreated)
-
-  // Build available modules for selection
-  const availableModules = (modulesData?.items || []).map((m) => ({
-    key: m.entity_key,
-    label: m.label,
-  }))
 
   // Track original values for change detection
   const [originalValues, setOriginalValues] = useState<{ label?: string; description?: string }>({})

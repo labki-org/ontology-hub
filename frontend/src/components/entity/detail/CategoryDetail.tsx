@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { useCategory, useCategories, useProperties, useSubobjects } from '@/api/entities'
+import { useCategory, useAvailableEntities } from '@/api/entities'
 import type { CategoryDetailV2 } from '@/api/types'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useGraphStore } from '@/stores/graphStore'
@@ -40,32 +40,12 @@ export function CategoryDetail({
   isEditing,
 }: CategoryDetailProps) {
   const { data: rawCategory, isLoading, error } = useCategory(entityKey, draftId)
-  const { data: categoriesData } = useCategories(undefined, 500, draftId)
+  const availableCategories = useAvailableEntities('categories', draftId, entityKey)
+  const availableProperties = useAvailableEntities('properties', draftId)
+  const availableSubobjects = useAvailableEntities('subobjects', draftId)
   const setSelectedEntity = useGraphStore((s) => s.setSelectedEntity)
   const openNestedCreateModal = useDraftStore((s) => s.openNestedCreateModal)
   const setOnNestedEntityCreated = useDraftStore((s) => s.setOnNestedEntityCreated)
-
-  // Build available categories for parent selection (excluding self)
-  const availableCategories = (categoriesData?.items || [])
-    .filter((c) => c.entity_key !== entityKey)
-    .map((c) => ({
-      key: c.entity_key,
-      label: c.label,
-    }))
-
-  // Fetch available properties for property fields
-  const { data: propertiesData } = useProperties(undefined, 500, draftId)
-  const availableProperties = (propertiesData?.items || []).map((p) => ({
-    key: p.entity_key,
-    label: p.label,
-  }))
-
-  // Fetch available subobjects for subobject fields
-  const { data: subobjectsData } = useSubobjects(undefined, 500, draftId)
-  const availableSubobjects = (subobjectsData?.items || []).map((s) => ({
-    key: s.entity_key,
-    label: s.label,
-  }))
 
   // Change tracking state for inheritance chain highlighting
   const directEdits = useDraftStore((s) => s.directlyEditedEntities)

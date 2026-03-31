@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { apiFetch } from './client'
 import type {
@@ -207,6 +208,28 @@ export function useResource(entityKey: string, draftId?: string) {
     queryFn: () => fetchEntityV2('resources', entityKey, draftId),
     enabled: !!entityKey,
   })
+}
+
+/**
+ * Pre-loads entities of a given type and returns them as {key, label}[] for use
+ * in comboboxes and searchable lists. Fetches up to 500 items.
+ */
+export function useAvailableEntities(
+  entityType: 'categories' | 'properties' | 'subobjects' | 'templates' | 'modules' | 'bundles' | 'dashboards' | 'resources',
+  draftId?: string,
+  excludeSelf?: string
+) {
+  const { data } = useQuery({
+    queryKey: ['v2', entityType, { limit: 500, draftId }],
+    queryFn: () => fetchEntitiesV2(entityType, undefined, 500, draftId),
+  })
+
+  return useMemo(() => {
+    const items = data?.items || []
+    return items
+      .filter((e) => e.entity_key !== excludeSelf)
+      .map((e) => ({ key: e.entity_key, label: e.label }))
+  }, [data, excludeSelf])
 }
 
 export function useEntitySearch(

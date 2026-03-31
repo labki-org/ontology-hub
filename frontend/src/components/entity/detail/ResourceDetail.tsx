@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { useQueries } from '@tanstack/react-query'
-import { useResource, useCategories } from '@/api/entities'
+import { useResource, useAvailableEntities } from '@/api/entities'
 import { apiFetch } from '@/api/client'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useGraphStore } from '@/stores/graphStore'
@@ -97,11 +97,7 @@ export function ResourceDetail({
   const resource = data as ResourceDetailV2 | undefined
 
   // Fetch available categories for the combobox
-  const { data: categoriesData } = useCategories(undefined, 500, draftId)
-  const availableCategories = (categoriesData?.items || []).map((c) => ({
-    key: c.entity_key,
-    label: c.label,
-  }))
+  const availableCategories = useAvailableEntities('categories', draftId)
 
   // Track original values for change detection
   const [originalValues, setOriginalValues] = useState<{

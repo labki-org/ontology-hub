@@ -1,12 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   useModule,
-  useCategories,
-  useProperties,
-  useSubobjects,
-  useTemplates,
-  useDashboards,
-  useResources,
+  useAvailableEntities,
 } from '@/api/entities'
 import type { ModuleDetailV2 } from '@/api/types'
 import { useAutoSave } from '@/hooks/useAutoSave'
@@ -40,42 +35,16 @@ interface ModuleDetailProps {
  */
 export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: ModuleDetailProps) {
   const { data: module, isLoading, error, refetch: refetchModule } = useModule(entityKey, draftId)
-  const { data: categoriesData } = useCategories(undefined, 500, draftId)
-  const { data: propertiesData } = useProperties(undefined, 500, draftId)
-  const { data: subobjectsData } = useSubobjects(undefined, 500, draftId)
-  const { data: templatesData } = useTemplates(undefined, 500, draftId)
-  const { data: dashboardsData } = useDashboards(undefined, 500, draftId)
-  const { data: resourcesData } = useResources(undefined, 500, draftId)
+  const availableCategories = useAvailableEntities('categories', draftId)
+  const availableProperties = useAvailableEntities('properties', draftId)
+  const availableSubobjects = useAvailableEntities('subobjects', draftId)
+  const availableTemplates = useAvailableEntities('templates', draftId)
+  const availableDashboards = useAvailableEntities('dashboards', draftId)
+  const availableResources = useAvailableEntities('resources', draftId)
 
   const setSelectedEntity = useGraphStore((s) => s.setSelectedEntity)
   const openNestedCreateModal = useDraftStore((s) => s.openNestedCreateModal)
   const setOnNestedEntityCreated = useDraftStore((s) => s.setOnNestedEntityCreated)
-
-  // Build available entities for lookups
-  const availableCategories = (categoriesData?.items || []).map((c) => ({
-    key: c.entity_key,
-    label: c.label,
-  }))
-  const availableProperties = (propertiesData?.items || []).map((p) => ({
-    key: p.entity_key,
-    label: p.label,
-  }))
-  const availableSubobjects = (subobjectsData?.items || []).map((s) => ({
-    key: s.entity_key,
-    label: s.label,
-  }))
-  const availableTemplates = (templatesData?.items || []).map((t) => ({
-    key: t.entity_key,
-    label: t.label,
-  }))
-  const availableDashboards = (dashboardsData?.items || []).map((d) => ({
-    key: d.entity_key,
-    label: d.label,
-  }))
-  const availableResources = (resourcesData?.items || []).map((r) => ({
-    key: r.entity_key,
-    label: r.label,
-  }))
 
   // Track original values for change detection
   const [originalValues, setOriginalValues] = useState<{

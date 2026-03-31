@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { useSubobject, useProperties } from '@/api/entities'
+import { useSubobject, useAvailableEntities } from '@/api/entities'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useDraftStore } from '@/stores/draftStore'
 import { EntityHeader } from '../sections/EntityHeader'
@@ -40,11 +40,7 @@ export function SubobjectDetail({
   const setOnNestedEntityCreated = useDraftStore((s) => s.setOnNestedEntityCreated)
 
   // Fetch available properties
-  const { data: propertiesData } = useProperties(undefined, 500, draftId)
-  const availableProperties = (propertiesData?.items || []).map((p) => ({
-    key: p.entity_key,
-    label: p.label,
-  }))
+  const availableProperties = useAvailableEntities('properties', draftId)
 
   // Cast to SubobjectDetailV2
   const subobject = data as SubobjectDetailV2 | undefined

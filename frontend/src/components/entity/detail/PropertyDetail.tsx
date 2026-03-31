@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { useProperty, usePropertyUsedBy, useTemplates, useCategories } from '@/api/entities'
+import { useProperty, usePropertyUsedBy, useAvailableEntities } from '@/api/entities'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useGraphStore } from '@/stores/graphStore'
 import { EntityHeader } from '../sections/EntityHeader'
@@ -65,19 +65,9 @@ export function PropertyDetail({
     data: usedByData,
     isLoading: usedByLoading,
   } = usePropertyUsedBy(entityKey, draftId)
-  const { data: templatesData } = useTemplates(undefined, 500, draftId)
-  const { data: categoriesData } = useCategories(undefined, 500, draftId)
+  const availableTemplates = useAvailableEntities('templates', draftId)
+  const availableCategories = useAvailableEntities('categories', draftId)
   const setSelectedEntity = useGraphStore((s) => s.setSelectedEntity)
-
-  // Build available templates for selection
-  const availableTemplates = (templatesData?.items || []).map((t) => ({
-    key: t.entity_key,
-    label: t.label,
-  }))
-  const availableCategories = (categoriesData?.items || []).map((c) => ({
-    key: c.entity_key,
-    label: c.label,
-  }))
 
   // Cast to PropertyDetailV2
   const property = data as PropertyDetailV2 | undefined
