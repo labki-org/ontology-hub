@@ -301,6 +301,24 @@ async def get_category(
                     inheritance_depth=row[2],
                 )
             )
+    else:
+        # Draft-created category - extract properties from effective JSON
+        for prop_key in effective.get("required_properties", []):
+            properties.append(
+                PropertyProvenance(
+                    entity_key=prop_key, label=prop_key, is_direct=True,
+                    is_inherited=False, is_required=True,
+                    source_category=entity_key, inheritance_depth=0,
+                )
+            )
+        for prop_key in effective.get("optional_properties", []):
+            properties.append(
+                PropertyProvenance(
+                    entity_key=prop_key, label=prop_key, is_direct=True,
+                    is_inherited=False, is_required=False,
+                    source_category=entity_key, inheritance_depth=0,
+                )
+            )
 
     # Get subobjects assigned to this category
     subobjects: list[SubobjectProvenance] = []
