@@ -67,23 +67,47 @@ export function EntityCombobox({
     draftId,
   )
 
-  // Use server results when searching, pre-loaded when idle
+  // Use server results when searching, merged with client-side filtered
+  // pre-loaded entities (which include draft-created items)
   const displayEntities = useMemo(() => {
-    const source = inputValue && searchResults?.items
-      ? searchResults.items.map((e) => ({ key: e.entity_key, label: e.label }))
-      : availableEntities
+    if (!inputValue) {
+      // No search — show pre-loaded list (includes draft creates)
+      return availableEntities.filter((e) => !selectedKeys.includes(e.key))
+    }
 
-    // Filter out already selected
-    return source.filter((e) => !selectedKeys.includes(e.key))
+    // Merge server results with client-filtered pre-loaded entities
+    // (draft-created entities won't appear in server results)
+    const serverItems = (searchResults?.items || []).map((e) => ({
+      key: e.entity_key,
+      label: e.label,
+    }))
+
+    const lowerSearch = inputValue.toLowerCase()
+    const clientMatches = availableEntities.filter(
+      (e) =>
+        e.key.toLowerCase().includes(lowerSearch) ||
+        e.label.toLowerCase().includes(lowerSearch)
+    )
+
+    // Deduplicate: server results + any client matches not already in server results
+    const seen = new Set(serverItems.map((e) => e.key))
+    const merged = [
+      ...serverItems,
+      ...clientMatches.filter((e) => !seen.has(e.key)),
+    ]
+
+    return merged.filter((e) => !selectedKeys.includes(e.key))
   }, [inputValue, searchResults, availableEntities, selectedKeys])
 
-  // Check if exact match exists
-  const allEntities = inputValue && searchResults?.items
-    ? searchResults.items.map((e) => ({ key: e.entity_key, label: e.label }))
-    : availableEntities
-  const exactMatch = allEntities.find(
-    (e) => e.key.toLowerCase() === inputValue.toLowerCase().trim()
-  )
+  // Check if exact match exists (check both server and pre-loaded)
+  const exactMatch = useMemo(() => {
+    if (!inputValue.trim()) return undefined
+    const lower = inputValue.toLowerCase().trim()
+    return (
+      availableEntities.find((e) => e.key.toLowerCase() === lower) ||
+      searchResults?.items?.find((e) => e.entity_key.toLowerCase() === lower)
+    )
+  }, [inputValue, availableEntities, searchResults])
 
   const showCreateOption = inputValue.trim() && !exactMatch && onCreateNew
 
