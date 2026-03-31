@@ -552,7 +552,15 @@ async def add_draft_change(
     # When a category or subobject is modified, re-populate any modules that
     # contain that category (their derived entities may have changed).
     # This covers both modules already in the draft AND canonical modules.
-    if change_in.entity_type in ("category", "subobject") and change_in.change_type == ChangeType.UPDATE:
+    import logging
+    _logger = logging.getLogger(__name__)
+    _logger.warning(
+        "Change saved: type=%s key=%s change_type=%s",
+        change_in.entity_type, change_in.entity_key, change_in.change_type,
+    )
+    if change_in.entity_type in ("category", "subobject") and change_in.change_type in (
+        ChangeType.UPDATE, ChangeType.CREATE,
+    ):
         # Collect module keys that need re-population
         modules_to_repopulate: set[str] = set()
 
@@ -590,6 +598,8 @@ async def add_draft_change(
                 change_in.entity_type == "subobject" and cats
             ):
                 modules_to_repopulate.add(dc.entity_key)
+
+        _logger.warning("Modules to re-populate for %s: %s", change_in.entity_key, modules_to_repopulate)
 
         # 3. For each module, ensure a DraftChange exists and re-populate
         for module_key in modules_to_repopulate:

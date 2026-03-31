@@ -321,52 +321,62 @@ async def _get_category_members(
             effective = patch.apply(canonical_json)
         except jsonpatch.JsonPatchException:
             effective = canonical_json
+
+        # Use effective JSON for direct properties (draft may have added/removed)
+        properties.update(effective.get("required_properties", []))
+        properties.update(effective.get("optional_properties", []))
+        subobjects.update(effective.get("required_subobjects", []))
+        subobjects.update(effective.get("optional_subobjects", []))
+
+        # Also add inherited properties from canonical (depth > 0)
+        inherited_query = text("""
+            SELECT p.entity_key
+            FROM category_property_effective cpe
+            JOIN properties p ON p.id = cpe.property_id
+            JOIN categories c ON c.id = cpe.category_id
+            WHERE c.entity_key = :entity_key AND cpe.depth > 0
+        """)
+        inherited_result = await session.execute(inherited_query, {"entity_key": category_key})
+        for row in inherited_result.fetchall():
+            properties.add(row[0])
+
+        # Draft-aware parent inheritance
+        effective_parents = effective.get("parents", [])
+        for parent_key in effective_parents:
+            parent_props, parent_subs = await _get_category_members(
+                session, parent_key, draft_changes
+            )
+            properties.update(parent_props)
+            subobjects.update(parent_subs)
     else:
         effective = category.canonical_json
 
-    # Get properties from category_property_effective materialized view
-    # This includes both direct and inherited properties
-    props_query = text("""
-        SELECT p.entity_key
-        FROM category_property_effective cpe
-        JOIN properties p ON p.id = cpe.property_id
-        JOIN categories c ON c.id = cpe.category_id
-        WHERE c.entity_key = :entity_key
-    """)
-    props_result = await session.execute(props_query, {"entity_key": category_key})
-    for row in props_result.fetchall():
-        properties.add(row[0])
+        # No draft changes — use canonical materialized view
+        props_query = text("""
+            SELECT p.entity_key
+            FROM category_property_effective cpe
+            JOIN properties p ON p.id = cpe.property_id
+            JOIN categories c ON c.id = cpe.category_id
+            WHERE c.entity_key = :entity_key
+        """)
+        props_result = await session.execute(props_query, {"entity_key": category_key})
+        for row in props_result.fetchall():
+            properties.add(row[0])
 
-    # If draft modifies parents, we need draft-aware inheritance
-    if draft_change and draft_change.change_type == ChangeType.UPDATE:
-        patch_ops: list[dict[str, Any]] = list(draft_change.patch) if draft_change.patch else []
-        modifies_parents = any(op.get("path", "").startswith("/parents") for op in patch_ops)
+        # Canonical subobjects
+        subs_query = text("""
+            SELECT s.entity_key
+            FROM category_subobject cs
+            JOIN subobjects s ON s.id = cs.subobject_id
+            JOIN categories c ON c.id = cs.category_id
+            WHERE c.entity_key = :entity_key
+        """)
+        subs_result = await session.execute(subs_query, {"entity_key": category_key})
+        for row in subs_result.fetchall():
+            subobjects.add(row[0])
 
-        if modifies_parents:
-            # Compute draft-aware inherited properties
-            effective_parents = effective.get("parents", [])
-            for parent_key in effective_parents:
-                parent_props, parent_subs = await _get_category_members(
-                    session, parent_key, draft_changes
-                )
-                properties.update(parent_props)
-                subobjects.update(parent_subs)
-
-    # Get subobjects from category_subobject table
-    subs_query = text("""
-        SELECT s.entity_key
-        FROM category_subobject cs
-        JOIN subobjects s ON s.id = cs.subobject_id
-        JOIN categories c ON c.id = cs.category_id
-        WHERE c.entity_key = :entity_key
-    """)
-    subs_result = await session.execute(subs_query, {"entity_key": category_key})
-    for row in subs_result.fetchall():
-        subobjects.add(row[0])
-
-    # Also check canonical_json for subobjects (draft-modified)
-    subobjects.update(effective.get("required_subobjects", []))
-    subobjects.update(effective.get("optional_subobjects", []))
+        subobjects.update(effective.get("required_subobjects", []))
+        subobjects.update(effective.get("optional_subobjects", []))
 
     return properties, subobjects
 
