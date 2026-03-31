@@ -1,0 +1,38 @@
+services:
+  backend:
+    image: ghcr.io/labki-org/ontology-hub-backend:${VERSION:-latest}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8000"
+    environment:
+      DATABASE_URL: "postgresql+asyncpg://${DB_USER:-ontology}:${DB_PASSWORD}@db:5432/${DB_NAME:-ontology_hub}"
+      GITHUB_REPO_OWNER: ${GITHUB_REPO_OWNER:-labki-org}
+      GITHUB_REPO_NAME: ${GITHUB_REPO_NAME:-labki-ontology}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
+      GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET}
+      SESSION_SECRET: ${SESSION_SECRET}
+      BACKEND_URL: ${BACKEND_URL:-http://localhost:8080}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      RUN_MIGRATIONS: "true"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${DB_NAME:-ontology_hub}
+      POSTGRES_USER: ${DB_USER:-ontology}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-ontology}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  db-data:
