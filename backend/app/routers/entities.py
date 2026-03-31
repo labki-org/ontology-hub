@@ -156,7 +156,7 @@ async def list_categories(
     cursor: str | None = Query(
         None, description="Last entity_key from previous page for pagination"
     ),
-    limit: int = Query(20, ge=1, le=100, description="Max items per page"),
+    limit: int = Query(20, ge=1, le=500, description="Max items per page"),
 ) -> EntityListResponse:
     """List categories with cursor-based pagination and draft overlay.
 
@@ -356,7 +356,7 @@ async def list_properties(
     cursor: str | None = Query(
         None, description="Last entity_key from previous page for pagination"
     ),
-    limit: int = Query(20, ge=1, le=100, description="Max items per page"),
+    limit: int = Query(20, ge=1, le=500, description="Max items per page"),
 ) -> EntityListResponse:
     """List properties with cursor-based pagination and draft overlay.
 
@@ -515,7 +515,7 @@ async def list_subobjects(
     cursor: str | None = Query(
         None, description="Last entity_key from previous page for pagination"
     ),
-    limit: int = Query(20, ge=1, le=100, description="Max items per page"),
+    limit: int = Query(20, ge=1, le=500, description="Max items per page"),
 ) -> EntityListResponse:
     """List subobjects with cursor-based pagination and draft overlay.
 
@@ -680,7 +680,7 @@ async def list_templates(
     cursor: str | None = Query(
         None, description="Last entity_key from previous page for pagination"
     ),
-    limit: int = Query(20, ge=1, le=100, description="Max items per page"),
+    limit: int = Query(20, ge=1, le=500, description="Max items per page"),
 ) -> EntityListResponse:
     """List templates with cursor-based pagination and draft overlay.
 
@@ -774,7 +774,7 @@ async def list_modules(
     cursor: str | None = Query(
         None, description="Last entity_key from previous page for pagination"
     ),
-    limit: int = Query(20, ge=1, le=100, description="Max items per page"),
+    limit: int = Query(20, ge=1, le=500, description="Max items per page"),
 ) -> EntityListResponse:
     """List modules with cursor-based pagination and draft overlay.
 
@@ -925,7 +925,7 @@ async def list_bundles(
     cursor: str | None = Query(
         None, description="Last entity_key from previous page for pagination"
     ),
-    limit: int = Query(20, ge=1, le=100, description="Max items per page"),
+    limit: int = Query(20, ge=1, le=500, description="Max items per page"),
 ) -> EntityListResponse:
     """List bundles with cursor-based pagination and draft overlay.
 
@@ -1036,7 +1036,7 @@ async def list_dashboards(
     cursor: str | None = Query(
         None, description="Last entity_key from previous page for pagination"
     ),
-    limit: int = Query(20, ge=1, le=100, description="Max items per page"),
+    limit: int = Query(20, ge=1, le=500, description="Max items per page"),
 ) -> EntityListResponse:
     """List dashboards with cursor-based pagination and draft overlay.
 
@@ -1132,7 +1132,7 @@ async def list_resources(
     cursor: str | None = Query(
         None, description="Last entity_key from previous page for pagination"
     ),
-    limit: int = Query(20, ge=1, le=100, description="Max items per page"),
+    limit: int = Query(20, ge=1, le=500, description="Max items per page"),
     category: str | None = Query(None, description="Filter by category key"),
 ) -> EntityListResponse:
     """List resources with cursor-based pagination, optional category filter, and draft overlay.

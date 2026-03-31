@@ -97,7 +97,7 @@ export function ResourceDetail({
   const resource = data as ResourceDetailV2 | undefined
 
   // Fetch available categories for the combobox
-  const { data: categoriesData } = useCategories(undefined, undefined, draftId)
+  const { data: categoriesData } = useCategories(undefined, 500, draftId)
   const availableCategories = (categoriesData?.items || []).map((c) => ({
     key: c.entity_key,
     label: c.label,

@@ -331,7 +331,7 @@ export function Sidebar() {
   const debouncedSearchTerm = useDebounce(searchTerm, 150)
 
   // Fetch all entity types
-  const SIDEBAR_FETCH_LIMIT = 100
+  const SIDEBAR_FETCH_LIMIT = 500
   const { data: categoriesData, isLoading: categoriesLoading } = useCategories(
     undefined,
     SIDEBAR_FETCH_LIMIT,

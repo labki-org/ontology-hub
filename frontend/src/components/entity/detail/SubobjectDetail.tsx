@@ -40,7 +40,7 @@ export function SubobjectDetail({
   const setOnNestedEntityCreated = useDraftStore((s) => s.setOnNestedEntityCreated)
 
   // Fetch available properties
-  const { data: propertiesData } = useProperties(undefined, undefined, draftId)
+  const { data: propertiesData } = useProperties(undefined, 500, draftId)
   const availableProperties = (propertiesData?.items || []).map((p) => ({
     key: p.entity_key,
     label: p.label,

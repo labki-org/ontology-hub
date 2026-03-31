@@ -40,7 +40,7 @@ export function CategoryDetail({
   isEditing,
 }: CategoryDetailProps) {
   const { data: rawCategory, isLoading, error } = useCategory(entityKey, draftId)
-  const { data: categoriesData } = useCategories(undefined, undefined, draftId)
+  const { data: categoriesData } = useCategories(undefined, 500, draftId)
   const setSelectedEntity = useGraphStore((s) => s.setSelectedEntity)
   const openNestedCreateModal = useDraftStore((s) => s.openNestedCreateModal)
   const setOnNestedEntityCreated = useDraftStore((s) => s.setOnNestedEntityCreated)
@@ -54,14 +54,14 @@ export function CategoryDetail({
     }))
 
   // Fetch available properties for property fields
-  const { data: propertiesData } = useProperties(undefined, undefined, draftId)
+  const { data: propertiesData } = useProperties(undefined, 500, draftId)
   const availableProperties = (propertiesData?.items || []).map((p) => ({
     key: p.entity_key,
     label: p.label,
   }))
 
   // Fetch available subobjects for subobject fields
-  const { data: subobjectsData } = useSubobjects(undefined, undefined, draftId)
+  const { data: subobjectsData } = useSubobjects(undefined, 500, draftId)
   const availableSubobjects = (subobjectsData?.items || []).map((s) => ({
     key: s.entity_key,
     label: s.label,

@@ -40,12 +40,12 @@ interface ModuleDetailProps {
  */
 export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: ModuleDetailProps) {
   const { data: module, isLoading, error, refetch: refetchModule } = useModule(entityKey, draftId)
-  const { data: categoriesData } = useCategories(undefined, undefined, draftId)
-  const { data: propertiesData } = useProperties(undefined, undefined, draftId)
-  const { data: subobjectsData } = useSubobjects(undefined, undefined, draftId)
-  const { data: templatesData } = useTemplates(undefined, undefined, draftId)
-  const { data: dashboardsData } = useDashboards(undefined, undefined, draftId)
-  const { data: resourcesData } = useResources(undefined, undefined, draftId)
+  const { data: categoriesData } = useCategories(undefined, 500, draftId)
+  const { data: propertiesData } = useProperties(undefined, 500, draftId)
+  const { data: subobjectsData } = useSubobjects(undefined, 500, draftId)
+  const { data: templatesData } = useTemplates(undefined, 500, draftId)
+  const { data: dashboardsData } = useDashboards(undefined, 500, draftId)
+  const { data: resourcesData } = useResources(undefined, 500, draftId)
 
   const setSelectedEntity = useGraphStore((s) => s.setSelectedEntity)
   const openNestedCreateModal = useDraftStore((s) => s.openNestedCreateModal)

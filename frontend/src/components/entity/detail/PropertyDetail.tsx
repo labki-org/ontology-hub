@@ -65,8 +65,8 @@ export function PropertyDetail({
     data: usedByData,
     isLoading: usedByLoading,
   } = usePropertyUsedBy(entityKey, draftId)
-  const { data: templatesData } = useTemplates(undefined, undefined, draftId)
-  const { data: categoriesData } = useCategories(undefined, undefined, draftId)
+  const { data: templatesData } = useTemplates(undefined, 500, draftId)
+  const { data: categoriesData } = useCategories(undefined, 500, draftId)
   const setSelectedEntity = useGraphStore((s) => s.setSelectedEntity)
 
   // Build available templates for selection
