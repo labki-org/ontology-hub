@@ -74,6 +74,11 @@ export function useAutoSave({
                          entityType === 'property' ? 'properties' :
                          `${entityType}s`
       queryClient.invalidateQueries({ queryKey: ['v2', pluralType] })
+      // Category/subobject changes trigger module re-populate on the backend,
+      // so invalidate module queries to pick up the updated derived entities
+      if (entityType === 'category' || entityType === 'subobject') {
+        queryClient.invalidateQueries({ queryKey: ['v2', 'modules'] })
+      }
       // Clear stale validation
       useDraftStore.getState().clearValidation()
       // Invalidate draft changes list
