@@ -545,6 +545,50 @@ async def add_draft_change(
         if should_populate:
             await auto_populate_module_derived(session, draft, change)
 
+    # When a category or subobject is modified, re-populate any modules that
+    # contain that category (their derived entities may have changed)
+    if change_in.entity_type in ("category", "subobject") and change_in.change_type == ChangeType.UPDATE:
+        # Find module changes in this draft that reference this entity
+        module_changes_query = select(DraftChange).where(
+            DraftChange.draft_id == draft.id,
+            DraftChange.entity_type == "module",
+        )
+        module_changes_result = await session.execute(module_changes_query)
+        for module_change in module_changes_result.scalars().all():
+            # Check if this module contains the modified category/subobject
+            if module_change.change_type == ChangeType.CREATE:
+                categories = (module_change.replacement_json or {}).get("categories", [])
+            else:
+                # For UPDATE, get effective categories from canonical + patch
+                module_obj = await session.execute(
+                    select(Module).where(Module.entity_key == module_change.entity_key)
+                )
+                module = module_obj.scalar_one_or_none()
+                if module:
+                    import jsonpatch
+                    canonical = dict(module.canonical_json)
+                    try:
+                        patch = jsonpatch.JsonPatch(module_change.patch or [])
+                        effective_module = patch.apply(canonical)
+                    except jsonpatch.JsonPatchException:
+                        effective_module = canonical
+                    categories = effective_module.get("categories", [])
+                else:
+                    categories = []
+
+            # For category changes: re-populate if the module contains this category
+            # For subobject changes: re-populate if any category in the module uses this subobject
+            should_repopulate = False
+            if change_in.entity_type == "category" and change_in.entity_key in categories:
+                should_repopulate = True
+            elif change_in.entity_type == "subobject":
+                # Any module with categories should be re-populated since subobjects
+                # are derived from categories and we don't know which category uses which subobject
+                should_repopulate = len(categories) > 0
+
+            if should_repopulate:
+                await auto_populate_module_derived(session, draft, module_change)
+
     await session.commit()
     await session.refresh(change)
 
