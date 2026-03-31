@@ -24,7 +24,7 @@ services:
       - internal
 
   backend:
-    image: ghcr.io/${GITHUB_REPOSITORY}-backend:latest
+    image: ghcr.io/${GITHUB_REPOSITORY}-backend:${VERSION:-latest}
     restart: unless-stopped
     depends_on:
       db:
