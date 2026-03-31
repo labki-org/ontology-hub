@@ -157,6 +157,7 @@ async def list_categories(
         None, description="Last entity_key from previous page for pagination"
     ),
     limit: int = Query(20, ge=1, le=500, description="Max items per page"),
+    search: str | None = Query(None, description="Filter by entity_key or label (case-insensitive)"),
 ) -> EntityListResponse:
     """List categories with cursor-based pagination and draft overlay.
 
@@ -167,6 +168,12 @@ async def list_categories(
     """
     # Query canonical categories
     query = select(Category).order_by(Category.entity_key)
+
+    if search:
+        query = query.where(
+            col(Category.entity_key).ilike(f"%{search}%")
+            | col(Category.label).ilike(f"%{search}%")
+        )
 
     if cursor:
         query = query.where(Category.entity_key > cursor)
@@ -357,6 +364,7 @@ async def list_properties(
         None, description="Last entity_key from previous page for pagination"
     ),
     limit: int = Query(20, ge=1, le=500, description="Max items per page"),
+    search: str | None = Query(None, description="Filter by entity_key or label (case-insensitive)"),
 ) -> EntityListResponse:
     """List properties with cursor-based pagination and draft overlay.
 
@@ -367,6 +375,12 @@ async def list_properties(
     """
     # Query canonical properties
     query = select(Property).order_by(Property.entity_key)
+
+    if search:
+        query = query.where(
+            col(Property.entity_key).ilike(f"%{search}%")
+            | col(Property.label).ilike(f"%{search}%")
+        )
 
     if cursor:
         query = query.where(Property.entity_key > cursor)
@@ -516,12 +530,19 @@ async def list_subobjects(
         None, description="Last entity_key from previous page for pagination"
     ),
     limit: int = Query(20, ge=1, le=500, description="Max items per page"),
+    search: str | None = Query(None, description="Filter by entity_key or label (case-insensitive)"),
 ) -> EntityListResponse:
     """List subobjects with cursor-based pagination and draft overlay.
 
     Rate limited to 100/minute per IP.
     """
     query = select(Subobject).order_by(Subobject.entity_key)
+
+    if search:
+        query = query.where(
+            col(Subobject.entity_key).ilike(f"%{search}%")
+            | col(Subobject.label).ilike(f"%{search}%")
+        )
 
     if cursor:
         query = query.where(Subobject.entity_key > cursor)
@@ -681,12 +702,19 @@ async def list_templates(
         None, description="Last entity_key from previous page for pagination"
     ),
     limit: int = Query(20, ge=1, le=500, description="Max items per page"),
+    search: str | None = Query(None, description="Filter by entity_key or label (case-insensitive)"),
 ) -> EntityListResponse:
     """List templates with cursor-based pagination and draft overlay.
 
     Rate limited to 100/minute per IP.
     """
     query = select(Template).order_by(Template.entity_key)
+
+    if search:
+        query = query.where(
+            col(Template.entity_key).ilike(f"%{search}%")
+            | col(Template.label).ilike(f"%{search}%")
+        )
 
     if cursor:
         query = query.where(Template.entity_key > cursor)
@@ -775,12 +803,19 @@ async def list_modules(
         None, description="Last entity_key from previous page for pagination"
     ),
     limit: int = Query(20, ge=1, le=500, description="Max items per page"),
+    search: str | None = Query(None, description="Filter by entity_key or label (case-insensitive)"),
 ) -> EntityListResponse:
     """List modules with cursor-based pagination and draft overlay.
 
     Rate limited to 100/minute per IP.
     """
     query = select(Module).order_by(Module.entity_key)
+
+    if search:
+        query = query.where(
+            col(Module.entity_key).ilike(f"%{search}%")
+            | col(Module.label).ilike(f"%{search}%")
+        )
 
     if cursor:
         query = query.where(Module.entity_key > cursor)
@@ -926,12 +961,19 @@ async def list_bundles(
         None, description="Last entity_key from previous page for pagination"
     ),
     limit: int = Query(20, ge=1, le=500, description="Max items per page"),
+    search: str | None = Query(None, description="Filter by entity_key or label (case-insensitive)"),
 ) -> EntityListResponse:
     """List bundles with cursor-based pagination and draft overlay.
 
     Rate limited to 100/minute per IP.
     """
     query = select(Bundle).order_by(Bundle.entity_key)
+
+    if search:
+        query = query.where(
+            col(Bundle.entity_key).ilike(f"%{search}%")
+            | col(Bundle.label).ilike(f"%{search}%")
+        )
 
     if cursor:
         query = query.where(Bundle.entity_key > cursor)
@@ -1037,12 +1079,19 @@ async def list_dashboards(
         None, description="Last entity_key from previous page for pagination"
     ),
     limit: int = Query(20, ge=1, le=500, description="Max items per page"),
+    search: str | None = Query(None, description="Filter by entity_key or label (case-insensitive)"),
 ) -> EntityListResponse:
     """List dashboards with cursor-based pagination and draft overlay.
 
     Rate limited to 100/minute per IP.
     """
     query = select(Dashboard).order_by(Dashboard.entity_key)
+
+    if search:
+        query = query.where(
+            col(Dashboard.entity_key).ilike(f"%{search}%")
+            | col(Dashboard.label).ilike(f"%{search}%")
+        )
 
     if cursor:
         query = query.where(Dashboard.entity_key > cursor)
@@ -1134,12 +1183,19 @@ async def list_resources(
     ),
     limit: int = Query(20, ge=1, le=500, description="Max items per page"),
     category: str | None = Query(None, description="Filter by category key"),
+    search: str | None = Query(None, description="Filter by entity_key or label (case-insensitive)"),
 ) -> EntityListResponse:
     """List resources with cursor-based pagination, optional category filter, and draft overlay.
 
     Rate limited to 100/minute per IP.
     """
     query = select(Resource).order_by(Resource.entity_key)
+
+    if search:
+        query = query.where(
+            col(Resource.entity_key).ilike(f"%{search}%")
+            | col(Resource.label).ilike(f"%{search}%")
+        )
 
     if category:
         query = query.where(text("CAST(category_keys AS jsonb) @> CAST(:cats AS jsonb)")).params(

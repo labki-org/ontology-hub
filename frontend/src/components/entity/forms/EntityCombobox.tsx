@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   Command,
   CommandEmpty,
@@ -10,15 +10,16 @@ import {
 } from '@/components/ui/command'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
-import { Plus, Check, ChevronsUpDown } from 'lucide-react'
+import { Plus, Check, ChevronsUpDown, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useEntitySearch } from '@/api/entities'
 
 type EntityType = 'category' | 'property' | 'subobject' | 'template' | 'module' | 'bundle'
 
 interface EntityComboboxProps {
   /** Type of entity being selected */
   entityType: EntityType
-  /** Available entities to select from */
+  /** Pre-loaded entities (shown when search is empty) */
   availableEntities: Array<{ key: string; label: string }>
   /** Currently selected entity keys */
   selectedKeys: string[]
@@ -30,28 +31,16 @@ interface EntityComboboxProps {
   placeholder?: string
   /** Whether the combobox is disabled */
   disabled?: boolean
+  /** Draft ID for server-side search context */
+  draftId?: string
 }
 
 /**
  * Autocomplete combobox for selecting related entities.
  *
- * Features:
- * - Type-ahead search with keyboard navigation (via cmdk)
- * - "Create" option appears when typing non-existent entity ID
- * - Filters out already-selected entities to prevent duplicates
- * - Searches both key (ID) and label fields
- *
- * @example
- * ```tsx
- * <EntityCombobox
- *   entityType="category"
- *   availableEntities={categories}
- *   selectedKeys={form.watch('parents') || []}
- *   onChange={(keys) => form.setValue('parents', keys)}
- *   onCreateNew={(id) => onCreateRelatedEntity('category', id)}
- *   placeholder="Add parent category..."
- * />
- * ```
+ * Uses server-side search when the user types, falling back to
+ * pre-loaded entities when the search box is empty. This ensures
+ * all entities are findable regardless of list size.
  */
 export function EntityCombobox({
   entityType,
@@ -61,31 +50,41 @@ export function EntityCombobox({
   onCreateNew,
   placeholder = 'Search...',
   disabled,
+  draftId,
 }: EntityComboboxProps) {
   const [open, setOpen] = useState(false)
   const [inputValue, setInputValue] = useState('')
 
-  // Filter out already selected entities
-  const unselectedEntities = availableEntities.filter(
-    (e) => !selectedKeys.includes(e.key)
+  // Server-side search when user types
+  const { data: searchResults, isLoading: isSearching } = useEntitySearch(
+    entityType === 'category' ? 'categories' :
+    entityType === 'property' ? 'properties' :
+    entityType === 'subobject' ? 'subobjects' :
+    entityType === 'template' ? 'templates' :
+    entityType === 'module' ? 'modules' :
+    'bundles',
+    inputValue,
+    draftId,
   )
 
-  // Filter by search (searches both key and label)
-  const filteredEntities = unselectedEntities.filter(
-    (e) =>
-      e.key.toLowerCase().includes(inputValue.toLowerCase()) ||
-      e.label.toLowerCase().includes(inputValue.toLowerCase())
-  )
+  // Use server results when searching, pre-loaded when idle
+  const displayEntities = useMemo(() => {
+    const source = inputValue && searchResults?.items
+      ? searchResults.items.map((e) => ({ key: e.entity_key, label: e.label }))
+      : availableEntities
 
-  // Check if exact match exists (in all entities, not just unselected)
-  const exactMatch = availableEntities.find(
+    // Filter out already selected
+    return source.filter((e) => !selectedKeys.includes(e.key))
+  }, [inputValue, searchResults, availableEntities, selectedKeys])
+
+  // Check if exact match exists
+  const allEntities = inputValue && searchResults?.items
+    ? searchResults.items.map((e) => ({ key: e.entity_key, label: e.label }))
+    : availableEntities
+  const exactMatch = allEntities.find(
     (e) => e.key.toLowerCase() === inputValue.toLowerCase().trim()
   )
 
-  // Show "Create" option only when:
-  // 1. Input has value
-  // 2. No exact match exists
-  // 3. onCreateNew handler is provided
   const showCreateOption = inputValue.trim() && !exactMatch && onCreateNew
 
   const handleSelect = (key: string) => {
@@ -125,7 +124,12 @@ export function EntityCombobox({
           />
           <CommandList>
             <CommandEmpty>
-              {showCreateOption ? (
+              {isSearching ? (
+                <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Searching...
+                </div>
+              ) : showCreateOption ? (
                 <button
                   className="flex items-center gap-2 w-full px-2 py-1.5 text-sm hover:bg-accent rounded-sm text-left"
                   onClick={handleCreate}
@@ -138,7 +142,7 @@ export function EntityCombobox({
               )}
             </CommandEmpty>
             <CommandGroup>
-              {filteredEntities.map((entity) => (
+              {displayEntities.map((entity) => (
                 <CommandItem
                   key={entity.key}
                   value={entity.key}
@@ -159,7 +163,7 @@ export function EntityCombobox({
                 </CommandItem>
               ))}
             </CommandGroup>
-            {showCreateOption && filteredEntities.length > 0 && (
+            {showCreateOption && displayEntities.length > 0 && (
               <CommandGroup>
                 <CommandSeparator />
                 <CommandItem

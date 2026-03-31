@@ -22,12 +22,14 @@ async function fetchEntitiesV2(
   entityType: string,
   cursor?: string,
   limit?: number,
-  draftId?: string
+  draftId?: string,
+  search?: string
 ): Promise<EntityListResponseV2> {
   const params = new URLSearchParams()
   if (cursor) params.set('cursor', cursor)
   if (limit) params.set('limit', String(limit))
   if (draftId) params.set('draft_id', draftId)
+  if (search) params.set('search', search)
 
   const queryString = params.toString()
   const endpoint = `/${entityType}${queryString ? `?${queryString}` : ''}`
@@ -204,5 +206,19 @@ export function useResource(entityKey: string, draftId?: string) {
     queryKey: ['v2', 'resource', entityKey, { draftId }],
     queryFn: () => fetchEntityV2('resources', entityKey, draftId),
     enabled: !!entityKey,
+  })
+}
+
+export function useEntitySearch(
+  entityType: string,
+  search: string,
+  draftId?: string,
+  limit: number = 30
+) {
+  return useQuery({
+    queryKey: ['v2', entityType, 'search', { search, limit, draftId }],
+    queryFn: () => fetchEntitiesV2(entityType, undefined, limit, draftId, search),
+    enabled: search.length >= 1,
+    staleTime: 30_000,
   })
 }
