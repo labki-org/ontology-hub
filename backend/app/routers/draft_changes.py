@@ -546,6 +546,9 @@ async def add_draft_change(
         if should_populate:
             await auto_populate_module_derived(session, draft, change)
 
+    # Flush so the category/subobject change is visible to subsequent queries
+    await session.flush()
+
     # When a category or subobject is modified, re-populate any modules that
     # contain that category (their derived entities may have changed).
     # This covers both modules already in the draft AND canonical modules.
