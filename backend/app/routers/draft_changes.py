@@ -11,7 +11,7 @@ Adding/removing changes from VALIDATED drafts auto-reverts status to DRAFT.
 """
 
 from datetime import datetime
-from typing import Any, cast
+from typing import cast
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request
@@ -30,7 +30,6 @@ from app.models.v2 import (
     DraftChange,
     DraftStatus,
     Module,
-    ModuleEntity,
     Property,
     Resource,
     Subobject,
@@ -42,7 +41,6 @@ from app.schemas.draft_change import (
     DraftChangesListResponse,
 )
 from app.services.draft_workflow import auto_revert_if_validated
-from app.services.module_derived import compute_module_derived_entities
 from app.services.resource_validation import validate_resource_fields
 
 router = APIRouter(tags=["draft-changes"])
@@ -110,125 +108,6 @@ async def entity_exists(session: AsyncSession, entity_type: str, entity_key: str
         select(model).where(model.entity_key == entity_key)  # type: ignore[attr-defined]
     )
     return result.scalars().first() is not None
-
-
-async def auto_populate_module_derived(
-    session: AsyncSession,
-    draft: Draft,
-    change: DraftChange,
-) -> None:
-    """Auto-populate module derived entities after categories change.
-
-    When a module's categories are modified, this function computes and adds
-    all derived entities (properties, subobjects, templates, resources) based
-    on what those categories require. Entities can appear in multiple modules.
-
-    Args:
-        session: Async database session
-        draft: The draft being modified
-        change: The module change that was just committed
-    """
-    from copy import deepcopy
-
-    import jsonpatch
-
-    # Get effective categories from the change
-    categories: list[str] = []
-
-    if change.change_type == ChangeType.CREATE:
-        categories = (change.replacement_json or {}).get("categories", [])
-    elif change.change_type == ChangeType.UPDATE:
-        module_query = select(Module).where(Module.entity_key == change.entity_key)
-        result = await session.execute(module_query)
-        module = result.scalar_one_or_none()
-
-        if module:
-            canonical_json = deepcopy(module.canonical_json)
-            categories_patches = [
-                op for op in (change.patch or []) if op.get("path", "").startswith("/categories")
-            ]
-            if categories_patches:
-                try:
-                    patch = jsonpatch.JsonPatch(categories_patches)
-                    effective = patch.apply(canonical_json)
-                    categories = effective.get("categories", [])
-                except jsonpatch.JsonPatchException:
-                    categories = canonical_json.get("categories", [])
-            else:
-                categories = canonical_json.get("categories", [])
-        else:
-            return
-
-    # Save manual categories before expanding (for UI distinction)
-    manual_categories = sorted(categories)
-
-    # Expand categories to include parent closure (so the module is self-contained)
-    if categories:
-        all_categories = set(categories)
-        pending = set(categories)
-        while pending:
-            batch = list(pending)
-            pending.clear()
-            for cat_key in batch:
-                cat_query = await session.execute(
-                    select(Category).where(Category.entity_key == cat_key)
-                )
-                cat = cat_query.scalar_one_or_none()
-                if cat:
-                    parents = (cat.canonical_json or {}).get("parents", [])
-                    for p in parents:
-                        if p not in all_categories:
-                            all_categories.add(p)
-                            pending.add(p)
-        categories = sorted(all_categories)
-
-    if not categories:
-        derived: dict[str, list[str] | dict[str, str]] = {
-            "properties": [],
-            "subobjects": [],
-            "templates": [],
-            "resources": [],
-        }
-    else:
-        derived = await compute_module_derived_entities(session, categories, draft_id=draft.id)
-
-    # Update the change with derived entities + expanded categories
-    if change.change_type == ChangeType.CREATE:
-        replacement = dict(change.replacement_json or {})
-        replacement["categories"] = categories
-        replacement["manual_categories"] = manual_categories
-        replacement["properties"] = derived["properties"]
-        replacement["subobjects"] = derived["subobjects"]
-        replacement["templates"] = derived["templates"]
-        replacement["resources"] = derived.get("resources", [])
-        change.replacement_json = replacement
-    else:
-        existing_patches: list[dict[str, Any]] = list(change.patch) if change.patch else []
-
-        derived_paths = {
-            "/categories",
-            "/manual_categories",
-            "/properties",
-            "/subobjects",
-            "/templates",
-            "/resources",
-        }
-        filtered_patches = [p for p in existing_patches if p.get("path") not in derived_paths]
-
-        # IMPORTANT: Use "add" not "replace" — field may not exist in canonical.
-        for path, values in [
-            ("/categories", categories),
-            ("/manual_categories", manual_categories),
-            ("/properties", derived["properties"]),
-            ("/subobjects", derived["subobjects"]),
-            ("/templates", derived["templates"]),
-            ("/resources", derived.get("resources", [])),
-        ]:
-            filtered_patches.append({"op": "add", "path": path, "value": values})
-
-        change.patch = filtered_patches
-
-    # No commit here — caller commits after auto_populate_module_derived
 
 
 def validate_dashboard_create(replacement_json: dict | None) -> str | None:
@@ -530,92 +409,6 @@ async def add_draft_change(
     # Update draft modified_at
     draft.modified_at = datetime.utcnow()
     session.add(draft)
-
-    # Auto-populate derived entities for module changes BEFORE committing,
-    # so the entire operation (change + derived entities) is atomic.
-    if change_in.entity_type == "module" and change_in.change_type in (
-        ChangeType.CREATE,
-        ChangeType.UPDATE,
-    ):
-        should_populate = change_in.change_type == ChangeType.CREATE
-        if change_in.change_type == ChangeType.UPDATE:
-            should_populate = any(
-                op.get("path", "").startswith("/categories") for op in (change_in.patch or [])
-            )
-
-        if should_populate:
-            await auto_populate_module_derived(session, draft, change)
-
-    # Flush so the category/subobject change is visible to subsequent queries
-    await session.flush()
-
-    # When a category or subobject is modified, re-populate any modules that
-    # contain that category (their derived entities may have changed).
-    # This covers both modules already in the draft AND canonical modules.
-    if change_in.entity_type in ("category", "subobject") and change_in.change_type in (
-        ChangeType.UPDATE, ChangeType.CREATE,
-    ):
-        # Collect module keys that need re-population
-        modules_to_repopulate: set[str] = set()
-
-        # 1. Find canonical modules containing this entity via ModuleEntity table
-        if change_in.entity_type == "category":
-            module_entity_query = (
-                select(Module.entity_key)
-                .join(ModuleEntity, col(ModuleEntity.module_id) == col(Module.id))
-                .where(
-                    ModuleEntity.entity_type == "category",
-                    ModuleEntity.entity_key == change_in.entity_key,
-                )
-            )
-            module_entity_result = await session.execute(module_entity_query)
-            for row in module_entity_result.all():
-                modules_to_repopulate.add(row[0])
-        elif change_in.entity_type == "subobject":
-            # Subobject changes could affect any module — find modules that have
-            # categories which reference this subobject
-            all_modules_query = select(Module)
-            all_modules_result = await session.execute(all_modules_query)
-            for mod in all_modules_result.scalars().all():
-                modules_to_repopulate.add(mod.entity_key)
-
-        # 2. Also check draft-created modules (not in canonical yet)
-        draft_module_query = select(DraftChange).where(
-            DraftChange.draft_id == draft.id,
-            DraftChange.entity_type == "module",
-            DraftChange.change_type == ChangeType.CREATE,
-        )
-        draft_module_result = await session.execute(draft_module_query)
-        for dc in draft_module_result.scalars().all():
-            cats = (dc.replacement_json or {}).get("categories", [])
-            if (change_in.entity_type == "category" and change_in.entity_key in cats) or (
-                change_in.entity_type == "subobject" and cats
-            ):
-                modules_to_repopulate.add(dc.entity_key)
-
-        # 3. For each module, ensure a DraftChange exists and re-populate
-        for module_key in modules_to_repopulate:
-            existing_module_change_query = select(DraftChange).where(
-                DraftChange.draft_id == draft.id,
-                DraftChange.entity_type == "module",
-                DraftChange.entity_key == module_key,
-            )
-            existing_result = await session.execute(existing_module_change_query)
-            module_change = existing_result.scalar_one_or_none()
-
-            if not module_change:
-                # Create an UPDATE change for this canonical module so auto-populate can work
-                module_change = DraftChange(
-                    draft_id=draft.id,
-                    change_type=ChangeType.UPDATE,
-                    entity_type="module",
-                    entity_key=module_key,
-                    patch=[],
-                )
-                session.add(module_change)
-                await session.flush()
-
-            await auto_populate_module_derived(session, draft, module_change)
 
     await session.commit()
     await session.refresh(change)

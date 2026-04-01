@@ -24,9 +24,7 @@ patch = [{"op": "add", "path": "/templates", "value": []}]
 ```
 
 **Where this has bitten us**:
-1. `auto_populate_module_derived()` in `draft_changes.py` - When adding derived entity patches (`/properties`, `/subobjects`, `/templates`), the canonical module JSON might not have all these fields.
-
-2. Any code that creates patches for fields that may or may not exist in the canonical data.
+Any code that creates patches for fields that may or may not exist in the canonical data.
 
 **Rule of thumb**:
 - Use `"add"` when setting a value on a field that might not exist
@@ -71,10 +69,10 @@ patch = jsonpatch.JsonPatch(relevant_patches)
 effective = patch.apply(canonical)
 ```
 
-## Module Derived Entities
+## Module Architecture
 
-Modules have two types of members:
-- **Manual**: `categories`, `dependencies` (explicitly set by user)
-- **Derived**: `properties`, `subobjects`, `templates` (auto-computed from categories)
+Modules store only manually-selected `categories` and `dashboards`. Dependency resolution
+(properties, subobjects, templates, resources) is handled by OntologySync at install time.
 
-When a module's categories change, `auto_populate_module_derived()` automatically computes and adds the derived entities to the draft patch.
+The hub computes derived entities on-the-fly for display purposes via
+`compute_module_derived_entities()` in `services/module_derived.py`, but does not store them.
