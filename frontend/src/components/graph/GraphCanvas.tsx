@@ -63,8 +63,8 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
   // Use prop entityKey or fall back to selectedEntityKey from store
   const entityKey = propEntityKey ?? selectedEntityKey
 
-  // Graph visualization supports all entity types except bundles
-  const GRAPH_SUPPORTED_TYPES = new Set(['category', 'property', 'subobject', 'template', 'module', 'dashboard', 'resource'])
+  // Graph visualization supports all entity types
+  const GRAPH_SUPPORTED_TYPES = new Set(['category', 'property', 'subobject', 'template', 'module', 'bundle', 'dashboard', 'resource'])
   const isGraphSupported = GRAPH_SUPPORTED_TYPES.has(selectedEntityType)
 
   // Fetch the full ontology graph (once, not per entity)
@@ -498,10 +498,7 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
   if (!isGraphSupported) {
     return (
       <div className="h-full flex items-center justify-center text-muted-foreground">
-        <div className="text-center">
-          <p>Graph view is not available for bundles</p>
-          <p className="text-sm mt-1">Select a category, property, subobject, template, or module</p>
-        </div>
+        <p>Graph view is not available for this entity type</p>
       </div>
     )
   }
