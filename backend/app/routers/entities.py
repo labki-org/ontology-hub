@@ -474,9 +474,6 @@ async def get_property(
     if not effective:
         raise HTTPException(status_code=404, detail="Property not found")
 
-    # Module and bundle membership
-    module_keys, bundle_keys = await _get_entity_membership(session, entity_key, "property")
-
     return PropertyDetailResponse(
         entity_key=effective.get("entity_key", entity_key),
         label=effective.get("label", ""),
@@ -494,8 +491,6 @@ async def get_property(
         # Constraints and relationships
         unique_values=effective.get("unique_values", False),
         has_display_template=effective.get("has_display_template_key"),
-        modules=module_keys,
-        bundles=bundle_keys,
         change_status=effective.get("_change_status"),
         deleted=effective.get("_deleted", False),
     )
@@ -705,20 +700,59 @@ async def get_subobject(
                 SubobjectPropertyInfo(entity_key=prop_key, label=prop_key, is_required=False)
             )
 
-    # Module and bundle membership
-    module_keys, bundle_keys = await _get_entity_membership(session, entity_key, "subobject")
-
     return SubobjectDetailResponse(
         entity_key=effective.get("entity_key", entity_key),
         label=effective.get("label", ""),
         description=effective.get("description"),
         required_properties=required_properties,
         optional_properties=optional_properties,
-        modules=module_keys,
-        bundles=bundle_keys,
         change_status=effective.get("_change_status"),
         deleted=effective.get("_deleted", False),
     )
+
+
+@router.get("/subobjects/{entity_key}/used-by", response_model=list[EntityWithStatus])
+@limiter.limit(RATE_LIMITS["entity_read"])
+async def get_subobject_used_by(
+    request: Request,
+    entity_key: str,
+    session: SessionDep,
+    draft_ctx: DraftContextDep,
+) -> list[EntityWithStatus]:
+    """Get categories that use this subobject.
+
+    Returns list of categories that have this subobject assigned
+    (required or optional), with draft change status.
+
+    Rate limited to 200/minute per IP.
+    """
+    # Verify subobject exists
+    sub_query = select(Subobject).where(Subobject.entity_key == entity_key)
+    sub_result = await session.execute(sub_query)
+    subobj = sub_result.scalar_one_or_none()
+
+    if not subobj:
+        effective = await draft_ctx.apply_overlay(None, "subobject", entity_key)
+        if not effective:
+            raise HTTPException(status_code=404, detail="Subobject not found")
+        return []
+
+    query = (
+        select(Category)
+        .join(CategorySubobject, col(CategorySubobject.category_id) == col(Category.id))
+        .where(CategorySubobject.subobject_id == subobj.id)
+        .order_by(Category.entity_key)
+    )
+    result = await session.execute(query)
+    categories = result.scalars().all()
+
+    items: list[EntityWithStatus] = []
+    for cat in categories:
+        effective = await draft_ctx.apply_overlay(cat, "category", cat.entity_key)
+        if effective:
+            items.append(EntityWithStatus.model_validate(effective))
+
+    return items
 
 
 # -----------------------------------------------------------------------------
@@ -943,6 +977,25 @@ async def get_module(
 
         parent_categories = sorted(visited - manual_set)
 
+    # Compute module membership for parent categories
+    parent_category_membership: dict[str, list[str]] = {}
+    if parent_categories:
+        membership_query = (
+            select(ModuleEntity.entity_key, col(Module.entity_key).label("module_key"))
+            .join(Module, col(Module.id) == col(ModuleEntity.module_id))
+            .where(
+                col(ModuleEntity.entity_key).in_(parent_categories),
+                ModuleEntity.entity_type == "category",
+            )
+        )
+        membership_result = await session.execute(membership_query)
+        for row in membership_result.fetchall():
+            cat_key = row[0]
+            mod_key = row[1]
+            if cat_key not in parent_category_membership:
+                parent_category_membership[cat_key] = []
+            parent_category_membership[cat_key].append(mod_key)
+
     return ModuleDetailResponse(
         entity_key=effective.get("entity_key", entity_key),
         label=effective.get("label", ""),
@@ -950,6 +1003,7 @@ async def get_module(
         categories=categories,
         dashboards=dashboards,
         parent_categories=parent_categories,
+        parent_category_membership=parent_category_membership,
         change_status=effective.get("_change_status"),
         deleted=effective.get("_deleted", False),
     )

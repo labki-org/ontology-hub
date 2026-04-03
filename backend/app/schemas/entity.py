@@ -145,12 +145,6 @@ class PropertyDetailResponse(BaseModel):
     has_display_template: str | None = Field(
         default=None, description="Template entity key for custom rendering"
     )
-    modules: list[str] = Field(
-        default_factory=list, description="Module entity keys containing this property"
-    )
-    bundles: list[str] = Field(
-        default_factory=list, description="Bundle entity keys (via module membership)"
-    )
     change_status: ChangeStatus | None = Field(
         default=None,
         validation_alias="_change_status",
@@ -182,12 +176,6 @@ class SubobjectDetailResponse(BaseModel):
     )
     optional_properties: list[SubobjectPropertyInfo] = Field(
         default_factory=list, description="Optional property assignments"
-    )
-    modules: list[str] = Field(
-        default_factory=list, description="Module entity keys containing this subobject"
-    )
-    bundles: list[str] = Field(
-        default_factory=list, description="Bundle entity keys (via module membership)"
     )
     change_status: ChangeStatus | None = Field(
         default=None,
@@ -248,6 +236,10 @@ class ModuleDetailResponse(BaseModel):
     parent_categories: list[str] = Field(
         default_factory=list,
         description="Parent categories that OntologySync will auto-include (computed on-the-fly)",
+    )
+    parent_category_membership: dict[str, list[str]] = Field(
+        default_factory=dict,
+        description="Module membership for each parent category: {cat_key: [module_keys]}",
     )
     change_status: ChangeStatus | None = Field(
         default=None,

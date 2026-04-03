@@ -62,6 +62,18 @@ async function fetchPropertyUsedBy(
   return apiFetch(endpoint, { v2: true })
 }
 
+async function fetchSubobjectUsedBy(
+  entityKey: string,
+  draftId?: string
+): Promise<EntityWithStatus[]> {
+  const params = new URLSearchParams()
+  if (draftId) params.set('draft_id', draftId)
+
+  const queryString = params.toString()
+  const endpoint = `/subobjects/${entityKey}/used-by${queryString ? `?${queryString}` : ''}`
+  return apiFetch(endpoint, { v2: true })
+}
+
 // Query hooks
 
 export function useOntologyVersion() {
@@ -174,6 +186,14 @@ export function usePropertyUsedBy(entityKey: string, draftId?: string) {
   return useQuery({
     queryKey: ['v2', 'property-used-by', entityKey, { draftId }],
     queryFn: () => fetchPropertyUsedBy(entityKey, draftId),
+    enabled: !!entityKey,
+  })
+}
+
+export function useSubobjectUsedBy(entityKey: string, draftId?: string) {
+  return useQuery({
+    queryKey: ['v2', 'subobject-used-by', entityKey, { draftId }],
+    queryFn: () => fetchSubobjectUsedBy(entityKey, draftId),
     enabled: !!entityKey,
   })
 }

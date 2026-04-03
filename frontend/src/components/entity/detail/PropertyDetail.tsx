@@ -4,7 +4,6 @@ import { useAutoSave } from '@/hooks/useAutoSave'
 import { useGraphStore } from '@/stores/graphStore'
 import { EntityHeader } from '../sections/EntityHeader'
 import { AccordionSection } from '../sections/AccordionSection'
-import { MembershipSection } from '../sections/MembershipSection'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -934,8 +933,6 @@ export function PropertyDetail({
         )}
       </AccordionSection>
 
-      {/* Module membership */}
-      <MembershipSection modules={property.modules || []} bundles={property.bundles || []} />
     </div>
   )
 }

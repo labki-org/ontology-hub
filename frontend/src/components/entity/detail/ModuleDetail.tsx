@@ -197,6 +197,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
 
   // Parent categories (computed on-the-fly by the backend)
   const parentCategories = moduleDetail.parent_categories || []
+  const parentCategoryMembership = moduleDetail.parent_category_membership || {}
 
   // Check for modifications
   const isCategoriesModified =
@@ -327,10 +328,22 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
               <p className="text-xs text-muted-foreground">
                 These parent categories will be auto-included when OntologySync imports this module.
               </p>
-              <div className="flex flex-wrap gap-1">
-                {parentCategories.map((key: string) =>
-                  renderEntityChip(key, 'category', getLabel(key, availableCategories))
-                )}
+              <div className="flex flex-wrap gap-1.5">
+                {parentCategories.map((key: string) => (
+                  <span key={key} className="inline-flex items-center gap-1">
+                    {renderEntityChip(key, 'category', getLabel(key, availableCategories))}
+                    {parentCategoryMembership[key]?.map((modKey) => (
+                      <Badge
+                        key={modKey}
+                        variant="secondary"
+                        className="text-[10px] px-1.5 py-0 cursor-pointer hover:bg-secondary/80"
+                        onClick={() => setSelectedEntity(modKey, 'module')}
+                      >
+                        {modKey}
+                      </Badge>
+                    ))}
+                  </span>
+                ))}
               </div>
             </div>
           )}

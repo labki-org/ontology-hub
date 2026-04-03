@@ -1,17 +1,18 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { useSubobject, useAvailableEntities } from '@/api/entities'
+import { useSubobject, useSubobjectUsedBy, useAvailableEntities } from '@/api/entities'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useDraftStore } from '@/stores/draftStore'
 import { EntityHeader } from '../sections/EntityHeader'
 import { AccordionSection } from '../sections/AccordionSection'
 import { SubsectionHeader } from '../sections/SubsectionHeader'
 import { SaveIndicator } from '../sections/SaveIndicator'
-import { MembershipSection } from '../sections/MembershipSection'
 import { DeletedItemBadge } from '../form/DeletedItemBadge'
 import { EntityCombobox } from '../forms/EntityCombobox'
 import { RelationshipChips } from '../forms/RelationshipChips'
+import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import type { SubobjectDetailV2 } from '@/api/types'
+import type { SubobjectDetailV2, EntityWithStatus } from '@/api/types'
+import { useGraphStore } from '@/stores/graphStore'
 
 interface SubobjectDetailProps {
   entityKey: string
@@ -36,8 +37,10 @@ export function SubobjectDetail({
   isEditing,
 }: SubobjectDetailProps) {
   const { data, isLoading, error } = useSubobject(entityKey, draftId)
+  const { data: usedByData, isLoading: usedByLoading } = useSubobjectUsedBy(entityKey, draftId)
   const openNestedCreateModal = useDraftStore((s) => s.openNestedCreateModal)
   const setOnNestedEntityCreated = useDraftStore((s) => s.setOnNestedEntityCreated)
+  const setSelectedEntity = useGraphStore((s) => s.setSelectedEntity)
 
   // Fetch available properties
   const availableProperties = useAvailableEntities('properties', draftId)
@@ -377,13 +380,45 @@ export function SubobjectDetail({
         </div>
       </AccordionSection>
 
-      <AccordionSection id="used-by" title="Used By" defaultOpen>
-        <p className="text-xs text-muted-foreground/60">
-          Where-used tracking not yet available for subobjects
-        </p>
+      <AccordionSection
+        id="used-by"
+        title="Used By"
+        count={usedByData?.length}
+        defaultOpen
+      >
+        {usedByLoading ? (
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+          </div>
+        ) : usedByData && usedByData.length > 0 ? (
+          <div className="space-y-2">
+            {usedByData.map((category: EntityWithStatus) => (
+              <div
+                key={category.entity_key}
+                className="flex items-center gap-2 group"
+              >
+                <Badge
+                  variant="outline"
+                  className="cursor-pointer hover:bg-secondary/80"
+                  onClick={() => setSelectedEntity(category.entity_key, 'category')}
+                >
+                  {category.label || category.entity_key}
+                </Badge>
+                {category.change_status && category.change_status !== 'unchanged' && (
+                  <Badge variant="secondary" className="text-xs">
+                    {category.change_status}
+                  </Badge>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground/60">
+            No categories use this subobject
+          </p>
+        )}
       </AccordionSection>
-
-      <MembershipSection modules={subobject.modules || []} bundles={subobject.bundles || []} />
     </div>
   )
 }

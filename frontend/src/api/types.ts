@@ -137,6 +137,7 @@ export interface ModuleDetailV2 {
   categories: string[]
   dashboards: string[]
   parent_categories: string[]  // Auto-resolved parent categories (read-only)
+  parent_category_membership: Record<string, string[]>  // Parent cat -> module keys
   change_status?: 'added' | 'modified' | 'deleted' | 'unchanged'
   deleted?: boolean
 }
