@@ -30,6 +30,12 @@ export interface SubobjectProvenance {
   is_required: boolean
 }
 
+export interface CategoryModuleMembership {
+  module_key: string
+  membership: 'manual' | 'inherited'
+  via?: string | null  // child category key for inherited membership
+}
+
 export interface CategoryDetailV2 {
   entity_key: string
   label: string
@@ -37,7 +43,7 @@ export interface CategoryDetailV2 {
   parents: string[]
   properties: PropertyProvenance[]
   subobjects: SubobjectProvenance[]
-  modules?: string[]
+  module_membership?: CategoryModuleMembership[]
   bundles?: string[]
   change_status?: 'added' | 'modified' | 'deleted' | 'unchanged'
   deleted?: boolean

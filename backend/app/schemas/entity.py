@@ -67,6 +67,14 @@ class SubobjectProvenance(BaseModel):
     is_required: bool = Field(description="True if subobject is required")
 
 
+class CategoryModuleMembership(BaseModel):
+    """Module membership info for a category, indicating how it's included."""
+
+    module_key: str
+    membership: str = Field(description="'manual' if directly listed, 'inherited' if via child category")
+    via: str | None = Field(default=None, description="Child category key that causes inherited membership")
+
+
 class CategoryDetailResponse(BaseModel):
     """Detailed category response with parents, properties, and subobjects.
 
@@ -85,8 +93,9 @@ class CategoryDetailResponse(BaseModel):
         default_factory=list,
         description="Subobjects assigned to this category (required + optional)",
     )
-    modules: list[str] = Field(
-        default_factory=list, description="Module entity keys containing this category"
+    module_membership: list[CategoryModuleMembership] = Field(
+        default_factory=list,
+        description="Modules containing this category (manual or via inheritance)",
     )
     bundles: list[str] = Field(
         default_factory=list, description="Bundle entity keys (via module membership)"

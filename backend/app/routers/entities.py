@@ -365,8 +365,85 @@ async def get_category(
                 )
             )
 
-    # Module and bundle membership
-    module_keys, bundle_keys = await _get_entity_membership(session, entity_key, "category")
+    # Module membership: manual (directly listed) + inherited (via child categories)
+    from app.schemas.entity import CategoryModuleMembership
+
+    module_membership: list[CategoryModuleMembership] = []
+    all_module_keys: set[str] = set()
+
+    # 1. Direct/manual membership: this category is listed in a module's categories
+    direct_module_keys, _ = await _get_entity_membership(session, entity_key, "category")
+    for mod_key in direct_module_keys:
+        module_membership.append(
+            CategoryModuleMembership(module_key=mod_key, membership="manual")
+        )
+        all_module_keys.add(mod_key)
+
+    # 2. Inherited membership: find descendant categories via BFS down the tree,
+    #    then check which modules contain those descendants
+    descendants_with_modules: list[tuple[str, str]] = []  # (descendant_key, module_key)
+
+    # BFS downward: find categories whose parent is this category (or its descendants)
+    visited: set[str] = {entity_key}
+    pending = [entity_key]
+
+    while pending:
+        batch = pending
+        pending = []
+        # Find children: categories whose parent_id matches categories in batch
+        child_query = (
+            select(Category.entity_key, CategoryParent.category_id)
+            .join(CategoryParent, CategoryParent.category_id == Category.id)
+            .where(
+                CategoryParent.parent_id.in_(
+                    select(Category.id).where(Category.entity_key.in_(batch))
+                )
+            )
+        )
+        child_result = await session.execute(child_query)
+        for row in child_result.fetchall():
+            child_key = row[0]
+            if child_key not in visited:
+                visited.add(child_key)
+                pending.append(child_key)
+
+    # Remove self from descendants
+    descendant_keys = visited - {entity_key}
+
+    if descendant_keys:
+        # Check which descendants are in modules
+        desc_membership_query = (
+            select(ModuleEntity.entity_key, col(Module.entity_key).label("module_key"))
+            .join(Module, col(Module.id) == col(ModuleEntity.module_id))
+            .where(
+                col(ModuleEntity.entity_key).in_(list(descendant_keys)),
+                ModuleEntity.entity_type == "category",
+            )
+        )
+        desc_result = await session.execute(desc_membership_query)
+        for row in desc_result.fetchall():
+            desc_key = row[0]
+            mod_key = row[1]
+            if mod_key not in all_module_keys:
+                module_membership.append(
+                    CategoryModuleMembership(
+                        module_key=mod_key, membership="inherited", via=desc_key
+                    )
+                )
+                all_module_keys.add(mod_key)
+
+    # Bundle membership from all modules
+    bundle_keys: list[str] = []
+    if all_module_keys:
+        bundle_query = (
+            select(col(Bundle.entity_key).label("bundle_key"))
+            .join(BundleModule, col(BundleModule.bundle_id) == col(Bundle.id))
+            .join(Module, col(Module.id) == col(BundleModule.module_id))
+            .where(col(Module.entity_key).in_(list(all_module_keys)))
+            .distinct()
+        )
+        bundle_result = await session.execute(bundle_query)
+        bundle_keys = [row.bundle_key for row in bundle_result.all()]
 
     return CategoryDetailResponse(
         entity_key=effective.get("entity_key", entity_key),
@@ -375,7 +452,7 @@ async def get_category(
         parents=parents,
         properties=properties,
         subobjects=subobjects,
-        modules=module_keys,
+        module_membership=module_membership,
         bundles=bundle_keys,
         change_status=effective.get("_change_status"),
         deleted=effective.get("_deleted", False),

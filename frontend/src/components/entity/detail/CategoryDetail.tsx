@@ -8,7 +8,6 @@ import { EntityHeader } from '../sections/EntityHeader'
 import { AccordionSection } from '../sections/AccordionSection'
 import { SubsectionHeader } from '../sections/SubsectionHeader'
 import { SaveIndicator } from '../sections/SaveIndicator'
-import { MembershipSection } from '../sections/MembershipSection'
 import { DeletedItemBadge } from '../form/DeletedItemBadge'
 import { EntityCombobox } from '../forms/EntityCombobox'
 import { RelationshipChips } from '../forms/RelationshipChips'
@@ -841,7 +840,66 @@ export function CategoryDetail({
       </AccordionSection>
 
       {/* Membership */}
-      <MembershipSection modules={category.modules || []} bundles={category.bundles || []} />
+      <AccordionSection
+        id="membership"
+        title="Membership"
+        count={(category.module_membership?.length || 0) + (category.bundles?.length || 0)}
+        defaultOpen={false}
+      >
+        <div className="space-y-4">
+          {(category.module_membership?.length || 0) > 0 && (
+            <div className="space-y-1.5">
+              <SubsectionHeader>Modules</SubsectionHeader>
+              <div className="pl-2 space-y-1">
+                {category.module_membership?.map((m) => (
+                  <div key={m.module_key} className="flex items-center gap-2">
+                    <Badge
+                      variant="secondary"
+                      className="cursor-pointer hover:bg-secondary/80"
+                      onClick={() => setSelectedEntity(m.module_key, 'module')}
+                    >
+                      {m.module_key}
+                    </Badge>
+                    {m.membership === 'inherited' ? (
+                      <span className="text-xs text-muted-foreground">
+                        via {m.via}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">
+                        direct
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(category.bundles?.length || 0) > 0 && (
+            <div className="space-y-1.5">
+              <SubsectionHeader>Bundles</SubsectionHeader>
+              <div className="pl-2 flex flex-wrap gap-1.5">
+                {category.bundles?.map((bundleKey) => (
+                  <Badge
+                    key={bundleKey}
+                    variant="outline"
+                    className="cursor-pointer hover:bg-muted"
+                    onClick={() => setSelectedEntity(bundleKey, 'bundle')}
+                  >
+                    {bundleKey}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(category.module_membership?.length || 0) === 0 && (category.bundles?.length || 0) === 0 && (
+            <p className="text-xs text-muted-foreground/60">
+              Not assigned to any modules or bundles
+            </p>
+          )}
+        </div>
+      </AccordionSection>
     </div>
   )
 }
