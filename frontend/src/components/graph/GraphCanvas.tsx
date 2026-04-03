@@ -340,16 +340,22 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
   )
 
   // Extract unique bundle IDs for hull controls
-  const moduleIds = useMemo(() => {
+  const { moduleIds, bundleIds } = useMemo(() => {
+    const moduleSet = new Set<string>()
     const bundleSet = new Set<string>()
     for (const node of nodes) {
+      if (node.data.modules && Array.isArray(node.data.modules)) {
+        for (const id of node.data.modules) {
+          moduleSet.add(id as string)
+        }
+      }
       if (node.data.bundles && Array.isArray(node.data.bundles)) {
-        for (const bundleId of node.data.bundles) {
-          bundleSet.add(bundleId)
+        for (const id of node.data.bundles) {
+          bundleSet.add(id as string)
         }
       }
     }
-    return Array.from(bundleSet)
+    return { moduleIds: Array.from(moduleSet), bundleIds: Array.from(bundleSet) }
   }, [nodes])
 
   // Track if layout has been initialized
@@ -535,7 +541,7 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
       {/* Controls bar - horizontal at top left */}
       <div className="absolute top-4 left-4 z-10 flex items-start gap-2">
         <GraphControls onResetLayout={restartSimulation} isSimulating={isRunning} />
-        <ModuleHullControls modules={moduleIds} />
+        <ModuleHullControls modules={moduleIds} bundles={bundleIds} />
       </div>
 
       <ReactFlow

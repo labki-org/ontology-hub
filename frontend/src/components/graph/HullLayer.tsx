@@ -14,7 +14,7 @@ interface HullLayerProps {
   viewport: Viewport
 }
 
-// Predefined color palette for module hulls (12 distinct colors)
+// Predefined color palette for hulls (12 distinct colors)
 const HULL_COLORS = [
   '#3b82f6', // blue-500
   '#10b981', // emerald-500
@@ -31,8 +31,8 @@ const HULL_COLORS = [
 ]
 
 /**
- * Deterministic color assignment based on moduleId hash.
- * Same module always gets same color across sessions.
+ * Deterministic color assignment based on ID hash.
+ * Same ID always gets same color across sessions.
  */
 // eslint-disable-next-line react-refresh/only-export-components -- Utility function
 export function getModuleColor(moduleId: string): string {
@@ -45,39 +45,52 @@ export function getModuleColor(moduleId: string): string {
 }
 
 /**
- * Renders all visible module hulls as SVG overlays.
+ * Renders module hulls (solid) and bundle hulls (dashed) as SVG overlays.
  *
- * Features:
- * - Extracts unique module IDs from all nodes
- * - Filters by visibleModules from hullStore
- * - Renders ModuleHull for each visible module
- * - Uses deterministic color assignment
- *
- * Rendered below nodes layer (pointer-events: none on hulls).
+ * Module hulls use node.data.modules, bundle hulls use node.data.bundles.
+ * Both include parent categories that OntologySync will auto-include.
  */
 export function HullLayer({ nodes, viewport }: HullLayerProps) {
   const visibleModules = useHullStore((s) => s.visibleModules)
 
-  // Extract all unique bundle IDs from nodes
+  // Extract unique module IDs from nodes
+  const allModuleIds = useMemo(() => {
+    const moduleSet = new Set<string>()
+    for (const node of nodes) {
+      if (node.data.modules && Array.isArray(node.data.modules)) {
+        for (const moduleId of node.data.modules) {
+          moduleSet.add(moduleId as string)
+        }
+      }
+    }
+    return Array.from(moduleSet)
+  }, [nodes])
+
+  // Extract unique bundle IDs from nodes
   const allBundleIds = useMemo(() => {
     const bundleSet = new Set<string>()
     for (const node of nodes) {
       if (node.data.bundles && Array.isArray(node.data.bundles)) {
         for (const bundleId of node.data.bundles) {
-          bundleSet.add(bundleId)
+          bundleSet.add(bundleId as string)
         }
       }
     }
     return Array.from(bundleSet)
   }, [nodes])
 
-  // Filter to only visible bundles
-  const visibleModuleIds = useMemo(() => {
+  // Filter to only visible hulls
+  const visibleModuleHulls = useMemo(() => {
+    if (visibleModules.size === 0) return allModuleIds
+    return allModuleIds.filter((id) => visibleModules.has(id))
+  }, [allModuleIds, visibleModules])
+
+  const visibleBundleHulls = useMemo(() => {
     if (visibleModules.size === 0) return allBundleIds
-    return allBundleIds.filter((bundleId) => visibleModules.has(bundleId))
+    return allBundleIds.filter((id) => visibleModules.has(id))
   }, [allBundleIds, visibleModules])
 
-  if (visibleModuleIds.length === 0) return null
+  if (visibleModuleHulls.length === 0 && visibleBundleHulls.length === 0) return null
 
   // Apply viewport transform to match React Flow's pan/zoom
   const transform = `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`
@@ -96,12 +109,27 @@ export function HullLayer({ nodes, viewport }: HullLayerProps) {
       }}
     >
       <g style={{ transform, transformOrigin: '0 0' }}>
-        {visibleModuleIds.map((moduleId) => (
+        {/* Bundle hulls first (behind module hulls) */}
+        {visibleBundleHulls.map((bundleId) => (
           <ModuleHull
-            key={moduleId}
+            key={`bundle-${bundleId}`}
+            moduleId={bundleId}
+            nodes={nodes}
+            color={getModuleColor(bundleId)}
+            hullType="bundle"
+            memberField="bundles"
+            padding={65}
+          />
+        ))}
+        {/* Module hulls on top */}
+        {visibleModuleHulls.map((moduleId) => (
+          <ModuleHull
+            key={`module-${moduleId}`}
             moduleId={moduleId}
             nodes={nodes}
             color={getModuleColor(moduleId)}
+            hullType="module"
+            memberField="modules"
           />
         ))}
       </g>

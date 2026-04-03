@@ -17,6 +17,7 @@ from app.models.v2 import (
     Bundle,
     BundleModule,
     Category,
+    CategoryParent,
     Dashboard,
     Module,
     ModuleDashboard,
@@ -1582,11 +1583,10 @@ class GraphQueryService:
         entity_keys: list[str],
         entity_type: str = "category",
     ) -> dict[str, list[str]]:
-        """Batch load module membership for entities to avoid N+1 queries.
+        """Batch load module membership for categories, including parent categories.
 
-        Args:
-            entity_keys: List of entity keys to look up
-            entity_type: Entity type for filtering (default "category")
+        For categories: expands membership to include parent categories that
+        OntologySync will auto-include (walks up the inheritance chain).
 
         Returns:
             Dict mapping entity_key to list of module entity_keys
@@ -1594,8 +1594,7 @@ class GraphQueryService:
         if not entity_keys:
             return {}
 
-        # Query module membership with module details
-        # entity_type is stored as string value (e.g., "category" not "CATEGORY")
+        # Get direct module membership from ModuleEntity table
         query = (
             select(ModuleEntity.entity_key, col(Module.entity_key).label("module_key"))  # type: ignore[var-annotated]
             .join(Module, onclause=col(Module.id) == col(ModuleEntity.module_id))
@@ -1604,20 +1603,78 @@ class GraphQueryService:
                 ModuleEntity.entity_type == entity_type,
             )
         )
-
         result = await self.session.execute(query)
-        rows = result.fetchall()
 
-        # Group by entity_key
-        membership: dict[str, list[str]] = {}
-        for row in rows:
-            entity_key = row.entity_key
-            module_key = row.module_key
-            if entity_key not in membership:
-                membership[entity_key] = []
-            membership[entity_key].append(module_key)
+        # Build direct membership: module_key → set of manual category keys
+        module_to_manual_cats: dict[str, set[str]] = {}
+        direct_membership: dict[str, list[str]] = {}
+        for row in result.fetchall():
+            cat_key = row.entity_key
+            mod_key = row.module_key
+            if cat_key not in direct_membership:
+                direct_membership[cat_key] = []
+            direct_membership[cat_key].append(mod_key)
+            if mod_key not in module_to_manual_cats:
+                module_to_manual_cats[mod_key] = set()
+            module_to_manual_cats[mod_key].add(cat_key)
 
-        return membership
+        if entity_type != "category" or not module_to_manual_cats:
+            return direct_membership
+
+        # Expand: for each module, walk UP from its manual categories to find
+        # all parent categories, and add those to the module's membership too.
+        # Load full parent graph once
+        parent_query = (
+            select(
+                Category.entity_key,
+                CategoryParent.parent_id,
+            )
+            .join(CategoryParent, CategoryParent.category_id == Category.id)
+        )
+        parent_result = await self.session.execute(parent_query)
+
+        # Build child→parent_ids and parent_id→parent_key mappings
+        child_to_parent_ids: dict[str, list] = {}
+        for row in parent_result.fetchall():
+            if row[0] not in child_to_parent_ids:
+                child_to_parent_ids[row[0]] = []
+            child_to_parent_ids[row[0]].append(row[1])
+
+        # Resolve parent IDs to keys
+        all_parent_ids = set()
+        for pids in child_to_parent_ids.values():
+            all_parent_ids.update(pids)
+
+        parent_id_to_key: dict[str, str] = {}
+        if all_parent_ids:
+            id_query = select(Category.id, Category.entity_key).where(
+                Category.id.in_(list(all_parent_ids))
+            )
+            id_result = await self.session.execute(id_query)
+            for row in id_result.fetchall():
+                parent_id_to_key[str(row[0])] = row[1]
+
+        # For each module, BFS up from manual categories
+        expanded_membership: dict[str, list[str]] = dict(direct_membership)
+
+        for mod_key, manual_cats in module_to_manual_cats.items():
+            visited: set[str] = set(manual_cats)
+            pending = list(manual_cats)
+
+            while pending:
+                current = pending.pop(0)
+                for pid in child_to_parent_ids.get(current, []):
+                    parent_key = parent_id_to_key.get(str(pid))
+                    if parent_key and parent_key not in visited:
+                        visited.add(parent_key)
+                        pending.append(parent_key)
+                        # Add parent to this module's membership
+                        if parent_key not in expanded_membership:
+                            expanded_membership[parent_key] = []
+                        if mod_key not in expanded_membership[parent_key]:
+                            expanded_membership[parent_key].append(mod_key)
+
+        return expanded_membership
 
     async def _get_bundle_membership(
         self,
@@ -1626,32 +1683,52 @@ class GraphQueryService:
     ) -> dict[str, list[str]]:
         """Batch load bundle membership for entities.
 
-        Traverses: entity → ModuleEntity → Module → BundleModule → Bundle.
+        For categories, uses expanded module membership (including parents)
+        to derive bundle membership.
         """
         if not entity_keys:
             return {}
 
-        query: Any = (
+        # Get expanded module membership first
+        module_membership = await self._get_module_membership(entity_keys, entity_type)
+
+        # Collect all module keys across all entities
+        all_module_keys: set[str] = set()
+        for mod_keys in module_membership.values():
+            all_module_keys.update(mod_keys)
+
+        if not all_module_keys:
+            return {}
+
+        # Map module_key → bundle_keys
+        bundle_query = (
             select(
-                ModuleEntity.entity_key,
+                col(Module.entity_key).label("module_key"),
                 col(Bundle.entity_key).label("bundle_key"),
             )
-            .join(Module, onclause=col(Module.id) == col(ModuleEntity.module_id))
-            .join(BundleModule, onclause=col(BundleModule.module_id) == col(Module.id))
-            .join(Bundle, onclause=col(Bundle.id) == col(BundleModule.bundle_id))
-            .where(
-                col(ModuleEntity.entity_key).in_(entity_keys),
-                ModuleEntity.entity_type == entity_type,
-            )
+            .join(BundleModule, col(BundleModule.module_id) == col(Module.id))
+            .join(Bundle, col(Bundle.id) == col(BundleModule.bundle_id))
+            .where(col(Module.entity_key).in_(list(all_module_keys)))
         )
+        bundle_result = await self.session.execute(bundle_query)
 
-        result = await self.session.execute(query)
+        module_to_bundles: dict[str, list[str]] = {}
+        for row in bundle_result.fetchall():
+            if row.module_key not in module_to_bundles:
+                module_to_bundles[row.module_key] = []
+            if row.bundle_key not in module_to_bundles[row.module_key]:
+                module_to_bundles[row.module_key].append(row.bundle_key)
+
+        # Derive entity → bundles from entity → modules → bundles
         membership: dict[str, list[str]] = {}
-        for row in result.fetchall():
-            if row.entity_key not in membership:
-                membership[row.entity_key] = []
-            if row.bundle_key not in membership[row.entity_key]:
-                membership[row.entity_key].append(row.bundle_key)
+        for entity_key, mod_keys in module_membership.items():
+            bundle_set: set[str] = set()
+            for mod_key in mod_keys:
+                for bk in module_to_bundles.get(mod_key, []):
+                    bundle_set.add(bk)
+            if bundle_set:
+                membership[entity_key] = sorted(bundle_set)
+
         return membership
 
     async def _get_edges_for_categories(

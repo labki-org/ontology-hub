@@ -12,6 +12,9 @@ interface ModuleHullProps {
   nodes: Node[]
   color: string
   padding?: number
+  hullType?: 'module' | 'bundle'
+  /** Which node data field to check for membership */
+  memberField?: 'modules' | 'bundles'
 }
 
 /**
@@ -55,26 +58,24 @@ type HullShape =
   | { type: 'path'; d: string }
 
 /**
- * Renders a convex hull around all nodes belonging to a module.
+ * Renders a convex hull around all nodes belonging to a module or bundle.
  *
- * Implementation:
- * 1. Filters nodes by moduleId in node.data.modules
- * 2. For 1 node: renders a circle
- * 3. For 2 nodes: renders an ellipse
- * 4. For 3+ nodes: expands points outward and renders smooth Catmull-Rom curve
- *
- * Returns null if no nodes belong to this module.
+ * - Module hulls: solid fill + solid border (current style)
+ * - Bundle hulls: no fill, dashed border
  */
 export function ModuleHull({
   moduleId,
   nodes,
   color,
   padding = 50,
+  hullType = 'module',
+  memberField = 'modules',
 }: ModuleHullProps) {
   const hullShape = useMemo((): HullShape | null => {
-    // Filter nodes belonging to this module
+    // Filter nodes belonging to this module/bundle
     const moduleNodes = nodes.filter(
-      (n) => n.data.bundles && Array.isArray(n.data.bundles) && n.data.bundles.includes(moduleId)
+      (n) => n.data[memberField] && Array.isArray(n.data[memberField]) &&
+        (n.data[memberField] as string[]).includes(moduleId)
     )
 
     if (moduleNodes.length === 0) return null
@@ -115,43 +116,34 @@ export function ModuleHull({
     const path = getSmoothHullPath(paddedCorners)
     if (!path) return null
     return { type: 'path' as const, d: path }
-  }, [moduleId, nodes, padding])
+  }, [moduleId, nodes, padding, memberField])
 
   // Compute label position above the hull
   const labelPosition = useMemo(() => {
     const moduleNodes = nodes.filter(
-      (n) => n.data.bundles && Array.isArray(n.data.bundles) && n.data.bundles.includes(moduleId)
+      (n) => n.data[memberField] && Array.isArray(n.data[memberField]) &&
+        (n.data[memberField] as string[]).includes(moduleId)
     )
     if (moduleNodes.length === 0) return null
 
-    // Use node bounds for label positioning
     const minX = Math.min(...moduleNodes.map((n) => n.position.x))
     const maxX = Math.max(...moduleNodes.map((n) => n.position.x + NODE_WIDTH))
     const minY = Math.min(...moduleNodes.map((n) => n.position.y))
     const cx = (minX + maxX) / 2
 
-    return { x: cx, y: minY - padding - 15 } // Above hull
-  }, [moduleId, nodes, padding])
+    return { x: cx, y: minY - padding - 15 }
+  }, [moduleId, nodes, padding, memberField])
 
   if (!hullShape) return null
 
-  const shapeElement = (() => {
-    if (hullShape.type === 'circle') {
-      return (
-        <circle
-          cx={hullShape.cx}
-          cy={hullShape.cy}
-          r={hullShape.r}
-          fill={color}
-          fillOpacity={0.15}
-          stroke={color}
-          strokeWidth={2}
-          strokeOpacity={0.4}
-          pointerEvents="none"
-        />
-      )
-    }
+  // Style based on hull type
+  const isBundle = hullType === 'bundle'
+  const fillOpacity = isBundle ? 0 : 0.15
+  const strokeOpacity = isBundle ? 0.35 : 0.4
+  const strokeWidth = isBundle ? 1.5 : 2
+  const strokeDasharray = isBundle ? '6 4' : undefined
 
+  const shapeElement = (() => {
     if (hullShape.type === 'ellipse') {
       return (
         <ellipse
@@ -160,26 +152,27 @@ export function ModuleHull({
           rx={hullShape.rx}
           ry={hullShape.ry}
           fill={color}
-          fillOpacity={0.15}
+          fillOpacity={fillOpacity}
           stroke={color}
-          strokeWidth={2}
-          strokeOpacity={0.4}
+          strokeWidth={strokeWidth}
+          strokeOpacity={strokeOpacity}
+          strokeDasharray={strokeDasharray}
           pointerEvents="none"
         />
       )
     }
 
-    // path type
+    // path type (convex hull)
     return (
       <path
         d={hullShape.d}
         fill={color}
-        fillOpacity={0.15}
+        fillOpacity={fillOpacity}
         stroke={color}
-        strokeWidth={2}
-        strokeOpacity={0.4}
+        strokeWidth={strokeWidth}
+        strokeOpacity={strokeOpacity}
+        strokeDasharray={strokeDasharray}
         pointerEvents="none"
-        className="module-hull"
       />
     )
   })()
@@ -193,9 +186,10 @@ export function ModuleHull({
           y={labelPosition.y}
           textAnchor="middle"
           fill={color}
-          fontSize={11}
-          fontWeight={500}
-          opacity={0.8}
+          fontSize={isBundle ? 10 : 11}
+          fontWeight={isBundle ? 400 : 500}
+          fontStyle={isBundle ? 'italic' : 'normal'}
+          opacity={isBundle ? 0.6 : 0.8}
           pointerEvents="none"
         >
           {moduleId}
