@@ -228,21 +228,26 @@ class TemplateDetailResponse(BaseModel):
 
 
 class ModuleDetailResponse(BaseModel):
-    """Detailed module response with entities.
+    """Detailed module response.
 
-    Entities are grouped by type for easy UI rendering.
+    Modules store only manually-picked categories and dashboards.
+    Parent categories are computed on-the-fly for display.
     """
 
     entity_key: str
     label: str
     description: str | None = None
-    entities: dict[str, list[str]] = Field(
-        default_factory=dict,
-        description="Entities by type: {category: [...], property: [...], ...}",
+    categories: list[str] = Field(
+        default_factory=list,
+        description="Manually selected categories",
     )
-    manual_categories: list[str] | None = Field(
-        default=None,
-        description="User-selected categories (before parent expansion)",
+    dashboards: list[str] = Field(
+        default_factory=list,
+        description="Manually selected dashboards",
+    )
+    parent_categories: list[str] = Field(
+        default_factory=list,
+        description="Parent categories that OntologySync will auto-include (computed on-the-fly)",
     )
     change_status: ChangeStatus | None = Field(
         default=None,

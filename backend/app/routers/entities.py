@@ -891,10 +891,11 @@ async def get_module(
     session: SessionDep,
     draft_ctx: DraftContextDep,
 ) -> ModuleDetailResponse:
-    """Get module detail with entities and closure (QRY-06).
+    """Get module detail with categories, dashboards, and parent categories.
 
-    Returns module with entities grouped by type and computed transitive
-    category dependencies (closure).
+    Modules store only manually-picked categories and dashboards.
+    Parent categories are computed on-the-fly by walking the category
+    inheritance graph, showing what OntologySync will auto-include.
 
     Rate limited to 200/minute per IP.
     """
@@ -908,73 +909,47 @@ async def get_module(
     if not effective:
         raise HTTPException(status_code=404, detail="Module not found")
 
-    # Get entities grouped by type
-    entities: dict[str, list[str]] = {}
-    change_status = effective.get("_change_status")
+    categories: list[str] = effective.get("categories", [])
+    dashboards: list[str] = effective.get("dashboards", [])
 
-    # Check if effective JSON has draft-modified entity arrays
-    has_draft_entities = change_status in ("modified", "added") and any(
-        key in effective
-        for key in (
-            "categories",
-            "properties",
-            "subobjects",
-            "templates",
-            "dashboards",
-            "resources",
-        )
-    )
+    # Compute parent categories on-the-fly via BFS over category_parent table
+    parent_categories: list[str] = []
+    if categories:
+        manual_set = set(categories)
+        visited: set[str] = set(categories)
+        pending = list(categories)
 
-    if has_draft_entities:
-        # Use entity arrays from effective JSON (draft changes take precedence)
-        if "categories" in effective:
-            entities["category"] = effective.get("categories", [])
-        if "properties" in effective:
-            entities["property"] = effective.get("properties", [])
-        if "subobjects" in effective:
-            entities["subobject"] = effective.get("subobjects", [])
-        if "templates" in effective:
-            entities["template"] = effective.get("templates", [])
-        if "dashboards" in effective:
-            entities["dashboard"] = effective.get("dashboards", [])
-        if "resources" in effective:
-            entities["resource"] = effective.get("resources", [])
-    elif module:
-        # No draft changes to entities - query canonical from database
-        entity_query = (
-            select(ModuleEntity.entity_type, ModuleEntity.entity_key)
-            .where(ModuleEntity.module_id == module.id)
-            .order_by(ModuleEntity.entity_type, ModuleEntity.entity_key)
-        )
-        entity_result = await session.execute(entity_query)
+        while pending:
+            batch = pending
+            pending = []
+            # Look up parent keys for this batch
+            cat_query = (
+                select(Category.entity_key, CategoryParent.parent_id)
+                .join(CategoryParent, CategoryParent.category_id == Category.id)
+                .where(Category.entity_key.in_(batch))
+            )
+            cat_result = await session.execute(cat_query)
 
-        for row in entity_result.fetchall():
-            entity_type = row[0].value if hasattr(row[0], "value") else row[0]
-            ent_key = row[1]
+            parent_ids = [row[1] for row in cat_result.fetchall()]
+            if parent_ids:
+                parent_query = select(Category.entity_key).where(
+                    Category.id.in_(parent_ids)
+                )
+                parent_result = await session.execute(parent_query)
+                for (parent_key,) in parent_result.fetchall():
+                    if parent_key not in visited:
+                        visited.add(parent_key)
+                        pending.append(parent_key)
 
-            if entity_type not in entities:
-                entities[entity_type] = []
-            entities[entity_type].append(ent_key)
-    else:
-        # Draft-created module - extract entities from effective JSON if present
-        if "entities" in effective:
-            entities = effective.get("entities", {})
-        else:
-            if "categories" in effective:
-                entities["category"] = effective.get("categories", [])
-            if "properties" in effective:
-                entities["property"] = effective.get("properties", [])
-            if "subobjects" in effective:
-                entities["subobject"] = effective.get("subobjects", [])
-            if "templates" in effective:
-                entities["template"] = effective.get("templates", [])
+        parent_categories = sorted(visited - manual_set)
 
     return ModuleDetailResponse(
         entity_key=effective.get("entity_key", entity_key),
         label=effective.get("label", ""),
         description=effective.get("description"),
-        entities=entities,
-        manual_categories=effective.get("manual_categories"),
+        categories=categories,
+        dashboards=dashboards,
+        parent_categories=parent_categories,
         change_status=effective.get("_change_status"),
         deleted=effective.get("_deleted", False),
     )

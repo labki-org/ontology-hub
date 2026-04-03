@@ -13,7 +13,7 @@ import { EntityCombobox } from '../forms/EntityCombobox'
 import { RelationshipChips } from '../forms/RelationshipChips'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Sparkles, Users } from 'lucide-react'
+import { Users, GitBranch } from 'lucide-react'
 import { SaveIndicator } from '../sections/SaveIndicator'
 
 interface ModuleDetailProps {
@@ -27,20 +27,16 @@ interface ModuleDetailProps {
  * Module detail page showing:
  * - Label and description
  * - Direct categories (manually added, editable)
- * - Auto-included entities (derived from categories, read-only)
+ * - Dashboards (manually added, editable)
+ * - Parent categories (auto-resolved, read-only preview)
  *
- * Only categories are editable.
- * Properties, subobjects, and templates are auto-populated based on
- * what the categories require.
+ * Dependency resolution (properties, subobjects, templates, resources)
+ * is handled by OntologySync at install time.
  */
 export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: ModuleDetailProps) {
   const { data: module, isLoading, error, refetch: refetchModule } = useModule(entityKey, draftId)
   const availableCategories = useAvailableEntities('categories', draftId)
-  const availableProperties = useAvailableEntities('properties', draftId)
-  const availableSubobjects = useAvailableEntities('subobjects', draftId)
-  const availableTemplates = useAvailableEntities('templates', draftId)
   const availableDashboards = useAvailableEntities('dashboards', draftId)
-  const availableResources = useAvailableEntities('resources', draftId)
 
   const setSelectedEntity = useGraphStore((s) => s.setSelectedEntity)
   const openNestedCreateModal = useDraftStore((s) => s.openNestedCreateModal)
@@ -63,7 +59,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
   // Track which entity we've initialized original values for (prevent reset on refetch)
   const initializedEntityRef = useRef<string | null>(null)
 
-  // Auto-save hook — refetch module detail after save to update closure and derived entities
+  // Auto-save hook — refetch module detail after save to update parent categories
   const { saveChange, isSaving } = useAutoSave({
     draftToken: draftToken || '',
     entityType: 'module',
@@ -80,12 +76,8 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
   /* eslint-disable react-hooks/set-state-in-effect -- Valid sync with external data */
   useEffect(() => {
     if (moduleDetail && initializedEntityRef.current !== entityKey) {
-      // Use manual_categories if available (preserves user intent);
-      // fall back to full category list for older modules without it
-      const categories = moduleDetail.manual_categories
-        ?? moduleDetail.entities?.category
-        ?? []
-      const dashboards = moduleDetail.entities?.dashboard || []
+      const categories = moduleDetail.categories ?? []
+      const dashboards = moduleDetail.dashboards ?? []
 
       setEditedLabel(moduleDetail.label)
       setEditedDescription(moduleDetail.description || '')
@@ -203,14 +195,8 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
   const changeStatus = moduleDetail.change_status || 'unchanged'
   const isDeleted = moduleDetail.deleted || false
 
-  // Get derived entities (read-only, auto-populated)
-  const allCategories = moduleDetail.entities?.category || []
-  const derivedCategories = allCategories.filter((c: string) => !editedCategories.includes(c))
-  const derivedProperties = moduleDetail.entities?.property || []
-  const derivedSubobjects = moduleDetail.entities?.subobject || []
-  const derivedTemplates = moduleDetail.entities?.template || []
-  const derivedResources = moduleDetail.entities?.resource || []
-  const totalDerived = derivedCategories.length + derivedProperties.length + derivedSubobjects.length + derivedTemplates.length + derivedResources.length
+  // Parent categories (computed on-the-fly by the backend)
+  const parentCategories = moduleDetail.parent_categories || []
 
   // Check for modifications
   const isCategoriesModified =
@@ -284,8 +270,7 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
       >
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Categories directly included in this module. Add categories here to include them and
-            their dependencies.
+            Categories directly included in this module.
           </p>
 
           {/* Current categories as chips */}
@@ -327,6 +312,27 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
               }}
               placeholder="Add category..."
             />
+          )}
+
+          {/* Parent categories (auto-resolved, read-only) */}
+          {parentCategories.length > 0 && (
+            <div className="mt-4 space-y-2">
+              <h4 className="text-sm font-semibold text-foreground/70 flex items-center gap-2">
+                <GitBranch className="h-3.5 w-3.5 text-muted-foreground" />
+                Parent categories
+                <Badge variant="secondary" className="text-xs">
+                  {parentCategories.length}
+                </Badge>
+              </h4>
+              <p className="text-xs text-muted-foreground">
+                These parent categories will be auto-included when OntologySync imports this module.
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {parentCategories.map((key: string) =>
+                  renderEntityChip(key, 'category', getLabel(key, availableCategories))
+                )}
+              </div>
+            </div>
           )}
         </div>
       </AccordionSection>
@@ -375,126 +381,6 @@ export function ModuleDetail({ entityKey, draftId, draftToken, isEditing }: Modu
               placeholder="Add dashboard..."
             />
           )}
-        </div>
-      </AccordionSection>
-
-      {/* Auto-included Entities (Derived - Read Only) */}
-      <AccordionSection
-        id="derived"
-        title={
-          <span className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-purple-500" />
-            Auto-included Entities
-            <Badge variant="outline" className="text-xs bg-purple-500/10 text-purple-700 border-purple-300">
-              Auto
-            </Badge>
-          </span>
-        }
-        count={totalDerived}
-        defaultOpen={true}
-      >
-        <div className="space-y-4">
-          <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 rounded-md p-3">
-            <p className="text-sm text-purple-700 dark:text-purple-300">
-              These entities are automatically included based on the categories above. They cannot
-              be edited directly - add or remove categories to change what's included.
-            </p>
-          </div>
-
-          {/* Categories (auto-expanded parents) */}
-          <div className="space-y-2">
-            <h4 className="text-sm font-semibold text-foreground/70 flex items-center gap-2">
-              Categories
-              <Badge variant="secondary" className="text-xs">
-                {derivedCategories.length}
-              </Badge>
-            </h4>
-            {derivedCategories.length > 0 ? (
-              <div className="flex flex-wrap gap-1 pl-4">
-                {derivedCategories.map((key: string) =>
-                  renderEntityChip(key, 'category', getLabel(key, availableCategories))
-                )}
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground/60 pl-4">No additional parent categories</p>
-            )}
-          </div>
-
-          {/* Properties */}
-          <div className="space-y-2">
-            <h4 className="text-sm font-semibold text-foreground/70 flex items-center gap-2">
-              Properties
-              <Badge variant="secondary" className="text-xs">
-                {derivedProperties.length}
-              </Badge>
-            </h4>
-            {derivedProperties.length > 0 ? (
-              <div className="flex flex-wrap gap-1 pl-4">
-                {derivedProperties.map((key) =>
-                  renderEntityChip(key, 'property', getLabel(key, availableProperties))
-                )}
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground/60 pl-4">No properties</p>
-            )}
-          </div>
-
-          {/* Subobjects */}
-          <div className="space-y-2">
-            <h4 className="text-sm font-semibold text-foreground/70 flex items-center gap-2">
-              Subobjects
-              <Badge variant="secondary" className="text-xs">
-                {derivedSubobjects.length}
-              </Badge>
-            </h4>
-            {derivedSubobjects.length > 0 ? (
-              <div className="flex flex-wrap gap-1 pl-4">
-                {derivedSubobjects.map((key) =>
-                  renderEntityChip(key, 'subobject', getLabel(key, availableSubobjects))
-                )}
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground/60 pl-4">No subobjects</p>
-            )}
-          </div>
-
-          {/* Templates */}
-          <div className="space-y-2">
-            <h4 className="text-sm font-semibold text-foreground/70 flex items-center gap-2">
-              Templates
-              <Badge variant="secondary" className="text-xs">
-                {derivedTemplates.length}
-              </Badge>
-            </h4>
-            {derivedTemplates.length > 0 ? (
-              <div className="flex flex-wrap gap-1 pl-4">
-                {derivedTemplates.map((key) =>
-                  renderEntityChip(key, 'template', getLabel(key, availableTemplates))
-                )}
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground/60 pl-4">No templates</p>
-            )}
-          </div>
-
-          {/* Resources */}
-          <div className="space-y-2">
-            <h4 className="text-sm font-semibold text-foreground/70 flex items-center gap-2">
-              Resources
-              <Badge variant="secondary" className="text-xs">
-                {derivedResources.length}
-              </Badge>
-            </h4>
-            {derivedResources.length > 0 ? (
-              <div className="flex flex-wrap gap-1 pl-4">
-                {derivedResources.map((key) =>
-                  renderEntityChip(key, 'resource', getLabel(key, availableResources))
-                )}
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground/60 pl-4">No resources</p>
-            )}
-          </div>
         </div>
       </AccordionSection>
 

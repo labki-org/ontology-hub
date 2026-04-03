@@ -134,8 +134,9 @@ export interface ModuleDetailV2 {
   entity_key: string
   label: string
   description?: string | null
-  entities: Record<string, string[]>  // { category: [...], property: [...] }
-  manual_categories?: string[]  // User-selected categories (vs auto-expanded parents)
+  categories: string[]
+  dashboards: string[]
+  parent_categories: string[]  // Auto-resolved parent categories (read-only)
   change_status?: 'added' | 'modified' | 'deleted' | 'unchanged'
   deleted?: boolean
 }
