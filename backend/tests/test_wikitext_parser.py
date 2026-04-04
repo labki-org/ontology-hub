@@ -7,7 +7,8 @@ from app.services.generators.wikitext_generator import (
     generate_subobject_wikitext,
 )
 from app.services.parsers.wikitext_parser import (
-    extract_annotations,
+    _extract_template_call,
+    _split_comma,
     extract_categories,
     parse_category_wikitext,
     parse_module_vocab,
@@ -30,45 +31,65 @@ class TestNameConversion:
         assert to_entity_key("Person") == "Person"
 
 
-class TestExtractAnnotations:
+class TestExtractTemplateCall:
     def test_basic(self):
         wikitext = """<!-- OntologySync Start -->
-[[Has type::Text]]
-[[Has description::The name]]
+{{Property
+|has_type=Text
+|has_description=The name
+}}
 <!-- OntologySync End -->"""
 
-        ann = extract_annotations(wikitext)
-        assert ann["Has type"] == ["Text"]
-        assert ann["Has description"] == ["The name"]
+        name, params = _extract_template_call(wikitext)
+        assert name == "Property"
+        assert params["has_type"] == "Text"
+        assert params["has_description"] == "The name"
 
-    def test_multi_value(self):
+    def test_multi_value_comma_separated(self):
         wikitext = """<!-- OntologySync Start -->
-[[Has required property::Property:Has name]]
-[[Has required property::Property:Has email]]
+{{Category
+|has_required_property=Has name, Has email
+}}
 <!-- OntologySync End -->"""
 
-        ann = extract_annotations(wikitext)
-        assert ann["Has required property"] == [
-            "Property:Has name",
-            "Property:Has email",
-        ]
+        name, params = _extract_template_call(wikitext)
+        assert name == "Category"
+        assert params["has_required_property"] == "Has name, Has email"
 
-    def test_ignores_outside_block(self):
-        wikitext = """[[Outside::value]]
-<!-- OntologySync Start -->
-[[Inside::value]]
-<!-- OntologySync End -->
-[[Also outside::value]]"""
+    def test_ignores_empty_params(self):
+        wikitext = """<!-- OntologySync Start -->
+{{Property
+|has_type=Text
+}}
+<!-- OntologySync End -->"""
 
-        ann = extract_annotations(wikitext)
-        assert len(ann) == 1
-        assert "Inside" in ann
+        _, params = _extract_template_call(wikitext)
+        assert "has_description" not in params
+
+    def test_no_markers(self):
+        wikitext = "{{Property|has_type=Text}}"
+        name, params = _extract_template_call(wikitext)
+        assert name == ""
+        assert params == {}
+
+
+class TestSplitComma:
+    def test_basic(self):
+        assert _split_comma("Dog, Cat, Mouse") == ["Dog", "Cat", "Mouse"]
+
+    def test_single(self):
+        assert _split_comma("Dog") == ["Dog"]
+
+    def test_empty(self):
+        assert _split_comma("") == []
 
 
 class TestExtractCategories:
     def test_extracts_outside_block(self):
         wikitext = """<!-- OntologySync Start -->
-[[Has type::Text]]
+{{Property
+|has_type=Text
+}}
 <!-- OntologySync End -->
 [[Category:Person]]
 [[Category:OntologySync-managed-resource]]"""
@@ -80,12 +101,14 @@ class TestExtractCategories:
 class TestParseCategory:
     def test_full_category(self):
         wikitext = """<!-- OntologySync Start -->
-[[Has description::A human being]]
-[[Display label::Person]]
-[[Has parent category::Category:Agent]]
-[[Has required property::Property:Has name]]
-[[Has optional property::Property:Has email]]
-[[Has optional subobject::Subobject:Address]]
+{{Category
+|has_description=A human being
+|display_label=Person
+|has_parent_category=Agent
+|has_required_property=Has name
+|has_optional_property=Has email
+|has_optional_subobject=Address
+}}
 <!-- OntologySync End -->
 [[Category:OntologySync-managed]]"""
 
@@ -100,7 +123,9 @@ class TestParseCategory:
 
     def test_minimal_category(self):
         wikitext = """<!-- OntologySync Start -->
-[[Has description::Base agent]]
+{{Category
+|has_description=Base agent
+}}
 <!-- OntologySync End -->
 [[Category:OntologySync-managed]]"""
 
@@ -109,13 +134,27 @@ class TestParseCategory:
         assert "parents" not in result
         assert "required_properties" not in result
 
+    def test_multiple_parents(self):
+        wikitext = """<!-- OntologySync Start -->
+{{Category
+|has_description=A researcher
+|has_parent_category=Person, Staff
+}}
+<!-- OntologySync End -->
+[[Category:OntologySync-managed]]"""
+
+        result = parse_category_wikitext(wikitext, "Researcher")
+        assert result["parents"] == ["Person", "Staff"]
+
 
 class TestParseProperty:
     def test_simple_text(self):
         wikitext = """<!-- OntologySync Start -->
-[[Has type::Text]]
-[[Has description::The name of an entity]]
-[[Display label::Name]]
+{{Property
+|has_description=The name of an entity
+|has_type=Text
+|display_label=Name
+}}
 <!-- OntologySync End -->
 [[Category:OntologySync-managed-property]]"""
 
@@ -126,10 +165,12 @@ class TestParseProperty:
 
     def test_multiple_cardinality(self):
         wikitext = """<!-- OntologySync Start -->
-[[Has type::Email]]
-[[Has description::Email address]]
-[[Display label::Email]]
-[[Allows multiple values::true]]
+{{Property
+|has_description=Email address
+|has_type=Email
+|display_label=Email
+|allows_multiple_values=Yes
+}}
 <!-- OntologySync End -->"""
 
         result = parse_property_wikitext(wikitext, "Has_email")
@@ -137,10 +178,11 @@ class TestParseProperty:
 
     def test_allowed_values(self):
         wikitext = """<!-- OntologySync Start -->
-[[Has type::Text]]
-[[Has description::Status]]
-[[Allows value::Active]]
-[[Allows value::Inactive]]
+{{Property
+|has_description=Status
+|has_type=Text
+|allows_value=Active, Inactive
+}}
 <!-- OntologySync End -->"""
 
         result = parse_property_wikitext(wikitext, "Has_status")
@@ -148,22 +190,49 @@ class TestParseProperty:
 
     def test_display_template(self):
         wikitext = """<!-- OntologySync Start -->
-[[Has type::Page]]
-[[Has description::Related page]]
-[[Has template::Template:Property/Page]]
+{{Property
+|has_description=Related page
+|has_type=Page
+|has_template=Property/Page
+}}
 <!-- OntologySync End -->"""
 
         result = parse_property_wikitext(wikitext, "Has_related")
         assert result["has_display_template"] == "Property/Page"
 
+    def test_value_from_category(self):
+        wikitext = """<!-- OntologySync Start -->
+{{Property
+|has_description=The assignee
+|has_type=Page
+|allows_value_from_category=Person
+}}
+<!-- OntologySync End -->"""
+
+        result = parse_property_wikitext(wikitext, "Has_assignee")
+        assert result["Allows_value_from_category"] == "Person"
+
+    def test_unique_values(self):
+        wikitext = """<!-- OntologySync Start -->
+{{Property
+|has_description=Unique ID
+|has_type=Text
+|has_unique_values=Yes
+}}
+<!-- OntologySync End -->"""
+
+        result = parse_property_wikitext(wikitext, "Has_uid")
+        assert result["unique_values"] is True
+
 
 class TestParseSubobject:
     def test_with_properties(self):
         wikitext = """<!-- OntologySync Start -->
-[[Has description::A physical address]]
-[[Has required property::Property:Has street]]
-[[Has required property::Property:Has city]]
-[[Has optional property::Property:Has postal code]]
+{{Subobject
+|has_description=A physical address
+|has_required_property=Has street, Has city
+|has_optional_property=Has postal code
+}}
 <!-- OntologySync End -->"""
 
         result = parse_subobject_wikitext(wikitext, "Address")
@@ -182,17 +251,38 @@ class TestParseTemplate:
 class TestParseResource:
     def test_with_properties(self):
         wikitext = """<!-- OntologySync Start -->
-[[Display label::John Doe]]
-[[Has name::John Doe]]
-[[Has email::john@example.com]]
+{{Person
+|display_label=John Doe
+|has_name=John Doe
+|has_email=john@example.com
+}}
 <!-- OntologySync End -->
 [[Category:Person]]
 [[Category:OntologySync-managed-resource]]"""
 
         result = parse_resource_wikitext(wikitext, "Person/John_doe")
         assert result["categories"] == ["Person"]
-        assert result["Has_name"] == "John Doe"
-        assert result["Has_email"] == "john@example.com"
+        assert result["Has_Name"] == "John Doe"
+        assert result["Has_Email"] == "john@example.com"
+
+    def test_with_body(self):
+        wikitext = """<!-- OntologySync Start -->
+{{SOP
+|has_description=A procedure
+|display_label=My SOP
+|has_document_type=SOP
+}}
+<!-- OntologySync End -->
+[[Category:SOP]]
+[[Category:OntologySync-managed-resource]]
+
+== Procedure ==
+Step 1: Do the thing."""
+
+        result = parse_resource_wikitext(wikitext, "SOP/My_sop")
+        assert result["categories"] == ["SOP"]
+        assert result["Has_Document_Type"] == "SOP"
+        assert "== Procedure ==" in result["wikitext"]
 
 
 class TestParseModuleVocab:
@@ -253,10 +343,24 @@ class TestCategoryRoundTrip:
     def test_label_matches_page_name_omitted(self):
         original = {"id": "Person", "label": "Person", "description": "A person"}
         wikitext = generate_category_wikitext(original)
-        assert "Display label" not in wikitext
+        assert "display_label" not in wikitext
 
         parsed = parse_category_wikitext(wikitext, "Person")
         assert parsed["label"] == "Person"
+
+    def test_multiple_properties(self):
+        original = {
+            "id": "Equipment",
+            "label": "Equipment",
+            "description": "Lab equipment",
+            "required_properties": ["Has_name", "Has_serial"],
+            "optional_properties": ["Has_location", "Has_notes", "Has_url"],
+        }
+        wikitext = generate_category_wikitext(original)
+        parsed = parse_category_wikitext(wikitext, "Equipment")
+
+        assert parsed["required_properties"] == original["required_properties"]
+        assert parsed["optional_properties"] == original["optional_properties"]
 
 
 class TestPropertyRoundTrip:
@@ -286,6 +390,45 @@ class TestPropertyRoundTrip:
         wikitext = generate_property_wikitext(original)
         parsed = parse_property_wikitext(wikitext, "Has_email")
         assert parsed["cardinality"] == "multiple"
+
+    def test_allowed_values_round_trip(self):
+        original = {
+            "id": "Has_status",
+            "label": "Status",
+            "description": "Status field",
+            "datatype": "Text",
+            "cardinality": "single",
+            "allowed_values": ["Active", "Inactive", "Retired"],
+        }
+        wikitext = generate_property_wikitext(original)
+        parsed = parse_property_wikitext(wikitext, "Has_status")
+        assert parsed["allowed_values"] == original["allowed_values"]
+
+    def test_value_from_category_round_trip(self):
+        original = {
+            "id": "Has_assignee",
+            "label": "Assignee",
+            "description": "Person assigned",
+            "datatype": "Page",
+            "cardinality": "single",
+            "Allows_value_from_category": "Person",
+        }
+        wikitext = generate_property_wikitext(original)
+        parsed = parse_property_wikitext(wikitext, "Has_assignee")
+        assert parsed["Allows_value_from_category"] == "Person"
+
+    def test_display_template_round_trip(self):
+        original = {
+            "id": "Has_link",
+            "label": "Link",
+            "description": "A link",
+            "datatype": "Page",
+            "cardinality": "single",
+            "has_display_template": "Property/Page",
+        }
+        wikitext = generate_property_wikitext(original)
+        parsed = parse_property_wikitext(wikitext, "Has_link")
+        assert parsed["has_display_template"] == "Property/Page"
 
 
 class TestSubobjectRoundTrip:
@@ -318,8 +461,8 @@ class TestResourceRoundTrip:
         parsed = parse_resource_wikitext(wikitext, "Person/John_doe")
 
         assert parsed["categories"] == ["Person"]
-        assert parsed["Has_name"] == "John Doe"
-        assert parsed["Has_email"] == "john@example.com"
+        assert parsed["Has_Name"] == "John Doe"
+        assert parsed["Has_Email"] == "john@example.com"
 
     def test_multi_category_round_trip(self):
         original = {
@@ -333,7 +476,23 @@ class TestResourceRoundTrip:
         parsed = parse_resource_wikitext(wikitext, "Lab/Microscope_1")
 
         assert set(parsed["categories"]) == {"Equipment", "Lab_item"}
-        assert parsed["Has_name"] == "Microscope 1"
+        assert parsed["Has_Name"] == "Microscope 1"
+
+    def test_with_body_round_trip(self):
+        original = {
+            "id": "SOP/Test_procedure",
+            "label": "Test Procedure",
+            "description": "A test SOP",
+            "categories": ["SOP"],
+            "Has_document_type": "SOP",
+            "wikitext": "== Steps ==\n1. Do the thing.\n2. Check the thing.",
+        }
+        wikitext = generate_resource_wikitext(original)
+        parsed = parse_resource_wikitext(wikitext, "SOP/Test_procedure")
+
+        assert parsed["categories"] == ["SOP"]
+        assert "== Steps ==" in parsed["wikitext"]
+        assert "Do the thing" in parsed["wikitext"]
 
 
 class TestModuleVocabRoundTrip:

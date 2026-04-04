@@ -1,7 +1,8 @@
 """Generate OntologySync wikitext files from structured entity dicts.
 
 This is the inverse of wikitext_parser.py. Given a dict in the same format
-as the DB's canonical_json, it produces wikitext with semantic annotations.
+as the DB's canonical_json, it produces wikitext using SemanticSchemas
+template call syntax (e.g. {{Property|has_type=Text|...}}).
 
 Used by the PR builder to generate wikitext files for GitHub PRs.
 """
@@ -14,9 +15,33 @@ from app.services.parsers.wikitext_parser import to_page_name
 from app.services.resource_validation import RESERVED_KEYS, get_entity_categories
 
 
-def _with_ns(entity_key: str, ns: str) -> str:
-    """Add a namespace prefix to an entity key for wikitext annotations."""
-    return f"{ns}:{to_page_name(entity_key)}"
+# ─── Helpers ──────────────────────────────────────────────────────────────────
+
+
+def _to_param(name: str) -> str:
+    """Convert a property display name to a template parameter name.
+
+    Follows SemanticSchemas NamingHelper convention: lowercase, spaces to underscores.
+    """
+    return name.lower().replace(" ", "_")
+
+
+def _comma_join(entity_keys: list[str]) -> str:
+    """Join entity keys as comma-separated page names (spaces, no namespace prefix)."""
+    return ", ".join(to_page_name(k) for k in entity_keys)
+
+
+def _build_template_call(template_name: str, params: list[tuple[str, str]]) -> str:
+    """Build a {{TemplateName|param=value|...}} string.
+
+    Only includes params with non-empty values.
+    """
+    parts = ["{{" + template_name]
+    for name, value in params:
+        if value:
+            parts.append(f"|{name}={value}")
+    parts.append("}}")
+    return "\n".join(parts)
 
 
 # ─── Entity-specific generators ─────────────────────────────────────────────
@@ -24,98 +49,91 @@ def _with_ns(entity_key: str, ns: str) -> str:
 
 def generate_category_wikitext(entity: dict[str, Any]) -> str:
     """Generate wikitext for a category entity."""
-    lines = ["<!-- OntologySync Start -->"]
+    label = entity.get("label", "")
+    page_name = to_page_name(entity.get("id", ""))
 
-    if entity.get("description"):
-        lines.append(f"[[Has description::{entity['description']}]]")
-    if entity.get("label") and entity["label"] != to_page_name(entity.get("id", "")):
-        lines.append(f"[[Display label::{entity['label']}]]")
+    params: list[tuple[str, str]] = [
+        ("has_description", entity.get("description", "")),
+        ("display_label", label if label and label != page_name else ""),
+        ("has_parent_category", _comma_join(entity.get("parents", []))),
+        ("has_required_property", _comma_join(entity.get("required_properties", []))),
+        ("has_optional_property", _comma_join(entity.get("optional_properties", []))),
+        ("has_required_subobject", _comma_join(entity.get("required_subobjects", []))),
+        ("has_optional_subobject", _comma_join(entity.get("optional_subobjects", []))),
+    ]
 
-    for parent in entity.get("parents", []):
-        lines.append(f"[[Has parent category::{_with_ns(parent, 'Category')}]]")
-    for prop in entity.get("required_properties", []):
-        lines.append(f"[[Has required property::{_with_ns(prop, 'Property')}]]")
-    for prop in entity.get("optional_properties", []):
-        lines.append(f"[[Has optional property::{_with_ns(prop, 'Property')}]]")
-    for sub in entity.get("required_subobjects", []):
-        lines.append(f"[[Has required subobject::{_with_ns(sub, 'Subobject')}]]")
-    for sub in entity.get("optional_subobjects", []):
-        lines.append(f"[[Has optional subobject::{_with_ns(sub, 'Subobject')}]]")
-
-    lines.append("<!-- OntologySync End -->")
-    lines.append("[[Category:OntologySync-managed]]")
-
+    lines = [
+        "<!-- OntologySync Start -->",
+        _build_template_call("Category", params),
+        "<!-- OntologySync End -->",
+        "[[Category:OntologySync-managed]]",
+    ]
     return "\n".join(lines) + "\n"
 
 
 def generate_property_wikitext(entity: dict[str, Any]) -> str:
     """Generate wikitext for a property entity."""
-    lines = ["<!-- OntologySync Start -->"]
+    label = entity.get("label", "")
+    page_name = to_page_name(entity.get("id", ""))
 
-    lines.append(f"[[Has type::{entity.get('datatype', '')}]]")
+    # Allows_value_from_category: convert entity key to page name (no namespace prefix)
+    from_cat = entity.get("Allows_value_from_category", "")
+    from_cat_value = to_page_name(from_cat) if from_cat else ""
 
-    if entity.get("description"):
-        lines.append(f"[[Has description::{entity['description']}]]")
-    if entity.get("label") and entity["label"] != to_page_name(entity.get("id", "")):
-        lines.append(f"[[Display label::{entity['label']}]]")
+    # has_display_template: convert entity key to page name (no namespace prefix)
+    template = entity.get("has_display_template", "")
+    template_value = to_page_name(template) if template else ""
 
-    if entity.get("cardinality") == "multiple":
-        lines.append("[[Allows multiple values::true]]")
+    # parent_property: convert entity key to page name (no namespace prefix)
+    parent = entity.get("parent_property", "")
+    parent_value = to_page_name(parent) if parent else ""
 
-    if isinstance(entity.get("allowed_values"), list):
-        for value in entity["allowed_values"]:
-            lines.append(f"[[Allows value::{value}]]")
+    params: list[tuple[str, str]] = [
+        ("has_description", entity.get("description", "")),
+        ("has_type", entity.get("datatype", "")),
+        ("display_label", label if label and label != page_name else ""),
+        ("allows_multiple_values", "Yes" if entity.get("cardinality") == "multiple" else ""),
+        ("allows_value", ", ".join(entity.get("allowed_values", []))),
+        ("allows_value_from_category", from_cat_value),
+        ("allows_pattern", entity.get("allowed_pattern", "") or ""),
+        ("allows_value_list", entity.get("allowed_value_list", "") or ""),
+        ("display_units", ", ".join(entity.get("display_units", []))),
+        (
+            "display_precision",
+            str(entity["display_precision"]) if entity.get("display_precision") is not None else "",
+        ),
+        ("has_unique_values", "Yes" if entity.get("unique_values") is True else ""),
+        ("has_template", template_value),
+        ("subproperty_of", parent_value),
+    ]
 
-    if entity.get("Allows_value_from_category"):
-        lines.append(
-            f"[[Allows value from category::{_with_ns(entity['Allows_value_from_category'], 'Category')}]]"
-        )
-
-    if entity.get("allowed_pattern"):
-        lines.append(f"[[Allows pattern::{entity['allowed_pattern']}]]")
-
-    if entity.get("allowed_value_list"):
-        lines.append(f"[[Allows value list::{entity['allowed_value_list']}]]")
-
-    if entity.get("display_units"):
-        for unit in entity["display_units"]:
-            lines.append(f"[[Display units::{unit}]]")
-
-    if entity.get("display_precision") is not None:
-        lines.append(f"[[Display precision::{entity['display_precision']}]]")
-
-    if entity.get("unique_values") is True:
-        lines.append("[[Has unique values::true]]")
-
-    if entity.get("has_display_template"):
-        lines.append(f"[[Has template::{_with_ns(entity['has_display_template'], 'Template')}]]")
-
-    if entity.get("parent_property"):
-        lines.append(f"[[Subproperty of::{_with_ns(entity['parent_property'], 'Property')}]]")
-
-    lines.append("<!-- OntologySync End -->")
-    lines.append("[[Category:OntologySync-managed-property]]")
-
+    lines = [
+        "<!-- OntologySync Start -->",
+        _build_template_call("Property", params),
+        "<!-- OntologySync End -->",
+        "[[Category:OntologySync-managed-property]]",
+    ]
     return "\n".join(lines) + "\n"
 
 
 def generate_subobject_wikitext(entity: dict[str, Any]) -> str:
     """Generate wikitext for a subobject entity."""
-    lines = ["<!-- OntologySync Start -->"]
+    label = entity.get("label", "")
+    page_name = to_page_name(entity.get("id", ""))
 
-    if entity.get("description"):
-        lines.append(f"[[Has description::{entity['description']}]]")
-    if entity.get("label") and entity["label"] != to_page_name(entity.get("id", "")):
-        lines.append(f"[[Display label::{entity['label']}]]")
+    params: list[tuple[str, str]] = [
+        ("has_description", entity.get("description", "")),
+        ("display_label", label if label and label != page_name else ""),
+        ("has_required_property", _comma_join(entity.get("required_properties", []))),
+        ("has_optional_property", _comma_join(entity.get("optional_properties", []))),
+    ]
 
-    for prop in entity.get("required_properties", []):
-        lines.append(f"[[Has required property::{_with_ns(prop, 'Property')}]]")
-    for prop in entity.get("optional_properties", []):
-        lines.append(f"[[Has optional property::{_with_ns(prop, 'Property')}]]")
-
-    lines.append("<!-- OntologySync End -->")
-    lines.append("[[Category:OntologySync-managed-subobject]]")
-
+    lines = [
+        "<!-- OntologySync Start -->",
+        _build_template_call("Subobject", params),
+        "<!-- OntologySync End -->",
+        "[[Category:OntologySync-managed-subobject]]",
+    ]
     return "\n".join(lines) + "\n"
 
 
@@ -131,28 +149,33 @@ def generate_dashboard_page_wikitext(wikitext_content: str) -> str:
 
 def generate_resource_wikitext(entity: dict[str, Any]) -> str:
     """Generate wikitext for a resource entity."""
-    lines = ["<!-- OntologySync Start -->"]
+    categories = get_entity_categories(entity)
+    template_name = to_page_name(categories[0]) if categories else "Resource"
 
-    if entity.get("description"):
-        lines.append(f"[[Has description::{entity['description']}]]")
-    if entity.get("label"):
-        lines.append(f"[[Display label::{entity['label']}]]")
+    params: list[tuple[str, str]] = [
+        ("has_description", entity.get("description", "") or ""),
+        ("display_label", entity.get("label", "") or ""),
+    ]
 
     # Dynamic property fields
     for key, value in entity.items():
         if key in RESERVED_KEYS:
             continue
-        page_name = to_page_name(key)
+        param_name = _to_param(to_page_name(key))
         if isinstance(value, list):
-            for v in value:
-                lines.append(f"[[{page_name}::{v}]]")
+            param_value = ", ".join(str(v) for v in value)
         else:
-            lines.append(f"[[{page_name}::{value}]]")
+            param_value = str(value)
+        params.append((param_name, param_value))
 
-    lines.append("<!-- OntologySync End -->")
+    lines = [
+        "<!-- OntologySync Start -->",
+        _build_template_call(template_name, params),
+        "<!-- OntologySync End -->",
+    ]
 
     # Category memberships (supports multiple)
-    for cat in get_entity_categories(entity):
+    for cat in categories:
         lines.append(f"[[Category:{to_page_name(cat)}]]")
     lines.append("[[Category:OntologySync-managed-resource]]")
 

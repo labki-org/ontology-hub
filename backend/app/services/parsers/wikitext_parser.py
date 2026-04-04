@@ -1,7 +1,8 @@
 """Parse OntologySync wikitext files into structured entity dicts.
 
-Wikitext files use semantic annotations within <!-- OntologySync Start/End --> blocks.
-Each annotation is a [[Property::Value]] pair on its own line.
+Wikitext files use SemanticSchemas template call syntax within
+<!-- OntologySync Start/End --> blocks.  Each entity is represented as a
+template call like {{Property|has_type=Text|has_description=...}}.
 
 This parser produces dicts in the same format as the old JSON entity files,
 so downstream code (entity_parser.py, validation, draft overlay) works unchanged.
@@ -22,7 +23,6 @@ NAMESPACE_TO_ENTITY_TYPE: dict[str, str] = {
     "NS_ONTOLOGY_RESOURCE": "resources",
 }
 
-_ANNOTATION_RE = re.compile(r"^\[\[([^:\[\]]+)::(.+)\]\]$")
 _CATEGORY_RE = re.compile(r"^\[\[Category:([^\]]+)\]\]$")
 
 _START_MARKER = "<!-- OntologySync Start -->"
@@ -37,13 +37,6 @@ def to_page_name(entity_key: str) -> str:
 def to_entity_key(page_name: str) -> str:
     """Convert a wiki page name (spaces) to an entity key (underscores)."""
     return page_name.replace(" ", "_")
-
-
-def _strip_namespace(value: str, expected_ns: str) -> str:
-    """Strip a namespace prefix and convert to entity key."""
-    prefix = expected_ns + ":"
-    stripped = value[len(prefix) :] if value.startswith(prefix) else value
-    return to_entity_key(stripped)
 
 
 def _iter_lines_by_block(
@@ -69,22 +62,61 @@ def _iter_lines_by_block(
     return result
 
 
-def extract_annotations(wikitext: str) -> dict[str, list[str]]:
-    """Extract semantic annotations from within OntologySync Start/End markers.
+def _extract_template_call(wikitext: str) -> tuple[str, dict[str, str]]:
+    """Extract template name and parameters from a template call within markers.
 
-    Returns a dict mapping property names to lists of values.
+    Parses content like:
+        <!-- OntologySync Start -->
+        {{Property
+        |has_type=Text
+        |has_description=A description
+        }}
+        <!-- OntologySync End -->
+
+    Returns (template_name, {"has_type": "Text", "has_description": "A description"}).
     """
-    annotations: dict[str, list[str]] = {}
+    # Extract content between markers
+    start = wikitext.find(_START_MARKER)
+    end = wikitext.find(_END_MARKER)
+    if start < 0 or end < 0 or end <= start:
+        return ("", {})
 
-    for trimmed, in_block in _iter_lines_by_block(wikitext):
-        if not in_block:
-            continue
-        match = _ANNOTATION_RE.match(trimmed)
-        if match:
-            prop, value = match.group(1), match.group(2)
-            annotations.setdefault(prop, []).append(value)
+    block = wikitext[start + len(_START_MARKER) : end].strip()
 
-    return annotations
+    # Find template call delimiters
+    if not block.startswith("{{") or not block.endswith("}}"):
+        return ("", {})
+
+    # Strip {{ and }}
+    inner = block[2:-2]
+
+    # Split on | at start of line to get template name and params
+    # The first segment is the template name (possibly with leading whitespace)
+    parts = re.split(r"\n\|", inner)
+    template_name = parts[0].strip()
+
+    params: dict[str, str] = {}
+    for part in parts[1:]:
+        eq_pos = part.find("=")
+        if eq_pos > 0:
+            key = part[:eq_pos].strip()
+            value = part[eq_pos + 1 :].strip()
+            if value:
+                params[key] = value
+
+    return (template_name, params)
+
+
+def _split_comma(value: str) -> list[str]:
+    """Split a comma-separated value string into a list, stripping whitespace."""
+    if not value:
+        return []
+    return [v.strip() for v in value.split(",") if v.strip()]
+
+
+def _comma_to_keys(value: str) -> list[str]:
+    """Split comma-separated page names and convert each to an entity key."""
+    return [to_entity_key(v) for v in _split_comma(value)]
 
 
 def extract_categories(wikitext: str) -> list[str]:
@@ -101,47 +133,36 @@ def extract_categories(wikitext: str) -> list[str]:
     return categories
 
 
-def _first(annotations: dict[str, list[str]], prop: str, default: str = "") -> str:
-    """Get first value for a property, or default."""
-    values = annotations.get(prop, [])
-    return values[0] if values else default
-
-
-def _all_stripped(annotations: dict[str, list[str]], prop: str, ns: str) -> list[str]:
-    """Get all values for a property, stripping namespace prefix."""
-    return [_strip_namespace(v, ns) for v in annotations.get(prop, [])]
-
-
 # ─── Entity-specific parsers ────────────────────────────────────────────────
 
 
 def parse_category_wikitext(wikitext: str, entity_key: str) -> dict[str, Any]:
     """Parse category wikitext into dict matching the JSON format."""
-    ann = extract_annotations(wikitext)
+    _, params = _extract_template_call(wikitext)
 
     result: dict[str, Any] = {
         "id": entity_key,
-        "label": _first(ann, "Display label", to_page_name(entity_key)),
-        "description": _first(ann, "Has description", ""),
+        "label": params.get("display_label", to_page_name(entity_key)),
+        "description": params.get("has_description", ""),
     }
 
-    parents = _all_stripped(ann, "Has parent category", "Category")
+    parents = _comma_to_keys(params.get("has_parent_category", ""))
     if parents:
         result["parents"] = parents
 
-    req_props = _all_stripped(ann, "Has required property", "Property")
+    req_props = _comma_to_keys(params.get("has_required_property", ""))
     if req_props:
         result["required_properties"] = req_props
 
-    opt_props = _all_stripped(ann, "Has optional property", "Property")
+    opt_props = _comma_to_keys(params.get("has_optional_property", ""))
     if opt_props:
         result["optional_properties"] = opt_props
 
-    req_subs = _all_stripped(ann, "Has required subobject", "Subobject")
+    req_subs = _comma_to_keys(params.get("has_required_subobject", ""))
     if req_subs:
         result["required_subobjects"] = req_subs
 
-    opt_subs = _all_stripped(ann, "Has optional subobject", "Subobject")
+    opt_subs = _comma_to_keys(params.get("has_optional_subobject", ""))
     if opt_subs:
         result["optional_subobjects"] = opt_subs
 
@@ -150,70 +171,69 @@ def parse_category_wikitext(wikitext: str, entity_key: str) -> dict[str, Any]:
 
 def parse_property_wikitext(wikitext: str, entity_key: str) -> dict[str, Any]:
     """Parse property wikitext into dict matching the JSON format."""
-    ann = extract_annotations(wikitext)
+    _, params = _extract_template_call(wikitext)
 
     result: dict[str, Any] = {
         "id": entity_key,
-        "label": _first(ann, "Display label", to_page_name(entity_key)),
-        "description": _first(ann, "Has description", ""),
-        "datatype": _first(ann, "Has type", ""),
-        "cardinality": "multiple" if _first(ann, "Allows multiple values") == "true" else "single",
+        "label": params.get("display_label", to_page_name(entity_key)),
+        "description": params.get("has_description", ""),
+        "datatype": params.get("has_type", ""),
+        "cardinality": "multiple" if params.get("allows_multiple_values") == "Yes" else "single",
     }
 
-    allowed_vals = ann.get("Allows value")
+    allowed_vals = _split_comma(params.get("allows_value", ""))
     if allowed_vals:
         result["allowed_values"] = allowed_vals
 
-    from_cat = _first(ann, "Allows value from category")
+    from_cat = params.get("allows_value_from_category", "")
     if from_cat:
-        result["Allows_value_from_category"] = _strip_namespace(from_cat, "Category")
+        result["Allows_value_from_category"] = to_entity_key(from_cat)
 
-    pattern = _first(ann, "Allows pattern")
+    pattern = params.get("allows_pattern", "")
     if pattern:
         result["allowed_pattern"] = pattern
 
-    value_list = _first(ann, "Allows value list")
+    value_list = params.get("allows_value_list", "")
     if value_list:
         result["allowed_value_list"] = value_list
 
-    display_units = ann.get("Display units")
+    display_units = _split_comma(params.get("display_units", ""))
     if display_units:
         result["display_units"] = display_units
 
-    precision = _first(ann, "Display precision")
+    precision = params.get("display_precision", "")
     if precision:
         result["display_precision"] = int(precision)
 
-    unique = _first(ann, "Has unique values")
-    if unique == "true":
+    if params.get("has_unique_values") == "Yes":
         result["unique_values"] = True
 
-    template = _first(ann, "Has template")
+    template = params.get("has_template", "")
     if template:
-        result["has_display_template"] = _strip_namespace(template, "Template")
+        result["has_display_template"] = to_entity_key(template)
 
-    parent_prop = _first(ann, "Subproperty of")
+    parent_prop = params.get("subproperty_of", "")
     if parent_prop:
-        result["parent_property"] = _strip_namespace(parent_prop, "Property")
+        result["parent_property"] = to_entity_key(parent_prop)
 
     return result
 
 
 def parse_subobject_wikitext(wikitext: str, entity_key: str) -> dict[str, Any]:
     """Parse subobject wikitext into dict matching the JSON format."""
-    ann = extract_annotations(wikitext)
+    _, params = _extract_template_call(wikitext)
 
     result: dict[str, Any] = {
         "id": entity_key,
-        "label": _first(ann, "Display label", to_page_name(entity_key)),
-        "description": _first(ann, "Has description", ""),
+        "label": params.get("display_label", to_page_name(entity_key)),
+        "description": params.get("has_description", ""),
     }
 
-    req_props = _all_stripped(ann, "Has required property", "Property")
+    req_props = _comma_to_keys(params.get("has_required_property", ""))
     if req_props:
         result["required_properties"] = req_props
 
-    opt_props = _all_stripped(ann, "Has optional property", "Property")
+    opt_props = _comma_to_keys(params.get("has_optional_property", ""))
     if opt_props:
         result["optional_properties"] = opt_props
 
@@ -241,7 +261,7 @@ def parse_dashboard_page(wikitext: str, page_name: str) -> dict[str, str]:
 def _extract_body(wikitext: str) -> str:
     """Extract free-form body content after the annotation block and category markers.
 
-    Needs raw line indices (unlike extract_annotations/extract_categories),
+    Needs raw line indices (unlike extract_categories),
     so it tracks block state inline rather than using _iter_lines_by_block.
     """
     lines = wikitext.split("\n")
@@ -267,7 +287,7 @@ def _extract_body(wikitext: str) -> str:
 
 def parse_resource_wikitext(wikitext: str, entity_key: str) -> dict[str, Any]:
     """Parse resource wikitext into dict matching the JSON format."""
-    ann = extract_annotations(wikitext)
+    template_name, params = _extract_template_call(wikitext)
     categories = extract_categories(wikitext)
 
     # Find all content categories (non-management)
@@ -277,18 +297,23 @@ def parse_resource_wikitext(wikitext: str, entity_key: str) -> dict[str, Any]:
 
     result: dict[str, Any] = {
         "id": entity_key,
-        "label": _first(ann, "Display label", to_page_name(entity_key.split("/")[-1])),
-        "description": _first(ann, "Has description", ""),
+        "label": params.get("display_label", to_page_name(entity_key.split("/")[-1])),
+        "description": params.get("has_description", ""),
         "categories": content_categories,
     }
 
-    # Add dynamic property fields
-    metadata_keys = {"Display label", "Has description"}
-    for prop, values in ann.items():
-        if prop in metadata_keys:
+    # Add dynamic property fields (everything except reserved metadata params)
+    metadata_params = {"display_label", "has_description"}
+    for param_name, value in params.items():
+        if param_name in metadata_params:
             continue
-        key = to_entity_key(prop)
-        result[key] = values[0] if len(values) == 1 else values
+        # Convert param name back to entity key format (e.g., "has_name" -> "Has_name")
+        # Param names are lowercase; original keys had capitalized words with underscores
+        # We store them as-is using the capitalized page_name -> entity_key convention
+        key = to_entity_key(to_page_name(param_name).title())
+        # Check if comma-separated (multi-value)
+        parts = _split_comma(value)
+        result[key] = parts if len(parts) > 1 else value
 
     # Extract free-form body content
     body = _extract_body(wikitext)
