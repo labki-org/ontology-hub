@@ -162,6 +162,23 @@ export function ModuleHull({
       )
     }
 
+    if (hullShape.type === 'circle') {
+      return (
+        <circle
+          cx={hullShape.cx}
+          cy={hullShape.cy}
+          r={hullShape.r}
+          fill={color}
+          fillOpacity={fillOpacity}
+          stroke={color}
+          strokeWidth={strokeWidth}
+          strokeOpacity={strokeOpacity}
+          strokeDasharray={strokeDasharray}
+          pointerEvents="none"
+        />
+      )
+    }
+
     // path type (convex hull)
     return (
       <path

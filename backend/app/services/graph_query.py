@@ -7,7 +7,6 @@ for change status badges (GRP-04).
 """
 
 import uuid
-from typing import Any
 
 from sqlalchemy import text
 from sqlmodel import col, select

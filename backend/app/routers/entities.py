@@ -381,8 +381,6 @@ async def get_category(
 
     # 2. Inherited membership: find descendant categories via BFS down the tree,
     #    then check which modules contain those descendants
-    descendants_with_modules: list[tuple[str, str]] = []  # (descendant_key, module_key)
-
     # BFS downward: find categories whose parent is this category (or its descendants)
     visited: set[str] = {entity_key}
     pending = [entity_key]
