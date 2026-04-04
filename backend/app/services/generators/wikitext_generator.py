@@ -14,7 +14,6 @@ from typing import Any
 from app.services.parsers.wikitext_parser import to_page_name
 from app.services.resource_validation import RESERVED_KEYS, get_entity_categories
 
-
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
 
@@ -162,10 +161,7 @@ def generate_resource_wikitext(entity: dict[str, Any]) -> str:
         if key in RESERVED_KEYS:
             continue
         param_name = _to_param(to_page_name(key))
-        if isinstance(value, list):
-            param_value = ", ".join(str(v) for v in value)
-        else:
-            param_value = str(value)
+        param_value = ", ".join(str(v) for v in value) if isinstance(value, list) else str(value)
         params.append((param_name, param_value))
 
     lines = [
