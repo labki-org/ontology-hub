@@ -7,6 +7,7 @@ for change status badges (GRP-04).
 """
 
 import uuid
+from typing import Any
 
 from sqlalchemy import text
 from sqlmodel import col, select
@@ -1697,7 +1698,7 @@ class GraphQueryService:
             return {}
 
         # Map module_key → bundle_keys
-        bundle_query = (  # type: ignore[var-annotated]
+        bundle_query: Any = (
             select(
                 col(Module.entity_key).label("module_key"),
                 col(Bundle.entity_key).label("bundle_key"),

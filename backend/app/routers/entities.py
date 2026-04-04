@@ -17,6 +17,7 @@ metadata (added/modified/deleted/unchanged).
 """
 
 import json
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from sqlalchemy import text
@@ -425,7 +426,7 @@ async def get_category(
 
     if descendant_keys:
         # Check which descendants are in modules
-        desc_membership_query = (  # type: ignore[var-annotated]
+        desc_membership_query: Any = (
             select(ModuleEntity.entity_key, col(Module.entity_key).label("module_key"))
             .join(Module, col(Module.id) == col(ModuleEntity.module_id))
             .where(
@@ -448,7 +449,7 @@ async def get_category(
     # Bundle membership from all modules
     bundle_keys: list[str] = []
     if all_module_keys:
-        bundle_query = (  # type: ignore[var-annotated]
+        bundle_query: Any = (
             select(col(Bundle.entity_key).label("bundle_key"))
             .join(BundleModule, col(BundleModule.bundle_id) == col(Bundle.id))
             .join(Module, col(Module.id) == col(BundleModule.module_id))
@@ -1073,7 +1074,7 @@ async def get_module(
     # Compute module membership for parent categories
     parent_category_membership: dict[str, list[str]] = {}
     if parent_categories:
-        membership_query = (  # type: ignore[var-annotated]
+        membership_query: Any = (
             select(ModuleEntity.entity_key, col(Module.entity_key).label("module_key"))
             .join(Module, col(Module.id) == col(ModuleEntity.module_id))
             .where(
