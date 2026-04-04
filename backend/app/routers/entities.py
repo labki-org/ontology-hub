@@ -406,10 +406,10 @@ async def get_category(
         # Find children: categories whose parent_id matches categories in batch
         child_query = (
             select(Category.entity_key, CategoryParent.category_id)
-            .join(CategoryParent, CategoryParent.category_id == Category.id)
+            .join(CategoryParent, col(CategoryParent.category_id) == col(Category.id))
             .where(
-                CategoryParent.parent_id.in_(
-                    select(Category.id).where(Category.entity_key.in_(batch))
+                col(CategoryParent.parent_id).in_(
+                    select(Category.id).where(col(Category.entity_key).in_(batch))
                 )
             )
         )
@@ -425,7 +425,7 @@ async def get_category(
 
     if descendant_keys:
         # Check which descendants are in modules
-        desc_membership_query = (
+        desc_membership_query = (  # type: ignore[var-annotated]
             select(ModuleEntity.entity_key, col(Module.entity_key).label("module_key"))
             .join(Module, col(Module.id) == col(ModuleEntity.module_id))
             .where(
@@ -448,7 +448,7 @@ async def get_category(
     # Bundle membership from all modules
     bundle_keys: list[str] = []
     if all_module_keys:
-        bundle_query = (
+        bundle_query = (  # type: ignore[var-annotated]
             select(col(Bundle.entity_key).label("bundle_key"))
             .join(BundleModule, col(BundleModule.bundle_id) == col(Bundle.id))
             .join(Module, col(Module.id) == col(BundleModule.module_id))
@@ -1054,14 +1054,14 @@ async def get_module(
             # Look up parent keys for this batch
             cat_query = (
                 select(Category.entity_key, CategoryParent.parent_id)
-                .join(CategoryParent, CategoryParent.category_id == Category.id)
-                .where(Category.entity_key.in_(batch))
+                .join(CategoryParent, col(CategoryParent.category_id) == col(Category.id))
+                .where(col(Category.entity_key).in_(batch))
             )
             cat_result = await session.execute(cat_query)
 
             parent_ids = [row[1] for row in cat_result.fetchall()]
             if parent_ids:
-                parent_query = select(Category.entity_key).where(Category.id.in_(parent_ids))
+                parent_query = select(Category.entity_key).where(col(Category.id).in_(parent_ids))
                 parent_result = await session.execute(parent_query)
                 for (parent_key,) in parent_result.fetchall():
                     if parent_key not in visited:
@@ -1073,7 +1073,7 @@ async def get_module(
     # Compute module membership for parent categories
     parent_category_membership: dict[str, list[str]] = {}
     if parent_categories:
-        membership_query = (
+        membership_query = (  # type: ignore[var-annotated]
             select(ModuleEntity.entity_key, col(Module.entity_key).label("module_key"))
             .join(Module, col(Module.id) == col(ModuleEntity.module_id))
             .where(

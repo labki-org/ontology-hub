@@ -1626,7 +1626,7 @@ class GraphQueryService:
         parent_query = select(
             Category.entity_key,
             CategoryParent.parent_id,
-        ).join(CategoryParent, CategoryParent.category_id == Category.id)
+        ).join(CategoryParent, col(CategoryParent.category_id) == col(Category.id))
         parent_result = await self.session.execute(parent_query)
 
         # Build child→parent_ids and parent_id→parent_key mappings
@@ -1644,7 +1644,7 @@ class GraphQueryService:
         parent_id_to_key: dict[str, str] = {}
         if all_parent_ids:
             id_query = select(Category.id, Category.entity_key).where(
-                Category.id.in_(list(all_parent_ids))
+                col(Category.id).in_(list(all_parent_ids))
             )
             id_result = await self.session.execute(id_query)
             for row in id_result.fetchall():
@@ -1697,7 +1697,7 @@ class GraphQueryService:
             return {}
 
         # Map module_key → bundle_keys
-        bundle_query = (
+        bundle_query = (  # type: ignore[var-annotated]
             select(
                 col(Module.entity_key).label("module_key"),
                 col(Bundle.entity_key).label("bundle_key"),
