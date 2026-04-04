@@ -1623,13 +1623,10 @@ class GraphQueryService:
         # Expand: for each module, walk UP from its manual categories to find
         # all parent categories, and add those to the module's membership too.
         # Load full parent graph once
-        parent_query = (
-            select(
-                Category.entity_key,
-                CategoryParent.parent_id,
-            )
-            .join(CategoryParent, CategoryParent.category_id == Category.id)
-        )
+        parent_query = select(
+            Category.entity_key,
+            CategoryParent.parent_id,
+        ).join(CategoryParent, CategoryParent.category_id == Category.id)
         parent_result = await self.session.execute(parent_query)
 
         # Build child→parent_ids and parent_id→parent_key mappings

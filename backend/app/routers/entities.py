@@ -157,7 +157,9 @@ async def list_categories(
         None, description="Last entity_key from previous page for pagination"
     ),
     limit: int = Query(20, ge=1, le=500, description="Max items per page"),
-    search: str | None = Query(None, description="Filter by entity_key or label (case-insensitive)"),
+    search: str | None = Query(
+        None, description="Filter by entity_key or label (case-insensitive)"
+    ),
 ) -> EntityListResponse:
     """List categories with cursor-based pagination and draft overlay.
 
@@ -171,8 +173,7 @@ async def list_categories(
 
     if search:
         query = query.where(
-            col(Category.entity_key).ilike(f"%{search}%")
-            | col(Category.label).ilike(f"%{search}%")
+            col(Category.entity_key).ilike(f"%{search}%") | col(Category.label).ilike(f"%{search}%")
         )
 
     if cursor:
@@ -273,17 +274,25 @@ async def get_category(
         for prop_key in effective.get("required_properties", []):
             properties.append(
                 PropertyProvenance(
-                    entity_key=prop_key, label=prop_key, is_direct=True,
-                    is_inherited=False, is_required=True,
-                    source_category=entity_key, inheritance_depth=0,
+                    entity_key=prop_key,
+                    label=prop_key,
+                    is_direct=True,
+                    is_inherited=False,
+                    is_required=True,
+                    source_category=entity_key,
+                    inheritance_depth=0,
                 )
             )
         for prop_key in effective.get("optional_properties", []):
             properties.append(
                 PropertyProvenance(
-                    entity_key=prop_key, label=prop_key, is_direct=True,
-                    is_inherited=False, is_required=False,
-                    source_category=entity_key, inheritance_depth=0,
+                    entity_key=prop_key,
+                    label=prop_key,
+                    is_direct=True,
+                    is_inherited=False,
+                    is_required=False,
+                    source_category=entity_key,
+                    inheritance_depth=0,
                 )
             )
         # Also add inherited properties from canonical (depth > 0)
@@ -302,9 +311,13 @@ async def get_category(
             for row in inherited_result.fetchall():
                 properties.append(
                     PropertyProvenance(
-                        entity_key=row[0], label=row[1],
-                        is_direct=False, is_inherited=True, is_required=row[3],
-                        source_category=row[4], inheritance_depth=row[2],
+                        entity_key=row[0],
+                        label=row[1],
+                        is_direct=False,
+                        is_inherited=True,
+                        is_required=row[3],
+                        source_category=row[4],
+                        inheritance_depth=row[2],
                     )
                 )
     elif category:
@@ -325,9 +338,13 @@ async def get_category(
         for row in props_result.fetchall():
             properties.append(
                 PropertyProvenance(
-                    entity_key=row[0], label=row[1],
-                    is_direct=(row[2] == 0), is_inherited=(row[2] > 0),
-                    is_required=row[3], source_category=row[4], inheritance_depth=row[2],
+                    entity_key=row[0],
+                    label=row[1],
+                    is_direct=(row[2] == 0),
+                    is_inherited=(row[2] > 0),
+                    is_required=row[3],
+                    source_category=row[4],
+                    inheritance_depth=row[2],
                 )
             )
 
@@ -374,9 +391,7 @@ async def get_category(
     # 1. Direct/manual membership: this category is listed in a module's categories
     direct_module_keys, _ = await _get_entity_membership(session, entity_key, "category")
     for mod_key in direct_module_keys:
-        module_membership.append(
-            CategoryModuleMembership(module_key=mod_key, membership="manual")
-        )
+        module_membership.append(CategoryModuleMembership(module_key=mod_key, membership="manual"))
         all_module_keys.add(mod_key)
 
     # 2. Inherited membership: find descendant categories via BFS down the tree,
@@ -473,7 +488,9 @@ async def list_properties(
         None, description="Last entity_key from previous page for pagination"
     ),
     limit: int = Query(20, ge=1, le=500, description="Max items per page"),
-    search: str | None = Query(None, description="Filter by entity_key or label (case-insensitive)"),
+    search: str | None = Query(
+        None, description="Filter by entity_key or label (case-insensitive)"
+    ),
 ) -> EntityListResponse:
     """List properties with cursor-based pagination and draft overlay.
 
@@ -487,8 +504,7 @@ async def list_properties(
 
     if search:
         query = query.where(
-            col(Property.entity_key).ilike(f"%{search}%")
-            | col(Property.label).ilike(f"%{search}%")
+            col(Property.entity_key).ilike(f"%{search}%") | col(Property.label).ilike(f"%{search}%")
         )
 
     if cursor:
@@ -634,7 +650,9 @@ async def list_subobjects(
         None, description="Last entity_key from previous page for pagination"
     ),
     limit: int = Query(20, ge=1, le=500, description="Max items per page"),
-    search: str | None = Query(None, description="Filter by entity_key or label (case-insensitive)"),
+    search: str | None = Query(
+        None, description="Filter by entity_key or label (case-insensitive)"
+    ),
 ) -> EntityListResponse:
     """List subobjects with cursor-based pagination and draft overlay.
 
@@ -845,7 +863,9 @@ async def list_templates(
         None, description="Last entity_key from previous page for pagination"
     ),
     limit: int = Query(20, ge=1, le=500, description="Max items per page"),
-    search: str | None = Query(None, description="Filter by entity_key or label (case-insensitive)"),
+    search: str | None = Query(
+        None, description="Filter by entity_key or label (case-insensitive)"
+    ),
 ) -> EntityListResponse:
     """List templates with cursor-based pagination and draft overlay.
 
@@ -855,8 +875,7 @@ async def list_templates(
 
     if search:
         query = query.where(
-            col(Template.entity_key).ilike(f"%{search}%")
-            | col(Template.label).ilike(f"%{search}%")
+            col(Template.entity_key).ilike(f"%{search}%") | col(Template.label).ilike(f"%{search}%")
         )
 
     if cursor:
@@ -946,7 +965,9 @@ async def list_modules(
         None, description="Last entity_key from previous page for pagination"
     ),
     limit: int = Query(20, ge=1, le=500, description="Max items per page"),
-    search: str | None = Query(None, description="Filter by entity_key or label (case-insensitive)"),
+    search: str | None = Query(
+        None, description="Filter by entity_key or label (case-insensitive)"
+    ),
 ) -> EntityListResponse:
     """List modules with cursor-based pagination and draft overlay.
 
@@ -956,8 +977,7 @@ async def list_modules(
 
     if search:
         query = query.where(
-            col(Module.entity_key).ilike(f"%{search}%")
-            | col(Module.label).ilike(f"%{search}%")
+            col(Module.entity_key).ilike(f"%{search}%") | col(Module.label).ilike(f"%{search}%")
         )
 
     if cursor:
@@ -1041,9 +1061,7 @@ async def get_module(
 
             parent_ids = [row[1] for row in cat_result.fetchall()]
             if parent_ids:
-                parent_query = select(Category.entity_key).where(
-                    Category.id.in_(parent_ids)
-                )
+                parent_query = select(Category.entity_key).where(Category.id.in_(parent_ids))
                 parent_result = await session.execute(parent_query)
                 for (parent_key,) in parent_result.fetchall():
                     if parent_key not in visited:
@@ -1099,7 +1117,9 @@ async def list_bundles(
         None, description="Last entity_key from previous page for pagination"
     ),
     limit: int = Query(20, ge=1, le=500, description="Max items per page"),
-    search: str | None = Query(None, description="Filter by entity_key or label (case-insensitive)"),
+    search: str | None = Query(
+        None, description="Filter by entity_key or label (case-insensitive)"
+    ),
 ) -> EntityListResponse:
     """List bundles with cursor-based pagination and draft overlay.
 
@@ -1109,8 +1129,7 @@ async def list_bundles(
 
     if search:
         query = query.where(
-            col(Bundle.entity_key).ilike(f"%{search}%")
-            | col(Bundle.label).ilike(f"%{search}%")
+            col(Bundle.entity_key).ilike(f"%{search}%") | col(Bundle.label).ilike(f"%{search}%")
         )
 
     if cursor:
@@ -1217,7 +1236,9 @@ async def list_dashboards(
         None, description="Last entity_key from previous page for pagination"
     ),
     limit: int = Query(20, ge=1, le=500, description="Max items per page"),
-    search: str | None = Query(None, description="Filter by entity_key or label (case-insensitive)"),
+    search: str | None = Query(
+        None, description="Filter by entity_key or label (case-insensitive)"
+    ),
 ) -> EntityListResponse:
     """List dashboards with cursor-based pagination and draft overlay.
 
@@ -1321,7 +1342,9 @@ async def list_resources(
     ),
     limit: int = Query(20, ge=1, le=500, description="Max items per page"),
     category: str | None = Query(None, description="Filter by category key"),
-    search: str | None = Query(None, description="Filter by entity_key or label (case-insensitive)"),
+    search: str | None = Query(
+        None, description="Filter by entity_key or label (case-insensitive)"
+    ),
 ) -> EntityListResponse:
     """List resources with cursor-based pagination, optional category filter, and draft overlay.
 
@@ -1331,8 +1354,7 @@ async def list_resources(
 
     if search:
         query = query.where(
-            col(Resource.entity_key).ilike(f"%{search}%")
-            | col(Resource.label).ilike(f"%{search}%")
+            col(Resource.entity_key).ilike(f"%{search}%") | col(Resource.label).ilike(f"%{search}%")
         )
 
     if category:

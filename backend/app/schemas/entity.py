@@ -71,8 +71,12 @@ class CategoryModuleMembership(BaseModel):
     """Module membership info for a category, indicating how it's included."""
 
     module_key: str
-    membership: str = Field(description="'manual' if directly listed, 'inherited' if via child category")
-    via: str | None = Field(default=None, description="Child category key that causes inherited membership")
+    membership: str = Field(
+        description="'manual' if directly listed, 'inherited' if via child category"
+    )
+    via: str | None = Field(
+        default=None, description="Child category key that causes inherited membership"
+    )
 
 
 class CategoryDetailResponse(BaseModel):
