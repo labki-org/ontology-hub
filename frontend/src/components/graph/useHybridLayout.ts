@@ -27,9 +27,10 @@ interface D3Node {
   y?: number
   vx?: number
   vy?: number
-  targetX?: number // Dagre-assigned X position for force constraint
-  targetY?: number // Dagre-assigned Y position for force constraint
+  targetX?: number // Assigned X position for force constraint
+  targetY?: number // Assigned Y position for force constraint
   isCategory?: boolean // Whether this is a category node (gets strong position constraint)
+  modules?: string[] // Combined module + bundle IDs for clustering force
 }
 
 /**
@@ -83,7 +84,7 @@ export function useHybridLayout(
       positionedNodes = applyRadialLayout(initialNodes, edges, simulationRef, d3NodesRef)
     } else {
       // Hybrid: dagre + force constraints
-      positionedNodes = applyHybridLayout(initialNodes, edges, direction, simulationRef, d3NodesRef)
+      positionedNodes = applyHybridLayout(initialNodes, edges, simulationRef, d3NodesRef)
     }
 
     setNodes(positionedNodes)
@@ -114,7 +115,7 @@ export function useHybridLayout(
       } else if (algorithm === 'radial') {
         positionedNodes = applyRadialLayout(initialNodes, edges, simulationRef, d3NodesRef)
       } else {
-        positionedNodes = applyHybridLayout(initialNodes, edges, direction, simulationRef, d3NodesRef)
+        positionedNodes = applyHybridLayout(initialNodes, edges, simulationRef, d3NodesRef)
       }
       setNodes(positionedNodes)
       return
@@ -324,22 +325,72 @@ function applyForceLayout(nodes: Node[], edges: Edge[]): Node[] {
 }
 
 /**
- * Hybrid layout: dagre for category hierarchy + force clustering for properties.
+ * Custom d3-force that pulls category nodes toward the centroid of their
+ * module/bundle groups.  Non-categories follow via edge forces instead.
+ */
+function createModuleClusterForce(strength: number) {
+  let simNodes: D3Node[] = []
+
+  const force = (alpha: number) => {
+    // Compute centroids for each module/bundle group
+    const centroids = new Map<string, { x: number; y: number; count: number }>()
+    for (const node of simNodes) {
+      if (!node.modules?.length) continue
+      for (const mod of node.modules) {
+        if (!centroids.has(mod)) centroids.set(mod, { x: 0, y: 0, count: 0 })
+        const c = centroids.get(mod)!
+        c.x += node.x ?? 0
+        c.y += node.y ?? 0
+        c.count++
+      }
+    }
+    for (const c of centroids.values()) {
+      c.x /= c.count
+      c.y /= c.count
+    }
+
+    // Pull categories toward the average of their module centroids
+    for (const node of simNodes) {
+      if (!node.isCategory || !node.modules?.length) continue
+      let tx = 0, ty = 0, count = 0
+      for (const mod of node.modules) {
+        const c = centroids.get(mod)
+        if (c && c.count > 1) {
+          tx += c.x
+          ty += c.y
+          count++
+        }
+      }
+      if (count > 0) {
+        tx /= count
+        ty /= count
+        node.vx = (node.vx ?? 0) + (tx - (node.x ?? 0)) * strength * alpha
+        node.vy = (node.vy ?? 0) + (ty - (node.y ?? 0)) * strength * alpha
+      }
+    }
+  }
+
+  force.initialize = (n: D3Node[]) => { simNodes = n }
+  return force
+}
+
+/**
+ * Hybrid layout: radial hierarchy + module-aware clustering.
  *
- * 1. Run dagre ONLY on category nodes (using parent edges) to establish backbone
- * 2. Position non-category nodes near their connected category centroid
- * 3. Run d3-force with strong clustering: categories pinned, properties orbit them
+ * 1. Build category hierarchy tree and sort roots by module affinity
+ * 2. Position categories in concentric rings radiating outward from center
+ * 3. Position non-category nodes near their connected category centroids
+ * 4. Run d3-force with module/bundle clustering to group related nodes
  */
 function applyHybridLayout(
   nodes: Node[],
   edges: Edge[],
-  direction: LayoutDirection,
   simulationRef: React.MutableRefObject<ReturnType<typeof forceSimulation<D3Node>> | null>,
   d3NodesRef: React.MutableRefObject<D3Node[]>
 ): Node[] {
   if (!nodes.length) return []
 
-  // Step 1: Classify nodes
+  // --- Step 1: Classify nodes ---
   const categoryIds = new Set(
     nodes.filter(n => n.data?.entity_type === 'category').map(n => n.id)
   )
@@ -353,60 +404,162 @@ function applyHybridLayout(
   const connectedNodes = nodes.filter(n => connectedIds.has(n.id))
   const orphanNodes = nodes.filter(n => !connectedIds.has(n.id))
 
-  // Step 2: Run dagre ONLY on categories with parent edges
+  // --- Step 2: Build category hierarchy from parent edges ---
   const parentEdges = edges.filter(e => e.data?.edge_type === 'parent')
-  const categoryNodes = connectedNodes.filter(n => categoryIds.has(n.id))
-
-  const dagreGraph = new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}))
-  dagreGraph.setGraph({
-    rankdir: direction,
-    nodesep: 200,
-    ranksep: 250,
-    marginx: 50,
-    marginy: 50,
-  })
-
-  for (const node of categoryNodes) {
-    dagreGraph.setNode(node.id, { width: NODE_WIDTH, height: NODE_HEIGHT })
-  }
+  const parentToChildren = new Map<string, string[]>()
+  const childToParent = new Map<string, string>()
 
   for (const edge of parentEdges) {
-    if (categoryIds.has(edge.source) && categoryIds.has(edge.target)) {
-      dagreGraph.setEdge(edge.target, edge.source)
+    const child = edge.source
+    const parent = edge.target
+    if (categoryIds.has(child) && categoryIds.has(parent) && !childToParent.has(child)) {
+      childToParent.set(child, parent)
+      if (!parentToChildren.has(parent)) parentToChildren.set(parent, [])
+      parentToChildren.get(parent)!.push(child)
     }
   }
 
-  dagre.layout(dagreGraph)
+  // Root categories = categories with no parent in the tree
+  const rootCategories: string[] = []
+  for (const id of categoryIds) {
+    if (!childToParent.has(id)) rootCategories.push(id)
+  }
 
-  // Get category positions from dagre
+  // --- Step 3: Module-aware root sorting ---
+  // Collect module + bundle IDs per node for clustering
+  const nodeModuleMap = new Map<string, string[]>()
+  for (const node of nodes) {
+    const mods = (node.data?.modules as string[]) ?? []
+    const buns = (node.data?.bundles as string[]) ?? []
+    nodeModuleMap.set(node.id, [...mods, ...buns])
+  }
+
+  // Compute which modules appear in each root's subtree
+  function getSubtreeModules(nodeId: string): Set<string> {
+    const mods = new Set(nodeModuleMap.get(nodeId) ?? [])
+    for (const child of parentToChildren.get(nodeId) ?? []) {
+      for (const mod of getSubtreeModules(child)) mods.add(mod)
+    }
+    return mods
+  }
+
+  const rootModuleSets = new Map<string, Set<string>>()
+  for (const root of rootCategories) {
+    rootModuleSets.set(root, getSubtreeModules(root))
+  }
+
+  // Greedy nearest-neighbor: place roots sharing modules adjacent angularly
+  const sortedRoots: string[] = []
+  const remaining = new Set(rootCategories)
+
+  if (remaining.size > 0) {
+    // Start with the root that has the most module connections
+    let current = [...remaining].sort((a, b) =>
+      (rootModuleSets.get(b)?.size ?? 0) - (rootModuleSets.get(a)?.size ?? 0)
+    )[0]
+    sortedRoots.push(current)
+    remaining.delete(current)
+
+    while (remaining.size > 0) {
+      const currentMods = rootModuleSets.get(current)!
+      let bestNext: string | null = null
+      let bestOverlap = -1
+
+      for (const candidate of remaining) {
+        const candidateMods = rootModuleSets.get(candidate)!
+        let overlap = 0
+        for (const mod of candidateMods) {
+          if (currentMods.has(mod)) overlap++
+        }
+        if (overlap > bestOverlap) {
+          bestOverlap = overlap
+          bestNext = candidate
+        }
+      }
+
+      current = bestNext!
+      sortedRoots.push(current)
+      remaining.delete(current)
+    }
+  }
+
+  // --- Step 4: Subtree sizes for angular allocation ---
+  const subtreeSize = new Map<string, number>()
+  function calculateSubtreeSize(nodeId: string): number {
+    const children = parentToChildren.get(nodeId) ?? []
+    if (children.length === 0) {
+      subtreeSize.set(nodeId, 1)
+      return 1
+    }
+    let size = 0
+    for (const child of children) size += calculateSubtreeSize(child)
+    subtreeSize.set(nodeId, size)
+    return size
+  }
+  for (const root of sortedRoots) calculateSubtreeSize(root)
+  for (const id of categoryIds) {
+    if (!subtreeSize.has(id)) subtreeSize.set(id, 1)
+  }
+
+  // --- Step 5: Radial positioning of categories ---
+  const ringSpacing = 380
+  // Spread roots on a ring when there are multiple; single root stays at center
+  const rootRingRadius = sortedRoots.length > 1 ? 120 + sortedRoots.length * 30 : 0
   const categoryPositions = new Map<string, { x: number; y: number }>()
-  for (const node of categoryNodes) {
-    const dagreNode = dagreGraph.node(node.id)
-    if (dagreNode) {
-      categoryPositions.set(node.id, {
-        x: dagreNode.x - NODE_WIDTH / 2,
-        y: dagreNode.y - NODE_HEIGHT / 2,
-      })
+
+  let totalLeaves = 0
+  for (const root of sortedRoots) totalLeaves += subtreeSize.get(root) ?? 1
+  if (totalLeaves === 0) totalLeaves = 1
+
+  function positionSubtree(
+    nodeId: string,
+    depth: number,
+    startAngle: number,
+    endAngle: number,
+  ) {
+    const radius = rootRingRadius + depth * ringSpacing
+    const angle = (startAngle + endAngle) / 2
+    categoryPositions.set(nodeId, {
+      x: radius * Math.cos(angle),
+      y: radius * Math.sin(angle),
+    })
+
+    const children = parentToChildren.get(nodeId) ?? []
+    if (children.length > 0) {
+      const totalChildSize = children.reduce((sum, c) => sum + (subtreeSize.get(c) ?? 1), 0)
+      let cur = startAngle
+      for (const child of children) {
+        const childSize = subtreeSize.get(child) ?? 1
+        const range = (endAngle - startAngle) * (childSize / totalChildSize)
+        positionSubtree(child, depth + 1, cur, cur + range)
+        cur += range
+      }
     }
   }
 
-  // Step 3: Compute initial positions for non-category nodes
-  // Place them near the centroid of their connected categories
+  let angle = -Math.PI / 2 // Start from top
+  for (const root of sortedRoots) {
+    const rootSize = subtreeSize.get(root) ?? 1
+    const range = (2 * Math.PI) * (rootSize / totalLeaves)
+    positionSubtree(root, 0, angle, angle + range)
+    angle += range
+  }
+
+  // --- Step 6: Non-category initial positions (near connected category centroids) ---
   const nodeNeighborCategories = new Map<string, string[]>()
   for (const edge of edges) {
     for (const [nodeId, catId] of [[edge.source, edge.target], [edge.target, edge.source]]) {
       if (!categoryIds.has(nodeId) && categoryIds.has(catId)) {
-        if (!nodeNeighborCategories.has(nodeId)) {
-          nodeNeighborCategories.set(nodeId, [])
-        }
+        if (!nodeNeighborCategories.has(nodeId)) nodeNeighborCategories.set(nodeId, [])
         nodeNeighborCategories.get(nodeId)!.push(catId)
       }
     }
   }
 
-  // Step 4: Build d3 nodes
+  // --- Step 7: Build d3 nodes ---
   const d3Nodes: D3Node[] = connectedNodes.map((node) => {
     const isCat = categoryIds.has(node.id)
+    const mods = nodeModuleMap.get(node.id) ?? []
 
     if (isCat) {
       const pos = categoryPositions.get(node.id) ?? { x: 0, y: 0 }
@@ -417,10 +570,12 @@ function applyHybridLayout(
         targetX: pos.x,
         targetY: pos.y,
         isCategory: true,
+        modules: mods,
       }
     }
 
-    // Non-category: start near connected categories' centroid
+    // Non-category: position outward from connected categories' centroid
+    // (deeper dependencies radiate outward from center, not inward)
     const connCats = nodeNeighborCategories.get(node.id) ?? []
     let cx = 0, cy = 0
     if (connCats.length > 0) {
@@ -433,42 +588,53 @@ function applyHybridLayout(
       cy /= connCats.length
     }
 
-    // Add jitter so they don't all start at exact same point
+    // Offset target outward from graph center so dependents sit
+    // on the outside of their category cluster
+    const distFromCenter = Math.sqrt(cx * cx + cy * cy)
+    const outwardOffset = 80
+    let tx = cx, ty = cy
+    if (distFromCenter > 0) {
+      tx += (cx / distFromCenter) * outwardOffset
+      ty += (cy / distFromCenter) * outwardOffset
+    }
+
+    // Deterministic jitter so nodes don't all start at exact same point
     let hash = 0
     for (const char of node.id) {
       hash = ((hash << 5) - hash) + char.charCodeAt(0)
       hash |= 0
     }
-    const angle = (Math.abs(hash) % 360) * (Math.PI / 180)
+    const jAngle = (Math.abs(hash) % 360) * (Math.PI / 180)
     const jitter = 30 + (Math.abs(hash) % 40)
 
     return {
       id: node.id,
-      x: cx + Math.cos(angle) * jitter,
-      y: cy + Math.sin(angle) * jitter,
-      targetX: cx,
-      targetY: cy,
+      x: tx + Math.cos(jAngle) * jitter,
+      y: ty + Math.sin(jAngle) * jitter,
+      targetX: tx,
+      targetY: ty,
       isCategory: false,
+      modules: mods,
     }
   })
   d3NodesRef.current = d3Nodes
 
-  // Step 5: Create links with edge-type-aware distances
+  // --- Step 8: Edge-type-aware links ---
   const d3Links = edges
     .filter(e => connectedIds.has(e.source) && connectedIds.has(e.target))
     .map((edge) => {
       const edgeType = edge.data?.edge_type
       if (edgeType === 'parent') {
-        return { source: edge.source, target: edge.target, distance: 200, strength: 0.5 }
+        return { source: edge.source, target: edge.target, distance: ringSpacing * 0.8, strength: 0.4 }
       }
-      // Property/subobject edges: short distance, strong pull to cluster
-      return { source: edge.source, target: edge.target, distance: 70, strength: 0.8 }
+      // Property/subobject edges: tight distance, strong pull to cluster around category
+      return { source: edge.source, target: edge.target, distance: 40, strength: 0.9 }
     })
 
-  // Step 6: Force simulation with clustering behavior
+  // --- Step 9: Force simulation ---
   const simulation = forceSimulation(d3Nodes)
     .force('charge', forceManyBody().strength((d: any) =>
-      d.isCategory ? -600 : -150
+      d.isCategory ? -800 : -80
     ))
     .force(
       'link',
@@ -477,14 +643,16 @@ function applyHybridLayout(
         .distance((d: any) => d.distance)
         .strength((d: any) => d.strength)
     )
-    .force('collide', forceCollide((d: any) => d.isCategory ? 80 : 40))
-    // Pin categories strongly to dagre positions
+    .force('collide', forceCollide((d: any) => d.isCategory ? 100 : 25))
+    // Pin categories to radial positions; push non-categories outward from center
     .force('targetX', forceX((d: any) => d.targetX).strength((d: any) =>
-      d.isCategory ? 0.9 : 0.05
+      d.isCategory ? 0.5 : 0.15
     ))
     .force('targetY', forceY((d: any) => d.targetY).strength((d: any) =>
-      d.isCategory ? 0.9 : 0.05
+      d.isCategory ? 0.5 : 0.15
     ))
+    // Module/bundle clustering — pulls same-group nodes together
+    .force('moduleClustering', createModuleClusterForce(0.22) as any)
     .alphaDecay(0.02)
     .stop()
 
@@ -509,7 +677,7 @@ function applyHybridLayout(
     }
   })
 
-  // Step 7: Position orphan nodes in a grid below
+  // Position orphan nodes in a grid below
   let maxY = -Infinity
   for (const node of positionedConnected) {
     maxY = Math.max(maxY, node.position.y + NODE_HEIGHT)

@@ -77,8 +77,9 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
   }
   const displayData = data ?? prevDataRef.current
 
-  // Get hovered node for edge highlighting
+  // Get hovered node/module for edge highlighting
   const hoveredNodeId = useGraphStore((s) => s.hoveredNodeId)
+  const hoveredModuleId = useGraphStore((s) => s.hoveredModuleId)
 
   // Convert API response to React Flow format
   // Non-category nodes (properties, subobjects, etc.) are duplicated per connected
@@ -178,6 +179,11 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
 
       for (const { catId, edge } of catEdges) {
         const cloneId = `${nodeId}__${catId}`
+        // Inherit the connected category's module/bundle membership so the
+        // clone appears inside the category's hull
+        const catNode = nodeMap.get(catId)
+        const mergedModules = [...new Set([...(node.modules ?? []), ...(catNode?.modules ?? [])])]
+        const mergedBundles = [...new Set([...(node.bundles ?? []), ...(catNode?.bundles ?? [])])]
         nodes.push({
           id: cloneId,
           type: 'entity',
@@ -187,8 +193,8 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
             node_id: cloneId,
             entity_key: node.id,
             entity_type: node.entity_type,
-            modules: node.modules,
-            bundles: node.bundles,
+            modules: mergedModules,
+            bundles: mergedBundles,
             change_status: node.change_status,
           },
         })
@@ -288,6 +294,11 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
       }
     }
 
+    // Build node lookup map for O(1) access in edge styling
+    const nodeById = hoveredModuleId
+      ? new Map(initialNodes.map(n => [n.id, n]))
+      : null
+
     return rawEdges.map((edge) => {
       const edgeType = edge.data?.edge_type as string
       const changeStatus = edge.data?.change_status as string | undefined
@@ -306,7 +317,19 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
 
       let opacity = 0.7
       let strokeWidth = 1.5
-      if (hoveredNodeId) {
+      if (hoveredModuleId && nodeById) {
+        // When hovering a module in sidebar, highlight edges between module members
+        const sourceNode = nodeById.get(edge.source)
+        const targetNode = nodeById.get(edge.target)
+        const sourceInModule = sourceNode &&
+          (((sourceNode.data.modules as string[]) ?? []).includes(hoveredModuleId) ||
+           ((sourceNode.data.bundles as string[]) ?? []).includes(hoveredModuleId))
+        const targetInModule = targetNode &&
+          (((targetNode.data.modules as string[]) ?? []).includes(hoveredModuleId) ||
+           ((targetNode.data.bundles as string[]) ?? []).includes(hoveredModuleId))
+        if (sourceInModule && targetInModule) { opacity = 1; strokeWidth = 2.5 }
+        else { opacity = 0.08 }
+      } else if (hoveredNodeId) {
         if (isConnectedToHovered) { opacity = 1; strokeWidth = 2.5 }
         else { opacity = 0.15 }
       } else if (selectedCloneIds.size > 0) {
@@ -330,7 +353,7 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
         },
       }
     })
-  }, [rawEdges, hoveredNodeId, selectedEntityKey])
+  }, [rawEdges, hoveredNodeId, hoveredModuleId, selectedEntityKey, initialNodes])
 
   // Apply layout based on selected algorithm
   const { nodes, isRunning, restartSimulation } = useHybridLayout(

@@ -31,6 +31,7 @@ import { CreateEntityModal } from '@/components/entity/modals/CreateEntityModal'
 import { NestedModalStack } from '@/components/entity/modals/NestedModalStack'
 import { DeleteConfirmation } from '@/components/entity/DeleteConfirmation'
 import { DeletedItemBadge } from '@/components/entity/form/DeletedItemBadge'
+import { getModuleColor } from '@/components/graph/HullLayer'
 import { CategoryForm } from '@/components/entity/forms/CategoryForm'
 import { PropertyForm } from '@/components/entity/forms/PropertyForm'
 import { SubobjectForm } from '@/components/entity/forms/SubobjectForm'
@@ -100,8 +101,10 @@ function EntitySection({
   deletedEntityChanges,
 }: EntitySectionProps) {
   const setSelectedEntity = useGraphStore((state) => state.setSelectedEntity)
+  const setHoveredModule = useGraphStore((state) => state.setHoveredModule)
   const directEdits = useDraftStore((s) => s.directlyEditedEntities)
   const transitiveAffects = useDraftStore((s) => s.transitivelyAffectedEntities)
+  const isModuleOrBundle = entityType === 'module' || entityType === 'bundle'
   const filteredEntities = useSearchFilter(searchTerm, entities)
   const tree = useMemo(
     () => treeMode ? buildTree(filteredEntities) : null,
@@ -179,7 +182,15 @@ function EntitySection({
                     !isDirectEdit && isTransitiveEffect && 'bg-blue-50 dark:bg-blue-900/10',
                     isDeleted && 'line-through text-muted-foreground'
                   )}
+                  onMouseEnter={isModuleOrBundle ? () => setHoveredModule(entity.entity_key) : undefined}
+                  onMouseLeave={isModuleOrBundle ? () => setHoveredModule(null) : undefined}
                 >
+                  {isModuleOrBundle && (
+                    <div
+                      className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
+                      style={{ backgroundColor: getModuleColor(entity.entity_key), opacity: 0.8 }}
+                    />
+                  )}
                   <button
                     onClick={() => setSelectedEntity(entity.entity_key, entityType)}
                     className="flex-1 truncate text-left"

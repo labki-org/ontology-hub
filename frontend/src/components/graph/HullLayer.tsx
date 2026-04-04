@@ -118,7 +118,7 @@ export function HullLayer({ nodes, viewport }: HullLayerProps) {
             color={getModuleColor(bundleId)}
             hullType="bundle"
             memberField="bundles"
-            padding={65}
+            padding={45}
           />
         ))}
         {/* Module hulls on top */}

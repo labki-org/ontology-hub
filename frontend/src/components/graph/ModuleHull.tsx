@@ -7,6 +7,9 @@ import type { Node } from '@xyflow/react'
 const NODE_WIDTH = 172
 const NODE_HEIGHT = 36
 
+/** Distance threshold for splitting a module's nodes into spatial sub-clusters. */
+const CLUSTER_THRESHOLD = 400
+
 interface ModuleHullProps {
   moduleId: string
   nodes: Node[]
@@ -58,72 +61,123 @@ type HullShape =
   | { type: 'path'; d: string }
 
 /**
- * Renders a convex hull around all nodes belonging to a module or bundle.
+ * Cluster nodes by spatial proximity using single-linkage clustering.
+ * Nodes within `threshold` distance (center-to-center) are chained into
+ * the same cluster.  This splits far-flung module members into separate
+ * tight hulls instead of one bloated convex hull.
+ */
+function clusterByProximity(moduleNodes: Node[], threshold: number): Node[][] {
+  const clusters: Node[][] = []
+  const assigned = new Set<number>()
+
+  for (let i = 0; i < moduleNodes.length; i++) {
+    if (assigned.has(i)) continue
+    const cluster: Node[] = [moduleNodes[i]]
+    assigned.add(i)
+    const queue = [i]
+
+    while (queue.length > 0) {
+      const ci = queue.shift()!
+      const cn = moduleNodes[ci]
+      const cx = cn.position.x + NODE_WIDTH / 2
+      const cy = cn.position.y + NODE_HEIGHT / 2
+
+      for (let j = 0; j < moduleNodes.length; j++) {
+        if (assigned.has(j)) continue
+        const jn = moduleNodes[j]
+        const jx = jn.position.x + NODE_WIDTH / 2
+        const jy = jn.position.y + NODE_HEIGHT / 2
+        if (Math.sqrt((cx - jx) ** 2 + (cy - jy) ** 2) < threshold) {
+          cluster.push(jn)
+          assigned.add(j)
+          queue.push(j)
+        }
+      }
+    }
+
+    clusters.push(cluster)
+  }
+
+  return clusters
+}
+
+/**
+ * Compute the hull shape for a single spatial cluster of nodes.
+ */
+function computeClusterShape(clusterNodes: Node[], padding: number): HullShape | null {
+  if (clusterNodes.length === 0) return null
+
+  if (clusterNodes.length === 1) {
+    const n = clusterNodes[0]
+    return {
+      type: 'ellipse' as const,
+      cx: n.position.x + NODE_WIDTH / 2,
+      cy: n.position.y + NODE_HEIGHT / 2,
+      rx: NODE_WIDTH / 2 + padding,
+      ry: NODE_HEIGHT / 2 + padding,
+    }
+  }
+
+  if (clusterNodes.length === 2) {
+    const minX = Math.min(clusterNodes[0].position.x, clusterNodes[1].position.x)
+    const maxX = Math.max(clusterNodes[0].position.x, clusterNodes[1].position.x) + NODE_WIDTH
+    const minY = Math.min(clusterNodes[0].position.y, clusterNodes[1].position.y)
+    const maxY = Math.max(clusterNodes[0].position.y, clusterNodes[1].position.y) + NODE_HEIGHT
+    return {
+      type: 'ellipse' as const,
+      cx: (minX + maxX) / 2,
+      cy: (minY + maxY) / 2,
+      rx: (maxX - minX) / 2 + padding,
+      ry: (maxY - minY) / 2 + padding,
+    }
+  }
+
+  const paddedCorners: [number, number][] = clusterNodes.flatMap((n) => getPaddedNodeCorners(n, padding))
+  const path = getSmoothHullPath(paddedCorners)
+  if (!path) return null
+  return { type: 'path' as const, d: path }
+}
+
+/**
+ * Renders hull(s) around nodes belonging to a module or bundle.
  *
- * - Module hulls: solid fill + solid border (current style)
+ * When a module's members are spatially dispersed, they are split into
+ * proximity-based sub-clusters and each cluster gets its own tight hull.
+ * This avoids giant convex hulls that balloon across unrelated nodes.
+ *
+ * - Module hulls: light fill + solid border
  * - Bundle hulls: no fill, dashed border
  */
 export function ModuleHull({
   moduleId,
   nodes,
   color,
-  padding = 50,
+  padding = 30,
   hullType = 'module',
   memberField = 'modules',
 }: ModuleHullProps) {
-  const hullShape = useMemo((): HullShape | null => {
-    // Filter nodes belonging to this module/bundle
-    const moduleNodes = nodes.filter(
+  // Filter nodes belonging to this module/bundle (shared by hull + label)
+  const moduleNodes = useMemo(
+    () => nodes.filter(
       (n) => n.data[memberField] && Array.isArray(n.data[memberField]) &&
         (n.data[memberField] as string[]).includes(moduleId)
-    )
+    ),
+    [moduleId, nodes, memberField]
+  )
 
-    if (moduleNodes.length === 0) return null
+  const hullShapes = useMemo((): HullShape[] => {
+    if (moduleNodes.length === 0) return []
 
-    // Single node: ellipse around node bounds
-    if (moduleNodes.length === 1) {
-      const n = moduleNodes[0]
-      const cx = n.position.x + NODE_WIDTH / 2
-      const cy = n.position.y + NODE_HEIGHT / 2
-      return {
-        type: 'ellipse' as const,
-        cx,
-        cy,
-        rx: NODE_WIDTH / 2 + padding,
-        ry: NODE_HEIGHT / 2 + padding,
-      }
-    }
+    // Split into spatial clusters — each gets its own tight hull
+    const clusters = clusterByProximity(moduleNodes, CLUSTER_THRESHOLD)
 
-    // Two nodes: ellipse around combined bounds
-    if (moduleNodes.length === 2) {
-      const minX = Math.min(moduleNodes[0].position.x, moduleNodes[1].position.x)
-      const maxX = Math.max(moduleNodes[0].position.x, moduleNodes[1].position.x) + NODE_WIDTH
-      const minY = Math.min(moduleNodes[0].position.y, moduleNodes[1].position.y)
-      const maxY = Math.max(moduleNodes[0].position.y, moduleNodes[1].position.y) + NODE_HEIGHT
-      const cx = (minX + maxX) / 2
-      const cy = (minY + maxY) / 2
-      return {
-        type: 'ellipse' as const,
-        cx,
-        cy,
-        rx: (maxX - minX) / 2 + padding,
-        ry: (maxY - minY) / 2 + padding,
-      }
-    }
+    return clusters
+      .map((cluster) => computeClusterShape(cluster, padding))
+      .filter((shape): shape is HullShape => shape !== null)
+  }, [moduleNodes, padding])
 
-    // 3+ nodes: smooth hull path from padded bounding box corners
-    const paddedCorners: [number, number][] = moduleNodes.flatMap((n) => getPaddedNodeCorners(n, padding))
-    const path = getSmoothHullPath(paddedCorners)
-    if (!path) return null
-    return { type: 'path' as const, d: path }
-  }, [moduleId, nodes, padding, memberField])
-
-  // Compute label position above the hull
+  // Compute label position above the topmost cluster
   const labelPosition = useMemo(() => {
-    const moduleNodes = nodes.filter(
-      (n) => n.data[memberField] && Array.isArray(n.data[memberField]) &&
-        (n.data[memberField] as string[]).includes(moduleId)
-    )
     if (moduleNodes.length === 0) return null
 
     const minX = Math.min(...moduleNodes.map((n) => n.position.x))
@@ -132,79 +186,67 @@ export function ModuleHull({
     const cx = (minX + maxX) / 2
 
     return { x: cx, y: minY - padding - 15 }
-  }, [moduleId, nodes, padding, memberField])
+  }, [moduleNodes, padding])
 
-  if (!hullShape) return null
+  if (hullShapes.length === 0) return null
 
   // Style based on hull type
   const isBundle = hullType === 'bundle'
-  const fillOpacity = isBundle ? 0 : 0.15
-  const strokeOpacity = isBundle ? 0.35 : 0.4
-  const strokeWidth = isBundle ? 1.5 : 2
-  const strokeDasharray = isBundle ? '6 4' : undefined
-
-  const shapeElement = (() => {
-    if (hullShape.type === 'ellipse') {
-      return (
-        <ellipse
-          cx={hullShape.cx}
-          cy={hullShape.cy}
-          rx={hullShape.rx}
-          ry={hullShape.ry}
-          fill={color}
-          fillOpacity={fillOpacity}
-          stroke={color}
-          strokeWidth={strokeWidth}
-          strokeOpacity={strokeOpacity}
-          strokeDasharray={strokeDasharray}
-          pointerEvents="none"
-        />
-      )
-    }
-
-    if (hullShape.type === 'circle') {
-      return (
-        <circle
-          cx={hullShape.cx}
-          cy={hullShape.cy}
-          r={hullShape.r}
-          fill={color}
-          fillOpacity={fillOpacity}
-          stroke={color}
-          strokeWidth={strokeWidth}
-          strokeOpacity={strokeOpacity}
-          strokeDasharray={strokeDasharray}
-          pointerEvents="none"
-        />
-      )
-    }
-
-    // path type (convex hull)
-    return (
-      <path
-        d={hullShape.d}
-        fill={color}
-        fillOpacity={fillOpacity}
-        stroke={color}
-        strokeWidth={strokeWidth}
-        strokeOpacity={strokeOpacity}
-        strokeDasharray={strokeDasharray}
-        pointerEvents="none"
-      />
-    )
-  })()
+  const commonProps = {
+    fill: color,
+    fillOpacity: isBundle ? 0 : 0.07,
+    stroke: color,
+    strokeWidth: isBundle ? 1.5 : 2,
+    strokeOpacity: isBundle ? 0.35 : 0.4,
+    strokeDasharray: isBundle ? '6 4' : undefined,
+    pointerEvents: 'none' as const,
+  }
 
   return (
     <>
-      {shapeElement}
+      {hullShapes.map((hullShape, i) => {
+        if (hullShape.type === 'ellipse') {
+          return (
+            <ellipse
+              key={i}
+              cx={hullShape.cx}
+              cy={hullShape.cy}
+              rx={hullShape.rx}
+              ry={hullShape.ry}
+              {...commonProps}
+            />
+          )
+        }
+
+        if (hullShape.type === 'circle') {
+          return (
+            <circle
+              key={i}
+              cx={hullShape.cx}
+              cy={hullShape.cy}
+              r={hullShape.r}
+              {...commonProps}
+            />
+          )
+        }
+
+        // path type (convex hull per cluster)
+        return (
+          <path
+            key={i}
+            d={hullShape.d}
+            {...commonProps}
+          />
+        )
+      })}
       {labelPosition && (
         <text
           x={labelPosition.x}
           y={labelPosition.y}
           textAnchor="middle"
           fill={color}
-          fontSize={isBundle ? 10 : 11}
-          fontWeight={isBundle ? 400 : 500}
+          fontSize={isBundle ? 13 : 14}
+          fontWeight={isBundle ? 500 : 600}
           fontStyle={isBundle ? 'italic' : 'normal'}
           opacity={isBundle ? 0.6 : 0.8}
           pointerEvents="none"

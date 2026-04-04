@@ -81,8 +81,8 @@ export function GraphControls({ onResetLayout, isSimulating }: GraphControlsProp
                 </Select>
               </div>
 
-              {/* Hide direction selector for radial layout (it has no direction) */}
-              {layoutAlgorithm !== 'radial' && (
+              {/* Hide direction selector for radial/hybrid layouts (they expand radially) */}
+              {layoutAlgorithm !== 'radial' && layoutAlgorithm !== 'hybrid' && (
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-medium text-muted-foreground">Direction:</span>
                   <Select

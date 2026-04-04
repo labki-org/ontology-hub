@@ -8,6 +8,7 @@ type GraphNodeData = {
   entity_key: string
   entity_type: string
   modules?: string[]
+  bundles?: string[]
   change_status?: 'added' | 'modified' | 'deleted' | 'unchanged'
   [key: string]: unknown
 }
@@ -158,6 +159,7 @@ function GraphNodeComponent({ data }: { data: GraphNodeData }) {
   const setSelectedEntity = useGraphStore((s) => s.setSelectedEntity)
   const selectedEntityKey = useGraphStore((s) => s.selectedEntityKey)
   const hoveredNodeId = useGraphStore((s) => s.hoveredNodeId)
+  const hoveredModuleId = useGraphStore((s) => s.hoveredModuleId)
 
   // Change propagation state
   const directEdits = useDraftStore((s) => s.directlyEditedEntities)
@@ -210,7 +212,15 @@ function GraphNodeComponent({ data }: { data: GraphNodeData }) {
   }, [selectedEntityKey, hoveredNodeId, edges])
 
   const getOpacity = (): number => {
-    // Hover takes priority over selection
+    // Module hover: highlight nodes belonging to the hovered module
+    if (hoveredModuleId) {
+      const modules = data.modules ?? []
+      const bundles = data.bundles ?? []
+      if (modules.includes(hoveredModuleId) || bundles.includes(hoveredModuleId)) return 1
+      return 0.15
+    }
+
+    // Node hover takes priority over selection
     if (focusNodeId) {
       if (nodeId === focusNodeId) return 1
       const isConnected = edges.some(

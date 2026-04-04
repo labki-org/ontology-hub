@@ -15,6 +15,7 @@ interface GraphState {
   selectedEntityType: string
   expandedNodes: Set<string>
   hoveredNodeId: string | null
+  hoveredModuleId: string | null
 
   // Current graph data (populated by GraphCanvas when graph loads)
   nodes: GraphNode[]
@@ -35,6 +36,7 @@ interface GraphState {
   setSelectedEntity: (key: string | null, entityType?: string) => void
   toggleNodeExpanded: (key: string) => void
   setHoveredNode: (key: string | null) => void
+  setHoveredModule: (key: string | null) => void
   setGraphData: (nodes: GraphNode[], edges: GraphEdge[]) => void
   setDepth: (depth: number) => void
   toggleEntityType: (type: 'property' | 'subobject' | 'template') => void
@@ -49,6 +51,7 @@ const initialState = {
   selectedEntityType: 'category',
   expandedNodes: new Set<string>(),
   hoveredNodeId: null as string | null,
+  hoveredModuleId: null as string | null,
   nodes: [] as GraphNode[],
   edges: [] as GraphEdge[],
   depth: 2,
@@ -84,6 +87,14 @@ export const useGraphStore = create<GraphState>()(
     setHoveredNode: (key) => {
       set((state) => {
         state.hoveredNodeId = key
+      })
+    },
+
+    setHoveredModule: (key) => {
+      set((state) => {
+        if (state.hoveredModuleId !== key) {
+          state.hoveredModuleId = key
+        }
       })
     },
 
@@ -141,6 +152,7 @@ export const useGraphStore = create<GraphState>()(
         state.selectedEntityType = 'category'
         state.expandedNodes = new Set<string>()
         state.hoveredNodeId = null
+        state.hoveredModuleId = null
         state.nodes = []
         state.edges = []
         state.depth = 2
