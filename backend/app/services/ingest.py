@@ -1,8 +1,13 @@
 """v2.0 ingest service for populating database from labki-ontology repo."""
 
+import asyncio
+import json
 import logging
+import shutil
+import tempfile
 import time
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from sqlalchemy import delete, select
@@ -34,7 +39,6 @@ from app.models.v2 import (
     # Mat view refresh
     refresh_category_property_effective,
 )
-from app.services.github import GitHubClient
 from app.services.parsers import EntityParser, ParsedEntities, PendingRelationship
 from app.services.parsers.wikitext_parser import (
     parse_wikitext,
@@ -62,94 +66,79 @@ class IngestService:
 
     def __init__(
         self,
-        github_client: GitHubClient,
         session: AsyncSession,
     ):
-        self._github = github_client
         self._session = session
         self._warnings: list[str] = []
         self._errors: list[str] = []
 
-    async def load_entity_files(
+    def load_entity_files_from_disk(
         self,
-        owner: str,
-        repo: str,
-        ref: str,
+        repo_path: Path,
     ) -> dict[str, list[tuple[str, dict]]]:
-        """Load all entity files from repo (.wikitext, .vocab.json, .json).
+        """Load all entity files from a local clone (.wikitext, .json).
 
         Wikitext files are parsed into structured dicts via wikitext_parser.
-        Module vocab.json files are parsed for module metadata.
-        Bundle .json files are loaded as-is.
+        JSON files (modules, bundles) are loaded as-is.
 
         Returns:
             {entity_type: [(source_path, content_dict), ...]}
         """
-        tree_entries = await self._github.get_repository_tree(owner, repo, ref)
-
         files: dict[str, list[tuple[str, dict]]] = {key: [] for key in ENTITY_DIRECTORIES}
 
-        for entry in tree_entries:
-            path = entry.get("path", "")
-            parts = path.split("/")
-
-            if len(parts) < 2:
+        for directory, file_type in ENTITY_DIRECTORIES.items():
+            dir_path = repo_path / directory
+            if not dir_path.exists():
                 continue
 
-            directory = parts[0]
-            filename = parts[-1]
+            if file_type == "wikitext":
+                for wikitext_path in sorted(dir_path.rglob("*.wikitext")):
+                    rel_path = wikitext_path.relative_to(repo_path)
+                    parts = rel_path.parts
 
-            if directory not in files:
-                continue
-
-            file_type = ENTITY_DIRECTORIES.get(directory)
-
-            # ── Wikitext entities ──
-            if file_type == "wikitext" and filename.endswith(".wikitext"):
-                # Allow nested paths for templates, resources, dashboards
-                # e.g. templates/Property/Page.wikitext, dashboards/Core_overview/Setup.wikitext
-                if len(parts) != 2 and directory not in (
-                    "templates",
-                    "resources",
-                    "dashboards",
-                ):
-                    continue
-
-                # Derive entity key from path
-                entity_key = "/".join(parts[1:]).removesuffix(".wikitext")
-
-                try:
-                    raw = await self._github.get_file_content_raw(owner, repo, path, ref=ref)
-
-                    # Dashboards: assemble multi-page structure
-                    if directory == "dashboards":
-                        # For dashboards, we assemble pages into a single entity later
-                        # Store raw wikitext with a special marker for post-processing
-                        page_name = entity_key.split("/", 1)[1] if "/" in entity_key else ""
-                        dashboard_id = entity_key.split("/")[0]
-                        content = {
-                            "_dashboard_id": dashboard_id,
-                            "_page_name": page_name,
-                            "_wikitext": raw,
-                        }
-                        files[directory].append((path, content))
+                    # Skip deeply nested files for non-nested dirs
+                    if len(parts) != 2 and directory not in (
+                        "templates",
+                        "resources",
+                        "dashboards",
+                    ):
                         continue
 
-                    # Parse wikitext to structured dict
-                    content = parse_wikitext(raw, directory, entity_key)
-                    files[directory].append((path, content))
-                except Exception as e:
-                    self._warnings.append(f"Failed to load {path}: {e}")
+                    entity_key = "/".join(parts[1:]).removesuffix(".wikitext")
 
-            # ── JSON (modules, bundles) ──
-            elif file_type == "json" and filename.endswith(".json"):
-                if len(parts) != 2:
-                    continue
-                try:
-                    content = await self._github.get_file_content(owner, repo, path, ref=ref)
-                    files[directory].append((path, content))
-                except Exception as e:
-                    self._warnings.append(f"Failed to load {path}: {e}")
+                    try:
+                        raw = wikitext_path.read_text(encoding="utf-8")
+
+                        # Dashboards: assemble multi-page structure
+                        if directory == "dashboards":
+                            page_name = entity_key.split("/", 1)[1] if "/" in entity_key else ""
+                            dashboard_id = entity_key.split("/")[0]
+                            content: dict[str, Any] = {
+                                "_dashboard_id": dashboard_id,
+                                "_page_name": page_name,
+                                "_wikitext": raw,
+                            }
+                            files[directory].append((str(rel_path), content))
+                            continue
+
+                        content = parse_wikitext(raw, directory, entity_key)
+                        files[directory].append((str(rel_path), content))
+                    except Exception as e:
+                        self._warnings.append(f"Failed to load {rel_path}: {e}")
+
+            elif file_type == "json":
+                for json_path in sorted(dir_path.glob("*.json")):
+                    rel_path = json_path.relative_to(repo_path)
+                    parts = rel_path.parts
+
+                    if len(parts) != 2:
+                        continue
+
+                    try:
+                        content = json.loads(json_path.read_text(encoding="utf-8"))
+                        files[directory].append((str(rel_path), content))
+                    except Exception as e:
+                        self._warnings.append(f"Failed to load {rel_path}: {e}")
 
         # Post-process dashboards: assemble multi-page structures
         files["dashboards"] = self._assemble_dashboards(files["dashboards"])
@@ -394,22 +383,56 @@ class IngestService:
         await refresh_category_property_effective(self._session)
 
 
+async def clone_repo(owner: str, repo: str, token: str | None, dest: str) -> str:
+    """Shallow-clone a GitHub repo into dest. Returns the HEAD commit SHA."""
+    if token:
+        repo_url = f"https://x-access-token:{token}@github.com/{owner}/{repo}.git"
+    else:
+        repo_url = f"https://github.com/{owner}/{repo}.git"
+
+    proc = await asyncio.create_subprocess_exec(
+        "git",
+        "clone",
+        "--depth",
+        "1",
+        repo_url,
+        dest,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    _, stderr = await proc.communicate()
+    if proc.returncode != 0:
+        raise RuntimeError(f"git clone failed: {stderr.decode()}")
+
+    proc = await asyncio.create_subprocess_exec(
+        "git",
+        "-C",
+        dest,
+        "rev-parse",
+        "HEAD",
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, _ = await proc.communicate()
+    return stdout.decode().strip()
+
+
 async def sync_repository_v2(
-    github_client: GitHubClient,
     session: AsyncSession,
     owner: str,
     repo: str,
+    github_token: str | None = None,
 ) -> dict[str, Any]:
-    """Perform full v2.0 repository sync from GitHub to database.
+    """Perform full v2.0 repository sync by cloning the repo locally.
 
-    Fetches all entity files, validates against schemas, parses entities,
+    Shallow-clones the repo, reads entity files from disk, parses entities,
     atomically replaces all canonical data, and refreshes mat view.
 
     Args:
-        github_client: Configured GitHubClient
         session: SQLModel async session
         owner: Repository owner
         repo: Repository name
+        github_token: GitHub token (required for private repos)
 
     Returns:
         Dict with sync stats: commit_sha, entity_counts, warnings, errors, duration
@@ -427,98 +450,96 @@ async def sync_repository_v2(
         existing_version.ingest_status = IngestStatus.IN_PROGRESS
         await session.commit()
 
-    service = IngestService(github_client, session)
+    service = IngestService(session)
+    tmpdir = tempfile.mkdtemp(prefix="ontology-sync-")
 
-    # 1. Get latest commit SHA
-    commit_sha = await github_client.get_latest_commit_sha(owner, repo)
-    logger.info("Syncing to commit %s", commit_sha)
+    try:
+        # 1. Shallow clone and get commit SHA
+        commit_sha = await clone_repo(owner, repo, github_token, tmpdir)
+        logger.info("Cloned to %s at commit %s", tmpdir, commit_sha)
 
-    # 2. Load entity files (wikitext + vocab.json + json)
-    entity_files = await service.load_entity_files(owner, repo, commit_sha)
-    total_files = sum(len(files) for files in entity_files.values())
-    logger.info("Loaded %d entity files", total_files)
+        # 2. Load entity files from disk
+        entity_files = service.load_entity_files_from_disk(Path(tmpdir))
+        total_files = sum(len(files) for files in entity_files.values())
+        logger.info("Loaded %d entity files from disk", total_files)
 
-    # 3. Validate parsed entities (basic structural checks)
-    # Wikitext files are already parsed into structured dicts by the loader.
-    # JSON Schema validation is no longer needed since the source format is wikitext.
-    validation_errors: list[str] = []
-    for _entity_type, files_list in entity_files.items():
-        for path, content in files_list:
-            if not content.get("id"):
-                validation_errors.append(f"{path}: missing 'id' field")
+        # 3. Validate parsed entities (basic structural checks)
+        validation_errors: list[str] = []
+        for _entity_type, files_list in entity_files.items():
+            for path, content in files_list:
+                if not content.get("id"):
+                    validation_errors.append(f"{path}: missing 'id' field")
 
-    if validation_errors:
-        # Log errors and abort - don't ingest invalid data
-        for error in validation_errors[:10]:  # Log first 10
-            logger.error("Validation error: %s", error)
-        if len(validation_errors) > 10:
-            logger.error("... and %d more validation errors", len(validation_errors) - 10)
+        if validation_errors:
+            for error in validation_errors[:10]:
+                logger.error("Validation error: %s", error)
+            if len(validation_errors) > 10:
+                logger.error("... and %d more validation errors", len(validation_errors) - 10)
 
-        # Create failed OntologyVersion record
+            version = OntologyVersion(
+                commit_sha=commit_sha,
+                ingest_status=IngestStatus.FAILED,
+                errors=validation_errors,
+            )
+            session.add(version)
+            await session.commit()
+
+            return {
+                "commit_sha": commit_sha,
+                "status": "failed",
+                "errors": validation_errors,
+                "duration": time.time() - start_time,
+            }
+
+        # 4. Parse all entities
+        parser = EntityParser()
+        parsed = parser.parse_all(entity_files)
+        logger.info("Parsed entities: %s", parsed.entity_counts())
+
+        # 5. Replace canonical data
+        await service.delete_all_canonical()
+        logger.info("Deleted existing canonical data")
+
+        await service.insert_entities(parsed)
+        logger.info("Inserted entities")
+
+        await service.resolve_and_insert_relationships(parsed.relationships)
+        logger.info("Inserted relationships")
+
         version = OntologyVersion(
             commit_sha=commit_sha,
-            ingest_status=IngestStatus.FAILED,
-            errors=validation_errors,
+            ingest_status=IngestStatus.COMPLETED,
+            entity_counts=parsed.entity_counts(),
+            warnings=service._warnings if service._warnings else None,
+            ingested_at=datetime.utcnow(),
         )
         session.add(version)
+
         await session.commit()
+
+        # 6. Refresh mat view (must be separate transaction)
+        try:
+            await service.refresh_mat_view()
+            logger.info("Refreshed category_property_effective mat view")
+        except Exception as e:
+            logger.warning("Mat view refresh failed (non-blocking): %s", e)
+            service._warnings.append(f"Mat view refresh failed: {e}")
+
+        duration = time.time() - start_time
+        logger.info(
+            "v2.0 sync complete in %.2fs: %s, %d warnings",
+            duration,
+            parsed.entity_counts(),
+            len(service._warnings),
+        )
 
         return {
             "commit_sha": commit_sha,
-            "status": "failed",
-            "errors": validation_errors,
-            "duration": time.time() - start_time,
+            "status": "completed",
+            "entity_counts": parsed.entity_counts(),
+            "warnings": service._warnings if service._warnings else None,
+            "duration": duration,
         }
 
-    # 5. Parse all entities
-    parser = EntityParser()
-    parsed = parser.parse_all(entity_files)
-    logger.info(
-        "Parsed entities: %s",
-        parsed.entity_counts(),
-    )
-
-    # 6. Replace canonical data
-    await service.delete_all_canonical()
-    logger.info("Deleted existing canonical data")
-
-    await service.insert_entities(parsed)
-    logger.info("Inserted entities")
-
-    await service.resolve_and_insert_relationships(parsed.relationships)
-    logger.info("Inserted relationships")
-
-    version = OntologyVersion(
-        commit_sha=commit_sha,
-        ingest_status=IngestStatus.COMPLETED,
-        entity_counts=parsed.entity_counts(),
-        warnings=service._warnings if service._warnings else None,
-        ingested_at=datetime.utcnow(),
-    )
-    session.add(version)
-
-    await session.commit()
-
-    # 7. Refresh mat view (must be separate transaction)
-    try:
-        await service.refresh_mat_view()
-        logger.info("Refreshed category_property_effective mat view")
-    except Exception as e:
-        logger.warning("Mat view refresh failed (non-blocking): %s", e)
-        service._warnings.append(f"Mat view refresh failed: {e}")
-
-    duration = time.time() - start_time
-    logger.info(
-        "v2.0 sync complete in %.2fs: %s, %d warnings",
-        duration,
-        parsed.entity_counts(),
-        len(service._warnings),
-    )
-
-    return {
-        "commit_sha": commit_sha,
-        "status": "completed",
-        "entity_counts": parsed.entity_counts(),
-        "warnings": service._warnings if service._warnings else None,
-        "duration": duration,
-    }
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)

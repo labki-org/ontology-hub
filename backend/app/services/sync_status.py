@@ -10,7 +10,6 @@ import asyncio
 import logging
 import time
 from dataclasses import dataclass
-from typing import Any
 
 from sqlalchemy import select
 from sqlmodel import col
@@ -70,11 +69,8 @@ async def get_cached_github_sha(
         return None, error_msg
 
 
-async def run_sync_with_lock(httpx_client: Any) -> bool:
+async def run_sync_with_lock() -> bool:
     """Run a full sync+rebase, protected by the module-level lock.
-
-    Args:
-        httpx_client: Pre-configured httpx.AsyncClient from app.state
 
     Returns:
         True if sync was started, False if another sync is already running.
@@ -84,7 +80,6 @@ async def run_sync_with_lock(httpx_client: Any) -> bool:
         return False
 
     async with _sync_lock, async_session_maker() as session:
-        github_client = GitHubClient(httpx_client)
         try:
             # Get previous commit SHA for draft rebase
             prev_version = (
@@ -100,10 +95,10 @@ async def run_sync_with_lock(httpx_client: Any) -> bool:
 
             # Run sync
             result = await sync_repository_v2(
-                github_client=github_client,
                 session=session,
                 owner=settings.GITHUB_REPO_OWNER,
                 repo=settings.GITHUB_REPO_NAME,
+                github_token=settings.GITHUB_TOKEN,
             )
             logger.info("Sync complete: %s", result)
 

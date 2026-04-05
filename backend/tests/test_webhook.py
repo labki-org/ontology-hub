@@ -11,7 +11,7 @@ Tests webhook signature verification, event handling, and background sync trigge
 import hashlib
 import hmac
 import json
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 import pytest
 from httpx import AsyncClient
@@ -150,20 +150,13 @@ class TestPushEventHandling:
             mock_settings.GITHUB_REPO_OWNER = "test-owner"
             mock_settings.GITHUB_REPO_NAME = "test-repo"
 
-            # Set the httpx client directly on app state
-            app = client._transport.app
-            original_value = getattr(app.state, "github_http_client", None)
-            app.state.github_http_client = AsyncMock()
-            try:
-                response = await client.post(
-                    "/api/v1/webhooks/github",
-                    json=payload,
-                    headers={
-                        "x-github-event": "push",
-                    },
-                )
-            finally:
-                app.state.github_http_client = original_value
+            response = await client.post(
+                "/api/v1/webhooks/github",
+                json=payload,
+                headers={
+                    "x-github-event": "push",
+                },
+            )
 
         assert response.status_code == 200
         data = response.json()
@@ -197,17 +190,11 @@ class TestPushEventHandling:
             mock_settings.GITHUB_REPO_OWNER = "test"
             mock_settings.GITHUB_REPO_NAME = "repo"
 
-            app = client._transport.app
-            original_value = getattr(app.state, "github_http_client", None)
-            app.state.github_http_client = AsyncMock()
-            try:
-                response = await client.post(
-                    "/api/v1/webhooks/github",
-                    json=payload,
-                    headers={"x-github-event": "push"},
-                )
-            finally:
-                app.state.github_http_client = original_value
+            response = await client.post(
+                "/api/v1/webhooks/github",
+                json=payload,
+                headers={"x-github-event": "push"},
+            )
 
         # Unique files: a, b, c, d, e = 5
         assert response.json()["files_changed"] == 5
@@ -225,46 +212,13 @@ class TestPushEventHandling:
             mock_settings.GITHUB_REPO_OWNER = "test"
             mock_settings.GITHUB_REPO_NAME = "repo"
 
-            app = client._transport.app
-            original_value = getattr(app.state, "github_http_client", None)
-            app.state.github_http_client = AsyncMock()
-            try:
-                response = await client.post(
-                    "/api/v1/webhooks/github",
-                    json=payload,
-                    headers={"x-github-event": "push"},
-                )
-            finally:
-                app.state.github_http_client = original_value
+            response = await client.post(
+                "/api/v1/webhooks/github",
+                json=payload,
+                headers={"x-github-event": "push"},
+            )
 
         assert response.json()["forced"] is True
-
-    async def test_push_without_github_token_returns_skipped(self, client: AsyncClient):
-        """Push event should return skipped when GITHUB_TOKEN not configured."""
-        payload = {"ref": "refs/heads/main", "commits": []}
-
-        with patch("app.routers.webhooks.settings") as mock_settings:
-            mock_settings.GITHUB_WEBHOOK_SECRET = None
-            mock_settings.GITHUB_REPO_OWNER = "test"
-            mock_settings.GITHUB_REPO_NAME = "repo"
-
-            # github_http_client is None when GITHUB_TOKEN not set
-            app = client._transport.app
-            original_value = getattr(app.state, "github_http_client", None)
-            app.state.github_http_client = None
-            try:
-                response = await client.post(
-                    "/api/v1/webhooks/github",
-                    json=payload,
-                    headers={"x-github-event": "push"},
-                )
-            finally:
-                app.state.github_http_client = original_value
-
-        assert response.status_code == 200
-        data = response.json()
-        assert data["status"] == "skipped"
-        assert "not configured" in data["reason"]
 
 
 class TestNonPushEvents:
