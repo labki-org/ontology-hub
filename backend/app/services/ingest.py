@@ -111,9 +111,7 @@ class IngestService:
 
                         # Dashboards: assemble multi-page structure
                         if directory == "dashboards":
-                            page_name = (
-                                entity_key.split("/", 1)[1] if "/" in entity_key else ""
-                            )
+                            page_name = entity_key.split("/", 1)[1] if "/" in entity_key else ""
                             dashboard_id = entity_key.split("/")[0]
                             content: dict[str, Any] = {
                                 "_dashboard_id": dashboard_id,
@@ -385,9 +383,7 @@ class IngestService:
         await refresh_category_property_effective(self._session)
 
 
-async def clone_repo(
-    owner: str, repo: str, token: str | None, dest: str
-) -> str:
+async def clone_repo(owner: str, repo: str, token: str | None, dest: str) -> str:
     """Shallow-clone a GitHub repo into dest. Returns the HEAD commit SHA."""
     if token:
         repo_url = f"https://x-access-token:{token}@github.com/{owner}/{repo}.git"
@@ -395,7 +391,12 @@ async def clone_repo(
         repo_url = f"https://github.com/{owner}/{repo}.git"
 
     proc = await asyncio.create_subprocess_exec(
-        "git", "clone", "--depth", "1", repo_url, dest,
+        "git",
+        "clone",
+        "--depth",
+        "1",
+        repo_url,
+        dest,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
@@ -404,7 +405,11 @@ async def clone_repo(
         raise RuntimeError(f"git clone failed: {stderr.decode()}")
 
     proc = await asyncio.create_subprocess_exec(
-        "git", "-C", dest, "rev-parse", "HEAD",
+        "git",
+        "-C",
+        dest,
+        "rev-parse",
+        "HEAD",
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
