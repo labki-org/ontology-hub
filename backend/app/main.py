@@ -176,22 +176,20 @@ def get_github_client(request: Request) -> GitHubClient:
 
 @app.post("/admin/sync-v2")
 async def trigger_sync_v2(
-    request: Request,
     session: AsyncSession = Depends(get_session),
 ):
-    """Trigger full v2.0 repository sync from GitHub.
+    """Trigger full v2.0 repository sync by cloning the repo.
 
-    Fetches all entity files, validates against schemas, parses entities,
-    atomically replaces all canonical data, and refreshes mat view.
+    Shallow-clones the repo, parses entity files, atomically replaces
+    all canonical data, and refreshes mat view.
 
     Returns:
         Sync statistics including commit_sha, entity_counts, warnings, duration
     """
-    github_client = get_github_client(request)
     result = await sync_repository_v2(
-        github_client=github_client,
         session=session,
         owner=settings.GITHUB_REPO_OWNER,
         repo=settings.GITHUB_REPO_NAME,
+        github_token=settings.GITHUB_TOKEN,
     )
     return result

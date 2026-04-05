@@ -59,16 +59,13 @@ async def verify_github_signature(request: Request) -> bytes:
     return body
 
 
-async def trigger_sync_background_v2(httpx_client: Any) -> None:
+async def trigger_sync_background_v2() -> None:
     """Background task to sync repository using v2.0 ingest.
 
     Delegates to the shared run_sync_with_lock function which handles
     session creation, sync execution, draft rebasing, and concurrency.
-
-    Args:
-        httpx_client: Pre-configured httpx.AsyncClient from app.state
     """
-    await run_sync_with_lock(httpx_client)
+    await run_sync_with_lock()
 
 
 @router.post("/github")
@@ -108,21 +105,8 @@ async def github_webhook(
     # Check for force push
     is_forced = payload.get("forced", False)
 
-    # Get the httpx client from app state for the background task
-    # IMPORTANT: Pass the raw httpx client, not wrapped GitHubClient
-    # The background task will wrap it since session context differs
-    httpx_client = request.app.state.github_http_client
-
-    if httpx_client is None:
-        logger.warning("GitHub webhook received but GITHUB_TOKEN not configured")
-        return {
-            "status": "skipped",
-            "event": event_type,
-            "reason": "GitHub integration not configured",
-        }
-
     # Trigger background sync (v2.0)
-    background_tasks.add_task(trigger_sync_background_v2, httpx_client)
+    background_tasks.add_task(trigger_sync_background_v2)
 
     logger.info(
         "Webhook received: push event with %d changed files (forced=%s)",
