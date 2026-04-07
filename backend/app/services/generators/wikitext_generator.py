@@ -205,6 +205,7 @@ def _extract_dashboard_body(wikitext: str) -> str:
     last_structural = -1
     in_block = False
     import re
+
     cat_re = re.compile(r"^\[\[Category:[^\]]+\]\]$")
 
     for i, line in enumerate(lines):

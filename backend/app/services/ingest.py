@@ -174,11 +174,7 @@ class IngestService:
 
             # Extract annotation properties from root page wikitext
             root_page = next((p for p in pages if p["name"] == ""), None)
-            annotations = (
-                parse_dashboard_annotations(root_page["wikitext"])
-                if root_page
-                else {}
-            )
+            annotations = parse_dashboard_annotations(root_page["wikitext"]) if root_page else {}
 
             dashboard_dict: dict[str, Any] = {
                 "id": dashboard_id,
