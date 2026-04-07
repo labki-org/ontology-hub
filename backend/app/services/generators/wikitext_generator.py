@@ -142,8 +142,87 @@ def generate_template_wikitext(entity: dict[str, Any]) -> str:
 
 
 def generate_dashboard_page_wikitext(wikitext_content: str) -> str:
-    """Generate wikitext for a dashboard page. Dashboards are pure wikitext."""
+    """Generate wikitext for a dashboard subpage. Subpages are pure wikitext."""
     return (wikitext_content or "") + "\n"
+
+
+# Keys in canonical_json that are NOT dynamic property fields for dashboards
+_DASHBOARD_RESERVED = RESERVED_KEYS | {"pages"}
+
+
+def generate_dashboard_root_wikitext(entity: dict[str, Any], root_wikitext: str) -> str:
+    """Generate wikitext for a dashboard root page with annotation block.
+
+    Produces the OntologySync marker block with {{Dashboard|...}} template
+    call containing category properties, followed by category memberships
+    and the page's body content.
+    """
+    params: list[tuple[str, str]] = []
+
+    desc = entity.get("description", "") or ""
+    if desc:
+        params.append(("has_description", desc))
+
+    # Dynamic property fields (Has_dashboard_scope, Has_parent_dashboard, etc.)
+    for key, value in entity.items():
+        if key in _DASHBOARD_RESERVED:
+            continue
+        param_name = _to_param(to_page_name(key))
+        param_value = ", ".join(str(v) for v in value) if isinstance(value, list) else str(value)
+        params.append((param_name, param_value))
+
+    lines = [
+        "<!-- OntologySync Start -->",
+        _build_template_call("Dashboard", params),
+        "<!-- OntologySync End -->",
+        "[[Category:Dashboard]]",
+        "[[Category:OntologySync-managed-dashboard]]",
+    ]
+
+    # Extract body content (everything after markers/categories in original wikitext)
+    body = _extract_dashboard_body(root_wikitext)
+    if body:
+        lines.append("")
+        lines.append(body)
+
+    return "\n".join(lines) + "\n"
+
+
+def _extract_dashboard_body(wikitext: str) -> str:
+    """Extract content after annotation block and category markers.
+
+    If the wikitext has no markers (e.g., newly created via the form),
+    the entire content is treated as the body.
+    """
+    if not wikitext:
+        return ""
+
+    # If no markers, the entire wikitext is the body
+    if "<!-- OntologySync Start -->" not in wikitext:
+        return wikitext.strip()
+
+    lines = wikitext.split("\n")
+    last_structural = -1
+    in_block = False
+    import re
+
+    cat_re = re.compile(r"^\[\[Category:[^\]]+\]\]$")
+
+    for i, line in enumerate(lines):
+        trimmed = line.strip()
+        if trimmed == "<!-- OntologySync Start -->":
+            in_block = True
+            last_structural = i
+        elif trimmed == "<!-- OntologySync End -->":
+            in_block = False
+            last_structural = i
+        elif in_block or cat_re.match(trimmed):
+            last_structural = i
+
+    if last_structural < 0 or last_structural >= len(lines) - 1:
+        return ""
+
+    return "\n".join(lines[last_structural + 1 :]).strip()
 
 
 def generate_resource_wikitext(entity: dict[str, Any]) -> str:

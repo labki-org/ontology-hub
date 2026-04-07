@@ -262,8 +262,8 @@ class TestParseResource:
 
         result = parse_resource_wikitext(wikitext, "Person/John_doe")
         assert result["categories"] == ["Person"]
-        assert result["Has_Name"] == "John Doe"
-        assert result["Has_Email"] == "john@example.com"
+        assert result["Has_name"] == "John Doe"
+        assert result["Has_email"] == "john@example.com"
 
     def test_with_body(self):
         wikitext = """<!-- OntologySync Start -->
@@ -281,7 +281,7 @@ Step 1: Do the thing."""
 
         result = parse_resource_wikitext(wikitext, "SOP/My_sop")
         assert result["categories"] == ["SOP"]
-        assert result["Has_Document_Type"] == "SOP"
+        assert result["Has_document_type"] == "SOP"
         assert "== Procedure ==" in result["wikitext"]
 
 
@@ -461,8 +461,8 @@ class TestResourceRoundTrip:
         parsed = parse_resource_wikitext(wikitext, "Person/John_doe")
 
         assert parsed["categories"] == ["Person"]
-        assert parsed["Has_Name"] == "John Doe"
-        assert parsed["Has_Email"] == "john@example.com"
+        assert parsed["Has_name"] == "John Doe"
+        assert parsed["Has_email"] == "john@example.com"
 
     def test_multi_category_round_trip(self):
         original = {
@@ -476,7 +476,7 @@ class TestResourceRoundTrip:
         parsed = parse_resource_wikitext(wikitext, "Lab/Microscope_1")
 
         assert set(parsed["categories"]) == {"Equipment", "Lab_item"}
-        assert parsed["Has_Name"] == "Microscope 1"
+        assert parsed["Has_name"] == "Microscope 1"
 
     def test_with_body_round_trip(self):
         original = {

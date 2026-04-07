@@ -41,6 +41,7 @@ from app.models.v2 import (
 )
 from app.services.parsers import EntityParser, ParsedEntities, PendingRelationship
 from app.services.parsers.wikitext_parser import (
+    parse_dashboard_annotations,
     parse_wikitext,
 )
 
@@ -171,12 +172,19 @@ class IngestService:
             # Sort: root page first, then subpages alphabetically
             pages.sort(key=lambda p: (p["name"] != "", p["name"]))
 
-            dashboard_dict = {
+            # Extract annotation properties from root page wikitext
+            root_page = next((p for p in pages if p["name"] == ""), None)
+            annotations = parse_dashboard_annotations(root_page["wikitext"]) if root_page else {}
+
+            dashboard_dict: dict[str, Any] = {
                 "id": dashboard_id,
-                "label": dashboard_id.replace("_", " "),
-                "description": "",
+                "label": annotations.pop("_annotation_label", dashboard_id.replace("_", " ")),
+                "description": annotations.pop("_annotation_description", ""),
+                "categories": ["Dashboard"],
                 "pages": pages,
             }
+            # Merge dynamic fields from annotations
+            dashboard_dict.update(annotations)
             result.append((source_path or f"dashboards/{dashboard_id}.wikitext", dashboard_dict))
 
         return result

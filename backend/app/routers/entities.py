@@ -1312,6 +1312,10 @@ async def get_dashboard(
         DashboardPage(name=p.get("name", ""), wikitext=p.get("wikitext", "")) for p in pages_data
     ]
 
+    # Extract dynamic fields (Category:Dashboard properties)
+    dashboard_reserved = RESERVED_KEYS_WITH_INTERNAL | {"pages"}
+    dynamic_fields = {k: v for k, v in effective.items() if k not in dashboard_reserved}
+
     # Module and bundle membership
     module_keys, bundle_keys = await _get_entity_membership(session, entity_key, "dashboard")
 
@@ -1319,6 +1323,7 @@ async def get_dashboard(
         entity_key=effective.get("entity_key", entity_key),
         label=effective.get("label", ""),
         description=effective.get("description"),
+        dynamic_fields=dynamic_fields,
         pages=pages,
         modules=module_keys,
         bundles=bundle_keys,
