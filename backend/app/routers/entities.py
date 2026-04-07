@@ -17,9 +17,11 @@ metadata (added/modified/deleted/unchanged).
 """
 
 import json
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi.responses import FileResponse
 from sqlalchemy import text
 from sqlmodel import col, select
 
@@ -59,6 +61,7 @@ from app.schemas.entity import (
     SubobjectProvenance,
     TemplateDetailResponse,
 )
+from app.config import settings
 from app.services.draft_overlay import DraftContextDep
 from app.services.resource_validation import (
     RESERVED_KEYS_WITH_INTERNAL,
@@ -1432,6 +1435,8 @@ async def get_resource(
     # Module and bundle membership
     module_keys, bundle_keys = await _get_entity_membership(session, entity_key, "resource")
 
+    media_refs = effective.get("media_refs", [])
+
     return ResourceDetailResponse(
         entity_key=effective.get("entity_key", entity_key),
         label=effective.get("label", ""),
@@ -1439,6 +1444,7 @@ async def get_resource(
         category_keys=categories,
         dynamic_fields=dynamic_fields,
         wikitext=effective.get("wikitext", ""),
+        media_refs=media_refs,
         modules=module_keys,
         bundles=bundle_keys,
         change_status=effective.get("_change_status"),
@@ -1497,3 +1503,58 @@ async def get_category_resources(
     items.sort(key=lambda x: x.entity_key)
 
     return items
+
+
+@router.get("/media")
+async def list_media_files(request: Request):
+    """List all available media files."""
+    media_dir = Path(settings.MEDIA_STORAGE_PATH)
+    if not media_dir.exists():
+        return {"items": []}
+
+    MEDIA_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"}
+    items = []
+    for f in sorted(media_dir.iterdir()):
+        if f.is_file() and f.suffix.lower() in MEDIA_EXTS:
+            items.append({
+                "filename": f.name,
+                "size_bytes": f.stat().st_size,
+                "content_type": {
+                    ".png": "image/png",
+                    ".jpg": "image/jpeg",
+                    ".jpeg": "image/jpeg",
+                    ".gif": "image/gif",
+                    ".svg": "image/svg+xml",
+                    ".webp": "image/webp",
+                }.get(f.suffix.lower(), "application/octet-stream"),
+            })
+    return {"items": items}
+
+
+@router.get("/media/{filename}")
+async def get_media_file(request: Request, filename: str):
+    """Serve a media file from the ontology media directory."""
+    # Sanitize filename to prevent path traversal
+    if "/" in filename or "\\" in filename or ".." in filename:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+
+    file_path = Path(settings.MEDIA_STORAGE_PATH) / filename
+    if not file_path.exists() or not file_path.is_file():
+        raise HTTPException(status_code=404, detail="Media file not found")
+
+    MEDIA_TYPES = {
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".gif": "image/gif",
+        ".svg": "image/svg+xml",
+        ".webp": "image/webp",
+    }
+    content_type = MEDIA_TYPES.get(file_path.suffix.lower(), "application/octet-stream")
+
+    headers = {"Cache-Control": "public, max-age=86400"}
+    # SVG security: prevent inline script execution
+    if file_path.suffix.lower() == ".svg":
+        headers["Content-Security-Policy"] = "default-src 'none'"
+
+    return FileResponse(str(file_path), media_type=content_type, headers=headers)

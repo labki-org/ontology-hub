@@ -433,6 +433,30 @@ export function ResourceDetail({
           )}
         </VisualChangeMarker>
       </AccordionSection>
+
+      {/* Media Section */}
+      {resource.media_refs && resource.media_refs.length > 0 && (
+        <AccordionSection
+          id="media"
+          title="Media"
+          count={resource.media_refs.length}
+          defaultOpen
+        >
+          <div className="grid grid-cols-2 gap-4">
+            {resource.media_refs.map((filename) => (
+              <div key={filename} className="space-y-1">
+                <img
+                  src={`/api/v2/media/${encodeURIComponent(filename)}`}
+                  alt={filename}
+                  className="w-full rounded-md border"
+                  loading="lazy"
+                />
+                <p className="text-xs text-muted-foreground truncate">{filename}</p>
+              </div>
+            ))}
+          </div>
+        </AccordionSection>
+      )}
     </div>
   )
 }

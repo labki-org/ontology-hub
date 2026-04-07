@@ -356,6 +356,10 @@ class ResourceDetailResponse(BaseModel):
     wikitext: str = Field(
         default="", description="Free-form wikitext body content for the resource page"
     )
+    media_refs: list[str] = Field(
+        default_factory=list,
+        description="Media filenames referenced via [[File:X]] in wikitext body",
+    )
     modules: list[str] = Field(
         default_factory=list, description="Module entity keys containing this resource"
     )

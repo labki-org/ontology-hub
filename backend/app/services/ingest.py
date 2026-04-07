@@ -39,6 +39,7 @@ from app.models.v2 import (
     # Mat view refresh
     refresh_category_property_effective,
 )
+from app.config import settings
 from app.services.parsers import EntityParser, ParsedEntities, PendingRelationship
 from app.services.parsers.wikitext_parser import (
     parse_dashboard_annotations,
@@ -470,6 +471,20 @@ async def sync_repository_v2(
         entity_files = service.load_entity_files_from_disk(Path(tmpdir))
         total_files = sum(len(files) for files in entity_files.values())
         logger.info("Loaded %d entity files from disk", total_files)
+
+        # Copy media files to persistent storage
+        media_dir = Path(tmpdir) / "media"
+        media_storage = Path(settings.MEDIA_STORAGE_PATH)
+        media_count = 0
+        MEDIA_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"}
+        if media_dir.exists():
+            media_storage.mkdir(parents=True, exist_ok=True)
+            for media_path in sorted(media_dir.iterdir()):
+                if media_path.is_file() and media_path.suffix.lower() in MEDIA_EXTS:
+                    shutil.copy2(str(media_path), str(media_storage / media_path.name))
+                    media_count += 1
+            if media_count:
+                logger.info("Copied %d media files to %s", media_count, media_storage)
 
         # 3. Validate parsed entities (basic structural checks)
         validation_errors: list[str] = []

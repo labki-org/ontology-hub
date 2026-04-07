@@ -23,6 +23,7 @@ RESERVED_KEYS = frozenset(
         "category",
         "categories",
         "wikitext",
+        "media_refs",
         "entity_key",
         "source_path",
     }

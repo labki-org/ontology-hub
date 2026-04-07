@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "http://localhost:5173"
     BACKEND_URL: str = "http://localhost:8080"  # External URL for OAuth callbacks
 
+    # Media storage
+    MEDIA_STORAGE_PATH: str = "/data/media"
+
     @property
     def github_repo(self) -> str:
         """Full repository path as owner/repo."""

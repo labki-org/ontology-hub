@@ -24,6 +24,7 @@ NAMESPACE_TO_ENTITY_TYPE: dict[str, str] = {
 }
 
 _CATEGORY_RE = re.compile(r"^\[\[Category:([^\]]+)\]\]$")
+_FILE_REF_RE = re.compile(r"\[\[File:([^\]|]+?)(?:\|[^\]]*)?\]\]")
 
 _START_MARKER = "<!-- OntologySync Start -->"
 _END_MARKER = "<!-- OntologySync End -->"
@@ -131,6 +132,25 @@ def extract_categories(wikitext: str) -> list[str]:
             categories.append(match.group(1))
 
     return categories
+
+
+def extract_media_references(wikitext: str) -> list[str]:
+    """Extract [[File:X]] references from wikitext body (outside annotation block)."""
+    refs: list[str] = []
+    in_block = False
+    for line in wikitext.split("\n"):
+        stripped = line.strip()
+        if stripped == _START_MARKER:
+            in_block = True
+            continue
+        if stripped == _END_MARKER:
+            in_block = False
+            continue
+        if in_block:
+            continue
+        for match in _FILE_REF_RE.finditer(line):
+            refs.append(match.group(1).strip())
+    return refs
 
 
 # ─── Entity-specific parsers ────────────────────────────────────────────────
@@ -350,6 +370,11 @@ def parse_resource_wikitext(wikitext: str, entity_key: str) -> dict[str, Any]:
     body = _extract_body(wikitext)
     if body:
         result["wikitext"] = body
+
+    # Extract media file references from body content
+    media_refs = extract_media_references(wikitext)
+    if media_refs:
+        result["media_refs"] = media_refs
 
     return result
 

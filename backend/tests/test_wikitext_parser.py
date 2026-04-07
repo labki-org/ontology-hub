@@ -10,6 +10,7 @@ from app.services.parsers.wikitext_parser import (
     _extract_template_call,
     _split_comma,
     extract_categories,
+    extract_media_references,
     parse_category_wikitext,
     parse_module_vocab,
     parse_property_wikitext,
@@ -246,6 +247,84 @@ class TestParseTemplate:
         result = parse_template_wikitext(wikitext, "Property/Page")
         assert result["id"] == "Property/Page"
         assert result["wikitext"] == "<includeonly>{{{value|}}}</includeonly>"
+
+
+class TestExtractMediaReferences:
+    def test_extracts_outside_block(self):
+        wikitext = """<!-- OntologySync Start -->
+{{SOP
+|has_description=A procedure
+}}
+<!-- OntologySync End -->
+[[Category:SOP]]
+
+== Images ==
+[[File:diagram.png]]
+[[File:photo.jpg|thumb|A photo]]"""
+
+        refs = extract_media_references(wikitext)
+        assert refs == ["diagram.png", "photo.jpg"]
+
+    def test_ignores_inside_block(self):
+        wikitext = """<!-- OntologySync Start -->
+{{SOP
+|has_description=A procedure
+}}
+[[File:inside_block.png]]
+<!-- OntologySync End -->
+[[File:outside.png]]"""
+
+        refs = extract_media_references(wikitext)
+        assert refs == ["outside.png"]
+
+    def test_handles_options(self):
+        wikitext = "[[File:test image.png|thumb|300px|Caption text]]"
+        refs = extract_media_references(wikitext)
+        assert refs == ["test image.png"]
+
+    def test_empty_wikitext(self):
+        assert extract_media_references("") == []
+
+    def test_no_file_refs(self):
+        wikitext = "Just some text\n[[Category:SOP]]"
+        refs = extract_media_references(wikitext)
+        assert refs == []
+
+    def test_multiple_on_same_line(self):
+        wikitext = "See [[File:a.png]] and [[File:b.jpg|thumb]]"
+        refs = extract_media_references(wikitext)
+        assert refs == ["a.png", "b.jpg"]
+
+
+class TestParseResourceMediaRefs:
+    def test_resource_with_media_refs(self):
+        wikitext = """<!-- OntologySync Start -->
+{{SOP
+|has_description=A procedure
+|display_label=My SOP
+}}
+<!-- OntologySync End -->
+[[Category:SOP]]
+[[Category:OntologySync-managed-resource]]
+
+== Images ==
+[[File:setup.png|thumb|Setup diagram]]
+[[File:result.jpg]]"""
+
+        result = parse_resource_wikitext(wikitext, "SOP/My_sop")
+        assert result["media_refs"] == ["setup.png", "result.jpg"]
+
+    def test_resource_without_media_refs(self):
+        wikitext = """<!-- OntologySync Start -->
+{{Person
+|display_label=John Doe
+|has_name=John Doe
+}}
+<!-- OntologySync End -->
+[[Category:Person]]"""
+
+        result = parse_resource_wikitext(wikitext, "Person/John_doe")
+        assert "media_refs" not in result
 
 
 class TestParseResource:

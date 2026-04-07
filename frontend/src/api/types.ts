@@ -197,6 +197,7 @@ export interface ResourceDetailV2 {
   category_keys: string[]
   dynamic_fields: Record<string, unknown>
   wikitext?: string
+  media_refs?: string[]
   modules?: string[]
   bundles?: string[]
   change_status?: 'added' | 'modified' | 'deleted' | 'unchanged'
