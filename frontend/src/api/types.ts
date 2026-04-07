@@ -181,6 +181,7 @@ export interface DashboardDetailV2 {
   entity_key: string
   label: string
   description?: string | null
+  dynamic_fields: Record<string, unknown>
   pages: DashboardPage[]
   modules?: string[]
   bundles?: string[]

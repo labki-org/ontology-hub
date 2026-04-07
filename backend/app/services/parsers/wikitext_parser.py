@@ -258,6 +258,37 @@ def parse_dashboard_page(wikitext: str, page_name: str) -> dict[str, str]:
     }
 
 
+def parse_dashboard_annotations(root_wikitext: str) -> dict[str, Any]:
+    """Extract annotation properties from a dashboard root page.
+
+    Dashboards always belong to Category:Dashboard. This extracts the
+    template parameters from the {{Dashboard|...}} annotation block
+    and returns them as dynamic fields (same format as resources).
+    """
+    template_name, params = _extract_template_call(root_wikitext)
+
+    result: dict[str, Any] = {}
+
+    # Map annotation params to entity key format, skipping metadata
+    metadata_params = {"has_description", "display_label"}
+    for param_name, value in params.items():
+        if param_name in metadata_params:
+            continue
+        # Capitalize only the first letter to match entity key convention
+        key = param_name[0].upper() + param_name[1:] if param_name else param_name
+        key = to_entity_key(key)
+        parts = _split_comma(value)
+        result[key] = parts if len(parts) > 1 else value
+
+    # Extract description and label from annotations if present
+    if "has_description" in params:
+        result["_annotation_description"] = params["has_description"]
+    if "display_label" in params:
+        result["_annotation_label"] = params["display_label"]
+
+    return result
+
+
 def _extract_body(wikitext: str) -> str:
     """Extract free-form body content after the annotation block and category markers.
 
@@ -308,9 +339,9 @@ def parse_resource_wikitext(wikitext: str, entity_key: str) -> dict[str, Any]:
         if param_name in metadata_params:
             continue
         # Convert param name back to entity key format (e.g., "has_name" -> "Has_name")
-        # Param names are lowercase; original keys had capitalized words with underscores
-        # We store them as-is using the capitalized page_name -> entity_key convention
-        key = to_entity_key(to_page_name(param_name).title())
+        # Capitalize only the first letter to match entity key convention
+        key = param_name[0].upper() + param_name[1:] if param_name else param_name
+        key = to_entity_key(key)
         # Check if comma-separated (multi-value)
         parts = _split_comma(value)
         result[key] = parts if len(parts) > 1 else value

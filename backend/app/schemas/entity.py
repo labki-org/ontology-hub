@@ -310,11 +310,15 @@ class DashboardPage(BaseModel):
 
 
 class DashboardDetailResponse(BaseModel):
-    """Detailed dashboard response with pages array."""
+    """Detailed dashboard response with pages array and category properties."""
 
     entity_key: str
     label: str
     description: str | None = None
+    dynamic_fields: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Category:Dashboard property values (e.g., Has_dashboard_scope, Has_parent_dashboard)",
+    )
     pages: list[DashboardPage] = Field(
         default_factory=list, description="Dashboard pages with wikitext content"
     )

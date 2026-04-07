@@ -27,6 +27,7 @@ from app.models.v2 import (
 )
 from app.services.generators.wikitext_generator import (
     generate_dashboard_page_wikitext,
+    generate_dashboard_root_wikitext,
     generate_wikitext,
 )
 
@@ -116,12 +117,12 @@ def serialize_for_repo(entity_json: dict, entity_type: str) -> str:
     if entity_type == "bundle":
         return json.dumps(cleaned, indent=2) + "\n"
 
-    # Dashboard -> wikitext pages (handled specially in build_files_from_draft_v2)
+    # Dashboard -> annotation block + body content for root page
     if entity_type == "dashboard":
-        # Dashboards have multi-page structure; this generates the root page
         pages = cleaned.get("pages", [])
         root = next((p for p in pages if p.get("name") == ""), None)
-        return generate_dashboard_page_wikitext(root["wikitext"] if root else "")
+        root_wikitext = root["wikitext"] if root else ""
+        return generate_dashboard_root_wikitext(cleaned, root_wikitext)
 
     # Wikitext entity types (category, property, subobject, template, resource)
     return generate_wikitext(cleaned, entity_type)
