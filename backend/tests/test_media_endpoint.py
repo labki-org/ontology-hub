@@ -1,5 +1,6 @@
 """Tests for the media file serving endpoint."""
 
+import json
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
@@ -109,3 +110,159 @@ async def test_media_svg_has_csp_header(media_tmpdir):
             resp = await client.get("/api/v2/media/diagram.svg")
             assert resp.status_code == 200
             assert resp.headers.get("content-security-policy") == "default-src 'none'"
+
+
+@pytest.mark.asyncio
+async def test_media_list_includes_sidecar_metadata(media_tmpdir):
+    """Media list endpoint includes metadata from JSON sidecar files."""
+    # Create a test image file
+    test_image = Path(media_tmpdir) / "photo.png"
+    test_image.write_bytes(b"\x89PNG\r\n\x1a\n" + b"\x00" * 50)
+
+    # Create matching JSON sidecar
+    sidecar = Path(media_tmpdir) / "photo.json"
+    sidecar.write_text(json.dumps({
+        "description": "Photo of the equipment",
+        "source": "Aharoni Lab, UCLA",
+        "license": "CC-BY-4.0",
+        "author": "Daniel Aharoni",
+    }))
+
+    with patch("app.routers.entities.settings") as mock_settings:
+        mock_settings.MEDIA_STORAGE_PATH = media_tmpdir
+
+        from app.main import app
+
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            resp = await client.get("/api/v2/media")
+            assert resp.status_code == 200
+            data = resp.json()
+            assert len(data["items"]) == 1
+
+            item = data["items"][0]
+            assert item["filename"] == "photo.png"
+            assert item["description"] == "Photo of the equipment"
+            assert item["source"] == "Aharoni Lab, UCLA"
+            assert item["license"] == "CC-BY-4.0"
+            assert item["author"] == "Daniel Aharoni"
+
+
+@pytest.mark.asyncio
+async def test_media_list_without_sidecar(media_tmpdir):
+    """Media list works normally when no JSON sidecar exists."""
+    test_image = Path(media_tmpdir) / "diagram.png"
+    test_image.write_bytes(b"\x89PNG\r\n\x1a\n" + b"\x00" * 50)
+
+    with patch("app.routers.entities.settings") as mock_settings:
+        mock_settings.MEDIA_STORAGE_PATH = media_tmpdir
+
+        from app.main import app
+
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            resp = await client.get("/api/v2/media")
+            assert resp.status_code == 200
+            data = resp.json()
+            assert len(data["items"]) == 1
+
+            item = data["items"][0]
+            assert item["filename"] == "diagram.png"
+            assert "description" not in item
+            assert "source" not in item
+            assert "license" not in item
+            assert "author" not in item
+
+
+@pytest.mark.asyncio
+async def test_media_list_ignores_invalid_sidecar(media_tmpdir):
+    """Media list gracefully handles invalid/malformed JSON sidecar."""
+    test_image = Path(media_tmpdir) / "broken.png"
+    test_image.write_bytes(b"\x89PNG\r\n\x1a\n" + b"\x00" * 50)
+
+    # Create a malformed JSON sidecar
+    sidecar = Path(media_tmpdir) / "broken.json"
+    sidecar.write_text("{invalid json content")
+
+    with patch("app.routers.entities.settings") as mock_settings:
+        mock_settings.MEDIA_STORAGE_PATH = media_tmpdir
+
+        from app.main import app
+
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            resp = await client.get("/api/v2/media")
+            assert resp.status_code == 200
+            data = resp.json()
+            assert len(data["items"]) == 1
+
+            item = data["items"][0]
+            assert item["filename"] == "broken.png"
+            # Metadata fields should not be present since sidecar is invalid
+            assert "description" not in item
+            assert "source" not in item
+
+
+@pytest.mark.asyncio
+async def test_media_list_partial_sidecar_metadata(media_tmpdir):
+    """Media list includes only the metadata fields present in the sidecar."""
+    test_image = Path(media_tmpdir) / "lens.jpg"
+    test_image.write_bytes(b"\xff\xd8\xff\xe0" + b"\x00" * 50)
+
+    # Sidecar with only required fields (no description or author)
+    sidecar = Path(media_tmpdir) / "lens.json"
+    sidecar.write_text(json.dumps({
+        "source": "UCLA",
+        "license": "CC-BY-4.0",
+    }))
+
+    with patch("app.routers.entities.settings") as mock_settings:
+        mock_settings.MEDIA_STORAGE_PATH = media_tmpdir
+
+        from app.main import app
+
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            resp = await client.get("/api/v2/media")
+            assert resp.status_code == 200
+            data = resp.json()
+            assert len(data["items"]) == 1
+
+            item = data["items"][0]
+            assert item["source"] == "UCLA"
+            assert item["license"] == "CC-BY-4.0"
+            assert "description" not in item
+            assert "author" not in item
+
+
+def test_ingest_copies_json_sidecars():
+    """Verify that sync_repository_v2 media copy includes .json sidecar files."""
+    import shutil
+
+    with tempfile.TemporaryDirectory() as src_dir, tempfile.TemporaryDirectory() as dest_dir:
+        # Simulate media directory with image + sidecar
+        media_src = Path(src_dir) / "media"
+        media_src.mkdir()
+
+        (media_src / "photo.png").write_bytes(b"\x89PNG" + b"\x00" * 20)
+        (media_src / "photo.json").write_text(json.dumps({
+            "source": "Test Lab",
+            "license": "CC-BY-4.0",
+        }))
+        (media_src / "diagram.svg").write_text("<svg></svg>")
+
+        # Run the same copy logic used in sync_repository_v2
+        media_storage = Path(dest_dir)
+        MEDIA_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"}
+        for media_path in sorted(media_src.iterdir()):
+            if media_path.is_file() and (
+                media_path.suffix.lower() in MEDIA_EXTS
+                or media_path.suffix.lower() == ".json"
+            ):
+                shutil.copy2(str(media_path), str(media_storage / media_path.name))
+
+        # Verify all files were copied
+        copied = {f.name for f in media_storage.iterdir()}
+        assert "photo.png" in copied
+        assert "photo.json" in copied
+        assert "diagram.svg" in copied

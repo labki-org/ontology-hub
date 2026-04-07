@@ -85,6 +85,15 @@ function formatValue(value: unknown): string | React.ReactNode {
   return String(value)
 }
 
+/** Metadata for a single media file loaded from JSON sidecar. */
+interface MediaMeta {
+  filename: string
+  description?: string
+  source?: string
+  license?: string
+  author?: string
+}
+
 export function ResourceDetail({
   entityKey,
   draftId,
@@ -93,6 +102,23 @@ export function ResourceDetail({
 }: ResourceDetailProps) {
   const { data, isLoading, error } = useResource(entityKey, draftId)
   const setSelectedEntity = useGraphStore((s) => s.setSelectedEntity)
+
+  // Fetch media metadata from the list endpoint so we can show sidecar info
+  const [mediaMetadata, setMediaMetadata] = useState<Record<string, MediaMeta>>({})
+
+  useEffect(() => {
+    apiFetch<{ items: MediaMeta[] }>('/media', { v2: true })
+      .then((data) => {
+        const map: Record<string, MediaMeta> = {}
+        for (const item of data.items) {
+          map[item.filename] = item
+        }
+        setMediaMetadata(map)
+      })
+      .catch(() => {
+        // Non-critical — metadata simply won't be displayed
+      })
+  }, [])
 
   const resource = data as ResourceDetailV2 | undefined
 
@@ -443,17 +469,32 @@ export function ResourceDetail({
           defaultOpen
         >
           <div className="grid grid-cols-2 gap-4">
-            {resource.media_refs.map((filename) => (
-              <div key={filename} className="space-y-1">
-                <img
-                  src={`/api/v2/media/${encodeURIComponent(filename)}`}
-                  alt={filename}
-                  className="w-full rounded-md border"
-                  loading="lazy"
-                />
-                <p className="text-xs text-muted-foreground truncate">{filename}</p>
-              </div>
-            ))}
+            {resource.media_refs.map((filename) => {
+              const meta = mediaMetadata[filename]
+              return (
+                <div key={filename} className="space-y-1">
+                  <img
+                    src={`/api/v2/media/${encodeURIComponent(filename)}`}
+                    alt={meta?.description || filename}
+                    className="w-full rounded-md border"
+                    loading="lazy"
+                  />
+                  <p className="text-xs text-muted-foreground truncate">{filename}</p>
+                  {meta?.description && (
+                    <p className="text-xs text-muted-foreground">{meta.description}</p>
+                  )}
+                  {meta?.source && (
+                    <p className="text-xs text-muted-foreground">Source: {meta.source}</p>
+                  )}
+                  {meta?.license && (
+                    <p className="text-xs text-muted-foreground">License: {meta.license}</p>
+                  )}
+                  {meta?.author && (
+                    <p className="text-xs text-muted-foreground">Author: {meta.author}</p>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </AccordionSection>
       )}

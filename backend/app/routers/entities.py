@@ -1507,27 +1507,43 @@ async def get_category_resources(
 
 @router.get("/media")
 async def list_media_files(request: Request):
-    """List all available media files."""
+    """List all available media files with optional JSON sidecar metadata."""
     media_dir = Path(settings.MEDIA_STORAGE_PATH)
     if not media_dir.exists():
         return {"items": []}
 
     MEDIA_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"}
+    CONTENT_TYPES = {
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".gif": "image/gif",
+        ".svg": "image/svg+xml",
+        ".webp": "image/webp",
+    }
     items = []
     for f in sorted(media_dir.iterdir()):
         if f.is_file() and f.suffix.lower() in MEDIA_EXTS:
-            items.append({
+            item: dict[str, Any] = {
                 "filename": f.name,
                 "size_bytes": f.stat().st_size,
-                "content_type": {
-                    ".png": "image/png",
-                    ".jpg": "image/jpeg",
-                    ".jpeg": "image/jpeg",
-                    ".gif": "image/gif",
-                    ".svg": "image/svg+xml",
-                    ".webp": "image/webp",
-                }.get(f.suffix.lower(), "application/octet-stream"),
-            })
+                "content_type": CONTENT_TYPES.get(
+                    f.suffix.lower(), "application/octet-stream"
+                ),
+            }
+
+            # Load metadata from JSON sidecar if present
+            sidecar_path = media_dir / (f.stem + ".json")
+            if sidecar_path.exists() and sidecar_path.is_file():
+                try:
+                    metadata = json.loads(sidecar_path.read_text(encoding="utf-8"))
+                    for key in ("description", "source", "license", "author"):
+                        if key in metadata:
+                            item[key] = metadata[key]
+                except (json.JSONDecodeError, OSError):
+                    pass  # Skip invalid sidecar files
+
+            items.append(item)
     return {"items": items}
 
 
