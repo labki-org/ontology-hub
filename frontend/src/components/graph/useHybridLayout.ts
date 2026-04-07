@@ -546,6 +546,15 @@ function applyHybridLayout(
   }
 
   // --- Step 6: Non-category initial positions (near connected category centroids) ---
+  // Build adjacency list for non-category -> neighbor lookups
+  const adjacency = new Map<string, string[]>()
+  for (const edge of edges) {
+    for (const [a, b] of [[edge.source, edge.target], [edge.target, edge.source]]) {
+      if (!adjacency.has(a)) adjacency.set(a, [])
+      adjacency.get(a)!.push(b)
+    }
+  }
+
   const nodeNeighborCategories = new Map<string, string[]>()
   for (const edge of edges) {
     for (const [nodeId, catId] of [[edge.source, edge.target], [edge.target, edge.source]]) {
@@ -553,6 +562,24 @@ function applyHybridLayout(
         if (!nodeNeighborCategories.has(nodeId)) nodeNeighborCategories.set(nodeId, [])
         nodeNeighborCategories.get(nodeId)!.push(catId)
       }
+    }
+  }
+
+  // Second pass: for nodes with no direct category neighbor (e.g. properties
+  // attached to subobjects), inherit categories from their non-category neighbors.
+  for (const node of connectedNodes) {
+    if (categoryIds.has(node.id)) continue
+    if (nodeNeighborCategories.has(node.id)) continue
+    const inherited: string[] = []
+    for (const neighbor of adjacency.get(node.id) ?? []) {
+      if (!categoryIds.has(neighbor)) {
+        for (const catId of nodeNeighborCategories.get(neighbor) ?? []) {
+          inherited.push(catId)
+        }
+      }
+    }
+    if (inherited.length > 0) {
+      nodeNeighborCategories.set(node.id, inherited)
     }
   }
 

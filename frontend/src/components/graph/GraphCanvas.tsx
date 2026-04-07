@@ -17,11 +17,14 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { AlertTriangle } from 'lucide-react'
 import { graphNodeTypes } from './GraphNode'
+import { FloatingEdge } from './FloatingEdge'
 import { GraphControls } from './GraphControls'
 import { useHybridLayout } from './useHybridLayout'
 import { HullLayer } from './HullLayer'
 import { ModuleHullControls } from './ModuleHullControls'
 import type { GraphNode as ApiGraphNode, GraphEdge as ApiGraphEdge } from '@/api/types'
+
+const graphEdgeTypes = { floating: FloatingEdge }
 
 interface GraphCanvasProps {
   entityKey?: string
@@ -206,7 +209,7 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
           id: `clone-${cloneId}-${edge.edge_type}`,
           source: edgeSource,
           target: edgeTarget,
-          type: 'default',
+          type: 'floating',
           data: { edge_type: edge.edge_type, change_status: edge.change_status },
           style: {},
         })
@@ -243,7 +246,7 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
         id: `parent-${i}-${edge.source}-${edge.target}`,
         source: edge.source,
         target: edge.target,
-        type: 'default',
+        type: 'floating',
         data: { edge_type: edge.edge_type, change_status: edge.change_status },
         style: {},
       })
@@ -270,7 +273,7 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
                 id: `noncat-${i}-${sc.catId}`,
                 source: `${edge.source}__${sc.catId}`,
                 target: `${edge.target}__${tc.catId}`,
-                type: 'default',
+                type: 'floating',
                 data: { edge_type: edge.edge_type, change_status: edge.change_status },
                 style: {},
               })
@@ -571,6 +574,7 @@ export function GraphCanvas({ entityKey: propEntityKey, draftId, detailPanelOpen
         nodes={nodes}
         edges={filteredEdges}
         nodeTypes={graphNodeTypes}
+        edgeTypes={graphEdgeTypes}
         onNodeMouseEnter={onNodeMouseEnter}
         onNodeMouseLeave={onNodeMouseLeave}
         minZoom={0.1}
