@@ -36,7 +36,7 @@ def app_with_media(media_tmpdir):
         mock_settings.DATABASE_URL = real.DATABASE_URL
 
         # Re-import to pick up patched settings
-        from app.routers.entities import get_media_file, router
+        from app.routers.entities import router
 
         yield router, media_tmpdir
 

@@ -25,6 +25,7 @@ from fastapi.responses import FileResponse
 from sqlalchemy import text
 from sqlmodel import col, select
 
+from app.config import settings
 from app.database import SessionDep
 from app.dependencies.rate_limit import RATE_LIMITS, limiter
 from app.models.v2 import (
@@ -61,7 +62,6 @@ from app.schemas.entity import (
     SubobjectProvenance,
     TemplateDetailResponse,
 )
-from app.config import settings
 from app.services.draft_overlay import DraftContextDep
 from app.services.resource_validation import (
     RESERVED_KEYS_WITH_INTERNAL,

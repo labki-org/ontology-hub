@@ -14,6 +14,7 @@ from sqlalchemy import delete, select
 from sqlmodel import col
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from app.config import settings
 from app.models.v2 import (
     # Entities
     Bundle,
@@ -39,7 +40,6 @@ from app.models.v2 import (
     # Mat view refresh
     refresh_category_property_effective,
 )
-from app.config import settings
 from app.services.parsers import EntityParser, ParsedEntities, PendingRelationship
 from app.services.parsers.wikitext_parser import (
     parse_dashboard_annotations,

@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, act } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ResourceDetail } from './ResourceDetail'
-import type { ResourceDetailV2 } from '@/api/types'
 
 // Use vi.hoisted so mock data is available inside vi.mock factories (which are hoisted)
 const { mockResourceData, mockMediaItems } = vi.hoisted(() => ({
