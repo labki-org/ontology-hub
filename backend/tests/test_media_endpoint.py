@@ -121,12 +121,16 @@ async def test_media_list_includes_sidecar_metadata(media_tmpdir):
 
     # Create matching JSON sidecar
     sidecar = Path(media_tmpdir) / "photo.json"
-    sidecar.write_text(json.dumps({
-        "description": "Photo of the equipment",
-        "source": "Aharoni Lab, UCLA",
-        "license": "CC-BY-4.0",
-        "author": "Daniel Aharoni",
-    }))
+    sidecar.write_text(
+        json.dumps(
+            {
+                "description": "Photo of the equipment",
+                "source": "Aharoni Lab, UCLA",
+                "license": "CC-BY-4.0",
+                "author": "Daniel Aharoni",
+            }
+        )
+    )
 
     with patch("app.routers.entities.settings") as mock_settings:
         mock_settings.MEDIA_STORAGE_PATH = media_tmpdir
@@ -211,10 +215,14 @@ async def test_media_list_partial_sidecar_metadata(media_tmpdir):
 
     # Sidecar with only required fields (no description or author)
     sidecar = Path(media_tmpdir) / "lens.json"
-    sidecar.write_text(json.dumps({
-        "source": "UCLA",
-        "license": "CC-BY-4.0",
-    }))
+    sidecar.write_text(
+        json.dumps(
+            {
+                "source": "UCLA",
+                "license": "CC-BY-4.0",
+            }
+        )
+    )
 
     with patch("app.routers.entities.settings") as mock_settings:
         mock_settings.MEDIA_STORAGE_PATH = media_tmpdir
@@ -245,10 +253,14 @@ def test_ingest_copies_json_sidecars():
         media_src.mkdir()
 
         (media_src / "photo.png").write_bytes(b"\x89PNG" + b"\x00" * 20)
-        (media_src / "photo.json").write_text(json.dumps({
-            "source": "Test Lab",
-            "license": "CC-BY-4.0",
-        }))
+        (media_src / "photo.json").write_text(
+            json.dumps(
+                {
+                    "source": "Test Lab",
+                    "license": "CC-BY-4.0",
+                }
+            )
+        )
         (media_src / "diagram.svg").write_text("<svg></svg>")
 
         # Run the same copy logic used in sync_repository_v2
@@ -256,8 +268,7 @@ def test_ingest_copies_json_sidecars():
         MEDIA_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"}
         for media_path in sorted(media_src.iterdir()):
             if media_path.is_file() and (
-                media_path.suffix.lower() in MEDIA_EXTS
-                or media_path.suffix.lower() == ".json"
+                media_path.suffix.lower() in MEDIA_EXTS or media_path.suffix.lower() == ".json"
             ):
                 shutil.copy2(str(media_path), str(media_storage / media_path.name))
 

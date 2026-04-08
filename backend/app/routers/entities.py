@@ -1527,9 +1527,7 @@ async def list_media_files(request: Request):
             item: dict[str, Any] = {
                 "filename": f.name,
                 "size_bytes": f.stat().st_size,
-                "content_type": CONTENT_TYPES.get(
-                    f.suffix.lower(), "application/octet-stream"
-                ),
+                "content_type": CONTENT_TYPES.get(f.suffix.lower(), "application/octet-stream"),
             }
 
             # Load metadata from JSON sidecar if present

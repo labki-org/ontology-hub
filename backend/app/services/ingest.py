@@ -481,8 +481,7 @@ async def sync_repository_v2(
             media_storage.mkdir(parents=True, exist_ok=True)
             for media_path in sorted(media_dir.iterdir()):
                 if media_path.is_file() and (
-                    media_path.suffix.lower() in MEDIA_EXTS
-                    or media_path.suffix.lower() == ".json"
+                    media_path.suffix.lower() in MEDIA_EXTS or media_path.suffix.lower() == ".json"
                 ):
                     shutil.copy2(str(media_path), str(media_storage / media_path.name))
                     media_count += 1
