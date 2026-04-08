@@ -534,9 +534,12 @@ export function Sidebar() {
   return (
     <aside className="w-64 border-r bg-sidebar text-sidebar-foreground flex flex-col">
       <div className="p-4 border-b">
-        <Link to="/" className="font-semibold text-lg hover:opacity-80">
-          Ontology Hub
-        </Link>
+        <div className="flex items-baseline gap-2">
+          <Link to="/" className="font-semibold text-lg hover:opacity-80">
+            Ontology Hub
+          </Link>
+          <span className="text-xs text-muted-foreground">{__APP_VERSION__}</span>
+        </div>
         {draftToken && (
           <Badge variant="outline" className="text-xs mt-1">
             Draft Mode
